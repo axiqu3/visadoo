@@ -5,16 +5,29 @@ const SITE = "https://visadoo-uae.netlify.app";
 
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 async function fetchJson(url){ const r=await fetch(url,{headers:{apikey:ANON,authorization:"Bearer "+ANON}}); if(!r.ok) return null; return await r.json(); }
+
+// ---- currency (single active currency chosen in the backend) ----
+const CCY_SYMBOLS={AED:"AED",USD:"$",EUR:"€",GBP:"£",INR:"₹",QAR:"QAR"};
+function resolveActive(settings){
+  const s=(settings&&settings[0])||{};
+  const code=(s.active_currency||"AED").toUpperCase();
+  let sym=CCY_SYMBOLS[code]||code;
+  const list=s.currencies;
+  if(Array.isArray(list)) list.forEach(function(c){ if(c&&String(c.code).toUpperCase()===code&&c.symbol) sym=c.symbol; });
+  return { code:code, symbol:sym };
+}
+function fmtMoney(n, sym){ if(n==null||n==="") return ""; const s=Number(n).toLocaleString("en-US"); return sym.length>1?(sym+" "+s):(sym+s); }
+function priceText(row, active){ return (row.prices&&row.prices[active.code]!=null&&row.prices[active.code]!=="")?fmtMoney(row.prices[active.code],active.symbol):fmtMoney(row.price_aed,"AED"); }
 const PLANE='<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>';
 const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function flag(iso2){ return iso2 ? ('https://flagcdn.com/w320/'+iso2.toLowerCase()+'.png') : ''; }
 
-function visaCard(v){
+function visaCard(v, active){
   var feats=(v.features||[]).slice(0,4).map(function(f){return '<li>'+CHECK+esc(f)+'</li>';}).join('');
   var cat = v.category ? '<div class="vsub">'+esc(v.category)+'</div>' : '';
   return '<div class="vcard">'+
     '<h3>'+esc(v.name)+'</h3>'+cat+
-    '<div class="price">AED '+esc(v.price_aed)+' <small>/ visa</small></div>'+
+    '<div class="price">'+esc(priceText(v, active))+' <small>/ visa</small></div>'+
     (v.blurb?'<p class="blurb">'+esc(v.blurb)+'</p>':'')+
     '<ul>'+feats+'</ul>'+
     '<a href="/app.html?visa='+encodeURIComponent(v.slug)+'" class="btn btn-primary btn-block">Apply now</a>'+
@@ -22,12 +35,12 @@ function visaCard(v){
   '</div>';
 }
 
-function pageHtml(c, visas, defaultImg){
+function pageHtml(c, visas, defaultImg, active){
   var title=(c.seo_title&&c.seo_title.trim())||(c.name+' Visas — Apply Online | Visa Doo');
   var desc=(c.seo_description&&c.seo_description.trim())||(c.summary||('Apply online for your '+c.name+' visa with Visa Doo. Tourist and business visas, document upload and live tracking.')).slice(0,160);
   var canonical=SITE+'/country/'+c.slug;
   var ogImage=c.social_image||defaultImg||'';
-  var cards = visas.length ? visas.map(visaCard).join('') : '<div class="empty-state" style="grid-column:1/-1"><p>Visa options for '+esc(c.name)+' are coming soon. <a href="/#contact" style="color:var(--blue-600);font-weight:700">Contact us</a> and we\'ll help.</p></div>';
+  var cards = visas.length ? visas.map(function(v){return visaCard(v, active);}).join('') : '<div class="empty-state" style="grid-column:1/-1"><p>Visa options for '+esc(c.name)+' are coming soon. <a href="/#contact" style="color:var(--blue-600);font-weight:700">Contact us</a> and we\'ll help.</p></div>';
 
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'+
     '<title>'+esc(title)+'</title><meta name="description" content="'+esc(desc)+'">'+
@@ -75,10 +88,11 @@ export default async (request) => {
   if(!countries||!countries.length) return notFound();
   const c=countries[0];
   const visas=await fetchJson(SUPABASE_URL+"/rest/v1/visa_types?country_slug=eq."+encodeURIComponent(slug)+"&active=eq.true&order=sort_order&select=*")||[];
-  const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image");
+  const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies");
   const defaultImg=(settings&&settings[0]&&settings[0].default_social_image)||"";
+  const active=resolveActive(settings);
 
-  return new Response(pageHtml(c, visas, defaultImg), {
+  return new Response(pageHtml(c, visas, defaultImg, active), {
     headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
   });
 };

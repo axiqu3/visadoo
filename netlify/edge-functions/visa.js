@@ -18,10 +18,24 @@ async function fetchJson(url) {
   return await r.json();
 }
 
+// ---- currency (single active currency chosen in the backend) ----
+const CCY_SYMBOLS = { AED: "AED", USD: "$", EUR: "€", GBP: "£", INR: "₹", QAR: "QAR" };
+function resolveActive(settings) {
+  const s = (settings && settings[0]) || {};
+  const code = (s.active_currency || "AED").toUpperCase();
+  let sym = CCY_SYMBOLS[code] || code;
+  const list = s.currencies;
+  if (Array.isArray(list)) list.forEach(function (c) { if (c && String(c.code).toUpperCase() === code && c.symbol) sym = c.symbol; });
+  return { code: code, symbol: sym };
+}
+function fmtMoney(n, sym) { if (n == null || n === "") return ""; const s = Number(n).toLocaleString("en-US"); return sym.length > 1 ? (sym + " " + s) : (sym + s); }
+function priceNum(row, active) { return (row.prices && row.prices[active.code] != null && row.prices[active.code] !== "") ? row.prices[active.code] : row.price_aed; }
+function priceText(row, active) { return (row.prices && row.prices[active.code] != null && row.prices[active.code] !== "") ? fmtMoney(row.prices[active.code], active.symbol) : fmtMoney(row.price_aed, "AED"); }
+
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const PLANE = '<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>';
 
-function pageHtml(v, others, defaultImg) {
+function pageHtml(v, others, defaultImg, active) {
   const name = v.name || "UAE Tourist Visa";
   const title = (v.seo_title && v.seo_title.trim()) || (name + " — Apply Online | Visa Doo");
   const desc = (v.seo_description && v.seo_description.trim()) ||
@@ -39,7 +53,7 @@ function pageHtml(v, others, defaultImg) {
     "description": desc,
     "areaServed": "AE",
     "provider": { "@type": "Organization", "name": "Visa Doo", "url": SITE },
-    "offers": { "@type": "Offer", "price": String(v.price_aed), "priceCurrency": "AED", "url": canonical }
+    "offers": { "@type": "Offer", "price": String(priceNum(v, active)), "priceCurrency": active.code, "url": canonical }
   };
 
   const related = others.map(function (o) {
@@ -47,7 +61,7 @@ function pageHtml(v, others, defaultImg) {
       (o.popular ? '<span class="tag">Most popular</span>' : '') +
       '<h3>' + esc(o.name) + '</h3>' +
       '<div class="vsub">' + esc(o.sub || '') + '</div>' +
-      '<div class="price">AED ' + esc(o.price_aed) + ' <small>/ visa</small></div>' +
+      '<div class="price">' + esc(priceText(o, active)) + ' <small>/ visa</small></div>' +
       '<p class="blurb">' + esc(o.blurb || '') + '</p>' +
       '<span class="btn btn-ghost btn-block">View details</span>' +
       '</a>';
@@ -90,14 +104,14 @@ function pageHtml(v, others, defaultImg) {
         '<h1>' + esc(name) + '</h1>' +
         '<p class="sub">' + esc(v.blurb || '') + '</p>' +
         '<div class="hero-cta">' +
-          '<a href="/app.html?visa=' + esc(v.slug) + '" class="btn btn-primary btn-lg">Apply now — AED ' + esc(v.price_aed) + '</a>' +
+          '<a href="/app.html?visa=' + esc(v.slug) + '" class="btn btn-primary btn-lg">Apply now — ' + esc(priceText(v, active)) + '</a>' +
           '<a href="' + esc(wa) + '" target="_blank" rel="noopener" class="btn btn-ghost btn-lg">Ask a question</a>' +
         '</div>' +
       '</div>' +
       '<div class="hero-art"><div class="hero-blob"></div>' +
         '<div class="passport-card">' +
           '<div class="passport-head"><span class="flag">' + PLANE + '</span><div><h4>' + esc(name) + '</h4><span>United Arab Emirates</span></div></div>' +
-          '<div class="passport-row"><span>Price</span><b>AED ' + esc(v.price_aed) + '</b></div>' +
+          '<div class="passport-row"><span>Price</span><b>' + esc(priceText(v, active)) + '</b></div>' +
           (v.days ? '<div class="passport-row"><span>Length of stay</span><b>Up to ' + esc(v.days) + ' days</b></div>' : '') +
           (v.sub ? '<div class="passport-row"><span>Entry</span><b>' + esc(v.sub) + '</b></div>' : '') +
           '<div class="passport-row"><span>Processing</span><b>3–5 days</b></div>' +
@@ -151,10 +165,11 @@ export default async (request) => {
   if (!v) return notFound();
   const others = rows.filter(function (x) { return x.slug !== slug && x.country_slug === v.country_slug; });
 
-  const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image");
+  const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies");
   const defaultImg = (settings && settings[0] && settings[0].default_social_image) || "";
+  const active = resolveActive(settings);
 
-  return new Response(pageHtml(v, others, defaultImg), {
+  return new Response(pageHtml(v, others, defaultImg, active), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" }
   });
 };
