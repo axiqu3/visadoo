@@ -44,6 +44,22 @@
     ]).then(function(res){ countryList=(res[0].data)||[]; groupList=(res[1].data)||[]; return true; });
   }
   function countryName(slug){ for(var i=0;i<countryList.length;i++){ if(countryList[i].slug===slug) return countryList[i].name; } return slug||'—'; }
+  function fnUrl(name){ return cfg.SUPABASE_URL.replace(/\/$/,'') + '/functions/v1/' + name; }
+
+  // Email the customer when their status changes (sends only for key stages; silently skips if email isn't set up).
+  function notifyStatusChange(appId, status, fullName){
+    sb.auth.getSession().then(function(sess){
+      var token=sess.data.session?sess.data.session.access_token:cfg.SUPABASE_ANON_KEY;
+      return fetch(fnUrl('send-status-email'), {
+        method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':cfg.SUPABASE_ANON_KEY, 'Authorization':'Bearer '+token },
+        body: JSON.stringify({ application_id:appId, status:status, origin:location.origin })
+      });
+    }).then(function(r){ return r.json().catch(function(){return {};}); }).then(function(d){
+      if(d && d.ok){ toast((fullName?fullName.split(' ')[0]:'Customer')+' was emailed about the update'); }
+      else if(d && d.error){ toast('Status saved — but the email didn’t send. Check the Email screen.'); console.error('status email error:', d.error, d.detail||''); }
+      // "skipped" (not a key stage / no key / disabled) stays quiet — the status still updated
+    }).catch(function(){ /* ignore — status update already saved */ });
+  }
 
   // ---------- tiny helpers ----------
   function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
@@ -528,6 +544,7 @@
     if(canManageContent()) items.push(['content','Content']);
     if(canManageContent()) items.push(['siteseo','Site SEO']);
     if(state.role==='admin') items.push(['brand','Brand & Settings']);
+    if(state.role==='admin') items.push(['emailcfg','Email']);
     if(state.role==='admin') items.push(['team','Team']);
     if(items.length<2) return ''; // no point showing a one-item switcher
     return '<div class="subnav" style="margin-bottom:18px">'+items.map(function(it){
@@ -674,6 +691,7 @@
 
     // save status (+ optional visa upload) + note
     var saveBtn=card.querySelector('[data-role="save"]');
+    var prevStatus=a.status;
     saveBtn.onclick=function(){
       var status=card.querySelector('[data-role="status"]').value;
       var note=card.querySelector('[data-role="note"]').value.trim();
@@ -699,6 +717,7 @@
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
         if(u.error) throw u.error;
         toast('Updated '+a.full_name.split(' ')[0]+'’s application to “'+status+'”');
+        if(status!==prevStatus) notifyStatusChange(a.id, status, a.full_name);
         renderAdmin();
       }).catch(function(err){
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
@@ -2017,6 +2036,58 @@
   }
 
   // ============================================================
+  //  EMAIL (admins only) — customer status-update emails via Brevo
+  // ============================================================
+  function renderEmailSettings(){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    root.innerHTML='<div class="app-main">'+adminSections('emailcfg')+
+      '<div class="app-head"><h1>Email</h1><p>Automatically email customers when their application reaches a key stage — sent through your Brevo email service.</p></div>'+
+      '<div id="emArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
+    '</div>';
+    wireAdminSections();
+    sb.from('email_settings').select('*').eq('id','global').single().then(function(r){ paintEmail(r.data||{}); });
+  }
+
+  function paintEmail(s){
+    var area=document.getElementById('emArea'); if(!area) return;
+    var notify = s.notify_status_emails!==false;
+    area.innerHTML=
+      '<div class="panel"><h3>Customer updates</h3><p class="phint">Email customers automatically when their application is marked <b>Approved</b>, <b>Visa Issued</b>, or <b>Action Needed</b>.</p>'+
+        '<label style="display:flex;align-items:center;gap:9px;font-weight:600;cursor:pointer"><input id="emNotify" type="checkbox" '+(notify?'checked':'')+' style="width:auto"> Send these update emails to customers</label>'+
+      '</div>'+
+      '<div class="panel"><h3>Email service (Brevo)</h3>'+
+        '<p class="phint">These emails are sent through Brevo. Paste your Brevo <b>API key</b> below to switch it on.</p>'+
+        '<div class="field"><label>Brevo API key</label><input id="emBrevoKey" type="password" value="'+esc(s.brevo_api_key||'')+'" placeholder="xkeysib-…" autocomplete="off"></div>'+
+        '<div id="emKeyWarn"></div>'+
+        '<p class="phint">In Brevo: <b>Settings → SMTP &amp; API → API Keys tab → Generate a new API key</b>. It starts with <b>xkeysib-</b>. (Do not use the SMTP key from the SMTP tab — that one won\'t work.) Your key is stored privately and never shown on your website.</p>'+
+        '<div style="background:var(--sky-50);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:13.5px;color:#475569">Sends as <b>'+esc(s.brevo_from_name||'Visa Doo')+' &lt;'+esc(s.brevo_from_email||'info@skybookdigital.com')+'&gt;</b>, with replies going to <b>'+esc(s.brevo_reply_to||'hello@visadoo.com')+'</b>.</div>'+
+      '</div>'+
+      '<div class="signin-msg" id="emMsg"></div>'+
+      '<button class="btn btn-primary btn-lg" id="emSave">Save email settings</button>';
+
+    var keyInput=document.getElementById('emBrevoKey'), warn=document.getElementById('emKeyWarn');
+    function checkKey(){
+      var v=(keyInput.value||'').trim();
+      if(v && v.indexOf('xsmtpsib')===0){ warn.innerHTML='<p class="phint" style="color:var(--red);margin-top:6px">⚠ This looks like an <b>SMTP key</b>. Customer emails need the <b>API key</b> (starts with xkeysib-) from the “API Keys” tab.</p>'; }
+      else warn.innerHTML='';
+    }
+    keyInput.oninput=checkKey; checkKey();
+
+    document.getElementById('emSave').onclick=function(){
+      var btn=this, m=document.getElementById('emMsg');
+      var key=(keyInput.value||'').trim();
+      if(key && key.indexOf('xsmtpsib')===0){ m.className='signin-msg err'; m.textContent='That’s a Brevo SMTP key. Please paste your Brevo API key (it starts with xkeysib-).'; return; }
+      btn.disabled=true; btn.innerHTML='<span class="spin"></span> Saving…';
+      sb.from('email_settings').update({ brevo_api_key:key||null, notify_status_emails:document.getElementById('emNotify').checked, updated_at:new Date().toISOString() }).eq('id','global').then(function(r){
+        btn.disabled=false; btn.innerHTML='Save email settings';
+        if(r.error){ m.className='signin-msg err'; m.textContent='Could not save. Please try again.'; console.error(r.error); return; }
+        m.className='signin-msg ok'; m.textContent=key?'Saved — customer update emails are on.':'Saved.';
+        toast('Email settings saved');
+      });
+    };
+  }
+
+  // ============================================================
   //  CONTENT (pages + FAQs + reviews)
   // ============================================================
   var contentTab='pages', pEditing=null, fEditing=null, rEditing=null;
@@ -2183,7 +2254,7 @@
     // permission guards — bounce to an allowed area
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
-    if((v==='team'||v==='brand') && state.role!=='admin') v=defaultStaffView();
+    if((v==='team'||v==='brand'||v==='emailcfg') && state.role!=='admin') v=defaultStaffView();
     state.view=v;
 
     if(v==='apply') renderApply();
@@ -2195,13 +2266,14 @@
     else if(v==='content') renderContentAdmin();
     else if(v==='siteseo') renderSiteSeo();
     else if(v==='brand') renderBrand();
+    else if(v==='emailcfg') renderEmailSettings();
     else if(v==='team') renderTeam();
     else renderApply();
   }
 
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','team'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
