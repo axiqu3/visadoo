@@ -1,0 +1,36 @@
+[build]
+  publish = "."
+
+# Inject editable global SEO into the homepage
+[[edge_functions]]
+  path = "/"
+  function = "home"
+
+# Server-rendered country pages (list a country's visas)
+[[edge_functions]]
+  path = "/country/*"
+  function = "country"
+
+# Server-rendered, SEO-friendly pages for each visa type
+[[edge_functions]]
+  path = "/visa/*"
+  function = "visa"
+
+# Server-rendered articles list and individual article pages
+[[edge_functions]]
+  path = "/articles"
+  function = "articles"
+
+[[edge_functions]]
+  path = "/article/*"
+  function = "articles"
+
+# Custom pages (About, Terms, …)
+[[edge_functions]]
+  path = "/p/*"
+  function = "page"
+
+# Auto-generated sitemap
+[[edge_functions]]
+  path = "/sitemap.xml"
+  function = "sitemap"

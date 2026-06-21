@@ -1,0 +1,16 @@
+# ---- Keep local machine settings off GitHub ----
+.claude/
+.netlify/
+
+# ---- Dependencies (not used today, ignored just in case) ----
+node_modules/
+
+# ---- Secret/environment files (none today — protects future ones) ----
+.env
+.env.*
+*.local
+
+# ---- OS / editor junk ----
+.DS_Store
+Thumbs.db
+*.log
