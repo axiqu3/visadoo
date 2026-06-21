@@ -569,7 +569,10 @@
   //  ADMIN  (team console — view all applications, change status, view docs)
   // ============================================================
   var ALL_STATUSES = cfg.STAGES.concat(['Action Needed']);
-  var adminFilter = 'all';
+  var adminRows = [];
+  var adminFilters = { q:'', visa:'', status:'all', country:'', from:'', to:'', sort:'newest' };
+  var adminFiltersOpen = false;
+  function adminActiveCount(){ var f=adminFilters, n=0; if(f.q.trim())n++; if(f.visa)n++; if(f.status!=='all')n++; if(f.country)n++; if(f.from||f.to)n++; return n; }
 
   // Top-level admin section switcher (Applications / Visa Types / …future)
   function adminSections(active){
@@ -594,41 +597,96 @@
     });
   }
 
+  function afVisaOptions(){ return '<option value="">All visa types</option>'+VISAS.map(function(v){ return '<option value="'+esc(v.id)+'"'+(adminFilters.visa===v.id?' selected':'')+'>'+esc(v.name)+'</option>'; }).join(''); }
+  function afStatusOptions(){
+    var opts=[['all','All statuses'],['In progress','In progress (not issued/closed)']].concat(ALL_STATUSES.map(function(s){return [s,s];}));
+    return opts.map(function(o){ return '<option value="'+esc(o[0])+'"'+(adminFilters.status===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('');
+  }
+  function afCountryOptions(){ return '<option value="">All countries</option>'+countryList.map(function(c){ return '<option value="'+esc(c.slug)+'"'+(adminFilters.country===c.slug?' selected':'')+'>'+esc(c.name)+'</option>'; }).join(''); }
+
   function renderAdmin(){
     if(!canViewApps()){ go(defaultStaffView()); return; }
+    if(!countryList.length){ loadCountriesGroups().then(function(){ var sel=document.getElementById('afCountry'); if(sel) sel.innerHTML=afCountryOptions(); }); }
+    var canProc=canProcessApps();
     root.innerHTML=
       '<div class="app-main">' +
         adminSections('admin') +
         '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
-          '<h1>Applications</h1><p>'+(canProcessApps()?'Review applications, move them through the stages, and open uploaded documents.':'View applications and their current status.')+'</p></div>'+
-          (canProcessApps()?'<button class="btn btn-primary" id="adminNewApp">+ New application for a customer</button>':'')+
+          '<h1>Applications</h1><p>'+(canProc?'Review applications, move them through the stages, and open uploaded documents.':'View applications and their current status.')+'</p></div>'+
+          (canProc?'<button class="btn btn-primary" id="adminNewApp">+ New application for a customer</button>':'')+
         '</div>' +
-        '<div class="subnav" id="adminFilter">' +
-          ['all','In progress','Visa Issued','Action Needed'].map(function(f){
-            return '<button data-f="'+esc(f)+'" class="'+(adminFilter===f?'active':'')+'">'+(f==='all'?'All':esc(f))+'</button>';
-          }).join('') +
-        '</div>' +
+        '<div style="margin-bottom:14px">'+
+          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+            '<button class="btn btn-ghost" id="adminFiltersBtn" type="button">Filters'+(adminActiveCount()?(' ('+adminActiveCount()+')'):'')+'</button>'+
+            '<span id="adminCount" class="phint" style="margin:0"></span>'+
+            '<button class="link-btn" id="adminClear" type="button" style="margin-left:auto;display:none">Clear all</button>'+
+          '</div>'+
+          '<div id="adminFilterPanel" class="panel" style="margin-top:12px;'+(adminFiltersOpen?'':'display:none')+'">'+
+            '<div class="field"><label>Search</label><input id="afQ" type="text" value="'+esc(adminFilters.q)+'" placeholder="Name, email, phone, passport, or reference…"></div>'+
+            '<div class="grid2">'+
+              '<div class="field"><label>Visa type</label><select id="afVisa">'+afVisaOptions()+'</select></div>'+
+              '<div class="field"><label>Status / stage</label><select id="afStatus">'+afStatusOptions()+'</select></div>'+
+              '<div class="field"><label>Destination country</label><select id="afCountry">'+afCountryOptions()+'</select></div>'+
+              '<div class="field"><label>Sort by</label><select id="afSort">'+
+                '<option value="newest"'+(adminFilters.sort==='newest'?' selected':'')+'>Newest first</option>'+
+                '<option value="oldest"'+(adminFilters.sort==='oldest'?' selected':'')+'>Oldest first</option>'+
+                '<option value="name"'+(adminFilters.sort==='name'?' selected':'')+'>Name A–Z</option>'+
+              '</select></div>'+
+              '<div class="field"><label>From date</label><input id="afFrom" type="date" value="'+esc(adminFilters.from)+'"></div>'+
+              '<div class="field"><label>To date</label><input id="afTo" type="date" value="'+esc(adminFilters.to)+'"></div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
         '<div id="adminList"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading applications…</p></div></div>' +
       '</div>';
 
     wireAdminSections();
     var newBtn=document.getElementById('adminNewApp'); if(newBtn){ newBtn.onclick=function(){ openOnBehalf(); }; }
-    root.querySelectorAll('#adminFilter button').forEach(function(b){
-      b.onclick=function(){ adminFilter=b.getAttribute('data-f'); renderAdmin(); };
-    });
+    document.getElementById('adminFiltersBtn').onclick=function(){ adminFiltersOpen=!adminFiltersOpen; document.getElementById('adminFilterPanel').style.display=adminFiltersOpen?'':'none'; };
+    document.getElementById('adminClear').onclick=function(){
+      adminFilters.q=''; adminFilters.visa=''; adminFilters.status='all'; adminFilters.country=''; adminFilters.from=''; adminFilters.to='';
+      document.getElementById('afQ').value=''; document.getElementById('afVisa').value=''; document.getElementById('afStatus').value='all';
+      document.getElementById('afCountry').value=''; document.getElementById('afFrom').value=''; document.getElementById('afTo').value='';
+      paintAdminList();
+    };
+    function bind(id,key,ev){ var el=document.getElementById(id); if(el) el[ev]=function(){ adminFilters[key]=el.value; paintAdminList(); }; }
+    bind('afQ','q','oninput'); bind('afVisa','visa','onchange'); bind('afStatus','status','onchange');
+    bind('afCountry','country','onchange'); bind('afSort','sort','onchange'); bind('afFrom','from','onchange'); bind('afTo','to','onchange');
 
     sb.from('applications').select('*, documents(*)').order('created_at',{ascending:false}).then(function(r){
       var box=document.getElementById('adminList');
       if(r.error){ box.innerHTML='<div class="empty-state"><p>Could not load applications.</p></div>'; console.error(r.error); return; }
-      var rows=r.data.filter(function(a){
-        if(adminFilter==='all') return true;
-        if(adminFilter==='In progress') return a.status!=='Visa Issued' && a.status!=='Action Needed';
-        return a.status===adminFilter;
-      });
-      if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No applications'+(adminFilter==='all'?' yet':' in this group')+'.</p></div>'; return; }
-      box.innerHTML=rows.map(adminCard).join('');
-      rows.forEach(wireAdminCard);
+      adminRows=r.data||[];
+      paintAdminList();
     });
+  }
+
+  function paintAdminList(){
+    var box=document.getElementById('adminList'); if(!box) return;
+    var f=adminFilters, q=f.q.trim().toLowerCase();
+    var rows=adminRows.filter(function(a){
+      if(f.status==='In progress'){ if(a.status==='Visa Issued'||a.status==='Action Needed') return false; }
+      else if(f.status!=='all'){ if(a.status!==f.status) return false; }
+      if(f.visa && a.visa_type!==f.visa) return false;
+      if(f.country){ var v=visaById(a.visa_type); if(!v || v.country_slug!==f.country) return false; }
+      var day=(a.created_at||'').slice(0,10);
+      if(f.from && day<f.from) return false;
+      if(f.to && day>f.to) return false;
+      if(q){ var hay=[a.full_name,a.email,a.phone,a.passport_number,a.reference_code].map(function(x){return (x||'').toLowerCase();}).join(' '); if(hay.indexOf(q)===-1) return false; }
+      return true;
+    });
+    rows.sort(function(a,b){
+      if(f.sort==='name') return (a.full_name||'').localeCompare(b.full_name||'');
+      var da=new Date(a.created_at).getTime(), db=new Date(b.created_at).getTime();
+      return f.sort==='oldest' ? (da-db) : (db-da);
+    });
+    var cnt=document.getElementById('adminCount'); if(cnt) cnt.textContent=rows.length+' of '+adminRows.length+' shown';
+    var clr=document.getElementById('adminClear'); if(clr) clr.style.display=adminActiveCount()?'inline':'none';
+    var fb=document.getElementById('adminFiltersBtn'); if(fb) fb.textContent='Filters'+(adminActiveCount()?(' ('+adminActiveCount()+')'):'');
+    if(!adminRows.length){ box.innerHTML='<div class="panel empty-state"><p>No applications yet.</p></div>'; return; }
+    if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No applications match your search or filters.</p></div>'; return; }
+    box.innerHTML=rows.map(adminCard).join('');
+    rows.forEach(wireAdminCard);
   }
 
   function docLabel(t){ return t==='visa'?'visa':(t==='photo'?'photo':'passport'); }
