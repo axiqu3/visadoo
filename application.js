@@ -276,7 +276,8 @@
           '<div class="grid2">' +
             field('full_name','Full name (as in passport)','text',defaultName,true) +
             field('passport_number','Passport number','text','',true) +
-            field('nationality','Nationality','text','',true) +
+            comboHtml('passport_issuing_country','Passport Issuing Country','Search country…',true) +
+            '<div id="stateWrap" style="display:none">'+comboHtml('state','State','Search state…',true)+'</div>' +
             field('phone','Phone number','tel','',true) +
             field('date_of_birth','Date of birth','date','',false) +
             field('passport_expiry','Passport expiry date','date','',false) +
@@ -314,6 +315,17 @@
     refreshSummary();
     loadApplyQuestions(selected);
     wireDrop('passport'); wireDrop('photo');
+
+    // Passport Issuing Country (India default + pinned) + conditional India State dropdown
+    var countryCombo, stateCombo;
+    function toggleState(country){
+      var w=document.getElementById('stateWrap'); if(!w) return;
+      if(country==='India'){ w.style.display=''; loadIndiaStates().then(function(){ if(stateCombo) stateCombo.refresh(); }); }
+      else { w.style.display='none'; var h=document.getElementById('state'), ss=document.getElementById('state_s'); if(h) h.value=''; if(ss) ss.value=''; }
+    }
+    loadCountries().then(function(){ if(countryCombo) countryCombo.refresh(); });
+    stateCombo=comboInit('state', function(){ return geoIndiaStates||[]; }, { placeholder:'Search state…' });
+    countryCombo=comboInit('passport_issuing_country', function(){ return geoCountries||['India']; }, { selected:'India', onSelect:toggleState });
 
     document.getElementById('applyForm').onsubmit=function(e){
       e.preventDefault();
@@ -390,6 +402,78 @@
         '<input type="file" id="file_'+key+'" accept="image/*,application/pdf" style="display:none">' +
       '</div></div>';
   }
+
+  // ---- searchable country / state dropdown ----
+  // Data comes from the country-state-city package's published data files (loaded from its CDN).
+  // We deliberately load only the small country + state files, never the large city file, and never hardcode the lists.
+  var GEO_BASE='https://cdn.jsdelivr.net/npm/country-state-city@3.2.1/lib/assets/';
+  var geoCountries=null, geoIndiaStates=null;
+  function loadCountries(){
+    if(geoCountries) return Promise.resolve(geoCountries);
+    return fetch(GEO_BASE+'country.json').then(function(r){ return r.json(); }).then(function(arr){
+      var names=(arr||[]).map(function(c){ return c.name; }).filter(Boolean).filter(function(n){ return n!=='India'; });
+      names.sort(function(a,b){ return a.localeCompare(b); });
+      names.unshift('India'); // India pinned to the top
+      geoCountries=names; return names;
+    }).catch(function(){ geoCountries=['India']; return geoCountries; });
+  }
+  function loadIndiaStates(){
+    if(geoIndiaStates) return Promise.resolve(geoIndiaStates);
+    return fetch(GEO_BASE+'state.json').then(function(r){ return r.json(); }).then(function(arr){
+      var names=(arr||[]).filter(function(s){ return s.countryCode==='IN'; }).map(function(s){ return s.name; }).filter(Boolean);
+      names.sort(function(a,b){ return a.localeCompare(b); });
+      geoIndiaStates=names; return names;
+    }).catch(function(){ geoIndiaStates=[]; return geoIndiaStates; });
+  }
+  function ensureComboCss(){
+    if(document.getElementById('combo-css')) return;
+    var st=document.createElement('style'); st.id='combo-css';
+    st.textContent='.combo-menu{position:absolute;left:0;right:0;top:100%;z-index:60;background:#fff;border:1.5px solid var(--line);border-radius:12px;margin-top:4px;max-height:260px;overflow:auto;box-shadow:0 14px 34px rgba(2,12,27,.14)}'+
+      '.combo-menu .ci{padding:11px 14px;cursor:pointer;font-size:15px;border-bottom:1px solid #f1f5f9}'+
+      '.combo-menu .ci:last-child{border-bottom:0}'+
+      '.combo-menu .ci.active{background:var(--sky-50)}'+
+      '@media(hover:hover){.combo-menu .ci:hover{background:var(--sky-50)}}'+
+      '.combo-menu .none{padding:12px 14px;color:var(--muted);font-size:14px}';
+    document.head.appendChild(st);
+  }
+  function comboHtml(id,label,placeholder,req){
+    return '<div class="field" style="position:relative">'+
+      '<label for="'+id+'_s">'+esc(label)+(req?' <span class="req-star">*</span>':'')+'</label>'+
+      '<input id="'+id+'_s" type="text" autocomplete="off" inputmode="search" placeholder="'+esc(placeholder||'Search…')+'">'+
+      '<input type="hidden" id="'+id+'">'+
+      '<div class="combo-menu" id="'+id+'_menu" style="display:none"></div>'+
+    '</div>';
+  }
+  function comboInit(id, getOptions, opts){
+    opts=opts||{}; ensureComboCss();
+    var s=document.getElementById(id+'_s'), hid=document.getElementById(id), menu=document.getElementById(id+'_menu');
+    if(!s||!hid||!menu) return null;
+    var active=-1, shown=[];
+    function setVal(v){ hid.value=v||''; s.value=v||''; if(opts.onSelect) opts.onSelect(v||''); }
+    function draw(q){
+      var all=getOptions()||[]; q=(q||'').trim().toLowerCase();
+      shown=(q ? all.filter(function(o){ return o.toLowerCase().indexOf(q)>-1; }) : all.slice()).slice(0,100);
+      if(!all.length){ menu.innerHTML='<div class="none">Loading…</div>'; return; }
+      if(!shown.length){ menu.innerHTML='<div class="none">No match — check spelling</div>'; return; }
+      menu.innerHTML=shown.map(function(o,i){ return '<div class="ci'+(i===active?' active':'')+'" data-v="'+esc(o)+'">'+esc(o)+'</div>'; }).join('');
+      menu.querySelectorAll('.ci').forEach(function(el){ el.addEventListener('pointerdown',function(e){ e.preventDefault(); setVal(el.getAttribute('data-v')); hide(); }); });
+    }
+    function open(){ active=-1; draw(s.value===hid.value?'':s.value); menu.style.display=''; }
+    function hide(){ menu.style.display='none'; }
+    s.addEventListener('focus',open);
+    s.addEventListener('input',function(){ active=-1; draw(s.value); menu.style.display=''; });
+    s.addEventListener('keydown',function(e){
+      if(menu.style.display==='none'){ if(e.key==='ArrowDown') open(); return; }
+      if(e.key==='ArrowDown'){ e.preventDefault(); active=Math.min(active+1,shown.length-1); draw(s.value); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); active=Math.max(active-1,0); draw(s.value); }
+      else if(e.key==='Enter'){ if(active>=0&&shown[active]){ e.preventDefault(); setVal(shown[active]); hide(); } }
+      else if(e.key==='Escape'){ hide(); }
+    });
+    s.addEventListener('blur',function(){ setTimeout(function(){ hide(); if(s.value!==hid.value) s.value=hid.value; },150); });
+    if(opts.selected) setVal(opts.selected);
+    return { refresh:function(){ if(menu.style.display!=='none') draw(s.value); } };
+  }
+
   var picked={};
   function wireDrop(key){
     var zone=document.getElementById('drop_'+key);
@@ -408,6 +492,10 @@
     var f=document.getElementById('applyForm');
     if(!f.checkValidity()){ f.reportValidity(); return; }
     if(!picked.passport || !picked.photo){ toast('Please upload both your passport copy and photo.'); return; }
+    var pCountry=(document.getElementById('passport_issuing_country').value||'').trim();
+    if(!pCountry){ toast('Please select your passport issuing country.'); return; }
+    var pState=((document.getElementById('state')||{}).value||'').trim();
+    if(pCountry==='India' && !pState){ toast('Please select your state.'); return; }
     var qa = collectApplyAnswers();
     if(!qa.ok){ toast('Please answer the required question: “'+qa.missing+'”.'); return; }
     var v=visaById(visaId);
@@ -429,7 +517,8 @@
         full_name: document.getElementById('full_name').value.trim(),
         email: state.user.email || document.getElementById('full_name').value,
         phone: document.getElementById('phone').value.trim(),
-        nationality: document.getElementById('nationality').value.trim(),
+        passport_issuing_country: pCountry,
+        state: pCountry==='India' ? pState : null,
         passport_number: document.getElementById('passport_number').value.trim(),
         date_of_birth: document.getElementById('date_of_birth').value || null,
         passport_expiry: document.getElementById('passport_expiry').value || null,
@@ -712,7 +801,7 @@
       '<div class="arow">' +
         '<div><h4>'+esc(a.full_name)+' '+statusPill(a.status)+'</h4>' +
         '<div class="meta">'+esc(visaName)+' · '+appPriceText(a)+' · Ref '+esc(a.reference_code)+' · '+created+'</div>' +
-        '<div class="meta">'+esc(a.nationality)+' · Passport '+esc(a.passport_number)+' · '+esc(a.phone)+' · '+esc(a.email)+'</div></div>' +
+        '<div class="meta">'+esc(a.passport_issuing_country||a.nationality||'')+(a.state?(' ('+esc(a.state)+')'):'')+' · Passport '+esc(a.passport_number)+' · '+esc(a.phone)+' · '+esc(a.email)+'</div></div>' +
       '</div>' +
       '<div class="doc-links">'+docBtns+'</div>' +
       answersHtml +
