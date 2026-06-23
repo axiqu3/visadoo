@@ -34,3 +34,21 @@
 [[edge_functions]]
   path = "/sitemap.xml"
   function = "sitemap"
+
+# Always serve the freshest code/markup so a stale cached file can never
+# make a form (or any feature) silently run an out-of-date version.
+# Browsers revalidate on each load and get a tiny "304 Not Modified" when unchanged.
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
