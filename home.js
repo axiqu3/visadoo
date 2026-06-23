@@ -31,10 +31,23 @@
     navLinks.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){navLinks.classList.remove('open');});}); }
   var y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
   var form=document.getElementById('contactForm');
-  if(form){ form.addEventListener('submit',function(e){ e.preventDefault(); var data=new FormData(form);
-    fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data).toString()})
-    .then(function(){document.getElementById('formOk').style.display='block';form.reset();})
-    .catch(function(){document.getElementById('formOk').style.display='block';form.reset();}); }); }
+  if(form){
+    var okEl=document.getElementById('formOk'); var okText=okEl?okEl.textContent:'';
+    function val(n){ var el=form.querySelector('[name="'+n+'"]'); return el?el.value:''; }
+    function showMsg(text,isErr){ if(!okEl) return; okEl.textContent=text; okEl.style.display='block'; okEl.style.color=isErr?'#b91c1c':''; okEl.style.background=isErr?'#fef2f2':''; okEl.style.borderColor=isErr?'#fecaca':''; }
+    form.addEventListener('submit',function(e){ e.preventDefault();
+      var btn=form.querySelector('button[type=submit]'); var ot=btn?btn.textContent:'';
+      if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+      fetch(cfg.SUPABASE_URL.replace(/\/$/,'')+'/functions/v1/send-contact',{
+        method:'POST', headers:{'Content-Type':'application/json','apikey':cfg.SUPABASE_ANON_KEY,'Authorization':'Bearer '+cfg.SUPABASE_ANON_KEY},
+        body:JSON.stringify({ name:val('name'), email:val('email'), message:val('message'), 'bot-field':val('bot-field') })
+      }).then(function(r){ return r.json().catch(function(){return {};}); }).then(function(d){
+        if(btn){ btn.disabled=false; btn.textContent=ot; }
+        if(d && d.ok){ showMsg(okText,false); form.reset(); }
+        else { showMsg('Sorry — that didn’t send. Please email hello@visadoo.com or message us on WhatsApp.',true); }
+      }).catch(function(){ if(btn){ btn.disabled=false; btn.textContent=ot; } showMsg('Sorry — that didn’t send. Please email hello@visadoo.com or message us on WhatsApp.',true); });
+    });
+  }
 
   // ---- destinations ----
   function countryCard(c){
