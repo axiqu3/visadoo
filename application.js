@@ -26,7 +26,17 @@
   function mapVisaRow(r){
     return { id:r.slug, name:r.name, sub:r.sub, price:r.price_aed, days:r.days,
              popular:r.popular, blurb:r.blurb, features:r.features||[], active:r.active,
-             country_slug:r.country_slug, category:r.category, prices:r.prices||{} };
+             country_slug:r.country_slug, category:r.category, prices:r.prices||{},
+             etaValue:r.processing_time_value, etaUnit:r.processing_time_unit };
+  }
+  // Expected processing time as a friendly estimate, e.g. "about 5 days" (blank if not set).
+  function etaText(v){
+    if(!v) return '';
+    var n=(v.etaValue!=null?v.etaValue:v.processing_time_value);
+    var u=(v.etaUnit||v.processing_time_unit);
+    if(n==null||n==='' || !u) return '';
+    var unit = u==='hours' ? ('hour'+(Number(n)===1?'':'s')) : ('day'+(Number(n)===1?'':'s'));
+    return 'about '+n+' '+unit;
   }
   function loadVisaTypes(){
     return sb.from('visa_types').select('*').eq('active',true).order('sort_order').then(function(r){
@@ -265,7 +275,9 @@
           '<span class="step-badge">Step 1 · Your visa</span>' +
           '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">' +
             '<div><h3 style="font-size:18px;font-weight:800">'+esc(chosen.name)+'</h3>' +
-              '<div class="phint" style="margin:3px 0 0">'+esc(chosen.sub||chosen.category||'')+(chosen.days?(' · up to '+chosen.days+' days'):'')+'</div></div>' +
+              '<div class="phint" style="margin:3px 0 0">'+esc(chosen.sub||chosen.category||'')+(chosen.days?(' · up to '+chosen.days+' days'):'')+'</div>' +
+              (etaText(chosen)?('<div class="phint" style="margin:6px 0 0">⏱ Estimated processing time: <b>'+esc(etaText(chosen))+'</b> <span style="opacity:.8">— an estimate, not a guaranteed approval time.</span></div>'):'') +
+              '</div>' +
             '<div style="text-align:right"><div style="font-size:22px;font-weight:800">'+visaPriceText(chosen)+'</div>' +
               '<a href="index.html#destinations" class="link-btn" style="padding:0;font-size:13px">Change visa</a></div>' +
           '</div>' +
@@ -1002,6 +1014,12 @@
         '<div class="field"><label>Name <span class="req-star">*</span></label><input id="vtName" type="text" value="'+esc(v.name)+'" placeholder="e.g. 90-Day Tourist Visa"></div>'+
         '<div class="field"><label>Entry type</label><input id="vtSub" type="text" value="'+esc(v.sub||'')+'" placeholder="e.g. Single Entry"></div>'+
         '<div class="field"><label>Length of stay (days)</label><input id="vtDays" type="number" min="0" value="'+esc(v.days)+'" placeholder="e.g. 90"></div>'+
+        '<div class="field"><label>Expected processing time</label>'+
+          '<div style="display:flex;gap:8px">'+
+            '<input id="vtEtaVal" type="number" min="0" value="'+esc(v.processing_time_value!=null?v.processing_time_value:'')+'" placeholder="e.g. 5" style="flex:1">'+
+            '<select id="vtEtaUnit" style="width:110px;padding:13px 10px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px"><option value="days"'+((v.processing_time_unit||'days')==='days'?' selected':'')+'>Days</option><option value="hours"'+(v.processing_time_unit==='hours'?' selected':'')+'>Hours</option></select>'+
+          '</div>'+
+          '<div class="phint" style="margin-top:6px">Shown to customers as an estimate (not a guarantee). Leave blank to hide.</div></div>'+
       '</div>'+
       '<div class="field"><label>Prices <span class="req-star">*</span></label>'+
         '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
@@ -1044,6 +1062,7 @@
       if(price==null||isNaN(price)||price<0){ msg.className='signin-msg err'; msg.textContent='Please enter a valid AED price (your base price).'; return; }
       var feats=document.getElementById('vtFeatures').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
       var daysV=parseInt(document.getElementById('vtDays').value,10);
+      var etaV=parseInt(document.getElementById('vtEtaVal').value,10);
       var payload={
         name:name,
         country_slug:country,
@@ -1052,6 +1071,8 @@
         price_aed:price,
         prices:pricesObj,
         days:isNaN(daysV)?null:daysV,
+        processing_time_value:isNaN(etaV)?null:etaV,
+        processing_time_unit:isNaN(etaV)?null:(document.getElementById('vtEtaUnit').value||'days'),
         blurb:document.getElementById('vtBlurb').value.trim()||null,
         features:feats,
         popular:document.getElementById('vtPopular').checked,

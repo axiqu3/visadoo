@@ -18,6 +18,14 @@ async function fetchJson(url) {
   return await r.json();
 }
 
+// Expected processing time as a friendly estimate, e.g. "about 5 days" (blank if not set).
+function etaStr(v) {
+  const n = v && v.processing_time_value, u = v && v.processing_time_unit;
+  if (n == null || n === "" || !u) return "";
+  const unit = u === "hours" ? ("hour" + (Number(n) === 1 ? "" : "s")) : ("day" + (Number(n) === 1 ? "" : "s"));
+  return "about " + n + " " + unit;
+}
+
 // ---- currency (single active currency chosen in the backend) ----
 const CCY_SYMBOLS = { AED: "AED", USD: "$", EUR: "€", GBP: "£", INR: "₹", QAR: "QAR" };
 function resolveActive(settings) {
@@ -114,8 +122,9 @@ function pageHtml(v, others, defaultImg, active) {
           '<div class="passport-row"><span>Price</span><b>' + esc(priceText(v, active)) + '</b></div>' +
           (v.days ? '<div class="passport-row"><span>Length of stay</span><b>Up to ' + esc(v.days) + ' days</b></div>' : '') +
           (v.sub ? '<div class="passport-row"><span>Entry</span><b>' + esc(v.sub) + '</b></div>' : '') +
-          '<div class="passport-row"><span>Processing</span><b>3–5 days</b></div>' +
+          (etaStr(v) ? '<div class="passport-row"><span>Est. processing</span><b>' + esc(etaStr(v)) + '</b></div>' : '') +
         '</div>' +
+        (etaStr(v) ? '<p style="font-size:12px;color:#94a3b8;margin:10px 2px 0;text-align:center">Estimated processing time — not a guaranteed approval time.</p>' : '') +
       '</div>' +
     '</div></section>' +
 
