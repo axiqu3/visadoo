@@ -667,6 +667,8 @@
   function adminSections(active){
     var items=[];
     if(canViewApps()) items.push(['admin','Applications']);
+    if(state.role==='admin') items.push(['enquiries','Enquiries']);
+    if(state.role==='admin') items.push(['customers','Customers']);
     if(canManageContent()) items.push(['destinations','Destinations']);
     if(canManageContent()) items.push(['visatypes','Visa Types']);
     if(canManageContent()) items.push(['articles','Articles']);
@@ -2307,6 +2309,149 @@
   }
 
   // ============================================================
+  //  CSV download helper (shared)
+  // ============================================================
+  function pad6(n){ n=String(n==null?'':n); while(n.length<6) n='0'+n; return n; }
+  function enqRef(seq){ return 'ENQ-'+pad6(seq); }
+  function csvCell(v){ v=(v==null?'':String(v)); return /[",\n\r]/.test(v) ? ('"'+v.replace(/"/g,'""')+'"') : v; }
+  function downloadCsv(filename, headers, rows){
+    var lines=[headers.map(csvCell).join(',')];
+    rows.forEach(function(r){ lines.push(r.map(csvCell).join(',')); });
+    var blob=new Blob(['﻿'+lines.join('\r\n')], { type:'text/csv;charset=utf-8;' });
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 120);
+    toast('Download started');
+  }
+
+  // ============================================================
+  //  ENQUIRIES (admins only) — homepage contact-form messages
+  // ============================================================
+  var enqRows=[];
+  function filteredEnq(){
+    var q=((document.getElementById('enqSearch')||{}).value||'').trim().toLowerCase();
+    var st=(document.getElementById('enqStatus')||{}).value||'all';
+    return enqRows.filter(function(e){
+      if(st!=='all' && e.status!==st) return false;
+      if(q){ var hay=[enqRef(e.seq),e.name,e.email,e.message].map(function(x){return (x||'').toString().toLowerCase();}).join(' '); if(hay.indexOf(q)===-1) return false; }
+      return true;
+    });
+  }
+  function paintEnq(){
+    var area=document.getElementById('enqArea'); if(!area) return;
+    var rows=filteredEnq();
+    var cnt=document.getElementById('enqCount'); if(cnt) cnt.textContent=rows.length+' of '+enqRows.length+' shown';
+    if(!enqRows.length){ area.innerHTML='<div class="panel empty-state"><p>No enquiries yet. Messages from the homepage contact form will appear here.</p></div>'; return; }
+    if(!rows.length){ area.innerHTML='<div class="panel empty-state"><p>No enquiries match your search.</p></div>'; return; }
+    area.innerHTML=rows.map(function(e){
+      var opts=['New','Contacted','Closed'].map(function(s){ return '<option'+(s===e.status?' selected':'')+'>'+s+'</option>'; }).join('');
+      return '<div class="admin-app"><div class="arow" style="align-items:flex-start;gap:14px"><div style="flex:1;min-width:0">'+
+        '<h4>'+esc(enqRef(e.seq))+' · '+esc(e.name||'(no name)')+'</h4>'+
+        '<div class="meta">'+esc(e.email||'')+' · '+esc(new Date(e.created_at).toLocaleString())+'</div>'+
+        '<p style="margin:8px 0 0;white-space:pre-wrap">'+esc(e.message||'')+'</p></div>'+
+        '<select data-enq="'+esc(e.id)+'" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit">'+opts+'</select>'+
+      '</div></div>';
+    }).join('');
+    area.querySelectorAll('select[data-enq]').forEach(function(sel){
+      sel.onchange=function(){ var id=sel.getAttribute('data-enq'), val=sel.value;
+        sb.from('enquiries').update({ status:val }).eq('id',id).then(function(r){
+          if(r.error){ toast('Could not update.'); console.error(r.error); return; }
+          var e=enqRows.filter(function(x){return x.id===id;})[0]; if(e) e.status=val; toast('Marked “'+val+'”');
+        });
+      };
+    });
+  }
+  function renderEnquiries(){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    root.innerHTML='<div class="app-main">'+adminSections('enquiries')+
+      '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
+        '<h1>Enquiries</h1><p>Messages from the homepage contact form. Each gets a tracking number so a missing one is easy to spot.</p></div>'+
+        '<button class="btn btn-ghost" id="enqCsv">Download CSV</button></div>'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">'+
+        '<input id="enqSearch" type="text" placeholder="Search name, email, message or ENQ no…" style="flex:1;min-width:200px;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px">'+
+        '<select id="enqStatus" style="padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"><option value="all">All statuses</option><option>New</option><option>Contacted</option><option>Closed</option></select>'+
+        '<span id="enqCount" class="phint" style="margin:0"></span>'+
+      '</div>'+
+      '<div id="enqArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    sb.from('enquiries').select('*').order('seq',{ascending:false}).then(function(r){
+      if(r.error){ document.getElementById('enqArea').innerHTML='<div class="empty-state"><p>Could not load enquiries.</p></div>'; console.error(r.error); return; }
+      enqRows=r.data||[]; paintEnq();
+    });
+    document.getElementById('enqSearch').oninput=paintEnq;
+    document.getElementById('enqStatus').onchange=paintEnq;
+    document.getElementById('enqCsv').onclick=function(){
+      var rows=filteredEnq().map(function(e){ return [enqRef(e.seq), new Date(e.created_at).toLocaleString(), e.name||'', e.email||'', e.status||'', e.message||'']; });
+      downloadCsv('visadoo-enquiries.csv', ['Enquiry No','Date','Name','Email','Status','Message'], rows);
+    };
+  }
+
+  // ============================================================
+  //  CUSTOMERS (admins only) — text-only applicant data for outreach (downloadable)
+  // ============================================================
+  var custList=[];
+  function dedupeCustomers(rows){
+    var map={};
+    rows.forEach(function(a){
+      var key=(a.email||'').toLowerCase().trim(); if(!key) key='no-email-'+(a.full_name||'')+Math.random();
+      var visaName=visaById(a.visa_type)?visaById(a.visa_type).name:(a.visa_type||'');
+      var country=a.passport_issuing_country||a.nationality||'';
+      var t=new Date(a.created_at).getTime();
+      if(!map[key]){ map[key]={ name:a.full_name||'', email:a.email||'', phone:a.phone||'', country:country, state:a.state||'', visa:visaName, status:a.status||'', count:1, first:a.created_at, last:a.created_at, _lastT:t }; }
+      else { var m=map[key]; m.count++;
+        if(t>m._lastT){ m._lastT=t; m.last=a.created_at; m.name=a.full_name||m.name; m.phone=a.phone||m.phone; m.country=country||m.country; m.state=a.state||m.state; m.visa=visaName||m.visa; m.status=a.status||m.status; }
+        if(new Date(a.created_at).getTime()<new Date(m.first).getTime()) m.first=a.created_at;
+      }
+    });
+    return Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){ return new Date(b.last)-new Date(a.last); });
+  }
+  function filteredCust(){
+    var q=((document.getElementById('custSearch')||{}).value||'').trim().toLowerCase();
+    if(!q) return custList;
+    return custList.filter(function(c){ var hay=[c.name,c.email,c.phone,c.country,c.state,c.visa].map(function(x){return (x||'').toString().toLowerCase();}).join(' '); return hay.indexOf(q)>-1; });
+  }
+  function paintCust(){
+    var area=document.getElementById('custArea'); if(!area) return;
+    var rows=filteredCust();
+    var cnt=document.getElementById('custCount'); if(cnt) cnt.textContent=rows.length+' of '+custList.length+' customers';
+    if(!custList.length){ area.innerHTML='<div class="panel empty-state"><p>No customers yet. People who submit an application will appear here.</p></div>'; return; }
+    if(!rows.length){ area.innerHTML='<div class="panel empty-state"><p>No customers match your search.</p></div>'; return; }
+    area.innerHTML=rows.map(function(c){
+      return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h4>'+esc(c.name||'(no name)')+(c.count>1?(' <span class="status-pill sp-progress" style="font-size:11px">'+c.count+' applications</span>'):'')+'</h4>'+
+        '<div class="meta">'+esc(c.email||'')+(c.phone?(' · '+esc(c.phone)):'')+'</div>'+
+        '<div class="meta">'+esc(c.country||'')+(c.state?(' · '+esc(c.state)):'')+' · '+esc(c.visa||'')+' · '+esc(c.status||'')+'</div></div>'+
+        '<div class="phint" style="margin:0;white-space:nowrap">Last: '+esc(new Date(c.last).toLocaleDateString())+'</div>'+
+      '</div></div>';
+    }).join('');
+  }
+  function renderCustomers(){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    if(!VISAS.length) loadVisaTypes();
+    root.innerHTML='<div class="app-main">'+adminSections('customers')+
+      '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
+        '<h1>Customers</h1><p>Everyone who submitted an application — one row per person (latest details). Text only, no documents. For outreach.</p></div>'+
+        '<button class="btn btn-ghost" id="custCsv">Download CSV</button></div>'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">'+
+        '<input id="custSearch" type="text" placeholder="Search name, email, phone or country…" style="flex:1;min-width:200px;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px">'+
+        '<span id="custCount" class="phint" style="margin:0"></span>'+
+      '</div>'+
+      '<div id="custArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    sb.from('applications').select('full_name,email,phone,passport_issuing_country,nationality,state,visa_type,status,created_at').order('created_at',{ascending:false}).then(function(r){
+      if(r.error){ document.getElementById('custArea').innerHTML='<div class="empty-state"><p>Could not load customers.</p></div>'; console.error(r.error); return; }
+      custList=dedupeCustomers(r.data||[]); paintCust();
+    });
+    document.getElementById('custSearch').oninput=paintCust;
+    document.getElementById('custCsv').onclick=function(){
+      var rows=filteredCust().map(function(c){ return [c.name,c.email,c.phone,c.country,c.state,c.visa,c.status,c.count,new Date(c.first).toLocaleDateString(),new Date(c.last).toLocaleDateString()]; });
+      downloadCsv('visadoo-customers.csv', ['Name','Email','Phone','Passport Issuing Country','State','Visa Type','Status','Applications','First Applied','Last Applied'], rows);
+    };
+  }
+
+  // ============================================================
   //  CONTENT (pages + FAQs + reviews)
   // ============================================================
   var contentTab='pages', pEditing=null, fEditing=null, rEditing=null;
@@ -2473,7 +2618,7 @@
     // permission guards — bounce to an allowed area
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
-    if((v==='team'||v==='brand'||v==='emailcfg') && state.role!=='admin') v=defaultStaffView();
+    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers') && state.role!=='admin') v=defaultStaffView();
     state.view=v;
 
     if(v==='apply') renderApply();
@@ -2486,13 +2631,15 @@
     else if(v==='siteseo') renderSiteSeo();
     else if(v==='brand') renderBrand();
     else if(v==='emailcfg') renderEmailSettings();
+    else if(v==='enquiries') renderEnquiries();
+    else if(v==='customers') renderCustomers();
     else if(v==='team') renderTeam();
     else renderApply();
   }
 
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','team'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
