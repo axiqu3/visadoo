@@ -2481,25 +2481,32 @@
   //  CUSTOMERS (admins only) — text-only applicant data for outreach (downloadable)
   // ============================================================
   var custList=[];
-  function dedupeCustomers(rows){
-    var map={};
-    rows.forEach(function(a){
-      var key=(a.email||'').toLowerCase().trim(); if(!key) key='no-email-'+(a.full_name||'')+Math.random();
+  // Build the customer list from the real customers table, merging in
+  // each person's application count + latest visa/status from applications.
+  function buildCustList(customers, apps){
+    var byId={};
+    (apps||[]).forEach(function(a){
+      if(!a.customer_id) return;
       var visaName=visaById(a.visa_type)?visaById(a.visa_type).name:(a.visa_type||'');
-      var country=a.passport_issuing_country||a.nationality||'';
       var t=new Date(a.created_at).getTime();
-      if(!map[key]){ map[key]={ name:a.full_name||'', email:a.email||'', phone:a.phone||'', country:country, state:a.state||'', visa:visaName, status:a.status||'', count:1, first:a.created_at, last:a.created_at, _lastT:t }; }
-      else { var m=map[key]; m.count++;
-        if(t>m._lastT){ m._lastT=t; m.last=a.created_at; m.name=a.full_name||m.name; m.phone=a.phone||m.phone; m.country=country||m.country; m.state=a.state||m.state; m.visa=visaName||m.visa; m.status=a.status||m.status; }
-        if(new Date(a.created_at).getTime()<new Date(m.first).getTime()) m.first=a.created_at;
+      var m=byId[a.customer_id];
+      if(!m){ byId[a.customer_id]={ count:1, first:a.created_at, last:a.created_at, _firstT:t, _lastT:t, visa:visaName, status:a.status||'' }; }
+      else { m.count++;
+        if(t>m._lastT){ m._lastT=t; m.last=a.created_at; m.visa=visaName||m.visa; m.status=a.status||m.status; }
+        if(t<m._firstT){ m._firstT=t; m.first=a.created_at; }
       }
     });
-    return Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){ return new Date(b.last)-new Date(a.last); });
+    return (customers||[]).map(function(c){
+      var agg=byId[c.id]||{ count:0, first:c.created_at, last:c.created_at, visa:'', status:'' };
+      return { id:c.id, name:c.full_name||'', email:c.email||'', phone:c.phone||'',
+        country:c.passport_issuing_country||'', state:c.state||'', source:c.lead_source||'',
+        visa:agg.visa, status:agg.status, count:agg.count, first:agg.first, last:agg.last };
+    }).sort(function(a,b){ return new Date(b.last)-new Date(a.last); });
   }
   function filteredCust(){
     var q=((document.getElementById('custSearch')||{}).value||'').trim().toLowerCase();
     if(!q) return custList;
-    return custList.filter(function(c){ var hay=[c.name,c.email,c.phone,c.country,c.state,c.visa].map(function(x){return (x||'').toString().toLowerCase();}).join(' '); return hay.indexOf(q)>-1; });
+    return custList.filter(function(c){ var hay=[c.name,c.email,c.phone,c.country,c.state,c.visa,c.source].map(function(x){return (x||'').toString().toLowerCase();}).join(' '); return hay.indexOf(q)>-1; });
   }
   function paintCust(){
     var area=document.getElementById('custArea'); if(!area) return;
@@ -2507,12 +2514,16 @@
     var cnt=document.getElementById('custCount'); if(cnt) cnt.textContent=rows.length+' of '+custList.length+' customers';
     if(!custList.length){ area.innerHTML='<div class="panel empty-state"><p>No customers yet. People who submit an application will appear here.</p></div>'; return; }
     if(!rows.length){ area.innerHTML='<div class="panel empty-state"><p>No customers match your search.</p></div>'; return; }
+    var srcLabel={application:'Applied',enquiry:'Enquiry','walk-in':'Walk-in',manual:'Added manually'};
     area.innerHTML=rows.map(function(c){
+      var countPill=c.count>1?(' <span class="status-pill sp-progress" style="font-size:11px">'+c.count+' applications</span>'):(c.count===0?(' <span class="status-pill sp-action" style="font-size:11px">Enquiry only</span>'):'');
+      var line2=[c.country,c.state,c.visa,c.status].filter(function(x){return x;}).map(esc).join(' · ');
+      var src=c.source?('<span class="phint" style="margin:0;font-size:11px">'+esc(srcLabel[c.source]||c.source)+'</span>'):'';
       return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
-        '<h4>'+esc(c.name||'(no name)')+(c.count>1?(' <span class="status-pill sp-progress" style="font-size:11px">'+c.count+' applications</span>'):'')+'</h4>'+
+        '<h4>'+esc(c.name||'(no name)')+countPill+'</h4>'+
         '<div class="meta">'+esc(c.email||'')+(c.phone?(' · '+esc(c.phone)):'')+'</div>'+
-        '<div class="meta">'+esc(c.country||'')+(c.state?(' · '+esc(c.state)):'')+' · '+esc(c.visa||'')+' · '+esc(c.status||'')+'</div></div>'+
-        '<div class="phint" style="margin:0;white-space:nowrap">Last: '+esc(new Date(c.last).toLocaleDateString())+'</div>'+
+        (line2?('<div class="meta">'+line2+'</div>'):'')+'</div>'+
+        '<div style="text-align:right;white-space:nowrap">'+src+'<div class="phint" style="margin:0">Last: '+esc(new Date(c.last).toLocaleDateString())+'</div></div>'+
       '</div></div>';
     }).join('');
   }
@@ -2521,7 +2532,7 @@
     if(!VISAS.length) loadVisaTypes();
     root.innerHTML='<div class="app-main">'+adminSections('customers')+
       '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
-        '<h1>Customers</h1><p>Everyone who submitted an application — one row per person (latest details). Text only, no documents. For outreach.</p></div>'+
+        '<h1>Customers</h1><p>One record per person — automatically gathered from applications and enquiries (matched by email). Text only, no documents. For outreach.</p></div>'+
         '<button class="btn btn-ghost" id="custCsv">Download CSV</button></div>'+
       '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">'+
         '<input id="custSearch" type="text" placeholder="Search name, email, phone or country…" style="flex:1;min-width:200px;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px">'+
@@ -2530,14 +2541,18 @@
       '<div id="custArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
     '</div>';
     wireAdminSections();
-    sb.from('applications').select('full_name,email,phone,passport_issuing_country,nationality,state,visa_type,status,created_at').order('created_at',{ascending:false}).then(function(r){
-      if(r.error){ document.getElementById('custArea').innerHTML='<div class="empty-state"><p>Could not load customers.</p></div>'; console.error(r.error); return; }
-      custList=dedupeCustomers(r.data||[]); paintCust();
+    Promise.all([
+      sb.from('customers').select('id,full_name,email,phone,passport_issuing_country,state,lead_source,created_at').order('created_at',{ascending:false}),
+      sb.from('applications').select('customer_id,visa_type,status,created_at')
+    ]).then(function(res){
+      if(res[0].error){ document.getElementById('custArea').innerHTML='<div class="empty-state"><p>Could not load customers.</p></div>'; console.error(res[0].error); return; }
+      custList=buildCustList(res[0].data||[], res[1].data||[]); paintCust();
     });
     document.getElementById('custSearch').oninput=paintCust;
     document.getElementById('custCsv').onclick=function(){
-      var rows=filteredCust().map(function(c){ return [c.name,c.email,c.phone,c.country,c.state,c.visa,c.status,c.count,new Date(c.first).toLocaleDateString(),new Date(c.last).toLocaleDateString()]; });
-      downloadCsv('visadoo-customers.csv', ['Name','Email','Phone','Passport Issuing Country','State','Visa Type','Status','Applications','First Applied','Last Applied'], rows);
+      var srcLabel={application:'Applied',enquiry:'Enquiry','walk-in':'Walk-in',manual:'Added manually'};
+      var rows=filteredCust().map(function(c){ return [c.name,c.email,c.phone,c.country,c.state,c.visa,c.status,c.count,(srcLabel[c.source]||c.source||''),new Date(c.first).toLocaleDateString(),new Date(c.last).toLocaleDateString()]; });
+      downloadCsv('visadoo-customers.csv', ['Name','Email','Phone','Passport Issuing Country','State','Visa Type','Status','Applications','Source','First Seen','Last Seen'], rows);
     };
   }
 
