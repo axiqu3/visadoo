@@ -18,6 +18,10 @@ async function fetchJson(url) {
   return await r.json();
 }
 
+// Brand colour palette — must match branding.js applyColor() so first paint is the saved colour (no flash).
+function shade(hex,p){ hex=(hex||"").replace("#",""); if(hex.length===3) hex=hex.split("").map(function(c){return c+c;}).join(""); if(hex.length!==6) return "#"+hex; var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16); var t=p<0?0:255,a=Math.abs(p)/100; r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b); return "#"+[r,g,b].map(function(v){return ("0"+v.toString(16)).slice(-2);}).join(""); }
+function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--blue-600:'+p+';--blue-700:'+shade(p,-14)+';--blue-900:'+shade(p,-34)+';--blue-500:'+shade(p,8)+';--blue-400:'+shade(p,24)+';--blue-100:'+shade(p,82)+';--sky-50:'+shade(p,93)+';}</style>'; }
+
 // Expected processing time as a friendly estimate, e.g. "about 5 days" (blank if not set).
 function etaStr(v) {
   const n = v && v.processing_time_value, u = v && v.processing_time_unit;
@@ -43,7 +47,7 @@ function priceText(row, active) { return (row.prices && row.prices[active.code] 
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const PLANE = '<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>';
 
-function pageHtml(v, others, defaultImg, active) {
+function pageHtml(v, others, defaultImg, active, brandColor) {
   const name = v.name || "UAE Tourist Visa";
   const title = (v.seo_title && v.seo_title.trim()) || (name + " — Apply Online | Visa Doo");
   const desc = (v.seo_description && v.seo_description.trim()) ||
@@ -94,6 +98,7 @@ function pageHtml(v, others, defaultImg, active) {
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">' +
     '<link rel="stylesheet" href="/styles.css">' +
+    brandVars(brandColor) +
     '<script src="/branding.js"></scr' + 'ipt>' +
     '<script type="application/ld+json">' + JSON.stringify(jsonld) + '</scr' + 'ipt>' +
     '</head><body>' +
@@ -174,11 +179,12 @@ export default async (request) => {
   if (!v) return notFound();
   const others = rows.filter(function (x) { return x.slug !== slug && x.country_slug === v.country_slug; });
 
-  const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies");
+  const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color");
   const defaultImg = (settings && settings[0] && settings[0].default_social_image) || "";
   const active = resolveActive(settings);
+  const brandColor = (settings && settings[0] && settings[0].brand_color) || "";
 
-  return new Response(pageHtml(v, others, defaultImg, active), {
+  return new Response(pageHtml(v, others, defaultImg, active, brandColor), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" }
   });
 };

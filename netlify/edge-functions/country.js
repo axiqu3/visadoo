@@ -35,7 +35,11 @@ function visaCard(v, active){
   '</div>';
 }
 
-function pageHtml(c, visas, defaultImg, active){
+// Brand colour palette — must match branding.js applyColor() so first paint is the saved colour (no flash).
+function shade(hex,p){ hex=(hex||"").replace("#",""); if(hex.length===3) hex=hex.split("").map(function(c){return c+c;}).join(""); if(hex.length!==6) return "#"+hex; var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16); var t=p<0?0:255,a=Math.abs(p)/100; r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b); return "#"+[r,g,b].map(function(v){return ("0"+v.toString(16)).slice(-2);}).join(""); }
+function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--blue-600:'+p+';--blue-700:'+shade(p,-14)+';--blue-900:'+shade(p,-34)+';--blue-500:'+shade(p,8)+';--blue-400:'+shade(p,24)+';--blue-100:'+shade(p,82)+';--sky-50:'+shade(p,93)+';}</style>'; }
+
+function pageHtml(c, visas, defaultImg, active, brandColor){
   var title=(c.seo_title&&c.seo_title.trim())||(c.name+' Visas — Apply Online | Visa Doo');
   var desc=(c.seo_description&&c.seo_description.trim())||(c.summary||('Apply online for your '+c.name+' visa with Visa Doo. Tourist and business visas, document upload and live tracking.')).slice(0,160);
   var canonical=SITE+'/country/'+c.slug;
@@ -52,6 +56,7 @@ function pageHtml(c, visas, defaultImg, active){
     '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
     '<link rel="stylesheet" href="/styles.css">'+
+    brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
     '</head><body>'+
     '<header class="header"><div class="container nav">'+
@@ -88,11 +93,12 @@ export default async (request) => {
   if(!countries||!countries.length) return notFound();
   const c=countries[0];
   const visas=await fetchJson(SUPABASE_URL+"/rest/v1/visa_types?country_slug=eq."+encodeURIComponent(slug)+"&active=eq.true&order=sort_order&select=*")||[];
-  const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies");
+  const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color");
   const defaultImg=(settings&&settings[0]&&settings[0].default_social_image)||"";
   const active=resolveActive(settings);
+  const brandColor=(settings&&settings[0]&&settings[0].brand_color)||"";
 
-  return new Response(pageHtml(c, visas, defaultImg, active), {
+  return new Response(pageHtml(c, visas, defaultImg, active, brandColor), {
     headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
   });
 };

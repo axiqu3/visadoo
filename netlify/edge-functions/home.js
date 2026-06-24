@@ -6,6 +6,11 @@ const SITE = "https://visadoo-uae.netlify.app";
 
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
 
+// Brand colour palette — must match branding.js applyColor() so the server-injected
+// colour is identical to what the script later sets (prevents the colour "flash").
+function shade(hex,p){ hex=(hex||"").replace("#",""); if(hex.length===3) hex=hex.split("").map(function(c){return c+c;}).join(""); if(hex.length!==6) return "#"+hex; var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16); var t=p<0?0:255,a=Math.abs(p)/100; r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b); return "#"+[r,g,b].map(function(v){return ("0"+v.toString(16)).slice(-2);}).join(""); }
+function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--blue-600:'+p+';--blue-700:'+shade(p,-14)+';--blue-900:'+shade(p,-34)+';--blue-500:'+shade(p,8)+';--blue-400:'+shade(p,24)+';--blue-100:'+shade(p,82)+';--sky-50:'+shade(p,93)+';}</style>'; }
+
 async function getSettings(){
   try{
     const r = await fetch(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=*", { headers:{ apikey:ANON, authorization:"Bearer "+ANON }});
@@ -54,6 +59,7 @@ export default async (request, context) => {
   if(s.google_verification && s.google_verification.trim()){
     inject += '<meta name="google-site-verification" content="'+esc(s.google_verification.trim())+'">';
   }
+  inject += brandVars(s.brand_color); // correct brand colour on first paint (no flash)
   html = html.replace("</head>", inject+"\n</head>");
 
   return new Response(html, { status: res.status, headers: { "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" } });
