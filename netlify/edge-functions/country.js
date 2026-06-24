@@ -22,10 +22,21 @@ const PLANE='<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.
 const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function flag(iso2){ return iso2 ? ('https://flagcdn.com/w320/'+iso2.toLowerCase()+'.png') : ''; }
 
+// "Get your visa in X" pill — uses the existing per-visa ETA; blank ETA shows nothing.
+// Brand-adaptive (var(--blue-*) are set to the saved brand colour), honest wording ("about").
+function etaBadge(v){
+  var n=v.processing_time_value, u=v.processing_time_unit;
+  if(n==null||n===''||!u) return '';
+  var unit = u==='hours' ? ('hour'+(Number(n)===1?'':'s')) : ('day'+(Number(n)===1?'':'s'));
+  return '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--sky-50);color:var(--blue-700);border:1px solid var(--blue-100);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:700;margin:0 0 12px;line-height:1.2">'+
+    '<span aria-hidden="true">⚡</span>Get your visa in about '+esc(n)+' '+unit+'</div>';
+}
+
 function visaCard(v, active){
   var feats=(v.features||[]).slice(0,4).map(function(f){return '<li>'+CHECK+esc(f)+'</li>';}).join('');
   var cat = v.category ? '<div class="vsub">'+esc(v.category)+'</div>' : '';
   return '<div class="vcard">'+
+    etaBadge(v)+
     '<h3>'+esc(v.name)+'</h3>'+cat+
     '<div class="price">'+esc(priceText(v, active))+' <small>/ visa</small></div>'+
     (v.blurb?'<p class="blurb">'+esc(v.blurb)+'</p>':'')+
