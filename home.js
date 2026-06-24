@@ -34,13 +34,14 @@
   if(form){
     var okEl=document.getElementById('formOk'); var okText=okEl?okEl.textContent:'';
     function val(n){ var el=form.querySelector('[name="'+n+'"]'); return el?el.value:''; }
+    var CONSENT_TEXT='Keep me updated with visa offers, tips and news by email and WhatsApp.';
     function showMsg(text,isErr){ if(!okEl) return; okEl.textContent=text; okEl.style.display='block'; okEl.style.color=isErr?'#b91c1c':''; okEl.style.background=isErr?'#fef2f2':''; okEl.style.borderColor=isErr?'#fecaca':''; }
     form.addEventListener('submit',function(e){ e.preventDefault();
       var btn=form.querySelector('button[type=submit]'); var ot=btn?btn.textContent:'';
       if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
       fetch(cfg.SUPABASE_URL.replace(/\/$/,'')+'/functions/v1/send-contact',{
         method:'POST', headers:{'Content-Type':'application/json','apikey':cfg.SUPABASE_ANON_KEY,'Authorization':'Bearer '+cfg.SUPABASE_ANON_KEY},
-        body:JSON.stringify({ name:val('name'), email:val('email'), message:val('message'), 'bot-field':val('bot-field') })
+        body:JSON.stringify({ name:val('name'), email:val('email'), message:val('message'), 'bot-field':val('bot-field'), consent:!!(form.querySelector('#cConsent')||{}).checked, consent_text:CONSENT_TEXT })
       }).then(function(r){ return r.json().catch(function(){return {};}); }).then(function(d){
         if(btn){ btn.disabled=false; btn.textContent=ot; }
         if(d && d.ok){ showMsg(okText,false); form.reset(); }

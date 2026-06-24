@@ -13,6 +13,9 @@
 
   var state = { user: null, role: null, isAdmin: false, view: 'apply' };
 
+  // Exact marketing-consent wording shown to customers (stored as an audit snapshot).
+  var MARKETING_CONSENT_TEXT = 'Keep me updated with visa offers, tips and news by email and WhatsApp.';
+
   // ---- role helpers ----
   function hasRole(list){ return list.indexOf(state.role) > -1; }
   function isStaff(){ return hasRole(['admin','agent','content','viewer']); }
@@ -379,6 +382,14 @@
           '</div>' +
         '</div>' +
 
+        '<div class="panel">' +
+          '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer;margin:0">' +
+            '<input id="marketingConsent" type="checkbox" checked style="width:auto;margin-top:3px;flex:none">' +
+            '<span style="font-size:14.5px;line-height:1.5">'+esc(MARKETING_CONSENT_TEXT)+' '+
+              '<span class="phint" style="display:inline">You can unsubscribe anytime. We\'ll still send updates about your own application either way.</span></span>' +
+          '</label>' +
+        '</div>' +
+
         '<div class="panel submit-bar">' +
           '<div class="total-line">Total for <span id="sumName"></span>: <b id="sumPrice"></b></div>' +
           '<button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button>' +
@@ -612,6 +623,13 @@
         return app;
       });
     }).then(function(app){
+      // Record marketing consent (best-effort — never blocks the confirmation).
+      var consentEl=document.getElementById('marketingConsent');
+      var optedIn=consentEl?!!consentEl.checked:true;
+      try {
+        sb.rpc('record_my_marketing_consent',{ p_opted_in:optedIn, p_source:'apply-form', p_text:MARKETING_CONSENT_TEXT })
+          .then(function(r){ if(r&&r.error) console.warn('consent record failed', r.error); });
+      } catch(_e){ /* ignore */ }
       renderSuccess(app);
     }).catch(function(err){
       btn.disabled=false; btn.innerHTML='Submit application';
@@ -2483,7 +2501,7 @@
   var custList=[];
   // Build the customer list from the real customers table, merging in
   // each person's application count + latest visa/status from applications.
-  function buildCustList(customers, apps){
+  function buildCustList(customers, apps, consents){
     var byId={};
     (apps||[]).forEach(function(a){
       if(!a.customer_id) return;
@@ -2496,12 +2514,26 @@
         if(t<m._firstT){ m._firstT=t; m.first=a.created_at; }
       }
     });
+    // Marketing state per customer (email channel is representative; the opt-in box sets both the same).
+    var consById={};
+    (consents||[]).forEach(function(cn){
+      var e=consById[cn.customer_id]||(consById[cn.customer_id]={hasRow:true,marketing:false});
+      if(cn.marketing_opted_in) e.marketing=true; // opted in on any channel counts as on
+    });
     return (customers||[]).map(function(c){
       var agg=byId[c.id]||{ count:0, first:c.created_at, last:c.created_at, visa:'', status:'' };
+      var cons=consById[c.id]||{hasRow:false,marketing:false};
       return { id:c.id, name:c.full_name||'', email:c.email||'', phone:c.phone||'',
         country:c.passport_issuing_country||'', state:c.state||'', source:c.lead_source||'',
-        visa:agg.visa, status:agg.status, count:agg.count, first:agg.first, last:agg.last };
+        visa:agg.visa, status:agg.status, count:agg.count, first:agg.first, last:agg.last,
+        marketing:cons.marketing };
     }).sort(function(a,b){ return new Date(b.last)-new Date(a.last); });
+  }
+  // Upsert a customer's marketing consent on both channels (staff manual change).
+  function setCustMarketing(id, val){
+    var now=new Date().toISOString();
+    var rows=['email','whatsapp'].map(function(ch){ return { customer_id:id, channel:ch, marketing_opted_in:val, marketing_source:'manual', marketing_updated_at:now, updated_at:now }; });
+    return sb.from('consent').upsert(rows,{onConflict:'customer_id,channel'});
   }
   function filteredCust(){
     var q=((document.getElementById('custSearch')||{}).value||'').trim().toLowerCase();
@@ -2519,13 +2551,27 @@
       var countPill=c.count>1?(' <span class="status-pill sp-progress" style="font-size:11px">'+c.count+' applications</span>'):(c.count===0?(' <span class="status-pill sp-action" style="font-size:11px">Enquiry only</span>'):'');
       var line2=[c.country,c.state,c.visa,c.status].filter(function(x){return x;}).map(esc).join(' · ');
       var src=c.source?('<span class="phint" style="margin:0;font-size:11px">'+esc(srcLabel[c.source]||c.source)+'</span>'):'';
+      var mPill=c.marketing
+        ? '<span class="status-pill sp-done" style="font-size:11px">📣 Marketing: On</span>'
+        : '<span class="status-pill" style="font-size:11px;background:#eef2f7;color:#64748b">📣 Marketing: Off</span>';
+      var mBtn='<button class="link-btn" data-mkt="'+esc(c.id)+'" data-mval="'+(c.marketing?'0':'1')+'" style="padding:0;font-size:12px">'+(c.marketing?'Turn off':'Turn on')+'</button>';
       return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
         '<h4>'+esc(c.name||'(no name)')+countPill+'</h4>'+
         '<div class="meta">'+esc(c.email||'')+(c.phone?(' · '+esc(c.phone)):'')+'</div>'+
-        (line2?('<div class="meta">'+line2+'</div>'):'')+'</div>'+
+        (line2?('<div class="meta">'+line2+'</div>'):'')+
+        '<div style="margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+mPill+mBtn+'</div></div>'+
         '<div style="text-align:right;white-space:nowrap">'+src+'<div class="phint" style="margin:0">Last: '+esc(new Date(c.last).toLocaleDateString())+'</div></div>'+
       '</div></div>';
     }).join('');
+    area.querySelectorAll('[data-mkt]').forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-mkt'), val=b.getAttribute('data-mval')==='1';
+      b.disabled=true; b.textContent='Saving…';
+      setCustMarketing(id,val).then(function(r){
+        if(r&&r.error){ toast('Could not update consent.'); console.error(r.error); b.disabled=false; return; }
+        custList.forEach(function(c){ if(c.id===id) c.marketing=val; });
+        toast(val?'Marketing turned on':'Marketing turned off'); paintCust();
+      });
+    }; });
   }
   function renderCustomers(){
     if(state.role!=='admin'){ go(defaultStaffView()); return; }
@@ -2543,16 +2589,17 @@
     wireAdminSections();
     Promise.all([
       sb.from('customers').select('id,full_name,email,phone,passport_issuing_country,state,lead_source,created_at').order('created_at',{ascending:false}),
-      sb.from('applications').select('customer_id,visa_type,status,created_at')
+      sb.from('applications').select('customer_id,visa_type,status,created_at'),
+      sb.from('consent').select('customer_id,channel,marketing_opted_in')
     ]).then(function(res){
       if(res[0].error){ document.getElementById('custArea').innerHTML='<div class="empty-state"><p>Could not load customers.</p></div>'; console.error(res[0].error); return; }
-      custList=buildCustList(res[0].data||[], res[1].data||[]); paintCust();
+      custList=buildCustList(res[0].data||[], res[1].data||[], res[2].data||[]); paintCust();
     });
     document.getElementById('custSearch').oninput=paintCust;
     document.getElementById('custCsv').onclick=function(){
       var srcLabel={application:'Applied',enquiry:'Enquiry','walk-in':'Walk-in',manual:'Added manually'};
-      var rows=filteredCust().map(function(c){ return [c.name,c.email,c.phone,c.country,c.state,c.visa,c.status,c.count,(srcLabel[c.source]||c.source||''),new Date(c.first).toLocaleDateString(),new Date(c.last).toLocaleDateString()]; });
-      downloadCsv('visadoo-customers.csv', ['Name','Email','Phone','Passport Issuing Country','State','Visa Type','Status','Applications','Source','First Seen','Last Seen'], rows);
+      var rows=filteredCust().map(function(c){ return [c.name,c.email,c.phone,c.country,c.state,c.visa,c.status,c.count,(srcLabel[c.source]||c.source||''),(c.marketing?'Yes':'No'),new Date(c.first).toLocaleDateString(),new Date(c.last).toLocaleDateString()]; });
+      downloadCsv('visadoo-customers.csv', ['Name','Email','Phone','Passport Issuing Country','State','Visa Type','Status','Applications','Source','Marketing Consent','First Seen','Last Seen'], rows);
     };
   }
 
