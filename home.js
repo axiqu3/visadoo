@@ -50,13 +50,31 @@
   }
 
   // ---- destinations ----
+  // Fastest processing time across a country's visas (compares hours vs days fairly); null if none set.
+  function fastestEta(cv){
+    var best=null;
+    cv.forEach(function(v){
+      var n=v.processing_time_value, u=v.processing_time_unit;
+      if(n==null||n===''||!u) return;
+      var hours = u==='hours' ? Number(n) : Number(n)*24;
+      if(best===null || hours<best.hours) best={hours:hours, value:n, unit:u};
+    });
+    return best;
+  }
+  // Brand-adaptive "Get your visa in as little as X" pill (honest; hidden when no ETA).
+  function etaPill(eta){
+    if(!eta) return '';
+    var unit = eta.unit==='hours' ? ('hour'+(Number(eta.value)===1?'':'s')) : ('day'+(Number(eta.value)===1?'':'s'));
+    return '<div style="display:inline-flex;align-items:center;gap:6px;background:var(--sky-50);color:var(--blue-700);border:1px solid var(--blue-100);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:700;margin:8px 0 0;line-height:1.2">⚡ Get your visa in as little as '+eta.value+' '+unit+'</div>';
+  }
+
   function countryCard(c){
     var price = (c.minPrice!=null) ? ('<div class="from">from '+money(c.minPrice)+' <span>/ visa</span></div>') : '';
     var n = c.visaCount||0;
     return '<a class="dest-card" href="/country/'+encodeURIComponent(c.slug)+'">'+
       '<img class="dest-flag" src="'+(c.image_url||flag(c.iso2))+'" alt="'+ (c.name||'') +'" loading="lazy">'+
       '<div class="dest-body"><h3>'+(c.name||'')+'</h3>'+
-      '<div class="meta">'+n+' visa option'+(n===1?'':'s')+'</div>'+price+'</div></a>';
+      '<div class="meta">'+n+' visa option'+(n===1?'':'s')+'</div>'+etaPill(c.eta)+price+'</div></a>';
   }
 
   function render(countries, groups){
@@ -106,7 +124,7 @@
       var sb=window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
       Promise.all([
         sb.from('countries').select('*').eq('active',true).order('sort_order'),
-        sb.from('visa_types').select('slug,country_slug,price_aed,prices').eq('active',true),
+        sb.from('visa_types').select('slug,country_slug,price_aed,prices,processing_time_value,processing_time_unit').eq('active',true),
         sb.from('visa_groups').select('*').eq('active',true).order('sort_order'),
         sb.from('site_settings').select('hero_image_url,active_currency,currencies').eq('id','global').single()
       ]).then(function(res){
@@ -120,6 +138,7 @@
           var cv=visas.filter(function(v){return v.country_slug===c.slug;});
           c.visaCount=cv.length;
           c.minPrice=cv.length?Math.min.apply(null,cv.map(function(v){return visaActivePrice(v);})):null;
+          c.eta=fastestEta(cv);
         });
         render(countries, groups);
       });
