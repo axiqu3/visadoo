@@ -21,6 +21,10 @@ async function fetchJson(url) {
 // Brand colour palette — must match branding.js applyColor() so first paint is the saved colour (no flash).
 function shade(hex,p){ hex=(hex||"").replace("#",""); if(hex.length===3) hex=hex.split("").map(function(c){return c+c;}).join(""); if(hex.length!==6) return "#"+hex; var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16); var t=p<0?0:255,a=Math.abs(p)/100; r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b); return "#"+[r,g,b].map(function(v){return ("0"+v.toString(16)).slice(-2);}).join(""); }
 function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--blue-600:'+p+';--blue-700:'+shade(p,-14)+';--blue-900:'+shade(p,-34)+';--blue-500:'+shade(p,8)+';--blue-400:'+shade(p,24)+';--blue-100:'+shade(p,82)+';--sky-50:'+shade(p,93)+';}</style>'; }
+// Logo / favicon — same site-wide for every request; matches branding.js so first paint is correct (no flash).
+var LOGO="", FAVICON="", APPICON="", BNAME="Visa Doo";
+function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME||"logo")+'" style="height:34px;width:auto;max-width:180px;display:block">') : ('<span class="logo">'+PLANE+'</span>Visa<b>Doo</b>'); }
+function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
 
 // Expected processing time as a friendly estimate, e.g. "about 5 days" (blank if not set).
 function etaStr(v) {
@@ -94,7 +98,7 @@ function pageHtml(v, others, defaultImg, active, brandColor) {
     '<meta name="twitter:title" content="' + esc(title) + '">' +
     '<meta name="twitter:description" content="' + esc(desc) + '">' +
     (ogImage ? '<meta name="twitter:image" content="' + esc(ogImage) + '">' : '') +
-    '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">' +
+    iconTags() +
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">' +
     '<link rel="stylesheet" href="/styles.css">' +
@@ -104,7 +108,7 @@ function pageHtml(v, others, defaultImg, active, brandColor) {
     '</head><body>' +
 
     '<header class="header"><div class="container nav">' +
-      '<a href="/" class="brand"><span class="logo">' + PLANE + '</span>Visa<b>Doo</b></a>' +
+      '<a href="/" class="brand">' + brandMark() + '</a>' +
       '<div class="nav-actions">' +
         '<a href="/app.html#track" class="btn btn-ghost">Track application</a>' +
         '<a href="/app.html?visa=' + esc(v.slug) + '" class="btn btn-primary">Apply now</a>' +
@@ -179,10 +183,12 @@ export default async (request) => {
   if (!v) return notFound();
   const others = rows.filter(function (x) { return x.slug !== slug && x.country_slug === v.country_slug; });
 
-  const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color");
+  const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name");
   const defaultImg = (settings && settings[0] && settings[0].default_social_image) || "";
   const active = resolveActive(settings);
   const brandColor = (settings && settings[0] && settings[0].brand_color) || "";
+  const ss0 = (settings && settings[0]) || {};
+  LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
 
   return new Response(pageHtml(v, others, defaultImg, active, brandColor), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" }

@@ -60,7 +60,20 @@ export default async (request, context) => {
     inject += '<meta name="google-site-verification" content="'+esc(s.google_verification.trim())+'">';
   }
   inject += brandVars(s.brand_color); // correct brand colour on first paint (no flash)
+
+  // Favicon / app icon: swap the default icon link for the saved ones (prevents tab-icon flash)
+  var iconLinks = "";
+  if(s.favicon_url) iconLinks += '<link rel="icon" href="'+esc(s.favicon_url)+'">';
+  if(s.app_icon_url || s.logo_url) iconLinks += '<link rel="apple-touch-icon" href="'+esc(s.app_icon_url || s.logo_url)+'">';
+  if(iconLinks) html = html.replace(/<link\s+rel="icon"[^>]*>/i, iconLinks);
+
   html = html.replace("</head>", inject+"\n</head>");
+
+  // Logo: replace the default brand mark (plane + "VisaDoo") with the uploaded logo so it's correct on first paint
+  if(s.logo_url){
+    var logoImg = '<img src="'+esc(s.logo_url)+'" alt="'+esc(s.brand_name||"logo")+'" style="height:34px;width:auto;max-width:180px;display:block">';
+    html = html.replace(/(<a[^>]*class="brand"[^>]*>)[\s\S]*?(<\/a>)/g, "$1"+logoImg+"$2");
+  }
 
   return new Response(html, { status: res.status, headers: { "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" } });
 };
