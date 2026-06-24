@@ -775,6 +775,7 @@
     if(canManageContent()) items.push(['siteseo','Site SEO']);
     if(state.role==='admin') items.push(['brand','Brand & Settings']);
     if(state.role==='admin') items.push(['emailcfg','Email']);
+    if(state.role==='admin') items.push(['comms','Communications']);
     if(state.role==='admin') items.push(['team','Team']);
     if(items.length<2) return ''; // no point showing a one-item switcher
     return '<div class="subnav" style="margin-bottom:18px">'+items.map(function(it){
@@ -2760,6 +2761,135 @@
   }
 
   // ============================================================
+  //  COMMUNICATIONS (notification engine: automation, templates, history)
+  // ============================================================
+  var commsRule=null, commsTpls=[], commsMsgs=[], commsTplEditing=null, commsReviewUrl='';
+  var PLACEHOLDERS='Placeholders you can use: {{first_name}}, {{name}}, {{visa}}, {{country}}, {{reference}}, {{review_url}}, {{brand}}';
+
+  function msgStatusPill(s){
+    var map={ sent:['sp-done','Sent'], delivered:['sp-done','Delivered'], queued:['sp-progress','Queued'],
+      skipped:['','Skipped'], failed:['sp-action','Failed'], cancelled:['','Cancelled'] };
+    var m=map[s]||['',''+s];
+    var extra=(s==='skipped'||s==='cancelled')?' style="background:#eef2f7;color:#64748b"':'';
+    return '<span class="status-pill '+m[0]+'" '+extra+'>'+esc(m[1])+'</span>';
+  }
+
+  function renderComms(){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    if(!VISAS.length) loadVisaTypes();
+    root.innerHTML='<div class="app-main">'+adminSections('comms')+
+      '<div class="app-head"><h1>Communications</h1><p>Your message engine — automations, templates and the history of everything sent.</p></div>'+
+      '<div id="commsArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
+    '</div>';
+    wireAdminSections();
+    Promise.all([
+      sb.from('automation_rules').select('*').eq('key','review-request').single(),
+      sb.from('site_settings').select('google_review_url').eq('id','global').single(),
+      sb.from('message_templates').select('*').order('key'),
+      sb.from('messages').select('id,to_address,subject,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').order('created_at',{ascending:false}).limit(100)
+    ]).then(function(res){
+      commsRule=res[0].data||null;
+      commsReviewUrl=(res[1].data&&res[1].data.google_review_url)||'';
+      commsTpls=res[2].data||[];
+      commsMsgs=res[3].data||[];
+      paintComms();
+    });
+  }
+
+  function paintComms(){
+    var area=document.getElementById('commsArea'); if(!area) return;
+    var ruleOn=commsRule?commsRule.active:false;
+    var urlMissing=!commsReviewUrl;
+    var autoPanel='<div class="panel"><h3 style="font-size:17px;font-weight:800;margin-bottom:4px">Review-request automation</h3>'+
+      '<p class="phint" style="margin-top:0">Automatically emails the customer <b>3 days after</b> you mark their visa as “Visa Issued”, asking for a Google review. Opt-outs are always respected.</p>'+
+      '<label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:10px 0"><input type="checkbox" id="cmAutoOn" '+(ruleOn?'checked':'')+' style="width:auto"> <span style="font-weight:600">Turn this automation on</span></label>'+
+      '<div class="field"><label>Your Google review link</label>'+
+        '<input id="cmReviewUrl" type="url" value="'+esc(commsReviewUrl)+'" placeholder="https://g.page/r/your-business/review" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px">'+
+        '<p class="phint">Paste the link customers use to leave you a Google review. '+(urlMissing?'<b style="color:var(--red)">Until this is set, review emails are skipped.</b>':'')+'</p></div>'+
+      '<div class="signin-msg" id="cmMsg"></div>'+
+      '<button class="btn btn-primary" id="cmSave">Save settings</button></div>';
+
+    var tplRows=commsTpls.map(function(t){
+      return '<div class="admin-app"><div class="arow"><div><h4>'+esc(t.name)+(t.active?'':' <span class="status-pill" style="background:#eef2f7;color:#64748b">Off</span>')+'</h4>'+
+        '<div class="meta">'+esc(t.channel)+' · '+esc(t.subject||'(no subject)')+'</div></div>'+
+        '<button class="btn btn-ghost" data-tpledit="'+esc(t.key)+'">Edit</button></div></div>';
+    }).join('')||'<div class="panel empty-state"><p>No templates.</p></div>';
+    var tplPanel='<div style="margin-top:26px"><h3 style="font-size:17px;font-weight:800;margin-bottom:8px">Message templates</h3>'+tplRows+'</div>';
+
+    var histPanel='<div style="margin-top:26px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">'+
+      '<h3 style="font-size:17px;font-weight:800;margin:0">Message history</h3>'+
+      '<input id="cmSearch" type="text" placeholder="Search email or subject…" style="flex:1;min-width:180px;max-width:320px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px"></div>'+
+      '<div id="cmHist"></div></div>';
+
+    area.innerHTML=autoPanel+(commsTplEditing?'':tplPanel)+(commsTplEditing?'':histPanel);
+
+    if(commsTplEditing){ area.innerHTML=tplEditorHtml(commsTplEditing); wireTplEditor(); return; }
+
+    document.getElementById('cmSave').onclick=function(){
+      var on=document.getElementById('cmAutoOn').checked;
+      var url=document.getElementById('cmReviewUrl').value.trim()||null;
+      var msg=document.getElementById('cmMsg'); var btn=document.getElementById('cmSave');
+      btn.disabled=true; btn.textContent='Saving…';
+      Promise.all([
+        sb.from('automation_rules').update({active:on, updated_at:new Date().toISOString()}).eq('key','review-request'),
+        sb.from('site_settings').update({google_review_url:url}).eq('id','global')
+      ]).then(function(r){
+        btn.disabled=false; btn.textContent='Save settings';
+        if((r[0]&&r[0].error)||(r[1]&&r[1].error)){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent='Could not save.'; return; }
+        if(commsRule) commsRule.active=on; commsReviewUrl=url||''; toast('Saved'); paintComms();
+      });
+    };
+    area.querySelectorAll('[data-tpledit]').forEach(function(b){ b.onclick=function(){
+      var k=b.getAttribute('data-tpledit'); commsTplEditing=JSON.parse(JSON.stringify(commsTpls.filter(function(x){return x.key===k;})[0])); paintComms();
+    }; });
+    var search=document.getElementById('cmSearch'); if(search) search.oninput=paintHist;
+    paintHist();
+  }
+
+  function paintHist(){
+    var box=document.getElementById('cmHist'); if(!box) return;
+    var q=((document.getElementById('cmSearch')||{}).value||'').trim().toLowerCase();
+    var rows=commsMsgs.filter(function(m){ if(!q) return true; return ((m.to_address||'')+' '+(m.subject||'')).toLowerCase().indexOf(q)>-1; });
+    if(!commsMsgs.length){ box.innerHTML='<div class="panel empty-state"><p>No messages yet. Sent emails (status updates and automations) will appear here.</p></div>'; return; }
+    if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No messages match your search.</p></div>'; return; }
+    box.innerHTML=rows.map(function(m){
+      var when=new Date(m.sent_at||m.created_at).toLocaleString();
+      var tpl=m.template_key==='review-request'?'Review request':(m.template_key==='status-update'?'Status update':(m.template_key||'Message'));
+      var reason=m.reason?(' · <span class="phint" style="display:inline">'+esc(m.reason)+'</span>'):'';
+      return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h4 style="font-size:15px">'+esc(m.subject||'(no subject)')+'</h4>'+
+        '<div class="meta">'+esc(m.to_address||'')+' · '+esc(tpl)+' · '+esc(m.channel)+reason+'</div></div>'+
+        '<div style="text-align:right;white-space:nowrap">'+msgStatusPill(m.status)+'<div class="phint" style="margin:4px 0 0">'+esc(when)+'</div></div>'+
+      '</div></div>';
+    }).join('');
+  }
+
+  function tplEditorHtml(t){
+    return '<div class="panel"><button class="link-btn" id="tplBack" style="margin-bottom:8px">← Back to communications</button>'+
+      '<h3 style="font-size:17px;font-weight:800">Edit template — '+esc(t.name)+'</h3>'+
+      '<label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:8px 0"><input type="checkbox" id="tplActive" '+(t.active?'checked':'')+' style="width:auto"> <span>Active</span></label>'+
+      '<div class="field"><label>Subject</label><input id="tplSubject" type="text" value="'+esc(t.subject||'')+'" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px"></div>'+
+      '<div class="field"><label>Body (HTML allowed)</label><textarea id="tplBody" style="width:100%;min-height:200px;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">'+esc(t.body||'')+'</textarea></div>'+
+      '<p class="phint">'+esc(PLACEHOLDERS)+'</p>'+
+      '<div class="signin-msg" id="tplMsg"></div>'+
+      '<div style="display:flex;gap:10px"><button class="btn btn-primary" id="tplSave">Save template</button><button class="btn btn-ghost" id="tplCancel">Cancel</button></div></div>';
+  }
+  function wireTplEditor(){
+    document.getElementById('tplBack').onclick=document.getElementById('tplCancel').onclick=function(){ commsTplEditing=null; paintComms(); };
+    document.getElementById('tplSave').onclick=function(){
+      var key=commsTplEditing.key, msg=document.getElementById('tplMsg'), btn=document.getElementById('tplSave');
+      var payload={ subject:document.getElementById('tplSubject').value, body:document.getElementById('tplBody').value, active:document.getElementById('tplActive').checked, updated_at:new Date().toISOString() };
+      btn.disabled=true; btn.textContent='Saving…';
+      sb.from('message_templates').update(payload).eq('key',key).then(function(r){
+        btn.disabled=false; btn.textContent='Save template';
+        if(r.error){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent='Could not save.'; return; }
+        commsTpls.forEach(function(t){ if(t.key===key){ t.subject=payload.subject; t.body=payload.body; t.active=payload.active; } });
+        commsTplEditing=null; toast('Template saved'); paintComms();
+      });
+    };
+  }
+
+  // ============================================================
   //  ROUTER
   // ============================================================
   function render(){
@@ -2770,7 +2900,7 @@
     // permission guards — bounce to an allowed area
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
-    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers') && state.role!=='admin') v=defaultStaffView();
+    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
     state.view=v;
 
     if(v==='apply') renderApply();
@@ -2785,6 +2915,7 @@
     else if(v==='emailcfg') renderEmailSettings();
     else if(v==='enquiries') renderEnquiries();
     else if(v==='customers') renderCustomers();
+    else if(v==='comms') renderComms();
     else if(v==='team') renderTeam();
     else if(v==='setpw') renderSetPassword();
     else renderApply();
@@ -2792,7 +2923,7 @@
 
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','team','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
