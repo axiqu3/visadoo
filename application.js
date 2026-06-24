@@ -161,7 +161,8 @@
     var roleLabels = { admin:'Admin', agent:'Agent', content:'Content', viewer:'Viewer' };
     var links = '';
     if(isStaff()){
-      links = '<button class="link-btn" data-go="'+defaultStaffView()+'">Dashboard</button>';
+      links = '<button class="link-btn" data-go="'+defaultStaffView()+'">Dashboard</button>' +
+              '<button class="link-btn" data-go="setpw">Set password</button>';
     } else {
       links = '<button class="link-btn" data-go="apply">New application</button>' +
               '<button class="link-btn" data-go="track">My applications</button>';
@@ -198,7 +199,13 @@
         '<div id="emailStep">' +
           '<div class="field"><label for="siEmail">Email address</label>' +
           '<input id="siEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>' +
-          '<button class="btn btn-primary btn-block" id="sendCodeBtn">Email me a sign-in link</button>' +
+          '<div class="field"><label for="siPass">Password</label>' +
+          '<input id="siPass" type="password" placeholder="Your password" autocomplete="current-password"></div>' +
+          '<button class="btn btn-primary btn-block" id="pwBtn">Sign in</button>' +
+          '<div style="text-align:right;margin-top:8px"><button class="link-btn" id="forgotBtn" style="padding:0;font-size:13px">Forgot password?</button></div>' +
+          '<div class="or-divider" style="margin-top:14px">or</div>' +
+          '<button class="btn btn-ghost btn-block" id="sendCodeBtn">Email me a sign-in link</button>' +
+          '<p class="phint" style="text-align:center;margin-top:10px">New here or a customer? Just use the email link — no password needed. Staff can set a password once signed in.</p>' +
         '</div>' +
         '<div id="sentStep" style="display:none">' +
           '<div style="text-align:center;padding:6px 0 14px">' +
@@ -226,6 +233,35 @@
     };
 
     var redirectTo = location.origin + '/app.html' + (intended?('?visa='+encodeURIComponent(intended)):'');
+
+    // Password sign-in (staff/admins who've set one) — instant, no email wait.
+    var pwBtn=document.getElementById('pwBtn');
+    function doPasswordSignIn(){
+      var email=document.getElementById('siEmail').value.trim();
+      var pass=document.getElementById('siPass').value;
+      if(!/.+@.+\..+/.test(email)){ showMsg('Please enter a valid email address.','err'); return; }
+      if(!pass){ showMsg('Enter your password, or use the email link below.','err'); return; }
+      pwBtn.disabled=true; pwBtn.innerHTML='<span class="spin"></span> Signing in…';
+      sb.auth.signInWithPassword({ email:email, password:pass }).then(function(r){
+        pwBtn.disabled=false; pwBtn.innerHTML='Sign in';
+        if(r.error){ showMsg('Wrong email or password — or you haven’t set a password yet. Use the email link below, then set a password from inside the app.','err'); return; }
+        // onAuthStateChange handles routing
+      });
+    }
+    pwBtn.onclick=doPasswordSignIn;
+    document.getElementById('siPass').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); doPasswordSignIn(); } });
+
+    // Forgot / set password — one-time reset email.
+    document.getElementById('forgotBtn').onclick=function(){
+      var email=document.getElementById('siEmail').value.trim();
+      if(!/.+@.+\..+/.test(email)){ showMsg('Enter your email above first, then tap “Forgot password?”.','err'); return; }
+      sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/app.html' }).then(function(r){
+        if(r.error){ showMsg(esc(r.error.message||'Could not send the reset email.'),'err'); return; }
+        showMsg('Password reset link sent to <b>'+esc(email)+'</b>. Open it to set a new password.','ok');
+      });
+    };
+
+    // Email sign-in link (customers / no password).
     var sendBtn=document.getElementById('sendCodeBtn');
     sendBtn.onclick=function(){
       var email=document.getElementById('siEmail').value.trim();
@@ -245,6 +281,39 @@
       document.getElementById('emailStep').style.display='block';
       msg.className='signin-msg';
     };
+  }
+
+  // ============================================================
+  //  SET / CHANGE PASSWORD (staff self-service + reset-link recovery)
+  // ============================================================
+  function renderSetPassword(){
+    if(!state.user){ renderSignIn(); return; }
+    renderHeader();
+    var recovery = !!state._recovery;
+    root.innerHTML='<div class="signin-wrap"><div class="signin-card">'+
+      '<div class="logo-lg">'+planeLogo()+'</div>'+
+      '<h2>'+(recovery?'Set a new password':'Set your password')+'</h2>'+
+      '<p class="muted">For <b>'+esc(state.user.email||'')+'</b>. After this you can sign in instantly with your email and password — no waiting for the email link.</p>'+
+      '<div class="signin-msg" id="spMsg"></div>'+
+      '<div class="field"><label for="spPass">New password</label><input id="spPass" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>'+
+      '<div class="field"><label for="spPass2">Confirm password</label><input id="spPass2" type="password" placeholder="Re-enter password" autocomplete="new-password"></div>'+
+      '<button class="btn btn-primary btn-block" id="spSave">Save password</button>'+
+      (recovery?'':'<button class="link-btn" id="spCancel" style="margin-top:10px">← Back</button>')+
+    '</div></div>';
+    var m=document.getElementById('spMsg');
+    document.getElementById('spSave').onclick=function(){
+      var p=document.getElementById('spPass').value, p2=document.getElementById('spPass2').value;
+      if((p||'').length<8){ m.className='signin-msg err'; m.textContent='Password must be at least 8 characters.'; return; }
+      if(p!==p2){ m.className='signin-msg err'; m.textContent='The two passwords don’t match.'; return; }
+      var btn=document.getElementById('spSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Saving…';
+      sb.auth.updateUser({ password:p }).then(function(r){
+        btn.disabled=false; btn.innerHTML='Save password';
+        if(r.error){ m.className='signin-msg err'; m.textContent=esc(r.error.message||'Could not set password.'); return; }
+        state._recovery=false; toast('Password saved — you can now sign in with your email and password.');
+        state.view = isStaff()?defaultStaffView():'apply'; go(state.view);
+      });
+    };
+    if(document.getElementById('spCancel')) document.getElementById('spCancel').onclick=function(){ state.view=isStaff()?defaultStaffView():'apply'; render(); };
   }
 
   // ============================================================
@@ -2655,12 +2724,13 @@
     else if(v==='enquiries') renderEnquiries();
     else if(v==='customers') renderCustomers();
     else if(v==='team') renderTeam();
+    else if(v==='setpw') renderSetPassword();
     else renderApply();
   }
 
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','team'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
@@ -2689,6 +2759,15 @@
   sb.auth.onAuthStateChange(function(event, session){
     var was = state.user;
     state.user = session ? session.user : null;
+    if(event==='PASSWORD_RECOVERY' && state.user){
+      // arrived via the password-reset email link — go straight to "set a new password"
+      state._recovery=true;
+      Promise.all([ sb.from('profiles').select('role').eq('id',state.user.id).single(), loadVisaTypes() ]).then(function(res){
+        state.role=(res[0].data&&res[0].data.role)||'customer'; state.isAdmin=state.role==='admin';
+        state.view='setpw'; renderHeader(); render();
+      });
+      return;
+    }
     if(state.user && !was){
       // just signed in
       state.view = (qParam('visa')) ? 'apply' : resolveStartView();
