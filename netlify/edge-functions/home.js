@@ -65,7 +65,9 @@ export default async (request, context) => {
   var iconLinks = "";
   if(s.favicon_url) iconLinks += '<link rel="icon" href="'+esc(s.favicon_url)+'">';
   if(s.app_icon_url || s.logo_url) iconLinks += '<link rel="apple-touch-icon" href="'+esc(s.app_icon_url || s.logo_url)+'">';
-  if(iconLinks) html = html.replace(/<link\s+rel="icon"[^>]*>/i, iconLinks);
+  // Match the WHOLE icon link incl. the href value — the default favicon is an inline SVG data-URI
+  // that contains '>' characters, so a plain [^>]* would stop early and leave a leftover scrap.
+  if(iconLinks) html = html.replace(/<link\s+rel="icon"\s+href="[^"]*">/i, iconLinks);
 
   html = html.replace("</head>", inject+"\n</head>");
 
