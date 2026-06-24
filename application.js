@@ -762,30 +762,69 @@
   var adminFiltersOpen = false;
   function adminActiveCount(){ var f=adminFilters, n=0; if(f.q.trim())n++; if(f.visa)n++; if(f.status!=='all')n++; if(f.country)n++; if(f.from||f.to)n++; return n; }
 
-  // Top-level admin section switcher (Applications / Visa Types / …future)
+  // Backend console navigation: a grouped left sidebar (collapses to a slide-out
+  // drawer on phones). Same data-section keys + routing as before — nothing breaks.
+  var ADMIN_VIEWS=['admin','enquiries','customers','comms','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+
+  // Inline-SVG icon per item (brand-coloured via currentColor).
+  function sideIcon(key){
+    var P={
+      admin:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+      enquiries:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+      customers:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
+      comms:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>',
+      destinations:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>',
+      visatypes:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><path d="M14 10h4M14 14h4"/>',
+      articles:'<path d="M4 4h13v16H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h5"/>',
+      content:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
+      siteseo:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+      brand:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+      emailcfg:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+      team:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'
+    };
+    return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[key]||'')+'</svg></span>';
+  }
+
+  // Groups + their items, each gated by the same role rules as before. Empty groups drop out.
+  function adminNavModel(){
+    var g=[
+      ['Customers',[['admin','Applications',canViewApps()],['enquiries','Enquiries',state.role==='admin'],['customers','Customers',state.role==='admin']]],
+      ['Messaging',[['comms','Communications',state.role==='admin']]],
+      ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()]]],
+      ['Content',[['articles','Articles',canManageContent()],['content','Content',canManageContent()],['siteseo','Site SEO',canManageContent()]]],
+      ['Settings',[['brand','Brand & Settings',state.role==='admin'],['emailcfg','Email',state.role==='admin'],['team','Team',state.role==='admin']]]
+    ];
+    return g.map(function(x){ return [x[0], x[1].filter(function(it){return it[2];})]; }).filter(function(x){ return x[1].length; });
+  }
+  function adminNavCount(){ return adminNavModel().reduce(function(n,g){ return n+g[1].length; },0); }
+
   function adminSections(active){
-    var items=[];
-    if(canViewApps()) items.push(['admin','Applications']);
-    if(state.role==='admin') items.push(['enquiries','Enquiries']);
-    if(state.role==='admin') items.push(['customers','Customers']);
-    if(canManageContent()) items.push(['destinations','Destinations']);
-    if(canManageContent()) items.push(['visatypes','Visa Types']);
-    if(canManageContent()) items.push(['articles','Articles']);
-    if(canManageContent()) items.push(['content','Content']);
-    if(canManageContent()) items.push(['siteseo','Site SEO']);
-    if(state.role==='admin') items.push(['brand','Brand & Settings']);
-    if(state.role==='admin') items.push(['emailcfg','Email']);
-    if(state.role==='admin') items.push(['comms','Communications']);
-    if(state.role==='admin') items.push(['team','Team']);
-    if(items.length<2) return ''; // no point showing a one-item switcher
-    return '<div class="subnav" style="margin-bottom:18px">'+items.map(function(it){
-      return '<button data-section="'+it[0]+'" class="'+(active===it[0]?'active':'')+'">'+esc(it[1])+'</button>';
-    }).join('')+'</div>';
+    var model=adminNavModel();
+    if(adminNavCount()<2) return ''; // nothing to switch between (e.g. viewer)
+    var groups=model.map(function(g){
+      var hasActive=g[1].some(function(it){ return it[0]===active; });
+      var items=g[1].map(function(it){
+        return '<button class="side-item'+(active===it[0]?' active':'')+'" data-section="'+it[0]+'">'+sideIcon(it[0])+'<span>'+esc(it[1])+'</span></button>';
+      }).join('');
+      return '<div class="side-group'+(hasActive?' open':'')+'">'+
+        '<button class="side-group-head" data-group-toggle><span>'+esc(g[0])+'</span>'+
+          '<svg class="caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'+
+        '</button><div class="side-group-items">'+items+'</div></div>';
+    }).join('');
+    return '<button class="side-toggle" id="sideToggle"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Menu</button>'+
+      '<div class="side-backdrop" id="sideBackdrop"></div>'+
+      '<nav class="admin-side" id="adminSide"><button class="side-close" id="sideClose" aria-label="Close menu">&times;</button>'+groups+'</nav>';
   }
   function wireAdminSections(){
     root.querySelectorAll('[data-section]').forEach(function(b){
-      b.onclick=function(){ go(b.getAttribute('data-section')); };
+      b.onclick=function(){ document.body.classList.remove('side-open'); go(b.getAttribute('data-section')); };
     });
+    root.querySelectorAll('[data-group-toggle]').forEach(function(b){
+      b.onclick=function(){ b.parentNode.classList.toggle('open'); };
+    });
+    var t=document.getElementById('sideToggle'); if(t) t.onclick=function(){ document.body.classList.add('side-open'); };
+    var c=document.getElementById('sideClose'); if(c) c.onclick=function(){ document.body.classList.remove('side-open'); };
+    var bd=document.getElementById('sideBackdrop'); if(bd) bd.onclick=function(){ document.body.classList.remove('side-open'); };
   }
 
   function afVisaOptions(){ return '<option value="">All visa types</option>'+VISAS.map(function(v){ return '<option value="'+esc(v.id)+'"'+(adminFilters.visa===v.id?' selected':'')+'>'+esc(v.name)+'</option>'; }).join(''); }
@@ -2902,6 +2941,11 @@
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
     state.view=v;
+
+    // Backend sidebar layout: shift content right only on staff console screens.
+    var showSide = isStaff() && ADMIN_VIEWS.indexOf(v)>-1 && adminNavCount()>=2;
+    document.body.classList.toggle('has-admin-side', showSide);
+    if(!showSide) document.body.classList.remove('side-open');
 
     if(v==='apply') renderApply();
     else if(v==='track') renderTrack();

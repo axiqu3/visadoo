@@ -220,3 +220,56 @@
 .answer-a{color:#24324a;flex:1}
 .answer-a a{color:var(--blue-700);font-weight:700;text-decoration:underline}
 @media (max-width:560px){ .answer-row{flex-direction:column;gap:2px} .answer-q{min-width:0} }
+
+/* ===== Backend console: grouped left sidebar ===== */
+.side-toggle{display:none}
+.side-backdrop{display:none}
+.side-close{display:none}
+.admin-side{
+  position:fixed;top:73px;left:0;bottom:0;width:236px;z-index:40;
+  background:#fff;border-right:1px solid var(--line);
+  padding:14px 12px 48px;overflow-y:auto;overscroll-behavior:contain;
+}
+.has-admin-side .app-main{margin-left:236px}
+.side-group{margin-bottom:2px}
+.side-group-head{
+  display:flex;align-items:center;justify-content:space-between;width:100%;
+  border:none;background:none;cursor:pointer;font-family:inherit;
+  font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);padding:12px 10px 6px;
+}
+.side-group-head .caret{opacity:.55;transition:transform .18s}
+.side-group.open .side-group-head .caret{transform:rotate(90deg)}
+.side-group-items{display:none}
+.side-group.open .side-group-items{display:block}
+.side-item{
+  display:flex;align-items:center;gap:11px;width:100%;
+  border:none;background:none;cursor:pointer;font-family:inherit;text-align:left;
+  font-size:14.5px;font-weight:600;color:var(--ink);
+  padding:9px 11px;border-radius:9px;margin:1px 0;
+}
+.side-item:hover{background:var(--sky-50)}
+.side-item.active{background:var(--blue-600);color:#fff}
+.side-item .ico{display:flex;color:var(--blue-600)}
+.side-item.active .ico{color:#fff}
+.side-item svg{width:18px;height:18px;flex:none}
+
+@media (max-width:900px){
+  .has-admin-side .app-main{margin-left:0}
+  .side-toggle{
+    display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;
+    border:1px solid var(--line);background:#fff;border-radius:10px;
+    padding:9px 14px;font-family:inherit;font-weight:700;font-size:14px;color:var(--ink);cursor:pointer;
+  }
+  .admin-side{
+    top:0;height:100%;bottom:auto;width:266px;z-index:60;padding-top:22px;
+    transform:translateX(-100%);transition:transform .22s ease;
+    box-shadow:0 12px 44px rgba(15,23,42,.22);
+  }
+  body.side-open .admin-side{transform:translateX(0)}
+  body.side-open .side-backdrop{display:block;position:fixed;inset:0;z-index:55;background:rgba(15,23,42,.42)}
+  .side-close{
+    display:block;position:absolute;top:8px;right:12px;border:none;background:none;
+    font-size:28px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 8px;
+  }
+}
