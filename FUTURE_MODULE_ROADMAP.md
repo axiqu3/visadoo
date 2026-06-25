@@ -25,12 +25,12 @@ Your #1 goal is **automated customer communication**. Almost every feature you l
 | **Consent capture** (opt-in/opt-out, per channel) | Legal must-have *before* any marketing message. |
 | **Notification & Automation Engine** (email working; WhatsApp-ready) | The shared spine. Everything else plugs in. |
 | **Visa ETA / processing-time estimate** (Feature 1) — *quick win* | Tiny, standalone, no risk; boosts trust & conversion while the engine is built. |
-| **(CEO action) Start WhatsApp Business verification with Meta** | Takes weeks — start now so it's ready when the engine is. |
+| **(RESOLVED 2026-06-25) WhatsApp via Telinfy (Meta BSP)** | No separate Meta verification needed — WABA already live via Telinfy; we use their API key. WhatsApp is now UNBLOCKED. |
 
 ### Phase 2 — Switch on the automations (the payoff) + light operations
 | Item | Why here |
 |---|---|
-| **WhatsApp integration** (Feature 5) | Plugs into the engine once Meta approves. |
+| **WhatsApp integration** (Feature 5) via **Telinfy** | Plugs into the engine using Telinfy's API key + pre-approved templates. No Meta-verification wait. |
 | **Review-request automation** (Feature 6) | First high-value automation: post-approval, delay, no duplicates, Google link. |
 | **Birthday module** (Feature 7) | Uses DOB **with consent**; plugs into engine. |
 | **Communication history** (Feature 12) | Reads from the engine's logs — per customer/application. |
@@ -52,7 +52,7 @@ Your #1 goal is **automated customer communication**. Almost every feature you l
 - **Quick wins:** Visa ETA (Feature 1) — do it first, this week. (Basic customer CSV export already exists.)
 - **Depends on other features:** WhatsApp, Reviews, Birthdays, Campaigns, Communication history → all depend on the **Notification Engine**. CRM, follow-ups, birthdays, assignment → depend on the **Customer record**. All marketing messages → depend on **Consent**.
 - **Privacy/security risk (handle carefully):** WhatsApp (API secrets, approved templates), Birthdays (uses DOB + consent), Reviews/Campaigns (consent + opt-out), CSV export (PII), Communication history (PII). Rule: secrets stay server-side only; never message without consent; always honour opt-out.
-- **Do NOT build yet:** Revenue/payment analytics (no payments yet); advanced escalations (premature for a small team); WhatsApp can't *go live* until Meta verification completes (but build the engine ready for it).
+- **Do NOT build yet:** Revenue/payment analytics (no payments yet); advanced escalations (premature for a small team). _(WhatsApp is no longer blocked — it goes live via **Telinfy** (Meta BSP) using their API key + approved templates; see memory `visadoo-whatsapp-telinfy`.)_
 - **Build next:** the **Phase-1 foundation** (Customer record + Consent + Notification Engine), with **Visa ETA shipped first** as the quick win while the foundation is designed.
 
 ---

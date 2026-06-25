@@ -42,7 +42,7 @@ Migrated from an old (skybookdigital) Brevo account to the **new Visa Doo Brevo 
 
 ## 7. Roadmap & phase logic
 CEO priority = **automate customer communication** (email + WhatsApp together). Payments not soon. Team 2–5.
-- **Phase 1 (now):** foundations — **Customer record + Consent + Notification & Automation Engine** (email + WhatsApp-ready). Quick win **Visa ETA = DONE**. CEO to start **Meta WhatsApp business verification** (slow).
+- **Phase 1 (now):** foundations — **Customer record + Consent + Notification & Automation Engine** (email + WhatsApp-ready). Quick win **Visa ETA = DONE**. **WhatsApp = via Telinfy (Meta BSP) — NO separate Meta verification needed** (WABA already live there; we use their API key). Next build. See memory `visadoo-whatsapp-telinfy`.
 - **Phase 2:** WhatsApp live, review-request automation, birthday module, communication history, staff assignment + follow-ups, CRM views.
 - **Phase 3:** major-events module, reports/analytics, advanced workflows, richer exports, online payments + revenue analytics.
 See `FUTURE_MODULE_ROADMAP.md` for the full reasoning.
@@ -59,7 +59,7 @@ See `FUTURE_MODULE_ROADMAP.md` for the full reasoning.
 RLS policies; auth/role functions (`set_user_role`, `handle_new_user`, `is_admin`, `has_role`); the `BREVO_API_KEY` secret + Supabase Auth SMTP config; the `netlify.toml` cache headers; domain authentication; live customer data (applications, enquiries, customers). Do **not** disable the OLD Brevo account's keys without confirming nothing uses them.
 
 ## 10. Next recommended build sequence
-1. (CEO) Start **Meta WhatsApp Business verification** now (runs for weeks).
+1. (CEO) **WhatsApp via Telinfy** — collect API key + WhatsApp Business ID + correct base URL/namespace + approved template names; no Meta verification needed.
 2. (Fresh chat) Build **Phase-1 foundation**: unified **Customer record** → **Consent** capture → **Notification & Automation Engine** (email first, WhatsApp-ready). Then review-request automation, birthdays, etc. (Phase 2).
 
 ## 11. Starter prompt to paste into a fresh Claude Code chat
