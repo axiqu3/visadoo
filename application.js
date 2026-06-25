@@ -2728,7 +2728,7 @@
   }
 
   // ---- per-customer page: profile + applications + full message history ----
-  function openCustomer(id){ custViewId=id; go('custview'); }
+  function openCustomer(id){ custViewId=id; state.view='custview'; location.hash='custview/'+encodeURIComponent(id); renderHeader(); render(); }
 
   function renderCustomerDetail(id){
     if(state.role!=='admin'){ go(defaultStaffView()); return; }
@@ -3129,6 +3129,7 @@
 
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
+    if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
