@@ -273,3 +273,22 @@
     font-size:28px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 8px;
   }
 }
+
+/* ===== "Action Needed" conversation thread + reply ===== */
+.thread-wrap{margin-top:16px;background:var(--sky-50);border:1px solid var(--blue-100);border-radius:12px;padding:14px 16px}
+.thread-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--blue-700);margin-bottom:10px}
+.thread{display:flex;flex-direction:column;gap:10px}
+.tmsg{border-radius:10px;padding:10px 12px;max-width:90%;font-size:14px}
+.tmsg-staff{background:#fff;border:1px solid var(--line);align-self:flex-start}
+.tmsg-cust{background:var(--blue-600);color:#fff;align-self:flex-end}
+.tmsg-head{font-size:11px;font-weight:700;opacity:.7;margin-bottom:4px}
+.tmsg-cust .tmsg-head{opacity:.9}
+.tmsg-body{line-height:1.5}
+.thread-req{margin-top:6px;font-size:13px;font-weight:600}
+.thread-atts{margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.thread-file{font-size:13px;font-weight:600;text-decoration:underline;color:var(--blue-700)}
+.tmsg-cust .thread-file{color:#fff}
+.reply-panel{margin-top:18px;border:1.5px solid #f0b4b4;border-radius:14px;padding:18px;background:#fff}
+.reply-title{font-size:16px;font-weight:800;color:var(--red);margin-bottom:4px}
+.reply-ask{color:var(--muted);font-size:14px;margin:0 0 14px;line-height:1.5}
+.reply-panel input[type=file]{display:block;font-size:13px;max-width:100%}

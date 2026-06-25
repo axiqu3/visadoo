@@ -687,7 +687,7 @@
       '<p>Track each application through to your visa being issued.</p></div>'+
       '<div id="trackList"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div></div>';
 
-    sb.from('applications').select('*, documents(*)').order('created_at',{ascending:false}).then(function(r){
+    sb.from('applications').select('*, documents(*), app_messages(*)').order('created_at',{ascending:false}).then(function(r){
       var box=document.getElementById('trackList');
       if(r.error){ box.innerHTML='<div class="empty-state"><p>Could not load your applications. Please refresh.</p></div>'; console.error(r.error); return; }
       if(!r.data.length){
@@ -701,6 +701,8 @@
         return;
       }
       box.innerHTML='<div class="app-list">'+r.data.map(appCard).join('')+'</div>';
+      wireThreadFiles(box);
+      box.querySelectorAll('.reply-panel[data-app]').forEach(function(panel){ var b=panel.querySelector('[data-reply-send]'); if(b) b.onclick=function(){ submitReply(panel); }; });
       // wire "download your visa" buttons
       r.data.forEach(function(a){
         var vd=(a.documents||[]).filter(function(d){return d.doc_type==='visa';})[0];
@@ -724,6 +726,27 @@
     if(status==='Action Needed') return '<span class="status-pill sp-action">'+esc(status)+'</span>';
     return '<span class="status-pill sp-progress">'+esc(status)+'</span>';
   }
+
+  // ---- shared "Action Needed" conversation thread (staff request <-> customer reply) ----
+  function fmtWhen(ts){ return new Date(ts).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); }
+  function threadMsgsOf(a){ return (a.app_messages||[]).slice().sort(function(x,y){ return new Date(x.created_at)-new Date(y.created_at); }); }
+  function lastStaffMsg(a){ var s=threadMsgsOf(a).filter(function(m){return m.author==='staff';}); return s.length?s[s.length-1]:null; }
+  function threadHtml(a){
+    var msgs=threadMsgsOf(a); if(!msgs.length) return '';
+    return '<div class="thread">'+msgs.map(function(m){
+      var staff=m.author==='staff';
+      var docs=(m.requested_docs&&m.requested_docs.length)?('<div class="thread-req">Documents requested: '+m.requested_docs.map(esc).join(', ')+'</div>'):'';
+      var atts=(m.attachments&&m.attachments.length)?('<div class="thread-atts">'+m.attachments.map(function(f){ return '<a href="#" class="thread-file" data-path="'+esc(f.path)+'">📎 '+(f.label?esc(f.label)+': ':'')+esc(f.name||'file')+'</a>'; }).join('')+'</div>'):'';
+      var bodyHtml=m.body?('<div class="tmsg-body">'+esc(m.body).replace(/\n/g,'<br>')+'</div>'):'';
+      return '<div class="tmsg '+(staff?'tmsg-staff':'tmsg-cust')+'"><div class="tmsg-head">'+(staff?'Our team':'Customer')+' · '+esc(fmtWhen(m.created_at))+'</div>'+bodyHtml+docs+atts+'</div>';
+    }).join('')+'</div>';
+  }
+  function wireThreadFiles(scope){
+    (scope||document).querySelectorAll('.thread-file[data-path]').forEach(function(link){
+      link.onclick=function(e){ e.preventDefault(); var p=link.getAttribute('data-path'), orig=link.textContent; link.textContent='Opening…';
+        sb.storage.from('visa-documents').createSignedUrl(p,3600).then(function(s){ link.textContent=orig; if(s.error||!s.data){ toast('Could not open that file.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); };
+    });
+  }
   function appCard(a){
     var stages=cfg.STAGES;
     var idx=stages.indexOf(a.status);
@@ -742,15 +765,60 @@
         '<div style="color:var(--muted);font-size:13.5px;margin-top:2px">Your UAE tourist visa has been issued. Download and keep a copy for your travel.</div></div>'+
         '<button class="btn btn-primary dl-visa" data-app="'+esc(a.id)+'">&#11015; Download your visa</button>'+
       '</div>' : '';
+    var msgs=threadMsgsOf(a);
+    var threadBlock = msgs.length ? ('<div class="thread-wrap"><div class="thread-title">Messages with our team</div>'+threadHtml(a)+'</div>') : '';
+    var replyPanel='';
+    if(action){
+      var ls=lastStaffMsg(a);
+      var reqDocs=(ls&&ls.requested_docs)||[];
+      var slots = reqDocs.length
+        ? reqDocs.map(function(label,i){ return '<div class="field"><label class="ulabel">'+esc(label)+'</label><input type="file" data-reqfile="'+i+'" data-label="'+esc(label)+'" accept="image/*,application/pdf"></div>'; }).join('')
+        : '<div class="field"><label class="ulabel">Attach a file (optional)</label><input type="file" data-reqfile="0" accept="image/*,application/pdf"></div>';
+      replyPanel='<div class="reply-panel" data-app="'+esc(a.id)+'">'+
+        '<div class="reply-title">Action needed — respond to our team</div>'+
+        '<p class="reply-ask">Upload the requested document'+(reqDocs.length>1?'s':'')+' below and/or send us a message. Your reply goes straight to our team.</p>'+
+        slots+
+        '<div class="field"><label class="ulabel">Message (optional)</label><textarea data-reply-msg rows="3" placeholder="Add a note for our team…" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"></textarea></div>'+
+        '<button class="btn btn-primary" data-reply-send>Send to our team</button>'+
+      '</div>';
+    }
     return '<div class="app-card">'+
       '<div class="app-card-top"><div>'+
         '<h3>'+esc(visaById(a.visa_type)?visaById(a.visa_type).name:a.visa_type)+'</h3>'+
         '<div class="sub">Ref '+esc(a.reference_code)+' · applied '+created+' · '+appPriceText(a)+'</div>'+
       '</div>'+statusPill(a.status)+'</div>'+
-      (action && a.notes ? '<div class="signin-msg err" style="display:block;margin-bottom:18px">'+esc(a.notes)+'</div>' : '')+
+      (action && a.notes && !msgs.length ? '<div class="signin-msg err" style="display:block;margin-bottom:18px">'+esc(a.notes)+'</div>' : '')+
       '<div class="tracker">'+steps+'</div>'+
       visaBanner+
+      threadBlock+
+      replyPanel+
       '</div>';
+  }
+
+  function submitReply(panel){
+    var appId=panel.getAttribute('data-app');
+    var btn=panel.querySelector('[data-reply-send]');
+    var msg=((panel.querySelector('[data-reply-msg]')||{}).value||'').trim();
+    var inputs=[].slice.call(panel.querySelectorAll('[data-reqfile]'));
+    var files=[];
+    for(var i=0;i<inputs.length;i++){ var fi=inputs[i]; if(fi.files&&fi.files[0]){ if(fi.files[0].size>10485760){ toast('“'+fi.files[0].name+'” is over 10 MB. Please choose a smaller file.'); return; } files.push({file:fi.files[0], label:fi.getAttribute('data-label')||''}); } }
+    if(!files.length && !msg){ toast('Please attach a file or write a message.'); return; }
+    btn.disabled=true; btn.innerHTML='<span class="spin"></span> Sending…';
+    var uid=state.user.id, atts=[];
+    var jobs=files.map(function(f,idx){
+      var ext=(f.file.name.split('.').pop()||'dat').toLowerCase();
+      var path=uid+'/'+appId+'/reply_'+Date.now()+'_'+idx+'.'+ext;
+      return sb.storage.from('visa-documents').upload(path,f.file,{upsert:false}).then(function(up){ if(up.error) throw up.error; atts.push({name:f.file.name, path:path, label:f.label}); });
+    });
+    Promise.all(jobs).then(function(){
+      return sb.from('app_messages').insert({ application_id:appId, author:'customer', author_id:uid, body:msg||null, attachments:atts });
+    }).then(function(r){
+      if(r.error) throw r.error;
+      sb.auth.getSession().then(function(sess){ var token=sess.data.session?sess.data.session.access_token:cfg.SUPABASE_ANON_KEY;
+        fetch(fnUrl('notify-staff-reply'),{ method:'POST', headers:{'Content-Type':'application/json','apikey':cfg.SUPABASE_ANON_KEY,'Authorization':'Bearer '+token}, body:JSON.stringify({application_id:appId, origin:location.origin}) }).catch(function(){}); });
+      toast('Sent to our team. We’ll review and update you.');
+      renderTrack();
+    }).catch(function(err){ btn.disabled=false; btn.innerHTML='Send to our team'; toast('Could not send. Please try again.'); console.error(err); });
   }
 
   // ============================================================
@@ -883,7 +951,7 @@
     bind('afQ','q','oninput'); bind('afVisa','visa','onchange'); bind('afStatus','status','onchange');
     bind('afCountry','country','onchange'); bind('afSort','sort','onchange'); bind('afFrom','from','onchange'); bind('afTo','to','onchange');
 
-    sb.from('applications').select('*, documents(*)').order('created_at',{ascending:false}).then(function(r){
+    sb.from('applications').select('*, documents(*), app_messages(*)').order('created_at',{ascending:false}).then(function(r){
       var box=document.getElementById('adminList');
       if(r.error){ box.innerHTML='<div class="empty-state"><p>Could not load applications.</p></div>'; console.error(r.error); return; }
       adminRows=r.data||[];
@@ -940,19 +1008,22 @@
       }).join('')+'</div>') : '';
     return '<div class="admin-app" data-id="'+esc(a.id)+'">' +
       '<div class="arow">' +
-        '<div><h4>'+esc(a.full_name)+' '+statusPill(a.status)+'</h4>' +
+        '<div><h4>'+esc(a.full_name)+' '+statusPill(a.status)+(a.unread_reply?' <span class="status-pill sp-action" style="font-size:11px">New reply</span>':'')+'</h4>' +
         '<div class="meta">'+esc(visaName)+' · '+appPriceText(a)+' · Ref '+esc(a.reference_code)+' · '+created+'</div>' +
         '<div class="meta">'+esc(a.passport_issuing_country||a.nationality||'')+(a.state?(' ('+esc(a.state)+')'):'')+' · Passport '+esc(a.passport_number)+' · '+esc(a.phone)+' · '+esc(a.email)+'</div></div>' +
       '</div>' +
       '<div class="doc-links">'+docBtns+'</div>' +
       answersHtml +
+      (threadMsgsOf(a).length ? ('<div class="thread-wrap"><div class="thread-title">Conversation</div>'+threadHtml(a)+'</div>') : '') +
       (canProcessApps() ? (
       '<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">' +
         '<div><label class="ulabel">Status</label><select data-role="status">'+opts+'</select></div>' +
-        '<div style="flex:1;min-width:220px" data-role="noteWrap"><label class="ulabel">Note to customer (shown if "Action Needed")</label>' +
-          '<input data-role="note" type="text" value="'+esc(a.notes||'')+'" placeholder="e.g. Passport photo is blurry, please re-upload" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"></div>' +
+        '<div style="flex:1;min-width:220px" data-role="noteWrap"><label class="ulabel">Message to customer (sent when status is “Action Needed”)</label>' +
+          '<input data-role="note" type="text" value="'+esc(a.notes||'')+'" placeholder="e.g. Your passport photo is blurry — please re-upload" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"></div>' +
         '<button class="btn btn-primary" data-role="save">Save</button>' +
       '</div>' +
+      '<div style="margin-top:10px" data-role="reqWrap"><label class="ulabel">Documents to request (one per line) — shown to the customer as upload slots when “Action Needed”</label>' +
+        '<textarea data-role="reqdocs" rows="2" placeholder="Bank statement&#10;Updated passport photo" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:14px"></textarea></div>' +
       '<div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)">' +
         '<label class="ulabel">Issued visa document ' +
           (hasVisa ? '<span style="color:var(--green)">· attached &#10003;</span>'
@@ -1002,6 +1073,8 @@
       };
     });
 
+    wireThreadFiles(card);
+
     if(!canProcessApps()) return; // viewers: read-only, no editing controls present
 
     // pick visa file
@@ -1020,6 +1093,7 @@
     saveBtn.onclick=function(){
       var status=card.querySelector('[data-role="status"]').value;
       var note=card.querySelector('[data-role="note"]').value.trim();
+      var reqDocs=((card.querySelector('[data-role="reqdocs"]')||{}).value||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
       if(status==='Visa Issued' && !hasVisa && !visaFile){
         toast('Please attach the visa document before marking this as Visa Issued.');
         return;
@@ -1037,10 +1111,17 @@
       }
 
       step.then(function(){
-        return sb.from('applications').update({ status:status, notes: note||null }).eq('id',a.id);
+        return sb.from('applications').update({ status:status, notes: note||null, unread_reply:false }).eq('id',a.id);
       }).then(function(u){
-        saveBtn.disabled=false; saveBtn.innerHTML='Save';
         if(u.error) throw u.error;
+        // Record an "Action Needed" request in the conversation thread (deduped vs the last staff message).
+        var ls=lastStaffMsg(a);
+        var dup = ls && (ls.body||'')===note && JSON.stringify(ls.requested_docs||[])===JSON.stringify(reqDocs);
+        if(status==='Action Needed' && (note || reqDocs.length) && !dup){
+          return sb.from('app_messages').insert({ application_id:a.id, customer_id:a.customer_id||null, author:'staff', author_id:state.user.id, body:note||null, requested_docs:reqDocs }).then(function(im){ if(im.error) throw im.error; });
+        }
+      }).then(function(){
+        saveBtn.disabled=false; saveBtn.innerHTML='Save';
         toast('Updated '+a.full_name.split(' ')[0]+'’s application to “'+status+'”');
         if(status!==prevStatus) notifyStatusChange(a.id, status, a.full_name);
         renderAdmin();
