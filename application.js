@@ -2791,13 +2791,13 @@
   }
 
   function msgRowHtml(m){
-    var when=new Date(m.sent_at||m.created_at).toLocaleString();
+    var when=(m.status==='queued'&&m.scheduled_for)?('Scheduled · '+new Date(m.scheduled_for).toLocaleString()):new Date(m.sent_at||m.created_at).toLocaleString();
     var tpl=m.template_key==='review-request'?'Review request':(m.template_key==='status-update'?'Status update':(m.template_key||'Message'));
     var reason=m.reason?(' · <span class="phint" style="display:inline">'+esc(m.reason)+'</span>'):'';
     var body=m.body?('<div id="mv_'+esc(m.id)+'" style="display:none;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;max-width:100%;overflow:auto">'+m.body+'</div>'):'';
     var viewBtn=m.body?('<button class="link-btn" data-msgview="'+esc(m.id)+'" style="padding:0;font-size:12px;margin-top:6px">View content</button>'):'';
     return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
-      '<h4 style="font-size:15px">'+esc(m.subject||'(no subject)')+'</h4>'+
+      '<h4 style="font-size:15px">'+esc(m.subject||tpl)+'</h4>'+
       '<div class="meta">'+esc(tpl)+' · '+esc(m.channel)+reason+'</div>'+viewBtn+body+'</div>'+
       '<div style="text-align:right;white-space:nowrap">'+msgStatusPill(m.status)+'<div class="phint" style="margin:4px 0 0">'+esc(when)+'</div></div>'+
     '</div></div>';
@@ -3052,11 +3052,11 @@
     if(!commsMsgs.length){ box.innerHTML='<div class="panel empty-state"><p>No messages yet. Sent emails (status updates and automations) will appear here.</p></div>'; return; }
     if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No messages match your search.</p></div>'; return; }
     box.innerHTML=rows.map(function(m){
-      var when=new Date(m.sent_at||m.created_at).toLocaleString();
+      var when=(m.status==='queued'&&m.scheduled_for)?('Scheduled · '+new Date(m.scheduled_for).toLocaleString()):new Date(m.sent_at||m.created_at).toLocaleString();
       var tpl=m.template_key==='review-request'?'Review request':(m.template_key==='status-update'?'Status update':(m.template_key||'Message'));
       var reason=m.reason?(' · <span class="phint" style="display:inline">'+esc(m.reason)+'</span>'):'';
       return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
-        '<h4 style="font-size:15px">'+esc(m.subject||'(no subject)')+'</h4>'+
+        '<h4 style="font-size:15px">'+esc(m.subject||tpl)+'</h4>'+
         '<div class="meta">'+esc(m.to_address||'')+' · '+esc(tpl)+' · '+esc(m.channel)+reason+'</div></div>'+
         '<div style="text-align:right;white-space:nowrap">'+msgStatusPill(m.status)+'<div class="phint" style="margin:4px 0 0">'+esc(when)+'</div></div>'+
       '</div></div>';
