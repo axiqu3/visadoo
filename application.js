@@ -764,7 +764,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','enquiries','customers','comms','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -2538,7 +2538,7 @@
   // ============================================================
   //  CUSTOMERS (admins only) — text-only applicant data for outreach (downloadable)
   // ============================================================
-  var custList=[];
+  var custList=[], custViewId=null;
   // Build the customer list from the real customers table, merging in
   // each person's application count + latest visa/status from applications.
   function buildCustList(customers, apps, consents){
@@ -2595,15 +2595,18 @@
         ? '<span class="status-pill sp-done" style="font-size:11px">📣 Marketing: On</span>'
         : '<span class="status-pill" style="font-size:11px;background:#eef2f7;color:#64748b">📣 Marketing: Off</span>';
       var mBtn='<button class="link-btn" data-mkt="'+esc(c.id)+'" data-mval="'+(c.marketing?'0':'1')+'" style="padding:0;font-size:12px">'+(c.marketing?'Turn off':'Turn on')+'</button>';
-      return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+      return '<div class="admin-app" data-custopen="'+esc(c.id)+'" style="cursor:pointer"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
         '<h4>'+esc(c.name||'(no name)')+countPill+'</h4>'+
         '<div class="meta">'+esc(c.email||'')+(c.phone?(' · '+esc(c.phone)):'')+'</div>'+
         (line2?('<div class="meta">'+line2+'</div>'):'')+
         '<div style="margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+mPill+mBtn+'</div></div>'+
-        '<div style="text-align:right;white-space:nowrap">'+src+'<div class="phint" style="margin:0">Last: '+esc(new Date(c.last).toLocaleDateString())+'</div></div>'+
+        '<div style="text-align:right;white-space:nowrap">'+src+'<div class="phint" style="margin:0">Last: '+esc(new Date(c.last).toLocaleDateString())+'</div>'+
+          '<div class="phint" style="margin:4px 0 0;color:var(--blue-600);font-weight:700">View history →</div></div>'+
       '</div></div>';
     }).join('');
-    area.querySelectorAll('[data-mkt]').forEach(function(b){ b.onclick=function(){
+    area.querySelectorAll('[data-custopen]').forEach(function(card){ card.onclick=function(){ openCustomer(card.getAttribute('data-custopen')); }; });
+    area.querySelectorAll('[data-mkt]').forEach(function(b){ b.onclick=function(ev){
+      if(ev&&ev.stopPropagation) ev.stopPropagation();
       var id=b.getAttribute('data-mkt'), val=b.getAttribute('data-mval')==='1';
       b.disabled=true; b.textContent='Saving…';
       setCustMarketing(id,val).then(function(r){
@@ -2641,6 +2644,82 @@
       var rows=filteredCust().map(function(c){ return [c.name,c.email,c.phone,c.country,c.state,c.visa,c.status,c.count,(srcLabel[c.source]||c.source||''),(c.marketing?'Yes':'No'),new Date(c.first).toLocaleDateString(),new Date(c.last).toLocaleDateString()]; });
       downloadCsv('visadoo-customers.csv', ['Name','Email','Phone','Passport Issuing Country','State','Visa Type','Status','Applications','Source','Marketing Consent','First Seen','Last Seen'], rows);
     };
+  }
+
+  // ---- per-customer page: profile + applications + full message history ----
+  function openCustomer(id){ custViewId=id; go('custview'); }
+
+  function renderCustomerDetail(id){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    if(!id){ go('customers'); return; }
+    if(!VISAS.length) loadVisaTypes();
+    root.innerHTML='<div class="app-main">'+adminSections('customers')+
+      '<button class="link-btn" id="custBack" style="margin-bottom:10px">← Back to customers</button>'+
+      '<div id="custDetail"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    document.getElementById('custBack').onclick=function(){ go('customers'); };
+    Promise.all([
+      sb.from('customers').select('*').eq('id',id).single(),
+      sb.from('applications').select('id,visa_type,status,reference_code,created_at').eq('customer_id',id).order('created_at',{ascending:false}),
+      sb.from('messages').select('id,to_address,subject,body,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').eq('customer_id',id).order('created_at',{ascending:false}).limit(200),
+      sb.from('consent').select('channel,marketing_opted_in,service_opted_out').eq('customer_id',id)
+    ]).then(function(res){
+      var c=res[0].data;
+      if(res[0].error||!c){ document.getElementById('custDetail').innerHTML='<div class="panel empty-state"><p>Could not load this customer.</p></div>'; return; }
+      paintCustomerDetail(c, res[1].data||[], res[2].data||[], res[3].data||[]);
+    });
+  }
+
+  function paintCustomerDetail(c, apps, msgs, consents){
+    var box=document.getElementById('custDetail'); if(!box) return;
+    var marketing=consents.some(function(x){ return x.marketing_opted_in; });
+    var srcLabel={application:'Applied',enquiry:'Enquiry','walk-in':'Walk-in',manual:'Added manually'};
+    var line=[c.passport_issuing_country,c.state].filter(function(x){return x;}).map(esc).join(' · ');
+    var mPill=marketing?'<span class="status-pill sp-done" style="font-size:11px">📣 Marketing: On</span>':'<span class="status-pill" style="font-size:11px;background:#eef2f7;color:#64748b">📣 Marketing: Off</span>';
+    var header='<div class="panel"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+      '<h2 style="font-size:22px;font-weight:800;margin:0 0 4px">'+esc(c.full_name||'(no name)')+'</h2>'+
+      '<div class="meta">'+esc(c.email||'')+(c.phone?(' · '+esc(c.phone)):'')+'</div>'+
+      (line?('<div class="meta">'+line+'</div>'):'')+
+      '<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+mPill+
+        '<button class="link-btn" id="cdMkt" data-mval="'+(marketing?'0':'1')+'" style="padding:0;font-size:12px">'+(marketing?'Turn off':'Turn on')+'</button>'+
+        (c.lead_source?('<span class="phint" style="margin:0">'+esc(srcLabel[c.lead_source]||c.lead_source)+'</span>'):'')+'</div></div>'+
+      '<div class="phint" style="margin:0;white-space:nowrap">Since '+esc(new Date(c.created_at).toLocaleDateString())+'</div></div>';
+
+    var appsHtml='';
+    if(apps.length){
+      appsHtml='<div style="margin-top:22px"><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Applications ('+apps.length+')</h3>'+
+        apps.map(function(a){ var vn=visaById(a.visa_type)?visaById(a.visa_type).name:(a.visa_type||'');
+          return '<div class="admin-app"><div class="arow"><div><h4 style="font-size:15px">'+esc(vn)+'</h4><div class="meta">'+esc(a.reference_code||'')+' · '+esc(a.status||'')+'</div></div>'+
+            '<div class="phint" style="margin:0">'+esc(new Date(a.created_at).toLocaleDateString())+'</div></div></div>'; }).join('')+'</div>';
+    }
+
+    var histHtml='<div style="margin-top:22px"><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Message history ('+msgs.length+')</h3>'+
+      (msgs.length? msgs.map(msgRowHtml).join('') : '<div class="panel empty-state"><p>No messages sent to this customer yet.</p></div>')+'</div>';
+
+    box.innerHTML=header+appsHtml+histHtml;
+
+    var mk=document.getElementById('cdMkt'); if(mk) mk.onclick=function(){
+      var val=mk.getAttribute('data-mval')==='1'; mk.disabled=true; mk.textContent='Saving…';
+      setCustMarketing(c.id,val).then(function(r){ if(r&&r.error){ toast('Could not update consent.'); mk.disabled=false; return; } toast(val?'Marketing turned on':'Marketing turned off'); renderCustomerDetail(c.id); });
+    };
+    box.querySelectorAll('[data-msgview]').forEach(function(b){ b.onclick=function(){
+      var d=document.getElementById('mv_'+b.getAttribute('data-msgview')); if(!d) return;
+      var show=d.style.display==='none'; d.style.display=show?'block':'none'; b.textContent=show?'Hide content':'View content';
+    }; });
+  }
+
+  function msgRowHtml(m){
+    var when=new Date(m.sent_at||m.created_at).toLocaleString();
+    var tpl=m.template_key==='review-request'?'Review request':(m.template_key==='status-update'?'Status update':(m.template_key||'Message'));
+    var reason=m.reason?(' · <span class="phint" style="display:inline">'+esc(m.reason)+'</span>'):'';
+    var body=m.body?('<div id="mv_'+esc(m.id)+'" style="display:none;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff;max-width:100%;overflow:auto">'+m.body+'</div>'):'';
+    var viewBtn=m.body?('<button class="link-btn" data-msgview="'+esc(m.id)+'" style="padding:0;font-size:12px;margin-top:6px">View content</button>'):'';
+    return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+      '<h4 style="font-size:15px">'+esc(m.subject||'(no subject)')+'</h4>'+
+      '<div class="meta">'+esc(tpl)+' · '+esc(m.channel)+reason+'</div>'+viewBtn+body+'</div>'+
+      '<div style="text-align:right;white-space:nowrap">'+msgStatusPill(m.status)+'<div class="phint" style="margin:4px 0 0">'+esc(when)+'</div></div>'+
+    '</div></div>';
   }
 
   // ============================================================
@@ -2940,6 +3019,7 @@
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
+    if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
     state.view=v;
 
     // Backend sidebar layout: shift content right only on staff console screens.
@@ -2959,6 +3039,7 @@
     else if(v==='emailcfg') renderEmailSettings();
     else if(v==='enquiries') renderEnquiries();
     else if(v==='customers') renderCustomers();
+    else if(v==='custview') renderCustomerDetail(custViewId);
     else if(v==='comms') renderComms();
     else if(v==='team') renderTeam();
     else if(v==='setpw') renderSetPassword();
