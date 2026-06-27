@@ -810,7 +810,16 @@
   //  ADMIN  (team console — view all applications, change status, view docs)
   // ============================================================
   var ALL_STATUSES = cfg.STAGES.concat(['Action Needed']);
-  var adminRows = [];
+  var adminRows = [], finSuppliers = [];
+  // Finance maths: GST (flexible) + customer total + margin. All INR.
+  function computeFinance(govt, service, gstMode, gstRate){
+    govt=Number(govt)||0; service=Number(service)||0; gstRate=Number(gstRate)||0;
+    var base=govt+service;
+    var taxable = gstMode==='none' ? 0 : (gstMode==='full' ? base : service); // 'service_only' default
+    var gst=Math.round(taxable*gstRate/100);
+    return { base:base, gst:gst, total:base+gst };
+  }
+  function finOf(a){ var f=a&&a.application_finance; if(Array.isArray(f)) return f[0]||null; return f||null; }
   var adminFilters = { q:'', visa:'', status:'all', country:'', from:'', to:'', sort:'newest' };
   var adminFiltersOpen = false;
   function adminActiveCount(){ var f=adminFilters, n=0; if(f.q.trim())n++; if(f.visa)n++; if(f.status!=='all')n++; if(f.country)n++; if(f.from||f.to)n++; return n; }
@@ -938,10 +947,14 @@
     bind('afQ','q','oninput'); bind('afVisa','visa','onchange'); bind('afStatus','status','onchange');
     bind('afCountry','country','onchange'); bind('afSort','sort','onchange'); bind('afFrom','from','onchange'); bind('afTo','to','onchange');
 
-    sb.from('applications').select('*, documents(*), app_messages(*)').order('created_at',{ascending:false}).then(function(r){
+    Promise.all([
+      sb.from('applications').select('*, documents(*), app_messages(*), application_finance(*)').order('created_at',{ascending:false}),
+      isFinance() ? sb.from('suppliers').select('id,name').eq('active',true).order('name') : Promise.resolve({data:[]})
+    ]).then(function(res){
       var box=document.getElementById('adminList');
-      if(r.error){ box.innerHTML='<div class="empty-state"><p>Could not load applications.</p></div>'; console.error(r.error); return; }
-      adminRows=r.data||[];
+      if(res[0].error){ box.innerHTML='<div class="empty-state"><p>Could not load applications.</p></div>'; console.error(res[0].error); return; }
+      adminRows=res[0].data||[];
+      finSuppliers=res[1].data||[];
       paintAdminList();
     });
   }
@@ -1021,6 +1034,35 @@
           '<input type="file" data-role="visaFile" accept="image/*,application/pdf" style="display:none">' +
         '</div>' +
       '</div>') : '') +
+      financePanelHtml(a) +
+    '</div>';
+  }
+
+  // Per-application Finance panel (admin/finance only). Govt fee + service charge
+  // + flexible GST → customer total; supplier + cost → margin (finance-only).
+  function financePanelHtml(a){
+    if(!isFinance()) return '';
+    var f=finOf(a)||{};
+    var supOpts='<option value="">— none —</option>'+finSuppliers.map(function(s){ return '<option value="'+esc(s.id)+'"'+(f.supplier_id===s.id?' selected':'')+'>'+esc(s.name)+'</option>'; }).join('');
+    function inr(id,label,val){ return '<div class="field"><label class="ulabel">'+label+'</label><input data-fin="'+id+'" type="number" min="0" value="'+esc(val==null?'':val)+'" placeholder="0"></div>'; }
+    function sel(id,label,opts,cur){ return '<div class="field"><label class="ulabel">'+label+'</label><select data-fin="'+id+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select></div>'; }
+    return '<div style="margin-top:16px;padding:14px 16px;border:1px solid var(--blue-100);background:var(--sky-50);border-radius:12px">'+
+      '<div class="answers-title" style="color:var(--blue-700)">💰 Finance</div>'+
+      '<div class="grid2">'+inr('govt','Government / embassy fee (₹)',f.government_fee)+inr('service','Service charge (₹)',f.service_charge)+'</div>'+
+      '<div class="grid2">'+sel('gstmode','GST',[['service_only','GST on service charge only'],['full','GST on full amount'],['none','No GST']],f.gst_mode||'service_only')+inr('gstrate','GST rate %',f.gst_rate!=null?f.gst_rate:18)+'</div>'+
+      '<div class="phint" data-fin="calc" style="margin:2px 0 12px;font-weight:600;color:var(--ink);font-size:14px"></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label class="ulabel">Supplier</label><select data-fin="supplier">'+supOpts+'</select></div>'+
+        inr('cost','Supplier cost (₹)',f.supplier_cost)+
+      '</div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label class="ulabel">Supplier reference</label><input data-fin="ref" type="text" value="'+esc(f.supplier_ref||'')+'" placeholder="supplier ref no."></div>'+
+        sel('custpay','Customer payment',[['unpaid','Unpaid'],['partial','Partial'],['paid','Paid'],['refunded','Refunded']],f.customer_payment_status||'unpaid')+
+      '</div>'+
+      '<div class="grid2">'+
+        sel('suppay','Supplier payment',[['unpaid','Unpaid'],['partial','Partial'],['paid','Paid']],f.supplier_payment_status||'unpaid')+
+        '<div class="field"><label class="ulabel">&nbsp;</label><button class="btn btn-primary" data-fin="save">Save finance</button></div>'+
+      '</div>'+
     '</div>';
   }
 
@@ -1061,6 +1103,38 @@
     });
 
     wireThreadFiles(card);
+
+    // Finance panel (admin/finance) — wired before the processing-controls gate.
+    if(isFinance()){
+      var fget=function(k){ var el=card.querySelector('[data-fin="'+k+'"]'); return el?el.value:''; };
+      var recalc=function(){
+        var c=computeFinance(fget('govt'),fget('service'),fget('gstmode'),fget('gstrate'));
+        var cost=Number(fget('cost'))||0; var el=card.querySelector('[data-fin="calc"]');
+        if(el) el.innerHTML='Customer total: <b>'+money(c.total)+'</b> (incl GST '+money(c.gst)+') · Margin: <b>'+money(c.base-cost)+'</b>';
+      };
+      ['govt','service','gstmode','gstrate','cost'].forEach(function(k){ var el=card.querySelector('[data-fin="'+k+'"]'); if(el){ el.oninput=recalc; el.onchange=recalc; } });
+      recalc();
+      var fsave=card.querySelector('[data-fin="save"]');
+      if(fsave) fsave.onclick=function(){
+        var c=computeFinance(fget('govt'),fget('service'),fget('gstmode'),fget('gstrate'));
+        var cost=Number(fget('cost'))||0;
+        var payload={ application_id:a.id, currency:'INR',
+          government_fee:Number(fget('govt'))||0, service_charge:Number(fget('service'))||0,
+          gst_mode:fget('gstmode')||'service_only', gst_rate:Number(fget('gstrate'))||0,
+          gst_amount:c.gst, customer_total:c.total,
+          supplier_id:fget('supplier')||null, supplier_cost:cost, supplier_ref:(fget('ref')||'').trim()||null,
+          customer_payment_status:fget('custpay')||'unpaid', supplier_payment_status:fget('suppay')||'unpaid',
+          margin:c.base-cost, updated_at:new Date().toISOString() };
+        var existed=!!finOf(a);
+        fsave.disabled=true; fsave.innerHTML='<span class="spin"></span>';
+        sb.from('application_finance').upsert(payload,{onConflict:'application_id'}).then(function(r){
+          fsave.disabled=false; fsave.innerHTML='Save finance';
+          if(r.error){ toast('Could not save finance.'); console.error(r.error); return; }
+          logFinance('application_finance', a.id, existed?'update':'create', 'Finance saved — total '+money(c.total)+', supplier cost '+money(cost)+', margin '+money(c.base-cost));
+          toast('Finance saved'); renderAdmin();
+        });
+      };
+    }
 
     if(!canProcessApps()) return; // viewers: read-only, no editing controls present
 
