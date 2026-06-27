@@ -57,6 +57,18 @@ Your #1 goal is **automated customer communication**. Almost every feature you l
 
 ---
 
+## Finance & Ledger track (planned 2026-06-25 — see `SCALABLE_FINANCE_LEDGER_PLAN.md`)
+A separate, scalable finance module. **Planning done; not built.** CEO decisions: base currency **INR**; **numbered receipts** in MVP; **GST flexible per application** (pure-agent vs full; CGST/SGST/IGST by customer state — confirm with CA); **simple refund entries** (no credit notes yet). Staff roles to add: **finance**, **sales** (Operations = `agent`; Owner/Admin = `admin`). Customers/Operations/Sales never see supplier cost or margin; every financial change is audit-logged; posted ledger entries are not silently editable; payment proofs/receipts stay private; **no online payment gateway / no gateway secrets** yet.
+
+| Finance phase | Scope |
+|---|---|
+| **F1 (MVP)** | Application-wise billing (govt fee + service charge + flexible GST) · customer part-payments/refunds + **numbered receipts** + proof upload · **supplier master** + supplier cost + supplier payments · first reports (pending customer/supplier payments, app/supplier/visa-type margin) · audit log · finance/sales roles. New tables: finance_settings, suppliers, application_finance, customer_payments, supplier_payments, finance_audit_log. |
+| **F2** | Supplier **ledger & statement of account** (opening balance, running balance, aging); posted entries read-only, corrections via reversing entries. |
+| **F3** | **B2B client ledger** (client master, credit terms/limit, bulk invoices, receipts, receivables, aging, statement). New: b2b_clients, client_invoices, client_payments, credit_notes. |
+| **F4** | **Online payment gateway** + advanced finance reports/exports (branded PDF/Excel). Replaces the old "Online payments + revenue analytics" line below. |
+
+---
+
 ## Architecture & setup verdict
 - **Netlify + Supabase + Brevo is enough for this next stage.** No stack change needed.
 - **Foundations to add before major comms modules** (additive — nothing is broken): a `customers` table, a `consent` record, a `messages`/communication-log table, message templates, and a scheduler (Supabase scheduled jobs) for delayed/birthday/review messages. Minor: a "staff assigned" field on applications.
