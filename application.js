@@ -810,7 +810,7 @@
   //  ADMIN  (team console — view all applications, change status, view docs)
   // ============================================================
   var ALL_STATUSES = cfg.STAGES.concat(['Action Needed']);
-  var adminRows = [], finSuppliers = [];
+  var adminRows = [], finSuppliers = [], finSettings = {}, finBrand = {};
   // Finance maths: GST (flexible) + customer total + margin. All INR.
   function computeFinance(govt, service, gstMode, gstRate){
     govt=Number(govt)||0; service=Number(service)||0; gstRate=Number(gstRate)||0;
@@ -820,6 +820,14 @@
     return { base:base, gst:gst, total:base+gst };
   }
   function finOf(a){ var f=a&&a.application_finance; if(Array.isArray(f)) return f[0]||null; return f||null; }
+  function cpListOf(a){ var c=(a&&a.customer_payments)||[]; return c.slice().sort(function(x,y){ return new Date(x.created_at)-new Date(y.created_at); }); }
+  function cpNetPaid(a){ return cpListOf(a).reduce(function(n,p){ return n + (p.kind==='refund' ? -Number(p.amount||0) : Number(p.amount||0)); }, 0); }
+  function receiptNo(p){ var pre=(p.kind==='refund')?'REF':((finSettings&&finSettings.receipt_prefix)||'RCPT'); return pre+'-'+String(p.seq==null?0:p.seq).padStart(6,'0'); }
+  function payStatusPill(s){
+    var map={ paid:['sp-done','Paid'], partial:['sp-progress','Partial'], unpaid:['','Unpaid'], refunded:['sp-action','Refunded'] };
+    var m=map[s||'unpaid']||['',s]; var ex=(s==='unpaid')?' style="background:#eef2f7;color:#64748b"':'';
+    return '<span class="status-pill '+m[0]+'"'+ex+'>'+esc(m[1])+'</span>';
+  }
   var adminFilters = { q:'', visa:'', status:'all', country:'', from:'', to:'', sort:'newest' };
   var adminFiltersOpen = false;
   function adminActiveCount(){ var f=adminFilters, n=0; if(f.q.trim())n++; if(f.visa)n++; if(f.status!=='all')n++; if(f.country)n++; if(f.from||f.to)n++; return n; }
@@ -947,14 +955,19 @@
     bind('afQ','q','oninput'); bind('afVisa','visa','onchange'); bind('afStatus','status','onchange');
     bind('afCountry','country','onchange'); bind('afSort','sort','onchange'); bind('afFrom','from','onchange'); bind('afTo','to','onchange');
 
+    var R=function(d){ return Promise.resolve({data:d}); };
     Promise.all([
-      sb.from('applications').select('*, documents(*), app_messages(*), application_finance(*)').order('created_at',{ascending:false}),
-      isFinance() ? sb.from('suppliers').select('id,name').eq('active',true).order('name') : Promise.resolve({data:[]})
+      sb.from('applications').select('*, documents(*), app_messages(*), application_finance(*), customer_payments(*)').order('created_at',{ascending:false}),
+      isFinance() ? sb.from('suppliers').select('id,name').eq('active',true).order('name') : R([]),
+      isFinance() ? sb.from('finance_settings').select('*').eq('id','global').single() : R(null),
+      isFinance() ? sb.from('site_settings').select('brand_name,brand_color,logo_url,contact_email,contact_phone,contact_whatsapp').eq('id','global').single() : R(null)
     ]).then(function(res){
       var box=document.getElementById('adminList');
       if(res[0].error){ box.innerHTML='<div class="empty-state"><p>Could not load applications.</p></div>'; console.error(res[0].error); return; }
       adminRows=res[0].data||[];
       finSuppliers=res[1].data||[];
+      finSettings=res[2].data||{};
+      finBrand=res[3].data||{};
       paintAdminList();
     });
   }
@@ -1057,13 +1070,78 @@
       '</div>'+
       '<div class="grid2">'+
         '<div class="field"><label class="ulabel">Supplier reference</label><input data-fin="ref" type="text" value="'+esc(f.supplier_ref||'')+'" placeholder="supplier ref no."></div>'+
-        sel('custpay','Customer payment',[['unpaid','Unpaid'],['partial','Partial'],['paid','Paid'],['refunded','Refunded']],f.customer_payment_status||'unpaid')+
-      '</div>'+
-      '<div class="grid2">'+
         sel('suppay','Supplier payment',[['unpaid','Unpaid'],['partial','Partial'],['paid','Paid']],f.supplier_payment_status||'unpaid')+
-        '<div class="field"><label class="ulabel">&nbsp;</label><button class="btn btn-primary" data-fin="save">Save finance</button></div>'+
       '</div>'+
+      '<button class="btn btn-primary" data-fin="save">Save finance</button>'+
+      financePaymentsHtml(a, f)+
     '</div>';
+  }
+
+  // Customer payments sub-section (list + record payment/refund + receipts).
+  function financePaymentsHtml(a, f){
+    var pays=cpListOf(a), net=cpNetPaid(a), total=Number(f.customer_total||0), balance=total-net;
+    var rows = pays.length ? pays.map(function(p){
+      var amt=(p.kind==='refund'?'−':'')+money(p.amount);
+      var proof=p.proof_path?(' · <a href="#" class="cp-proof" data-path="'+esc(p.proof_path)+'">proof</a>'):'';
+      return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed var(--blue-100);font-size:13.5px">'+
+        '<div><b>'+esc(receiptNo(p))+'</b> · '+amt+' · '+esc(p.method||'')+proof+'</div>'+
+        '<div style="white-space:nowrap;color:var(--muted)">'+esc(new Date(p.received_at||p.created_at).toLocaleDateString())+' · <a href="#" class="cp-receipt" data-id="'+esc(p.id)+'">Receipt</a></div>'+
+      '</div>';
+    }).join('') : '<div class="phint" style="margin:4px 0">No payments recorded yet.</div>';
+    function form(kind){ return '<div class="cp-form" data-kind="'+kind+'" style="display:none;margin-top:8px;padding:10px;border:1px dashed var(--blue-100);border-radius:10px;background:#fff">'+
+      '<div class="grid2"><div class="field"><label class="ulabel">Amount (₹)</label><input data-cp="amount" type="number" min="0"></div>'+
+      '<div class="field"><label class="ulabel">Method</label><select data-cp="method"><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="upi">UPI</option><option value="card">Card</option><option value="cheque">Cheque</option><option value="other">Other</option></select></div></div>'+
+      '<div class="grid2"><div class="field"><label class="ulabel">Reference (optional)</label><input data-cp="reference" type="text"></div>'+
+      '<div class="field"><label class="ulabel">Proof (optional)</label><input data-cp="proof" type="file" accept="image/*,application/pdf"></div></div>'+
+      '<div class="field"><label class="ulabel">Remarks (optional)</label><input data-cp="remarks" type="text"></div>'+
+      '<div style="display:flex;gap:10px;align-items:center"><button class="btn btn-primary" data-cp="save">Save '+(kind==='refund'?'refund':'payment')+'</button><button class="link-btn" data-cp="cancel">Cancel</button></div>'+
+    '</div>'; }
+    return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--blue-100)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
+        '<div style="font-weight:700">Customer payments '+payStatusPill(f.customer_payment_status)+'</div>'+
+        '<div class="phint" style="margin:0">Paid '+money(net)+' of '+money(total)+' · Balance '+money(balance)+'</div>'+
+      '</div>'+
+      '<div style="margin-top:6px">'+rows+'</div>'+
+      '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" data-cp="addpay">+ Record payment</button><button class="btn btn-ghost" data-cp="addref">Record refund</button></div>'+
+      form('payment')+form('refund')+
+    '</div>';
+  }
+
+  // Branded, numbered, printable receipt (new window → Save as PDF).
+  function openReceipt(p, a){
+    var f=finOf(a)||{};
+    var brand=(finBrand&&finBrand.brand_name)||'Visa Doo';
+    var color=(finBrand&&finBrand.brand_color)||'#2563eb';
+    var gstin=(finSettings&&finSettings.gstin)||'';
+    var home=(finSettings&&finSettings.home_state)||'';
+    var visaName=visaById(a.visa_type)?visaById(a.visa_type).name:(a.visa_type||'');
+    var gst=Number(f.gst_amount||0);
+    var intra = home && a.state && home.toLowerCase()===String(a.state).toLowerCase();
+    var gstLines='';
+    if(gst>0){ gstLines = intra
+      ? '<tr><td>CGST</td><td style="text-align:right">'+money(gst/2)+'</td></tr><tr><td>SGST</td><td style="text-align:right">'+money(gst/2)+'</td></tr>'
+      : '<tr><td>IGST</td><td style="text-align:right">'+money(gst)+'</td></tr>'; }
+    var net=cpNetPaid(a), total=Number(f.customer_total||0), bal=total-net;
+    var rowIf=function(label,val){ return Number(val||0)?('<tr><td>'+label+'</td><td style="text-align:right">'+money(val)+'</td></tr>'):''; };
+    var html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(receiptNo(p))+'</title><meta name="viewport" content="width=device-width,initial-scale=1">'+
+      '<style>body{font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:640px;margin:24px auto;padding:0 16px}h1{font-size:20px;margin:0}table{width:100%;border-collapse:collapse;margin:12px 0}td{padding:6px 0;border-bottom:1px solid #eef2f7}.tot td{font-weight:800;border-top:2px solid #0f172a;border-bottom:none}.hd{padding:18px 20px;border-radius:12px 12px 0 0;color:#fff}.bx{border:1px solid #e7ecf3;border-top:none;border-radius:0 0 12px 12px;padding:20px}.muted{color:#64748b;font-size:13px}@media print{.noprint{display:none}}</style></head><body>'+
+      '<div class="hd" style="background:'+esc(color)+'"><div style="font-size:22px;font-weight:800">'+esc(brand)+'</div>'+(gstin?'<div style="font-size:12px;opacity:.9">GSTIN: '+esc(gstin)+'</div>':'')+'</div>'+
+      '<div class="bx">'+
+        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><div><h1>'+(p.kind==='refund'?'Refund Receipt':'Receipt')+'</h1><div class="muted">'+esc(receiptNo(p))+'</div></div>'+
+          '<div class="muted" style="text-align:right">'+esc(new Date(p.received_at||p.created_at).toLocaleString())+'</div></div>'+
+        '<table><tr><td class="muted">Customer</td><td style="text-align:right">'+esc(a.full_name||'')+'</td></tr>'+
+          '<tr><td class="muted">Application</td><td style="text-align:right">'+esc(a.reference_code||'')+' · '+esc(visaName)+'</td></tr></table>'+
+        '<table>'+rowIf('Government / embassy fee',f.government_fee)+rowIf('Service charge',f.service_charge)+gstLines+
+          '<tr class="tot"><td>Total</td><td style="text-align:right">'+money(total)+'</td></tr></table>'+
+        '<table><tr><td class="muted">'+(p.kind==='refund'?'Refunded now':'Paid now')+' ('+esc(p.method||'')+')</td><td style="text-align:right;font-weight:700">'+(p.kind==='refund'?'−':'')+money(p.amount)+'</td></tr>'+
+          '<tr><td class="muted">Total received to date</td><td style="text-align:right">'+money(net)+'</td></tr>'+
+          '<tr><td class="muted">Balance</td><td style="text-align:right">'+money(bal)+'</td></tr></table>'+
+        (p.reference?'<div class="muted">Ref: '+esc(p.reference)+'</div>':'')+
+        '<p class="muted" style="margin-top:18px">Thank you. This is a computer-generated receipt from '+esc(brand)+'.</p>'+
+        '<button class="noprint" onclick="window.print()" style="margin-top:10px;padding:10px 18px;border:none;background:'+esc(color)+';color:#fff;border-radius:8px;font-weight:700;cursor:pointer">Print / Save PDF</button>'+
+      '</div></body></html>';
+    var w=window.open('','_blank'); if(!w){ toast('Please allow pop-ups to view the receipt.'); return; }
+    w.document.write(html); w.document.close();
   }
 
   function wireAdminCard(a){
@@ -1123,7 +1201,7 @@
           gst_mode:fget('gstmode')||'service_only', gst_rate:Number(fget('gstrate'))||0,
           gst_amount:c.gst, customer_total:c.total,
           supplier_id:fget('supplier')||null, supplier_cost:cost, supplier_ref:(fget('ref')||'').trim()||null,
-          customer_payment_status:fget('custpay')||'unpaid', supplier_payment_status:fget('suppay')||'unpaid',
+          supplier_payment_status:fget('suppay')||'unpaid',
           margin:c.base-cost, updated_at:new Date().toISOString() };
         var existed=!!finOf(a);
         fsave.disabled=true; fsave.innerHTML='<span class="spin"></span>';
@@ -1134,6 +1212,35 @@
           toast('Finance saved'); renderAdmin();
         });
       };
+
+      // payments: record payment/refund, receipts, proof links
+      var cpf=function(kind){ return card.querySelector('.cp-form[data-kind="'+kind+'"]'); };
+      var ap=card.querySelector('[data-cp="addpay"]'); if(ap) ap.onclick=function(){ var fm=cpf('payment'); fm.style.display=fm.style.display==='none'?'block':'none'; };
+      var ar=card.querySelector('[data-cp="addref"]'); if(ar) ar.onclick=function(){ var fm=cpf('refund'); fm.style.display=fm.style.display==='none'?'block':'none'; };
+      ['payment','refund'].forEach(function(kind){
+        var form=cpf(kind); if(!form) return;
+        form.querySelector('[data-cp="cancel"]').onclick=function(){ form.style.display='none'; };
+        form.querySelector('[data-cp="save"]').onclick=function(){
+          var amt=Number(form.querySelector('[data-cp="amount"]').value);
+          if(!(amt>0)){ toast('Enter a valid amount.'); return; }
+          var sbtn=form.querySelector('[data-cp="save"]'); sbtn.disabled=true; sbtn.innerHTML='<span class="spin"></span>';
+          var fileEl=form.querySelector('[data-cp="proof"]'); var file=fileEl&&fileEl.files[0];
+          var ins=function(proofPath){ return sb.from('customer_payments').insert({ application_id:a.id, kind:kind, amount:amt,
+            method:form.querySelector('[data-cp="method"]').value,
+            reference:(form.querySelector('[data-cp="reference"]').value||'').trim()||null,
+            remarks:(form.querySelector('[data-cp="remarks"]').value||'').trim()||null,
+            proof_path:proofPath||null, received_by:(state.user&&state.user.id)||null }); };
+          var up=Promise.resolve(null);
+          if(file){ if(file.size>10485760){ toast('Proof file is over 10 MB.'); sbtn.disabled=false; sbtn.innerHTML='Save '+kind; return; }
+            var ext=(file.name.split('.').pop()||'dat').toLowerCase(); var path='finance/'+a.id+'/pay_'+Date.now()+'.'+ext;
+            up=sb.storage.from('finance-files').upload(path,file,{upsert:false}).then(function(u){ if(u.error) throw u.error; return path; });
+          }
+          up.then(ins).then(function(r){ if(r.error) throw r.error; logFinance('customer_payment', a.id, kind, (kind==='refund'?'Refund ':'Payment ')+money(amt)); toast('Saved'); renderAdmin(); })
+            .catch(function(err){ sbtn.disabled=false; sbtn.innerHTML='Save '+kind; toast('Could not save. Please try again.'); console.error(err); });
+        };
+      });
+      card.querySelectorAll('.cp-receipt').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var p=cpListOf(a).filter(function(x){return x.id===l.getAttribute('data-id');})[0]; if(p) openReceipt(p,a); }; });
+      card.querySelectorAll('.cp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var path=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; sb.storage.from('finance-files').createSignedUrl(path,3600).then(function(s){ l.textContent=o; if(s.error||!s.data){ toast('Could not open proof.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); }; });
     }
 
     if(!canProcessApps()) return; // viewers: read-only, no editing controls present
