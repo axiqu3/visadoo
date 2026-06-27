@@ -18,11 +18,12 @@
 
   // ---- role helpers ----
   function hasRole(list){ return list.indexOf(state.role) > -1; }
-  function isStaff(){ return hasRole(['admin','agent','content','viewer']); }
-  function canViewApps(){ return hasRole(['admin','agent','viewer']); }
+  function isStaff(){ return hasRole(['admin','agent','content','viewer','finance','sales']); }
+  function canViewApps(){ return hasRole(['admin','agent','viewer','finance','sales']); }
   function canProcessApps(){ return hasRole(['admin','agent']); }
   function canManageContent(){ return hasRole(['admin','content']); }
-  function defaultStaffView(){ if(canViewApps()) return 'admin'; if(canManageContent()) return 'visatypes'; return 'admin'; }
+  function isFinance(){ return hasRole(['admin','finance']); }   // sees money: suppliers, finance panels, margin
+  function defaultStaffView(){ if(canViewApps()) return 'admin'; if(isFinance()) return 'suppliers'; if(canManageContent()) return 'visatypes'; return 'admin'; }
 
   // Visa types: loaded live from the database (config is just a fallback)
   var VISAS = (cfg.VISAS || []).slice();
@@ -145,7 +146,7 @@
     var name = meta.full_name || meta.name || state.user.email || 'You';
     var initial = (name[0]||'U').toUpperCase();
     var av = meta.avatar_url ? '<img src="'+esc(meta.avatar_url)+'" alt="">' : esc(initial);
-    var roleLabels = { admin:'Admin', agent:'Agent', content:'Content', viewer:'Viewer' };
+    var roleLabels = { admin:'Admin', agent:'Agent', content:'Content', viewer:'Viewer', finance:'Finance', sales:'Sales' };
     var links = '';
     if(isStaff()){
       links = '<button class="link-btn" data-go="'+defaultStaffView()+'">Dashboard</button>' +
@@ -816,7 +817,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -832,7 +833,8 @@
       siteseo:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
       brand:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
       emailcfg:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
-      team:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>'
+      team:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+      suppliers:'<path d="M3 7h13v10H3zM16 10h3l2 3v4h-5"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>'
     };
     return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[key]||'')+'</svg></span>';
   }
@@ -842,6 +844,7 @@
     var g=[
       ['Customers',[['admin','Applications',canViewApps()],['enquiries','Enquiries',state.role==='admin'],['customers','Customers',state.role==='admin']]],
       ['Messaging',[['comms','Communications',state.role==='admin']]],
+      ['Finance',[['suppliers','Suppliers',isFinance()]]],
       ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()]]],
       ['Content',[['articles','Articles',canManageContent()],['content','Content',canManageContent()],['siteseo','Site SEO',canManageContent()]]],
       ['Settings',[['brand','Brand & Settings',state.role==='admin'],['emailcfg','Email',state.role==='admin'],['team','Team',state.role==='admin']]]
@@ -1880,10 +1883,118 @@
   }
 
   // ============================================================
+  //  SUPPLIERS (Finance) — supplier master
+  // ============================================================
+  var supList=[], supEditing=null;
+  var SUP_TYPES=['Embassy','Processing partner','Other'];
+
+  // Append-only finance audit entry (who/what/when + remarks).
+  function logFinance(entity_type, entity_id, action, remarks){
+    return sb.from('finance_audit_log').insert({ entity_type:entity_type, entity_id:entity_id||null, action:action, actor:(state.user&&state.user.id)||null, actor_role:state.role||null, remarks:remarks||null });
+  }
+
+  function renderSuppliers(){
+    if(!isFinance()){ go(defaultStaffView()); return; }
+    root.innerHTML='<div class="app-main">'+adminSections('suppliers')+
+      '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
+        '<h1>Suppliers</h1><p>Your visa suppliers (embassies, processing partners). Costs and payments are recorded per application.</p></div>'+
+        '<button class="btn btn-primary" id="supAdd">+ Add supplier</button></div>'+
+      '<div id="supArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    document.getElementById('supAdd').onclick=function(){ supEditing={ id:null, name:'', supplier_type:'', contact_name:'', email:'', phone:'', address:'', payment_terms:'', credit_limit:'', opening_balance:0, tax_no:'', notes:'', active:true }; paintSup(); };
+    sb.from('suppliers').select('*').order('name').then(function(r){
+      if(r.error){ document.getElementById('supArea').innerHTML='<div class="empty-state"><p>Could not load suppliers.</p></div>'; console.error(r.error); return; }
+      supList=r.data||[]; paintSup();
+    });
+  }
+
+  function paintSup(){
+    var area=document.getElementById('supArea'); if(!area) return;
+    if(supEditing){ area.innerHTML=supFormHtml(supEditing); wireSupForm(); return; }
+    if(!supList.length){ area.innerHTML='<div class="panel empty-state"><p>No suppliers yet. Add your first supplier.</p></div>'; return; }
+    area.innerHTML=supList.map(function(s){
+      var meta=[s.supplier_type, s.contact_name, s.phone, s.email].filter(Boolean).map(esc).join(' · ');
+      var bal=[];
+      if(s.opening_balance && Number(s.opening_balance)!==0) bal.push('Opening balance: '+money(s.opening_balance));
+      if(s.credit_limit!=null && s.credit_limit!=='') bal.push('Credit limit: '+money(s.credit_limit));
+      return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h4>'+esc(s.name)+(s.active?'':' <span class="status-pill" style="background:#eef2f7;color:#64748b;font-size:11px">Inactive</span>')+'</h4>'+
+        (meta?('<div class="meta">'+meta+'</div>'):'')+
+        (bal.length?('<div class="meta">'+bal.join(' · ')+'</div>'):'')+'</div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<button class="btn btn-ghost" data-supedit="'+esc(s.id)+'">Edit</button>'+
+          (state.role==='admin'?('<button class="btn btn-ghost" data-supdel="'+esc(s.id)+'" style="color:var(--red)">Delete</button>'):'')+
+        '</div></div></div>';
+    }).join('');
+    area.querySelectorAll('[data-supedit]').forEach(function(b){ b.onclick=function(){ supEditing=JSON.parse(JSON.stringify(supList.filter(function(x){return x.id===b.getAttribute('data-supedit');})[0])); paintSup(); }; });
+    area.querySelectorAll('[data-supdel]').forEach(function(b){ b.onclick=function(){
+      var s=supList.filter(function(x){return x.id===b.getAttribute('data-supdel');})[0]; if(!s) return;
+      if(!window.confirm('Delete supplier “'+s.name+'”? This cannot be undone.')) return;
+      sb.from('suppliers').delete().eq('id',s.id).then(function(r){ if(r.error){ toast('Could not delete (the supplier may be in use).'); return; } logFinance('supplier',s.id,'delete','Deleted supplier '+s.name); toast('Supplier deleted'); renderSuppliers(); });
+    }; });
+  }
+
+  function supFormHtml(s){
+    function f(id,label,val,type){ return '<div class="field"><label>'+label+'</label><input id="'+id+'" type="'+(type||'text')+'" value="'+esc(val==null?'':val)+'"></div>'; }
+    return '<div class="panel">'+
+      '<button class="link-btn" id="supBack" style="margin-bottom:8px">← Back to suppliers</button>'+
+      '<div class="field"><label>Supplier name <span class="req-star">*</span></label><input id="supName" type="text" value="'+esc(s.name||'')+'" placeholder="e.g. UAE Embassy / ABC Visa Services"></div>'+
+      '<div class="field"><label>Type</label><input id="supType" list="supTypeList" value="'+esc(s.supplier_type||'')+'" placeholder="Embassy / Processing partner / Other"><datalist id="supTypeList">'+SUP_TYPES.map(function(t){return '<option value="'+esc(t)+'">';}).join('')+'</datalist></div>'+
+      '<div class="grid2">'+f('supContact','Contact person',s.contact_name)+f('supPhone','Phone',s.phone,'tel')+'</div>'+
+      '<div class="grid2">'+f('supEmail','Email',s.email,'email')+f('supTax','Tax / GSTIN (optional)',s.tax_no)+'</div>'+
+      '<div class="field"><label>Address</label><textarea id="supAddr" style="min-height:60px">'+esc(s.address||'')+'</textarea></div>'+
+      '<div class="field"><label>Payment terms</label><input id="supTerms" type="text" value="'+esc(s.payment_terms||'')+'" placeholder="e.g. Net 30 days, Advance"></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>Credit limit (₹, optional)</label><input id="supCredit" type="number" min="0" value="'+esc(s.credit_limit==null?'':s.credit_limit)+'" placeholder="leave blank if none"></div>'+
+        '<div class="field"><label>Opening balance (₹)</label><input id="supOpening" type="number" value="'+esc(s.opening_balance==null?0:s.opening_balance)+'" placeholder="0"><div class="phint">What you already owe this supplier at the start. Usually 0.</div></div>'+
+      '</div>'+
+      '<div class="field"><label>Notes</label><textarea id="supNotes" style="min-height:60px">'+esc(s.notes||'')+'</textarea></div>'+
+      '<label style="display:flex;align-items:center;gap:9px;font-weight:500;cursor:pointer"><input id="supActive" type="checkbox" '+(s.active?'checked':'')+' style="width:auto"> Active</label>'+
+      '<div class="signin-msg" id="supMsg"></div>'+
+      '<div style="display:flex;gap:10px;margin-top:10px"><button class="btn btn-primary" id="supSave">'+(s.id?'Save changes':'Create supplier')+'</button><button class="btn btn-ghost" id="supCancel">Cancel</button></div>'+
+    '</div>';
+  }
+
+  function wireSupForm(){
+    document.getElementById('supBack').onclick=document.getElementById('supCancel').onclick=function(){ supEditing=null; paintSup(); };
+    document.getElementById('supSave').onclick=function(){
+      var name=document.getElementById('supName').value.trim();
+      var msg=document.getElementById('supMsg');
+      if(!name){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent='Please enter a supplier name.'; return; }
+      function num(id){ var v=document.getElementById(id).value; if(v==='') return null; var n=Number(v); return isNaN(n)?null:n; }
+      var payload={
+        name:name,
+        supplier_type:document.getElementById('supType').value.trim()||null,
+        contact_name:document.getElementById('supContact').value.trim()||null,
+        email:document.getElementById('supEmail').value.trim()||null,
+        phone:document.getElementById('supPhone').value.trim()||null,
+        address:document.getElementById('supAddr').value.trim()||null,
+        payment_terms:document.getElementById('supTerms').value.trim()||null,
+        tax_no:document.getElementById('supTax').value.trim()||null,
+        credit_limit:num('supCredit'),
+        opening_balance:num('supOpening')||0,
+        notes:document.getElementById('supNotes').value.trim()||null,
+        active:document.getElementById('supActive').checked,
+        updated_at:new Date().toISOString()
+      };
+      var btn=document.getElementById('supSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+      var editingId=supEditing&&supEditing.id;
+      var op = editingId ? sb.from('suppliers').update(payload).eq('id',editingId).select().single() : sb.from('suppliers').insert(payload).select().single();
+      op.then(function(r){
+        btn.disabled=false; btn.innerHTML='Save';
+        if(r.error){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent='Could not save. Please try again.'; console.error(r.error); return; }
+        logFinance('supplier', r.data.id, editingId?'update':'create', (editingId?'Updated':'Created')+' supplier '+name);
+        supEditing=null; toast('Supplier saved'); renderSuppliers();
+      });
+    };
+  }
+
+  // ============================================================
   //  TEAM MANAGEMENT (admins only)
   // ============================================================
-  var ROLE_OPTS=[['agent','Agent / Processor'],['content','Content / SEO editor'],['viewer','Viewer (read-only)'],['admin','Admin (full access)']];
-  function roleName(r){ var m={admin:'Admin',agent:'Agent',content:'Content / SEO',viewer:'Viewer',customer:'Customer'}; return m[r]||r; }
+  var ROLE_OPTS=[['agent','Agent / Processor'],['finance','Finance'],['sales','Sales / Support'],['content','Content / SEO editor'],['viewer','Viewer (read-only)'],['admin','Admin (full access)']];
+  function roleName(r){ var m={admin:'Admin',agent:'Agent',content:'Content / SEO',viewer:'Viewer',customer:'Customer',finance:'Finance',sales:'Sales / Support'}; return m[r]||r; }
 
   // Send an invitation = a one-tap sign-in link; clicking it signs them in with the role waiting in team_invites.
   function sendInviteEmail(email){
@@ -3061,6 +3172,7 @@
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
+    if(v==='suppliers' && !isFinance()) v=defaultStaffView();
     state.view=v;
 
     // Backend sidebar layout: shift content right only on staff console screens.
@@ -3082,6 +3194,7 @@
     else if(v==='customers') renderCustomers();
     else if(v==='custview') renderCustomerDetail(custViewId);
     else if(v==='comms') renderComms();
+    else if(v==='suppliers') renderSuppliers();
     else if(v==='team') renderTeam();
     else if(v==='setpw') renderSetPassword();
     else renderApply();
@@ -3090,7 +3203,7 @@
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','team','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
