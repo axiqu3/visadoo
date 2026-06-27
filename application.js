@@ -48,41 +48,25 @@
     });
   }
 
-  // ---- currency (single active currency chosen in the backend; exact price per currency per visa) ----
-  var CCY_SYMBOLS = { AED:'AED', USD:'$', EUR:'€', GBP:'£', INR:'₹', QAR:'QAR' };
-  var activeCurrency = { code:'AED', symbol:'AED' };
-  var currencyList = [ { code:'AED', symbol:'AED' } ];
-  function loadCurrency(){
-    return sb.from('site_settings').select('active_currency, currencies').eq('id','global').single().then(function(r){
-      var d=r.data||{};
-      var list=d.currencies; if(typeof list==='string'){ try{list=JSON.parse(list);}catch(e){list=null;} }
-      if(Array.isArray(list) && list.length){ currencyList=list.map(function(c){ return { code:String(c.code||'').toUpperCase(), symbol:c.symbol||CCY_SYMBOLS[String(c.code||'').toUpperCase()]||c.code }; }); }
-      var hasAed=false; for(var k=0;k<currencyList.length;k++){ if(currencyList[k].code==='AED') hasAed=true; }
-      if(!hasAed) currencyList.unshift({ code:'AED', symbol:'AED' });
-      var code=(d.active_currency||'AED').toUpperCase();
-      var found=null; for(var i=0;i<currencyList.length;i++){ if(currencyList[i].code===code) found=currencyList[i]; }
-      activeCurrency = found || currencyList[0] || { code:'AED', symbol:'AED' };
-      return activeCurrency;
-    }).catch(function(){ return activeCurrency; });
+  // ---- currency: INR only. Base price is stored on price_aed (kept name) / prices.INR. ----
+  var activeCurrency = { code:'INR', symbol:'₹' };
+  function loadCurrency(){ activeCurrency = { code:'INR', symbol:'₹' }; return Promise.resolve(activeCurrency); }
+  // Format a number as Indian-grouped rupees, e.g. ₹1,23,456.
+  function money(amount){
+    if(amount==null || amount==='' || isNaN(Number(amount))) return '';
+    return '₹' + Number(amount).toLocaleString('en-IN');
   }
-  function money(amount, cur){
-    if(amount==null || amount==='') return '';
-    cur = cur || activeCurrency;
-    var n = Number(amount).toLocaleString('en-US');
-    var sym = cur.symbol || cur.code;
-    return sym.length>1 ? (sym+' '+n) : (sym+n);
+  // A visa's INR price, or null if none set (shown as "Price on request").
+  function visaPrice(v){
+    if(!v) return null;
+    var p = (v.prices && v.prices.INR!=null && v.prices.INR!=='') ? v.prices.INR : (v.price!=null ? v.price : v.price_aed);
+    return (p==null || p==='' || isNaN(Number(p)) || Number(p)<=0) ? null : Number(p);
   }
-  // price of a visa in the active currency, falling back to its AED price if that currency isn't set
-  function visaPriceText(v){
-    if(!v) return '';
-    if(v.prices && v.prices[activeCurrency.code]!=null && v.prices[activeCurrency.code]!=='') return money(v.prices[activeCurrency.code], activeCurrency);
-    var aed = (v.price!=null ? v.price : v.price_aed);
-    return money(aed, { code:'AED', symbol:'AED' });
-  }
+  function visaPriceText(v){ var p=visaPrice(v); return p==null ? 'Price on request' : money(p); }
   function appPriceText(a){
     var v=visaById(a.visa_type);
     if(v) return visaPriceText(v);
-    return money(a.price_aed, { code:'AED', symbol:'AED' });
+    var p=a.price_aed; return (p==null || Number(p)<=0) ? 'Price on request' : money(p);
   }
 
   // Countries & groups (for admin managers + visa assignment)
@@ -1229,15 +1213,11 @@
           '</div>'+
           '<div class="phint" style="margin-top:6px">Shown to customers as an estimate (not a guarantee). Leave blank to hide.</div></div>'+
       '</div>'+
-      '<div class="field"><label>Prices <span class="req-star">*</span></label>'+
-        '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
-          currencyList.map(function(c){
-            var val = (c.code==='AED') ? (v.prices&&v.prices.AED!=null?v.prices.AED:v.price_aed) : (v.prices&&v.prices[c.code]!=null?v.prices[c.code]:'');
-            return '<div style="flex:1;min-width:110px"><div class="phint" style="margin:0 0 4px;font-weight:600">'+esc(c.code)+'</div><input id="vtPrice_'+esc(c.code)+'" type="number" min="0" value="'+esc(val==null?'':val)+'" placeholder="0"></div>';
-          }).join('')+
-        '</div>'+
-        '<div class="phint" style="margin-top:6px">AED is required (your base price). Fill the others for the currencies you use. The site shows whichever currency you pick in <b>Brand &amp; Settings</b>.</div>'+
-      '</div>'+
+      (function(){ var cur=(v.prices&&v.prices.INR!=null&&v.prices.INR!=='')?v.prices.INR:((v.price_aed!=null&&v.price_aed>0)?v.price_aed:'');
+        return '<div class="field"><label>Price (₹)</label>'+
+        '<input id="vtPriceINR" type="number" min="0" value="'+esc(cur)+'" placeholder="e.g. 4500">'+
+        '<div class="phint" style="margin-top:6px">Enter the price in Indian Rupees (₹). Leave blank to show “Price on request”.</div>'+
+      '</div>'; })()+
       '<div class="field"><label>Short description</label><textarea id="vtBlurb" style="min-height:70px" placeholder="One friendly line describing this visa.">'+esc(v.blurb||'')+'</textarea></div>'+
       '<div class="field"><label>Bullet points (one per line)</label><textarea id="vtFeatures" style="min-height:96px" placeholder="Stay up to 90 days&#10;Single entry&#10;Processed in 3–5 working days">'+esc((v.features||[]).join('\n'))+'</textarea></div>'+
       '<div class="grid2">'+
@@ -1260,14 +1240,13 @@
     var saveBtn=document.getElementById('vtSave');
     saveBtn.onclick=function(){
       var name=document.getElementById('vtName').value.trim();
-      var pricesObj={};
-      currencyList.forEach(function(c){ var el=document.getElementById('vtPrice_'+c.code); if(el){ var n=parseInt(el.value,10); if(!isNaN(n)&&n>=0) pricesObj[c.code]=n; } });
-      var price=pricesObj.AED;
+      var priceRaw=parseInt(document.getElementById('vtPriceINR').value,10);
+      var price=(isNaN(priceRaw)||priceRaw<0)?0:priceRaw;   // blank/invalid → 0 (shows "Price on request")
+      var pricesObj=price>0?{ INR:price }:{};
       var country=document.getElementById('vtCountry').value;
       var msg=document.getElementById('vtMsg');
       if(!country){ msg.className='signin-msg err'; msg.textContent='Please choose a destination country.'; return; }
       if(!name){ msg.className='signin-msg err'; msg.textContent='Please enter a name.'; return; }
-      if(price==null||isNaN(price)||price<0){ msg.className='signin-msg err'; msg.textContent='Please enter a valid AED price (your base price).'; return; }
       var feats=document.getElementById('vtFeatures').value.split('\n').map(function(s){return s.trim();}).filter(Boolean);
       var daysV=parseInt(document.getElementById('vtDays').value,10);
       var etaV=parseInt(document.getElementById('vtEtaVal').value,10);
@@ -2402,21 +2381,8 @@
         '<div class="field"><label>Google Analytics ID</label><input id="bGa" type="text" value="'+esc(s.analytics_ga_id||'')+'" placeholder="G-XXXXXXXXXX"></div>'+
         '<a href="https://analytics.google.com" target="_blank" rel="noopener" class="link-btn" style="padding-left:0">Open Google Analytics ↗</a>'+
       '</div>'+
-      // Currency
-      (function(){
-        var KNOWN=[['AED','AED'],['USD','$'],['EUR','€'],['GBP','£'],['INR','₹'],['QAR','QAR']];
-        var enabled={}; var arr=s.currencies; if(typeof arr==='string'){ try{arr=JSON.parse(arr);}catch(e){arr=null;} }
-        if(Array.isArray(arr)) arr.forEach(function(c){ if(c&&c.code) enabled[String(c.code).toUpperCase()]=true; });
-        var active=(s.active_currency||'AED').toUpperCase();
-        return '<div class="panel"><h3>Currency</h3><p class="phint">Choose the currency your website displays. Tick the currencies you use, then pick which one to show now. You set each visa\'s exact price per currency under <b>Visa Types</b>.</p>'+
-          '<div class="field"><label>Currencies you use</label><div style="display:flex;gap:16px;flex-wrap:wrap">'+
-            KNOWN.map(function(c){ var on=enabled[c[0]]||c[0]==='AED'; return '<label style="display:flex;align-items:center;gap:7px;font-weight:500;cursor:pointer"><input type="checkbox" class="bCcyOn" data-code="'+c[0]+'" '+(on?'checked':'')+(c[0]==='AED'?' disabled':'')+' style="width:auto"> '+c[0]+' <span class="phint" style="margin:0">'+c[1]+'</span></label>'; }).join('')+
-          '</div></div>'+
-          '<div class="field" style="max-width:280px"><label>Show prices in</label><select id="bActiveCcy" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px">'+
-            KNOWN.map(function(c){ return '<option value="'+c[0]+'"'+(c[0]===active?' selected':'')+'>'+c[0]+' ('+c[1]+')</option>'; }).join('')+
-          '</select></div>'+
-        '</div>';
-      })()+
+      // Currency (INR only)
+      '<div class="panel"><h3>Currency</h3><p class="phint">All prices are shown in <b>Indian Rupees (₹)</b>. You set each visa\'s price under <b>Visa Types</b>.</p></div>'+
       '<div class="signin-msg" id="bMsg"></div>'+
       '<button class="btn btn-primary btn-lg" id="bSave">Save settings</button>';
 
@@ -2444,16 +2410,10 @@
     document.getElementById('bSave').onclick=function(){
       var btn=document.getElementById('bSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Saving…';
       var colorVal=ch.value[0]==='#'?ch.value:('#'+ch.value);
-      // currency: gather enabled currencies + active choice
-      var SYM={ AED:'AED', USD:'$', EUR:'€', GBP:'£', INR:'₹', QAR:'QAR' };
-      var enabledCodes={ AED:true };
-      area.querySelectorAll('.bCcyOn').forEach(function(c){ if(c.checked) enabledCodes[c.getAttribute('data-code')]=true; });
-      var activeCcy=(document.getElementById('bActiveCcy').value||'AED').toUpperCase();
-      enabledCodes[activeCcy]=true; // active must be one you use
-      var ccyArr=Object.keys(enabledCodes).map(function(code){ return { code:code, symbol:SYM[code]||code }; });
+      // currency: INR only
       sb.from('site_settings').update({
-        active_currency:activeCcy,
-        currencies:ccyArr,
+        active_currency:'INR',
+        currencies:[{ code:'INR', symbol:'₹' }],
         brand_name:document.getElementById('bName').value.trim()||null,
         brand_color:/^#[0-9a-fA-F]{6}$/.test(colorVal)?colorVal:null,
         logo_url:urls.logo_url, favicon_url:urls.favicon_url, app_icon_url:urls.app_icon_url,

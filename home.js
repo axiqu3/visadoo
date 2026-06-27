@@ -3,18 +3,13 @@
   var cfg = window.VISADOO_CONFIG;
   function flag(iso2){ return iso2 ? ('https://flagcdn.com/w160/'+iso2.toLowerCase()+'.png') : ''; }
 
-  // ---- currency (single active currency chosen in the backend) ----
-  var CCY_SYMBOLS={AED:'AED',USD:'$',EUR:'€',GBP:'£',INR:'₹',QAR:'QAR'};
-  var ACTIVE={code:'AED',symbol:'AED'};
-  function setActive(code, currencies){
-    code=(code||'AED').toUpperCase();
-    var sym=CCY_SYMBOLS[code]||code, list=currencies;
-    if(typeof list==='string'){ try{list=JSON.parse(list);}catch(e){list=null;} }
-    if(Array.isArray(list)) list.forEach(function(c){ if(c&&String(c.code).toUpperCase()===code&&c.symbol) sym=c.symbol; });
-    ACTIVE={code:code, symbol:sym};
+  // ---- currency: INR only (₹, Indian grouping) ----
+  function money(n){ if(n==null||n===''||isNaN(Number(n))) return ''; return '₹'+Number(n).toLocaleString('en-IN'); }
+  // A visa's INR price, or null when none is set.
+  function visaActivePrice(v){
+    var p=(v.prices && v.prices.INR!=null && v.prices.INR!=='') ? v.prices.INR : v.price_aed;
+    return (p==null || p==='' || isNaN(Number(p)) || Number(p)<=0) ? null : Number(p);
   }
-  function money(n){ if(n==null||n==='') return ''; var s=Number(n).toLocaleString('en-US'); var sym=ACTIVE.symbol||ACTIVE.code; return sym.length>1?(sym+' '+s):(sym+s); }
-  function visaActivePrice(v){ if(v.prices && v.prices[ACTIVE.code]!=null && v.prices[ACTIVE.code]!=='') return Number(v.prices[ACTIVE.code]); return v.price_aed; }
 
   // ---- contact links ----
   var waLink = 'https://wa.me/' + cfg.WHATSAPP + '?text=' + encodeURIComponent('Hi Visa Doo, I have a question about a visa.');
@@ -131,14 +126,14 @@
       ]).then(function(res){
         var countries=(res[0].data)||[], visas=(res[1].data)||[], groups=(res[2].data)||[];
         var ss=res[3].data||{};
-        setActive(ss.active_currency, ss.currencies);
         var heroImg=ss.hero_image_url||null;
         if(heroImg){ var hero=document.querySelector('.hero'); if(hero){ hero.style.backgroundImage='linear-gradient(rgba(244,249,255,.78),rgba(255,255,255,.9)), url('+heroImg+')'; hero.classList.add('has-banner'); } }
         // compute min price + count per country (in the active currency)
         countries.forEach(function(c){
           var cv=visas.filter(function(v){return v.country_slug===c.slug;});
           c.visaCount=cv.length;
-          c.minPrice=cv.length?Math.min.apply(null,cv.map(function(v){return visaActivePrice(v);})):null;
+          var cprices=cv.map(visaActivePrice).filter(function(p){return p!=null;});
+          c.minPrice=cprices.length?Math.min.apply(null,cprices):null;
           c.eta=fastestEta(cv);
         });
         render(countries, groups);

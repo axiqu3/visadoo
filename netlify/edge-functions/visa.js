@@ -35,18 +35,14 @@ function etaStr(v) {
 }
 
 // ---- currency (single active currency chosen in the backend) ----
-const CCY_SYMBOLS = { AED: "AED", USD: "$", EUR: "€", GBP: "£", INR: "₹", QAR: "QAR" };
-function resolveActive(settings) {
-  const s = (settings && settings[0]) || {};
-  const code = (s.active_currency || "AED").toUpperCase();
-  let sym = CCY_SYMBOLS[code] || code;
-  const list = s.currencies;
-  if (Array.isArray(list)) list.forEach(function (c) { if (c && String(c.code).toUpperCase() === code && c.symbol) sym = c.symbol; });
-  return { code: code, symbol: sym };
+// Currency: INR only (₹, Indian grouping). Args kept for caller compatibility but ignored.
+function resolveActive() { return { code: "INR", symbol: "₹" }; }
+function fmtMoney(n) { if (n == null || n === "" || isNaN(Number(n))) return ""; return "₹" + Number(n).toLocaleString("en-IN"); }
+function priceNum(row) {
+  const p = (row.prices && row.prices.INR != null && row.prices.INR !== "") ? row.prices.INR : row.price_aed;
+  return (p == null || p === "" || isNaN(Number(p)) || Number(p) <= 0) ? null : Number(p);
 }
-function fmtMoney(n, sym) { if (n == null || n === "") return ""; const s = Number(n).toLocaleString("en-US"); return sym.length > 1 ? (sym + " " + s) : (sym + s); }
-function priceNum(row, active) { return (row.prices && row.prices[active.code] != null && row.prices[active.code] !== "") ? row.prices[active.code] : row.price_aed; }
-function priceText(row, active) { return (row.prices && row.prices[active.code] != null && row.prices[active.code] !== "") ? fmtMoney(row.prices[active.code], active.symbol) : fmtMoney(row.price_aed, "AED"); }
+function priceText(row) { const p = priceNum(row); return p == null ? "Price on request" : fmtMoney(p); }
 
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const PLANE = '<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>';
