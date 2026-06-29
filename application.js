@@ -854,9 +854,10 @@
     var m=map[s||'unpaid']||['',s]; var ex=(s==='unpaid')?' style="background:#eef2f7;color:#64748b"':'';
     return '<span class="status-pill '+m[0]+'"'+ex+'>'+esc(m[1])+'</span>';
   }
-  var adminFilters = { q:'', visa:'', status:'all', country:'', from:'', to:'', sort:'newest' };
+  var adminFilters = { q:'', visa:'', status:'all', country:'', from:'', to:'', sort:'newest', custpay:'all', supplier:'', unread:false, pendingref:false };
   var adminFiltersOpen = false;
-  function adminActiveCount(){ var f=adminFilters, n=0; if(f.q.trim())n++; if(f.visa)n++; if(f.status!=='all')n++; if(f.country)n++; if(f.from||f.to)n++; return n; }
+  function adminActiveCount(){ var f=adminFilters, n=0; if(f.q.trim())n++; if(f.visa)n++; if(f.status!=='all')n++; if(f.country)n++; if(f.from||f.to)n++; if(f.custpay&&f.custpay!=='all')n++; if(f.supplier)n++; if(f.unread)n++; if(f.pendingref)n++; return n; }
+  function afSupplierOptions(){ return '<option value="">All suppliers</option>'+finSuppliers.map(function(s){ return '<option value="'+esc(s.id)+'"'+(adminFilters.supplier===s.id?' selected':'')+'>'+esc(s.name)+'</option>'; }).join(''); }
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
@@ -965,6 +966,15 @@
               '<div class="field"><label>From date</label><input id="afFrom" type="date" value="'+esc(adminFilters.from)+'"></div>'+
               '<div class="field"><label>To date</label><input id="afTo" type="date" value="'+esc(adminFilters.to)+'"></div>'+
             '</div>'+
+            (isFinance()? ('<div class="grid2">'+
+              '<div class="field"><label>Customer payment</label><select id="afCustpay">'+
+                ['all','unpaid','partial','paid','refunded'].map(function(s){ return '<option value="'+s+'"'+(adminFilters.custpay===s?' selected':'')+'>'+(s==='all'?'All payment statuses':(s.charAt(0).toUpperCase()+s.slice(1)))+'</option>'; }).join('')+'</select></div>'+
+              '<div class="field"><label>Supplier</label><select id="afSupplier">'+afSupplierOptions()+'</select></div>'+
+            '</div>') : '')+
+            '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:6px">'+
+              '<label style="display:flex;gap:7px;align-items:center;font-weight:500;cursor:pointer"><input type="checkbox" id="afUnread" '+(adminFilters.unread?'checked':'')+' style="width:auto"> New customer reply</label>'+
+              '<label style="display:flex;gap:7px;align-items:center;font-weight:500;cursor:pointer"><input type="checkbox" id="afPendingRef" '+(adminFilters.pendingref?'checked':'')+' style="width:auto"> Pending refund request</label>'+
+            '</div>'+
           '</div>'+
         '</div>'+
         '<div id="adminList"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading applications…</p></div></div>' +
@@ -975,13 +985,15 @@
     document.getElementById('adminFiltersBtn').onclick=function(){ adminFiltersOpen=!adminFiltersOpen; document.getElementById('adminFilterPanel').style.display=adminFiltersOpen?'':'none'; };
     document.getElementById('adminClear').onclick=function(){
       adminFilters.q=''; adminFilters.visa=''; adminFilters.status='all'; adminFilters.country=''; adminFilters.from=''; adminFilters.to='';
-      document.getElementById('afQ').value=''; document.getElementById('afVisa').value=''; document.getElementById('afStatus').value='all';
-      document.getElementById('afCountry').value=''; document.getElementById('afFrom').value=''; document.getElementById('afTo').value='';
-      paintAdminList();
+      adminFilters.custpay='all'; adminFilters.supplier=''; adminFilters.unread=false; adminFilters.pendingref=false;
+      renderAdmin(); return;
     };
     function bind(id,key,ev){ var el=document.getElementById(id); if(el) el[ev]=function(){ adminFilters[key]=el.value; paintAdminList(); }; }
+    function bindChk(id,key){ var el=document.getElementById(id); if(el) el.onchange=function(){ adminFilters[key]=el.checked; paintAdminList(); }; }
     bind('afQ','q','oninput'); bind('afVisa','visa','onchange'); bind('afStatus','status','onchange');
     bind('afCountry','country','onchange'); bind('afSort','sort','onchange'); bind('afFrom','from','onchange'); bind('afTo','to','onchange');
+    bind('afCustpay','custpay','onchange'); bind('afSupplier','supplier','onchange');
+    bindChk('afUnread','unread'); bindChk('afPendingRef','pendingref');
 
     var R=function(d){ return Promise.resolve({data:d}); };
     Promise.all([
@@ -996,6 +1008,7 @@
       finSuppliers=res[1].data||[];
       finSettings=res[2].data||{};
       finBrand=res[3].data||{};
+      var ssel=document.getElementById('afSupplier'); if(ssel) ssel.innerHTML=afSupplierOptions();
       paintAdminList();
     });
   }
@@ -1012,6 +1025,12 @@
       if(f.from && day<f.from) return false;
       if(f.to && day>f.to) return false;
       if(q){ var hay=[a.full_name,a.email,a.phone,a.passport_number,a.reference_code].map(function(x){return (x||'').toLowerCase();}).join(' '); if(hay.indexOf(q)===-1) return false; }
+      if(isFinance()){
+        if(f.custpay && f.custpay!=='all'){ var ff=finOf(a); if(!ff || ff.customer_payment_status!==f.custpay) return false; }
+        if(f.supplier){ if(!(a.application_cost_lines||[]).some(function(l){return l.supplier_id===f.supplier;})) return false; }
+      }
+      if(f.unread && !a.unread_reply) return false;
+      if(f.pendingref){ if(!(a.customer_payments||[]).some(function(p){return p.kind==='refund' && (p.status||'')==='pending';})) return false; }
       return true;
     });
     rows.sort(function(a,b){
@@ -2427,54 +2446,92 @@
   // ============================================================
   //  FINANCE REPORTS (Finance) — pending payments, outstanding, margins + CSV
   // ============================================================
+  var frFilters={ from:'', to:'', visa:'', supplier:'', custpay:'all' }, frFiltersOpen=false, frData=null;
+  function frActiveCount(){ var f=frFilters,n=0; if(f.from||f.to)n++; if(f.visa)n++; if(f.supplier)n++; if(f.custpay&&f.custpay!=='all')n++; return n; }
   function renderFinReports(){
     if(!isFinance()){ go(defaultStaffView()); return; }
     if(!VISAS.length) loadVisaTypes();
     root.innerHTML='<div class="app-main">'+adminSections('reports')+
-      '<div class="app-head"><h1>Finance reports</h1><p>Pending payments, supplier outstanding and margins. Download any table as CSV.</p></div>'+
+      '<div class="app-head"><h1>Finance reports</h1><p>Pending payments, supplier outstanding and margins. Filter, then download any table as CSV.</p></div>'+
+      '<div style="margin-bottom:14px">'+
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+          '<button class="btn btn-ghost" id="frFiltersBtn" type="button">Filters'+(frActiveCount()?(' ('+frActiveCount()+')'):'')+'</button>'+
+          '<button class="link-btn" id="frClear" type="button" style="margin-left:auto;display:'+(frActiveCount()?'inline':'none')+'">Clear all</button>'+
+        '</div>'+
+        '<div id="frFilterPanel" class="panel" style="margin-top:12px;'+(frFiltersOpen?'':'display:none')+'">'+
+          '<div class="grid2">'+
+            '<div class="field"><label>From date</label><input id="frFrom" type="date" value="'+esc(frFilters.from)+'"></div>'+
+            '<div class="field"><label>To date</label><input id="frTo" type="date" value="'+esc(frFilters.to)+'"></div>'+
+            '<div class="field"><label>Visa type</label><select id="frVisa"><option value="">All visa types</option>'+VISAS.map(function(v){return '<option value="'+esc(v.id)+'"'+(frFilters.visa===v.id?' selected':'')+'>'+esc(v.name)+'</option>';}).join('')+'</select></div>'+
+            '<div class="field"><label>Customer payment</label><select id="frCustpay">'+['all','unpaid','partial','paid','refunded'].map(function(s){return '<option value="'+s+'"'+(frFilters.custpay===s?' selected':'')+'>'+(s==='all'?'All payment statuses':(s.charAt(0).toUpperCase()+s.slice(1)))+'</option>';}).join('')+'</select></div>'+
+            '<div class="field"><label>Supplier</label><select id="frSupplier"><option value="">All suppliers</option></select></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
       '<div id="frArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
     '</div>';
     wireAdminSections();
-    function section(title,csvId,inner){ return '<div style="margin-bottom:22px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="font-size:16px;font-weight:800;margin:0">'+esc(title)+'</h3><button class="btn btn-ghost" id="'+csvId+'">Download CSV</button></div>'+inner+'</div>'; }
-    function emptyMsg(m){ return '<div class="panel empty-state"><p>'+esc(m)+'</p></div>'; }
-    function tbl(headers, rows){ return '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted)">'+headers.map(function(h,i){return '<th style="padding:0 8px 4px 0;text-align:'+(i>0?'right':'left')+'">'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return '<td style="padding:5px 8px 5px 0;border-top:1px solid var(--line)'+(i>0?';text-align:right':'')+'">'+esc(c)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>'; }
-    function wireCsv(id,fname,headers,rows){ var b=document.getElementById(id); if(b) b.onclick=function(){ downloadCsv(fname,headers,rows); }; }
+    document.getElementById('frFiltersBtn').onclick=function(){ frFiltersOpen=!frFiltersOpen; document.getElementById('frFilterPanel').style.display=frFiltersOpen?'':'none'; };
+    document.getElementById('frClear').onclick=function(){ frFilters={from:'',to:'',visa:'',supplier:'',custpay:'all'}; renderFinReports(); };
+    function fbind(id,key){ var el=document.getElementById(id); if(el) el.onchange=function(){ frFilters[key]=el.value; paintFinReports(); }; }
+    fbind('frFrom','from'); fbind('frTo','to'); fbind('frVisa','visa'); fbind('frCustpay','custpay'); fbind('frSupplier','supplier');
     Promise.all([
-      sb.from('application_finance').select('application_id, customer_total, total_cost, margin, customer_payment_status, applications(full_name,reference_code,visa_type)'),
+      sb.from('application_finance').select('application_id, customer_total, total_cost, margin, customer_payment_status, applications(full_name,reference_code,visa_type,created_at)'),
       sb.from('customer_payments').select('application_id, kind, amount, status'),
       sb.from('suppliers').select('id,name,opening_balance'),
-      sb.from('application_cost_lines').select('supplier_id, cost'),
+      sb.from('application_cost_lines').select('application_id, supplier_id, cost'),
       sb.from('supplier_payments').select('supplier_id, amount')
     ]).then(function(res){
       var area=document.getElementById('frArea'); if(!area) return;
       if(res[0].error){ area.innerHTML='<div class="empty-state"><p>Could not load reports.</p></div>'; console.error(res[0].error); return; }
-      var afs=res[0].data||[], pays=res[1].data||[], sups=res[2].data||[], lines=res[3].data||[], sppays=res[4].data||[];
-      var vn=function(slug){ return (visaById(slug)?visaById(slug).name:slug)||''; };
-      var netByApp={}; pays.forEach(function(p){ if((p.status||'approved')!=='approved') return; netByApp[p.application_id]=(netByApp[p.application_id]||0)+(p.kind==='refund'?-Number(p.amount||0):Number(p.amount||0)); });
-      var payable={}, paid={}; lines.forEach(function(l){ if(l.supplier_id) payable[l.supplier_id]=(payable[l.supplier_id]||0)+Number(l.cost||0); }); sppays.forEach(function(p){ if(p.supplier_id) paid[p.supplier_id]=(paid[p.supplier_id]||0)+Number(p.amount||0); });
-      var pendingCust=[]; afs.forEach(function(f){ var app=f.applications||{}; var net=netByApp[f.application_id]||0; var bal=Number(f.customer_total||0)-net; if(bal>0.5) pendingCust.push({ name:app.full_name||'', ref:app.reference_code||'', visa:vn(app.visa_type), total:Number(f.customer_total||0), paid:net, balance:bal, status:f.customer_payment_status||'' }); });
-      var supRows=sups.map(function(s){ var p=payable[s.id]||0, pd=paid[s.id]||0; var op=Number(s.opening_balance||0); return { name:s.name, opening:op, payable:p, paid:pd, outstanding:op+p-pd }; });
-      var supPending=supRows.filter(function(r){return r.outstanding>0.5;});
-      var appMargin=afs.map(function(f){ var app=f.applications||{}; return { name:app.full_name||'', ref:app.reference_code||'', visa:vn(app.visa_type), selling:Number(f.customer_total||0), cost:Number(f.total_cost||0), margin:Number(f.margin||0) }; });
-      var vtMap={}; afs.forEach(function(f){ var app=f.applications||{}; var v=vn(app.visa_type)||'(none)'; var m=vtMap[v]||(vtMap[v]={visa:v,count:0,margin:0,selling:0}); m.count++; m.margin+=Number(f.margin||0); m.selling+=Number(f.customer_total||0); });
-      var vtRows=Object.keys(vtMap).map(function(k){return vtMap[k];}).sort(function(a,b){return b.margin-a.margin;});
-      var sum=function(arr,k){ return arr.reduce(function(s,r){return s+Number(r[k]||0);},0); };
-      var totReceivable=sum(pendingCust,'balance'), totPayable=sum(supPending,'outstanding'), totMargin=sum(appMargin,'margin');
-      area.innerHTML=
-        '<div class="grid2" style="margin-bottom:8px">'+
-          '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Receivable (customers owe)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totReceivable)+'</div></div>'+
-          '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Payable (we owe suppliers)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totPayable)+'</div></div>'+
-        '</div>'+
-        '<div class="panel" style="text-align:center;margin-bottom:18px"><div class="phint" style="margin:0">Total margin (all applications)</div><div style="font-size:22px;font-weight:800;color:var(--green)">'+money(totMargin)+'</div></div>'+
-        section('Pending customer payments','frCsv1', pendingCust.length? tbl(['Customer','Total','Paid','Balance','Status'], pendingCust.map(function(r){return [r.name+' ('+r.ref+')', money(r.total), money(r.paid), money(r.balance), r.status];})) : emptyMsg('No pending customer payments. 🎉'))+
-        section('Supplier outstanding','frCsv2', supPending.length? tbl(['Supplier','Payable','Paid','Outstanding'], supPending.map(function(r){return [r.name, money(r.opening+r.payable), money(r.paid), money(r.outstanding)];})) : emptyMsg('No supplier dues. 🎉'))+
-        section('Application margin','frCsv3', appMargin.length? tbl(['Application','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name+' ('+r.ref+')', money(r.selling), money(r.cost), money(r.margin)];})) : emptyMsg('No finance entries yet.'))+
-        section('Visa-type margin','frCsv4', vtRows.length? tbl(['Visa type','Apps','Selling','Margin'], vtRows.map(function(r){return [r.visa, r.count, money(r.selling), money(r.margin)];})) : emptyMsg('No data yet.'));
-      wireCsv('frCsv1','pending-customer-payments.csv',['Customer','Reference','Visa','Total','Paid','Balance','Status'], pendingCust.map(function(r){return [r.name,r.ref,r.visa,r.total,r.paid,r.balance,r.status];}));
-      wireCsv('frCsv2','supplier-outstanding.csv',['Supplier','Opening','Payable','Paid','Outstanding'], supRows.map(function(r){return [r.name,r.opening,r.payable,r.paid,r.outstanding];}));
-      wireCsv('frCsv3','application-margin.csv',['Customer','Reference','Visa','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name,r.ref,r.visa,r.selling,r.cost,r.margin];}));
-      wireCsv('frCsv4','visa-type-margin.csv',['Visa type','Applications','Selling','Margin'], vtRows.map(function(r){return [r.visa,r.count,r.selling,r.margin];}));
+      frData={ afs:res[0].data||[], pays:res[1].data||[], sups:res[2].data||[], lines:res[3].data||[], sppays:res[4].data||[] };
+      var ssel=document.getElementById('frSupplier'); if(ssel) ssel.innerHTML='<option value="">All suppliers</option>'+frData.sups.map(function(s){return '<option value="'+esc(s.id)+'"'+(frFilters.supplier===s.id?' selected':'')+'>'+esc(s.name)+'</option>';}).join('');
+      paintFinReports();
     });
+  }
+  function paintFinReports(){
+    var area=document.getElementById('frArea'); if(!area||!frData) return;
+    var fbn=document.getElementById('frFiltersBtn'); if(fbn) fbn.textContent='Filters'+(frActiveCount()?(' ('+frActiveCount()+')'):'');
+    var fcl=document.getElementById('frClear'); if(fcl) fcl.style.display=frActiveCount()?'inline':'none';
+    var f=frFilters, afs=frData.afs, pays=frData.pays, sups=frData.sups, lines=frData.lines, sppays=frData.sppays;
+    var vn=function(slug){ return (visaById(slug)?visaById(slug).name:slug)||''; };
+    function section(title,csvId,inner){ return '<div style="margin-bottom:22px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="font-size:16px;font-weight:800;margin:0">'+esc(title)+'</h3><button class="btn btn-ghost" id="'+csvId+'">Download CSV</button></div>'+inner+'</div>'; }
+    function emptyMsg(m){ return '<div class="panel empty-state"><p>'+esc(m)+'</p></div>'; }
+    function tbl(headers, rows){ return '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted)">'+headers.map(function(h,i){return '<th style="padding:0 8px 4px 0;text-align:'+(i>0?'right':'left')+'">'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return '<td style="padding:5px 8px 5px 0;border-top:1px solid var(--line)'+(i>0?';text-align:right':'')+'">'+esc(c)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>'; }
+    function wireCsv(id,fname,headers,rows){ var b=document.getElementById(id); if(b) b.onclick=function(){ downloadCsv(fname,headers,rows); }; }
+    var netByApp={}; pays.forEach(function(p){ if((p.status||'approved')!=='approved') return; netByApp[p.application_id]=(netByApp[p.application_id]||0)+(p.kind==='refund'?-Number(p.amount||0):Number(p.amount||0)); });
+    var payable={}, paid={}; lines.forEach(function(l){ if(l.supplier_id) payable[l.supplier_id]=(payable[l.supplier_id]||0)+Number(l.cost||0); }); sppays.forEach(function(p){ if(p.supplier_id) paid[p.supplier_id]=(paid[p.supplier_id]||0)+Number(p.amount||0); });
+    var supByApp={}; lines.forEach(function(l){ if(l.application_id&&l.supplier_id){ (supByApp[l.application_id]=supByApp[l.application_id]||{})[l.supplier_id]=true; } });
+    function appPass(fr){ var app=fr.applications||{};
+      if(f.visa && app.visa_type!==f.visa) return false;
+      if(f.custpay&&f.custpay!=='all' && (fr.customer_payment_status||'')!==f.custpay) return false;
+      var day=(app.created_at||'').slice(0,10); if(f.from && day<f.from) return false; if(f.to && day>f.to) return false;
+      if(f.supplier){ var m=supByApp[fr.application_id]||{}; if(!m[f.supplier]) return false; }
+      return true;
+    }
+    var fafs=afs.filter(appPass);
+    var pendingCust=[]; fafs.forEach(function(fr){ var app=fr.applications||{}; var net=netByApp[fr.application_id]||0; var bal=Number(fr.customer_total||0)-net; if(bal>0.5) pendingCust.push({ name:app.full_name||'', ref:app.reference_code||'', visa:vn(app.visa_type), total:Number(fr.customer_total||0), paid:net, balance:bal, status:fr.customer_payment_status||'' }); });
+    var appMargin=fafs.map(function(fr){ var app=fr.applications||{}; return { name:app.full_name||'', ref:app.reference_code||'', visa:vn(app.visa_type), selling:Number(fr.customer_total||0), cost:Number(fr.total_cost||0), margin:Number(fr.margin||0) }; });
+    var vtMap={}; fafs.forEach(function(fr){ var app=fr.applications||{}; var v=vn(app.visa_type)||'(none)'; var m=vtMap[v]||(vtMap[v]={visa:v,count:0,margin:0,selling:0}); m.count++; m.margin+=Number(fr.margin||0); m.selling+=Number(fr.customer_total||0); });
+    var vtRows=Object.keys(vtMap).map(function(k){return vtMap[k];}).sort(function(a,b){return b.margin-a.margin;});
+    var supRows=sups.filter(function(s){ return !f.supplier || s.id===f.supplier; }).map(function(s){ var p=payable[s.id]||0, pd=paid[s.id]||0; var op=Number(s.opening_balance||0); return { name:s.name, opening:op, payable:p, paid:pd, outstanding:op+p-pd }; });
+    var supPending=supRows.filter(function(r){return r.outstanding>0.5;});
+    var sum=function(arr,k){ return arr.reduce(function(s,r){return s+Number(r[k]||0);},0); };
+    var totReceivable=sum(pendingCust,'balance'), totPayable=sum(supPending,'outstanding'), totMargin=sum(appMargin,'margin');
+    area.innerHTML=
+      '<div class="grid2" style="margin-bottom:8px">'+
+        '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Receivable (customers owe)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totReceivable)+'</div></div>'+
+        '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Payable (we owe suppliers)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totPayable)+'</div></div>'+
+      '</div>'+
+      '<div class="panel" style="text-align:center;margin-bottom:18px"><div class="phint" style="margin:0">Total margin (filtered applications)</div><div style="font-size:22px;font-weight:800;color:var(--green)">'+money(totMargin)+'</div></div>'+
+      section('Pending customer payments','frCsv1', pendingCust.length? tbl(['Customer','Total','Paid','Balance','Status'], pendingCust.map(function(r){return [r.name+' ('+r.ref+')', money(r.total), money(r.paid), money(r.balance), r.status];})) : emptyMsg('No pending customer payments.'))+
+      section('Supplier outstanding','frCsv2', supPending.length? tbl(['Supplier','Payable','Paid','Outstanding'], supPending.map(function(r){return [r.name, money(r.opening+r.payable), money(r.paid), money(r.outstanding)];})) : emptyMsg('No supplier dues.'))+
+      section('Application margin','frCsv3', appMargin.length? tbl(['Application','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name+' ('+r.ref+')', money(r.selling), money(r.cost), money(r.margin)];})) : emptyMsg('No finance entries match.'))+
+      section('Visa-type margin','frCsv4', vtRows.length? tbl(['Visa type','Apps','Selling','Margin'], vtRows.map(function(r){return [r.visa, r.count, money(r.selling), money(r.margin)];})) : emptyMsg('No data.'));
+    wireCsv('frCsv1','pending-customer-payments.csv',['Customer','Reference','Visa','Total','Paid','Balance','Status'], pendingCust.map(function(r){return [r.name,r.ref,r.visa,r.total,r.paid,r.balance,r.status];}));
+    wireCsv('frCsv2','supplier-outstanding.csv',['Supplier','Opening','Payable','Paid','Outstanding'], supRows.map(function(r){return [r.name,r.opening,r.payable,r.paid,r.outstanding];}));
+    wireCsv('frCsv3','application-margin.csv',['Customer','Reference','Visa','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name,r.ref,r.visa,r.selling,r.cost,r.margin];}));
+    wireCsv('frCsv4','visa-type-margin.csv',['Visa type','Applications','Selling','Margin'], vtRows.map(function(r){return [r.visa,r.count,r.selling,r.margin];}));
   }
 
   // ============================================================
