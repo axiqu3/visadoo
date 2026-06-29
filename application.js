@@ -724,6 +724,8 @@
     var m=map[s]||['',s], ex=(s==='unpaid')?' style="background:#eef2f7;color:#64748b"':'';
     return '<span class="status-pill pill-sm '+m[0]+'"'+ex+'>'+esc(m[1])+'</span>';
   }
+  // Shared right-chevron for clickable compact rows.
+  var CHEV='<svg class="ar-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
 
   // ---- shared "Action Needed" conversation thread (staff request <-> customer reply) ----
   function fmtWhen(ts){ return new Date(ts).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}); }
@@ -1090,8 +1092,7 @@
       '</div>'+
       '<div class="ar-right">'+rowPayPill(a)+pendRef+
         '<span class="status-pill pill-sm '+statusPillClass(a.status)+'">'+esc(a.status)+'</span>'+
-        '<span class="ar-date">'+created+'</span>'+
-        '<svg class="ar-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'+
+        '<span class="ar-date">'+created+'</span>'+CHEV+
       '</div>'+
     '</div>';
   }
@@ -2325,7 +2326,11 @@
         (s.payment_terms?('<div class="meta">Terms: '+esc(s.payment_terms)+'</div>'):'')+'</div>'+
         '<div style="text-align:right;white-space:nowrap"><div class="phint" style="margin:0">Outstanding</div><div style="font-size:22px;font-weight:800;color:'+(outstanding>0?'var(--red)':'var(--green)')+'">'+money(outstanding)+'</div></div>'+
       '</div>'+
-        '<button class="btn btn-primary" id="spAdd" style="margin-top:8px">+ Record payment</button>'+
+        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">'+
+          '<button class="btn btn-primary" id="spAdd">+ Record payment</button>'+
+          '<button class="btn btn-ghost" id="supEditBtn">Edit details</button>'+
+          (state.role==='admin'?('<button class="btn btn-ghost" id="supDelBtn" style="color:var(--red)">Delete</button>'):'')+
+        '</div>'+
         '<div id="spForm" style="display:none;margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px">'+
           '<div class="grid2"><div class="field"><label class="ulabel">Amount (₹)</label><input id="spAmt" type="number" min="0"></div>'+
           '<div class="field"><label class="ulabel">Method</label><select id="spMethod"><option value="bank">Bank transfer</option><option value="upi">UPI</option><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="card">Card</option><option value="other">Other</option></select></div></div>'+
@@ -2342,6 +2347,11 @@
       '</div>';
     document.getElementById('spAdd').onclick=function(){ var fm=document.getElementById('spForm'); fm.style.display=fm.style.display==='none'?'block':'none'; };
     document.getElementById('spCancel').onclick=function(){ document.getElementById('spForm').style.display='none'; };
+    var supEditBtn=document.getElementById('supEditBtn'); if(supEditBtn) supEditBtn.onclick=function(){ supEditing=JSON.parse(JSON.stringify(s)); go('suppliers'); };
+    var supDelBtn=document.getElementById('supDelBtn'); if(supDelBtn) supDelBtn.onclick=function(){
+      if(!window.confirm('Delete supplier “'+s.name+'”? This cannot be undone.')) return;
+      sb.from('suppliers').delete().eq('id',s.id).then(function(r){ if(r.error){ toast('Could not delete (the supplier may be in use).'); console.error(r.error); return; } logFinance('supplier',s.id,'delete','Deleted supplier '+s.name); toast('Supplier deleted'); go('suppliers'); });
+    };
     box.querySelectorAll('.sp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var p=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; sb.storage.from('finance-files').createSignedUrl(p,3600).then(function(r){ l.textContent=o; if(r.error||!r.data){ toast('Could not open receipt.'); return; } window.open(r.data.signedUrl,'_blank','noopener'); }); }; });
     document.getElementById('spSave').onclick=function(){
       var amt=Number(document.getElementById('spAmt').value);
@@ -2392,30 +2402,19 @@
     var area=document.getElementById('supArea'); if(!area) return;
     if(supEditing){ area.innerHTML=supFormHtml(supEditing); wireSupForm(); return; }
     if(!supList.length){ area.innerHTML='<div class="panel empty-state"><p>No suppliers yet. Add your first supplier.</p></div>'; return; }
-    area.innerHTML=supList.map(function(s){
+    area.innerHTML='<div class="app-list">'+supList.map(function(s){
       var meta=[s.supplier_type, s.contact_name, s.phone, s.email].filter(Boolean).map(esc).join(' · ');
       var out=Number(s._outstanding||0);
       var outPill=out>0
-        ? '<span class="status-pill sp-action" style="font-size:12px">Outstanding: '+money(out)+'</span>'
-        : '<span class="status-pill sp-done" style="font-size:12px">Settled</span>';
-      var extra=(s.credit_limit!=null&&s.credit_limit!=='')?(' · Credit limit: '+money(s.credit_limit)):'';
-      return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
-        '<h4>'+esc(s.name)+(s.active?'':' <span class="status-pill" style="background:#eef2f7;color:#64748b;font-size:11px">Inactive</span>')+'</h4>'+
-        (meta?('<div class="meta">'+meta+'</div>'):'')+
-        '<div style="margin-top:6px">'+outPill+'<span class="phint" style="display:inline;margin-left:8px">'+extra.replace(/^ · /,'')+'</span></div></div>'+
-        '<div style="display:flex;gap:8px">'+
-          '<button class="btn btn-ghost" data-supview="'+esc(s.id)+'">Statement</button>'+
-          '<button class="btn btn-ghost" data-supedit="'+esc(s.id)+'">Edit</button>'+
-          (state.role==='admin'?('<button class="btn btn-ghost" data-supdel="'+esc(s.id)+'" style="color:var(--red)">Delete</button>'):'')+
-        '</div></div></div>';
-    }).join('');
-    area.querySelectorAll('[data-supview]').forEach(function(b){ b.onclick=function(){ openSupplier(b.getAttribute('data-supview')); }; });
-    area.querySelectorAll('[data-supedit]').forEach(function(b){ b.onclick=function(){ supEditing=JSON.parse(JSON.stringify(supList.filter(function(x){return x.id===b.getAttribute('data-supedit');})[0])); paintSup(); }; });
-    area.querySelectorAll('[data-supdel]').forEach(function(b){ b.onclick=function(){
-      var s=supList.filter(function(x){return x.id===b.getAttribute('data-supdel');})[0]; if(!s) return;
-      if(!window.confirm('Delete supplier “'+s.name+'”? This cannot be undone.')) return;
-      sb.from('suppliers').delete().eq('id',s.id).then(function(r){ if(r.error){ toast('Could not delete (the supplier may be in use).'); return; } logFinance('supplier',s.id,'delete','Deleted supplier '+s.name); toast('Supplier deleted'); renderSuppliers(); });
-    }; });
+        ? '<span class="status-pill sp-action pill-sm">Outstanding '+money(out)+'</span>'
+        : '<span class="status-pill sp-done pill-sm">Settled</span>';
+      var inactive=s.active?'':' <span class="status-pill pill-sm" style="background:#eef2f7;color:#64748b">Inactive</span>';
+      return '<div class="app-row" data-supopen="'+esc(s.id)+'"><div class="ar-main">'+
+        '<div class="ar-name">'+esc(s.name)+inactive+'</div>'+
+        '<div class="ar-sub">'+(meta||'—')+'</div></div>'+
+        '<div class="ar-right">'+outPill+CHEV+'</div></div>';
+    }).join('')+'</div>';
+    area.querySelectorAll('[data-supopen]').forEach(function(el){ el.onclick=function(){ openSupplier(el.getAttribute('data-supopen')); }; });
   }
 
   function supFormHtml(s){
@@ -3324,7 +3323,7 @@
   // ============================================================
   //  CUSTOMERS (admins only) — text-only applicant data for outreach (downloadable)
   // ============================================================
-  var custList=[], custViewId=null;
+  var custList=[], custViewId=null, CUST_PAGE=25, custLimit=CUST_PAGE;
   // Build the customer list from the real customers table, merging in
   // each person's application count + latest visa/status from applications.
   function buildCustList(customers, apps, consents){
@@ -3372,47 +3371,35 @@
     var cnt=document.getElementById('custCount'); if(cnt) cnt.textContent=rows.length+' of '+custList.length+' customers';
     if(!custList.length){ area.innerHTML='<div class="panel empty-state"><p>No customers yet. People who submit an application will appear here.</p></div>'; return; }
     if(!rows.length){ area.innerHTML='<div class="panel empty-state"><p>No customers match your search.</p></div>'; return; }
-    var srcLabel={application:'Applied',enquiry:'Enquiry','walk-in':'Walk-in',manual:'Added manually'};
-    area.innerHTML=rows.map(function(c){
-      var countPill=c.count>1?(' <span class="status-pill sp-progress" style="font-size:11px">'+c.count+' applications</span>'):(c.count===0?(' <span class="status-pill sp-action" style="font-size:11px">Enquiry only</span>'):'');
+    var shown=rows.slice(0, custLimit), remaining=rows.length-shown.length;
+    area.innerHTML='<div class="app-list">'+shown.map(function(c){
+      var countPill=c.count>1?('<span class="status-pill sp-progress pill-sm">'+c.count+' apps</span>'):(c.count===0?('<span class="status-pill sp-action pill-sm">Enquiry</span>'):'');
       var line2=[c.country,c.state,c.visa,c.status].filter(function(x){return x;}).map(esc).join(' · ');
-      var src=c.source?('<span class="phint" style="margin:0;font-size:11px">'+esc(srcLabel[c.source]||c.source)+'</span>'):'';
       var mPill=c.marketing
-        ? '<span class="status-pill sp-done" style="font-size:11px">📣 Marketing: On</span>'
-        : '<span class="status-pill" style="font-size:11px;background:#eef2f7;color:#64748b">📣 Marketing: Off</span>';
-      var mBtn='<button class="link-btn" data-mkt="'+esc(c.id)+'" data-mval="'+(c.marketing?'0':'1')+'" style="padding:0;font-size:12px">'+(c.marketing?'Turn off':'Turn on')+'</button>';
-      return '<div class="admin-app" data-custopen="'+esc(c.id)+'" style="cursor:pointer"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
-        '<h4>'+esc(c.name||'(no name)')+countPill+'</h4>'+
-        '<div class="meta">'+esc(c.email||'')+(c.phone?(' · '+esc(c.phone)):'')+'</div>'+
-        (line2?('<div class="meta">'+line2+'</div>'):'')+
-        '<div style="margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+mPill+mBtn+'</div></div>'+
-        '<div style="text-align:right;white-space:nowrap">'+src+'<div class="phint" style="margin:0">Last: '+esc(new Date(c.last).toLocaleDateString())+'</div>'+
-          '<div class="phint" style="margin:4px 0 0;color:var(--blue-600);font-weight:700">View history →</div></div>'+
-      '</div></div>';
-    }).join('');
-    area.querySelectorAll('[data-custopen]').forEach(function(card){ card.onclick=function(){ openCustomer(card.getAttribute('data-custopen')); }; });
-    area.querySelectorAll('[data-mkt]').forEach(function(b){ b.onclick=function(ev){
-      if(ev&&ev.stopPropagation) ev.stopPropagation();
-      var id=b.getAttribute('data-mkt'), val=b.getAttribute('data-mval')==='1';
-      b.disabled=true; b.textContent='Saving…';
-      setCustMarketing(id,val).then(function(r){
-        if(r&&r.error){ toast('Could not update consent.'); console.error(r.error); b.disabled=false; return; }
-        custList.forEach(function(c){ if(c.id===id) c.marketing=val; });
-        toast(val?'Marketing turned on':'Marketing turned off'); paintCust();
-      });
-    }; });
+        ? '<span class="status-pill sp-done pill-sm">📣 On</span>'
+        : '<span class="status-pill pill-sm" style="background:#eef2f7;color:#64748b">📣 Off</span>';
+      var sub=[c.phone?esc(c.phone):'', line2].filter(function(x){return x;}).join(' · ');
+      return '<div class="app-row" data-custopen="'+esc(c.id)+'"><div class="ar-main">'+
+        '<div class="ar-name">'+esc(c.name||'(no name)')+(c.email?'<span class="ar-ref"> · '+esc(c.email)+'</span>':'')+(countPill?(' '+countPill):'')+'</div>'+
+        '<div class="ar-sub">'+(sub||'—')+'</div></div>'+
+        '<div class="ar-right">'+mPill+'<span class="ar-date">'+esc(new Date(c.last).toLocaleDateString())+'</span>'+CHEV+'</div></div>';
+    }).join('')+'</div>'+
+      (remaining>0 ? ('<div class="app-loadmore"><button class="btn btn-ghost" id="custMore" type="button">Load more ('+remaining+' more)</button></div>') : '');
+    area.querySelectorAll('[data-custopen]').forEach(function(el){ el.onclick=function(){ openCustomer(el.getAttribute('data-custopen')); }; });
+    var more=document.getElementById('custMore'); if(more) more.onclick=function(){ custLimit+=CUST_PAGE; paintCust(); };
   }
   function renderCustomers(){
     if(state.role!=='admin'){ go(defaultStaffView()); return; }
     if(!VISAS.length) loadVisaTypes();
+    custLimit=CUST_PAGE;
     root.innerHTML='<div class="app-main">'+adminSections('customers')+
       '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
         '<h1>Customers</h1><p>One record per person — automatically gathered from applications and enquiries (matched by email). Text only, no documents. For outreach.</p></div>'+
         '<button class="btn btn-ghost" id="custCsv">Download CSV</button></div>'+
-      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">'+
-        '<input id="custSearch" type="text" placeholder="Search name, email, phone or country…" style="flex:1;min-width:200px;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px">'+
-        '<span id="custCount" class="phint" style="margin:0"></span>'+
-      '</div>'+
+      '<div style="margin-bottom:14px"><div class="app-toolbar">'+
+        '<div class="app-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+
+        '<input id="custSearch" type="text" placeholder="Search name, email, phone or country…"></div>'+
+      '</div><div style="margin-top:6px"><span id="custCount" class="phint" style="margin:0"></span></div></div>'+
       '<div id="custArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
     '</div>';
     wireAdminSections();
@@ -3424,7 +3411,7 @@
       if(res[0].error){ document.getElementById('custArea').innerHTML='<div class="empty-state"><p>Could not load customers.</p></div>'; console.error(res[0].error); return; }
       custList=buildCustList(res[0].data||[], res[1].data||[], res[2].data||[]); paintCust();
     });
-    document.getElementById('custSearch').oninput=paintCust;
+    document.getElementById('custSearch').oninput=function(){ custLimit=CUST_PAGE; paintCust(); };
     document.getElementById('custCsv').onclick=function(){
       var srcLabel={application:'Applied',enquiry:'Enquiry','walk-in':'Walk-in',manual:'Added manually'};
       var rows=filteredCust().map(function(c){ return [c.name,c.email,c.phone,c.country,c.state,c.visa,c.status,c.count,(srcLabel[c.source]||c.source||''),(c.marketing?'Yes':'No'),new Date(c.first).toLocaleDateString(),new Date(c.last).toLocaleDateString()]; });
