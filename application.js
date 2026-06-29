@@ -968,7 +968,7 @@
             '</div>'+
             (isFinance()? ('<div class="grid2">'+
               '<div class="field"><label>Customer payment</label><select id="afCustpay">'+
-                ['all','unpaid','partial','paid','refunded'].map(function(s){ return '<option value="'+s+'"'+(adminFilters.custpay===s?' selected':'')+'>'+(s==='all'?'All payment statuses':(s.charAt(0).toUpperCase()+s.slice(1)))+'</option>'; }).join('')+'</select></div>'+
+                [['all','All payment statuses'],['unpaid','Unpaid'],['partial','Partial'],['paid','Paid'],['refunded','Refunded'],['advance','Advance (paid, not billed)']].map(function(o){ return '<option value="'+o[0]+'"'+(adminFilters.custpay===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('')+'</select></div>'+
               '<div class="field"><label>Supplier</label><select id="afSupplier">'+afSupplierOptions()+'</select></div>'+
             '</div>') : '')+
             '<div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:6px">'+
@@ -1026,7 +1026,10 @@
       if(f.to && day>f.to) return false;
       if(q){ var hay=[a.full_name,a.email,a.phone,a.passport_number,a.reference_code].map(function(x){return (x||'').toLowerCase();}).join(' '); if(hay.indexOf(q)===-1) return false; }
       if(isFinance()){
-        if(f.custpay && f.custpay!=='all'){ var ff=finOf(a); if(!ff || ff.customer_payment_status!==f.custpay) return false; }
+        if(f.custpay && f.custpay!=='all'){ var ff=finOf(a);
+          if(f.custpay==='advance'){ if(!ff || Number(ff.customer_total||0)>0 || cpNetPaid(a)<=0) return false; }
+          else if(!ff || ff.customer_payment_status!==f.custpay) return false;
+        }
         if(f.supplier){ if(!(a.application_cost_lines||[]).some(function(l){return l.supplier_id===f.supplier;})) return false; }
       }
       if(f.unread && !a.unread_reply) return false;
@@ -2468,7 +2471,7 @@
             '<div class="field"><label>From date</label><input id="frFrom" type="date" value="'+esc(frFilters.from)+'"></div>'+
             '<div class="field"><label>To date</label><input id="frTo" type="date" value="'+esc(frFilters.to)+'"></div>'+
             '<div class="field"><label>Visa type</label><select id="frVisa"><option value="">All visa types</option>'+VISAS.map(function(v){return '<option value="'+esc(v.id)+'"'+(frFilters.visa===v.id?' selected':'')+'>'+esc(v.name)+'</option>';}).join('')+'</select></div>'+
-            '<div class="field"><label>Customer payment</label><select id="frCustpay">'+['all','unpaid','partial','paid','refunded'].map(function(s){return '<option value="'+s+'"'+(frFilters.custpay===s?' selected':'')+'>'+(s==='all'?'All payment statuses':(s.charAt(0).toUpperCase()+s.slice(1)))+'</option>';}).join('')+'</select></div>'+
+            '<div class="field"><label>Customer payment</label><select id="frCustpay">'+[['all','All payment statuses'],['unpaid','Unpaid'],['partial','Partial'],['paid','Paid'],['refunded','Refunded'],['advance','Advance (paid, not billed)']].map(function(o){return '<option value="'+o[0]+'"'+(frFilters.custpay===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select></div>'+
             '<div class="field"><label>Supplier</label><select id="frSupplier"><option value="">All suppliers</option></select></div>'+
           '</div>'+
         '</div>'+
@@ -2509,7 +2512,10 @@
     var supByApp={}; lines.forEach(function(l){ if(l.application_id&&l.supplier_id){ (supByApp[l.application_id]=supByApp[l.application_id]||{})[l.supplier_id]=true; } });
     function appPass(fr){ var app=fr.applications||{};
       if(f.visa && app.visa_type!==f.visa) return false;
-      if(f.custpay&&f.custpay!=='all' && (fr.customer_payment_status||'')!==f.custpay) return false;
+      if(f.custpay&&f.custpay!=='all'){
+        if(f.custpay==='advance'){ if(Number(fr.customer_total||0)>0 || (netByApp[fr.application_id]||0)<=0) return false; }
+        else if((fr.customer_payment_status||'')!==f.custpay) return false;
+      }
       var day=(app.created_at||'').slice(0,10); if(f.from && day<f.from) return false; if(f.to && day>f.to) return false;
       if(f.supplier){ var m=supByApp[fr.application_id]||{}; if(!m[f.supplier]) return false; }
       return true;
