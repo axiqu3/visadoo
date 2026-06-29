@@ -811,13 +811,39 @@
   // ============================================================
   var ALL_STATUSES = cfg.STAGES.concat(['Action Needed']);
   var adminRows = [], finSuppliers = [], finSettings = {}, finBrand = {};
-  // Finance maths: GST (flexible) + customer total + margin. All INR.
-  function computeFinance(govt, service, gstMode, gstRate){
-    govt=Number(govt)||0; service=Number(service)||0; gstRate=Number(gstRate)||0;
-    var base=govt+service;
-    var taxable = gstMode==='none' ? 0 : (gstMode==='full' ? base : service); // 'service_only' default
-    var gst=Math.round(taxable*gstRate/100);
-    return { base:base, gst:gst, total:base+gst };
+  // Finance maths (cost lines + margin ₹/% + flexible GST). All INR.
+  var COST_CATEGORIES=['Visa processing','Insurance','Express delivery','Voucher','Other'];
+  function computeFin(lines, marginType, marginValue, gstMode, gstRate){
+    var totalCost=(lines||[]).reduce(function(s,l){ return s+(Number(l.cost)||0); },0);
+    marginValue=Number(marginValue)||0; gstRate=Number(gstRate)||0;
+    var marginAmt = marginType==='percent' ? Math.round(totalCost*marginValue/100) : marginValue;
+    var selling = totalCost + marginAmt;
+    var taxable = gstMode==='none' ? 0 : (gstMode==='full' ? selling : marginAmt); // 'margin' default
+    var gst = Math.round(taxable*gstRate/100);
+    return { totalCost:totalCost, marginAmt:marginAmt, selling:selling, gst:gst, total:selling+gst };
+  }
+  // One editable cost-line row (category · supplier · cost).
+  function clRowHtml(l){
+    l=l||{};
+    var cats=COST_CATEGORIES.map(function(c){ return '<option'+(l.category===c?' selected':'')+'>'+esc(c)+'</option>'; }).join('');
+    var sups='<option value="">— supplier —</option>'+finSuppliers.map(function(s){ return '<option value="'+esc(s.id)+'"'+(l.supplier_id===s.id?' selected':'')+'>'+esc(s.name)+'</option>'; }).join('');
+    return '<div class="cl-row" style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center">'+
+      '<select class="cl-cat" style="flex:1;min-width:130px">'+cats+'</select>'+
+      '<select class="cl-sup" style="flex:1;min-width:130px">'+sups+'</select>'+
+      '<input class="cl-cost" type="number" min="0" placeholder="cost ₹" value="'+esc(l.cost!=null&&l.cost!==0?l.cost:(l.cost===0?'0':''))+'" style="width:110px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">'+
+      '<button type="button" class="cl-del link-btn" style="color:var(--red);padding:0 6px;font-size:16px">✕</button>'+
+    '</div>';
+  }
+  // Customer payment status from payment lines vs a given total (mirrors the DB trigger).
+  function cpStatus(a, total){
+    var pays=cpListOf(a);
+    var paid=pays.filter(function(p){return p.kind!=='refund';}).reduce(function(s,p){return s+Number(p.amount||0);},0);
+    var ref=pays.filter(function(p){return p.kind==='refund';}).reduce(function(s,p){return s+Number(p.amount||0);},0);
+    var net=paid-ref;
+    if(ref>0 && net<=0) return 'refunded';
+    if(net<=0) return 'unpaid';
+    if(total>0 && net>=total) return 'paid';
+    return 'partial';
   }
   function finOf(a){ var f=a&&a.application_finance; if(Array.isArray(f)) return f[0]||null; return f||null; }
   function cpListOf(a){ var c=(a&&a.customer_payments)||[]; return c.slice().sort(function(x,y){ return new Date(x.created_at)-new Date(y.created_at); }); }
@@ -957,7 +983,7 @@
 
     var R=function(d){ return Promise.resolve({data:d}); };
     Promise.all([
-      sb.from('applications').select('*, documents(*), app_messages(*), application_finance(*), customer_payments(*)').order('created_at',{ascending:false}),
+      sb.from('applications').select('*, documents(*), app_messages(*), application_finance(*), customer_payments(*), application_cost_lines(*)').order('created_at',{ascending:false}),
       isFinance() ? sb.from('suppliers').select('id,name').eq('active',true).order('name') : R([]),
       isFinance() ? sb.from('finance_settings').select('*').eq('id','global').single() : R(null),
       isFinance() ? sb.from('site_settings').select('brand_name,brand_color,logo_url,contact_email,contact_phone,contact_whatsapp').eq('id','global').single() : R(null)
@@ -1051,28 +1077,31 @@
     '</div>';
   }
 
-  // Per-application Finance panel (admin/finance only). Govt fee + service charge
-  // + flexible GST → customer total; supplier + cost → margin (finance-only).
+  // Per-application Finance panel (admin/finance only). Cost lines + margin (₹/%)
+  // → selling price + flexible GST → customer total. Customer never sees this.
   function financePanelHtml(a){
     if(!isFinance()) return '';
     var f=finOf(a)||{};
-    var supOpts='<option value="">— none —</option>'+finSuppliers.map(function(s){ return '<option value="'+esc(s.id)+'"'+(f.supplier_id===s.id?' selected':'')+'>'+esc(s.name)+'</option>'; }).join('');
-    function inr(id,label,val){ return '<div class="field"><label class="ulabel">'+label+'</label><input data-fin="'+id+'" type="number" min="0" value="'+esc(val==null?'':val)+'" placeholder="0"></div>'; }
-    function sel(id,label,opts,cur){ return '<div class="field"><label class="ulabel">'+label+'</label><select data-fin="'+id+'">'+opts.map(function(o){return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select></div>'; }
+    var lines=(a.application_cost_lines||[]).slice().sort(function(x,y){ return new Date(x.created_at)-new Date(y.created_at); });
+    if(!lines.length) lines=[{}];
+    var marginType=f.margin_type||'amount';
+    var gstmodeSel=[['margin','GST on margin'],['full','GST on full price'],['none','No GST']].map(function(o){ return '<option value="'+o[0]+'"'+((f.gst_mode||'margin')===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('');
     return '<div style="margin-top:16px;padding:14px 16px;border:1px solid var(--blue-100);background:var(--sky-50);border-radius:12px">'+
       '<div class="answers-title" style="color:var(--blue-700)">💰 Finance</div>'+
-      '<div class="grid2">'+inr('govt','Government / embassy fee (₹)',f.government_fee)+inr('service','Service charge (₹)',f.service_charge)+'</div>'+
-      '<div class="grid2">'+sel('gstmode','GST',[['service_only','GST on service charge only'],['full','GST on full amount'],['none','No GST']],f.gst_mode||'service_only')+inr('gstrate','GST rate %',f.gst_rate!=null?f.gst_rate:18)+'</div>'+
-      '<div class="phint" data-fin="calc" style="margin:2px 0 12px;font-weight:600;color:var(--ink);font-size:14px"></div>'+
+      '<div style="font-weight:600;font-size:13px;margin-bottom:6px">Cost lines</div>'+
+      '<div data-fin="clwrap">'+lines.map(clRowHtml).join('')+'</div>'+
+      '<button type="button" class="btn btn-ghost" data-fin="addline" style="margin:2px 0 12px">+ Add cost line</button>'+
       '<div class="grid2">'+
-        '<div class="field"><label class="ulabel">Supplier</label><select data-fin="supplier">'+supOpts+'</select></div>'+
-        inr('cost','Supplier cost (₹)',f.supplier_cost)+
+        '<div class="field"><label class="ulabel">Margin</label><div style="display:flex;gap:6px">'+
+          '<select data-fin="margintype" style="width:84px"><option value="amount"'+(marginType==='amount'?' selected':'')+'>₹</option><option value="percent"'+(marginType==='percent'?' selected':'')+'>%</option></select>'+
+          '<input data-fin="marginval" type="number" min="0" value="'+esc(f.margin_value!=null?f.margin_value:'')+'" placeholder="0" style="flex:1;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit"></div></div>'+
+        '<div class="field"><label class="ulabel">GST</label><select data-fin="gstmode">'+gstmodeSel+'</select></div>'+
       '</div>'+
       '<div class="grid2">'+
-        '<div class="field"><label class="ulabel">Supplier reference</label><input data-fin="ref" type="text" value="'+esc(f.supplier_ref||'')+'" placeholder="supplier ref no."></div>'+
-        sel('suppay','Supplier payment',[['unpaid','Unpaid'],['partial','Partial'],['paid','Paid']],f.supplier_payment_status||'unpaid')+
+        '<div class="field"><label class="ulabel">GST rate %</label><input data-fin="gstrate" type="number" min="0" value="'+esc(f.gst_rate!=null?f.gst_rate:18)+'"></div>'+
+        '<div class="field"><label class="ulabel">&nbsp;</label><button class="btn btn-primary" data-fin="save" style="width:100%">Save finance</button></div>'+
       '</div>'+
-      '<button class="btn btn-primary" data-fin="save">Save finance</button>'+
+      '<div class="phint" data-fin="calc" style="margin:2px 0 0;font-weight:600;color:var(--ink);font-size:14px"></div>'+
       financePaymentsHtml(a, f)+
     '</div>';
   }
@@ -1131,7 +1160,7 @@
           '<div class="muted" style="text-align:right">'+esc(new Date(p.received_at||p.created_at).toLocaleString())+'</div></div>'+
         '<table><tr><td class="muted">Customer</td><td style="text-align:right">'+esc(a.full_name||'')+'</td></tr>'+
           '<tr><td class="muted">Application</td><td style="text-align:right">'+esc(a.reference_code||'')+' · '+esc(visaName)+'</td></tr></table>'+
-        '<table>'+rowIf('Government / embassy fee',f.government_fee)+rowIf('Service charge',f.service_charge)+gstLines+
+        '<table>'+rowIf('Visa service charges',f.selling_price)+gstLines+
           '<tr class="tot"><td>Total</td><td style="text-align:right">'+money(total)+'</td></tr></table>'+
         '<table><tr><td class="muted">'+(p.kind==='refund'?'Refunded now':'Paid now')+' ('+esc(p.method||'')+')</td><td style="text-align:right;font-weight:700">'+(p.kind==='refund'?'−':'')+money(p.amount)+'</td></tr>'+
           '<tr><td class="muted">Total received to date</td><td style="text-align:right">'+money(net)+'</td></tr>'+
@@ -1185,32 +1214,47 @@
     // Finance panel (admin/finance) — wired before the processing-controls gate.
     if(isFinance()){
       var fget=function(k){ var el=card.querySelector('[data-fin="'+k+'"]'); return el?el.value:''; };
+      var readLines=function(){ return [].map.call(card.querySelectorAll('.cl-row'), function(row){
+        return { category:((row.querySelector('.cl-cat')||{}).value)||'Visa processing',
+                 supplier_id:((row.querySelector('.cl-sup')||{}).value)||null,
+                 cost:Number((row.querySelector('.cl-cost')||{}).value)||0 }; }); };
       var recalc=function(){
-        var c=computeFinance(fget('govt'),fget('service'),fget('gstmode'),fget('gstrate'));
-        var cost=Number(fget('cost'))||0; var el=card.querySelector('[data-fin="calc"]');
-        if(el) el.innerHTML='Customer total: <b>'+money(c.total)+'</b> (incl GST '+money(c.gst)+') · Margin: <b>'+money(c.base-cost)+'</b>';
+        var c=computeFin(readLines(), fget('margintype'), fget('marginval'), fget('gstmode'), fget('gstrate'));
+        var el=card.querySelector('[data-fin="calc"]');
+        if(el) el.innerHTML='Total cost: <b>'+money(c.totalCost)+'</b> · Margin: <b>'+money(c.marginAmt)+'</b> · Selling: <b>'+money(c.selling)+'</b> · GST: '+money(c.gst)+' · Customer total: <b>'+money(c.total)+'</b>';
       };
-      ['govt','service','gstmode','gstrate','cost'].forEach(function(k){ var el=card.querySelector('[data-fin="'+k+'"]'); if(el){ el.oninput=recalc; el.onchange=recalc; } });
+      var clwrap=card.querySelector('[data-fin="clwrap"]');
+      var isFinEl=function(t){ return t&&t.closest&&(t.closest('[data-fin="clwrap"]') || (t.getAttribute && ['margintype','marginval','gstmode','gstrate'].indexOf(t.getAttribute('data-fin'))>-1)); };
+      card.addEventListener('input', function(e){ if(isFinEl(e.target)) recalc(); });
+      card.addEventListener('change', function(e){ if(isFinEl(e.target)) recalc(); });
+      if(clwrap) clwrap.addEventListener('click', function(e){ var del=e.target.closest('.cl-del'); if(del){ var row=del.closest('.cl-row'); if(row){ row.remove(); recalc(); } } });
+      var addBtn=card.querySelector('[data-fin="addline"]'); if(addBtn) addBtn.onclick=function(){ if(clwrap){ clwrap.insertAdjacentHTML('beforeend', clRowHtml({})); } };
       recalc();
       var fsave=card.querySelector('[data-fin="save"]');
       if(fsave) fsave.onclick=function(){
-        var c=computeFinance(fget('govt'),fget('service'),fget('gstmode'),fget('gstrate'));
-        var cost=Number(fget('cost'))||0;
-        var payload={ application_id:a.id, currency:'INR',
-          government_fee:Number(fget('govt'))||0, service_charge:Number(fget('service'))||0,
-          gst_mode:fget('gstmode')||'service_only', gst_rate:Number(fget('gstrate'))||0,
-          gst_amount:c.gst, customer_total:c.total,
-          supplier_id:fget('supplier')||null, supplier_cost:cost, supplier_ref:(fget('ref')||'').trim()||null,
-          supplier_payment_status:fget('suppay')||'unpaid',
-          margin:c.base-cost, updated_at:new Date().toISOString() };
+        var lines=readLines().filter(function(l){ return l.cost>0 || l.supplier_id; });
+        var mtype=fget('margintype')||'amount', mval=Number(fget('marginval'))||0;
+        var c=computeFin(lines, mtype, mval, fget('gstmode'), fget('gstrate'));
+        var status=cpStatus(a, c.total);
         var existed=!!finOf(a);
         fsave.disabled=true; fsave.innerHTML='<span class="spin"></span>';
-        sb.from('application_finance').upsert(payload,{onConflict:'application_id'}).then(function(r){
+        sb.from('application_cost_lines').delete().eq('application_id', a.id).then(function(d){
+          if(d.error) throw d.error;
+          if(!lines.length) return { error:null };
+          return sb.from('application_cost_lines').insert(lines.map(function(l){ return { application_id:a.id, category:l.category, supplier_id:l.supplier_id, cost:l.cost }; }));
+        }).then(function(ins){
+          if(ins&&ins.error) throw ins.error;
+          return sb.from('application_finance').upsert({ application_id:a.id, currency:'INR',
+            total_cost:c.totalCost, margin_type:mtype, margin_value:mval, margin:c.marginAmt,
+            gst_mode:fget('gstmode')||'margin', gst_rate:Number(fget('gstrate'))||0, gst_amount:c.gst,
+            selling_price:c.selling, customer_total:c.total, customer_payment_status:status,
+            updated_at:new Date().toISOString() }, {onConflict:'application_id'});
+        }).then(function(r){
           fsave.disabled=false; fsave.innerHTML='Save finance';
-          if(r.error){ toast('Could not save finance.'); console.error(r.error); return; }
-          logFinance('application_finance', a.id, existed?'update':'create', 'Finance saved — total '+money(c.total)+', supplier cost '+money(cost)+', margin '+money(c.base-cost));
+          if(r&&r.error) throw r.error;
+          logFinance('application_finance', a.id, existed?'update':'create', 'Finance saved — selling '+money(c.selling)+', GST '+money(c.gst)+', total '+money(c.total)+', cost '+money(c.totalCost)+', margin '+money(c.marginAmt));
           toast('Finance saved'); renderAdmin();
-        });
+        }).catch(function(err){ fsave.disabled=false; fsave.innerHTML='Save finance'; toast('Could not save finance.'); console.error(err); });
       };
 
       // payments: record payment/refund, receipts, proof links
