@@ -1174,10 +1174,15 @@
       '<div class="field"><label class="ulabel">Remarks (optional)</label><input data-cp="remarks" type="text"></div>'+
       '<div style="display:flex;gap:10px;align-items:center"><button class="btn btn-primary" data-cp="save">Save '+(kind==='refund'?'refund':'payment')+'</button><button class="link-btn" data-cp="cancel">Cancel</button></div>'+
     '</div>'; }
+    var unbilled = (total<=0 && net>0); // money received but billing not set yet
+    var pill = unbilled ? '<span class="status-pill sp-progress" style="font-size:11px">Advance</span>' : payStatusPill(f.customer_payment_status);
+    var summary = unbilled
+      ? ('Advance received '+money(net)+' · enter the billing above to apply it')
+      : ('Paid '+money(net)+' of '+money(total)+' · Balance '+money(balance));
     return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--blue-100)">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'+
-        '<div style="font-weight:700">Customer payments '+payStatusPill(f.customer_payment_status)+'</div>'+
-        '<div class="phint" style="margin:0">Paid '+money(net)+' of '+money(total)+' · Balance '+money(balance)+'</div>'+
+        '<div style="font-weight:700">Customer payments '+pill+'</div>'+
+        '<div class="phint" style="margin:0">'+summary+'</div>'+
       '</div>'+
       '<div style="margin-top:6px">'+rows+'</div>'+
       '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" data-cp="addpay">+ Record payment</button><button class="btn btn-ghost" data-cp="addref">Record refund</button></div>'+
