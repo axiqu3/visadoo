@@ -12,6 +12,49 @@ _Created 2026-06-25. **Planning document only — no code, database, or security
 
 ---
 
+## 0b. 🔒 LOCKED REVISED MODEL (brainstorm, 2026-06-29) — SUPERSEDES the cost/margin details below
+_This is the agreed working model after a brainstorming session. Where it conflicts with older sections (esp. the single "government fee + service charge" billing), **this section wins.** Built F1a stays; F1b/F1c get revised to match (see "Rebuild steps")._
+
+**Per application — a basket of internal COST LINES (multiple suppliers allowed):**
+- Each application holds a **list of cost lines**; each line = **category** · **supplier (optional)** · **cost (₹)**.
+- Categories (fixed list + free-text on "Other"): **Visa processing, Insurance, Express delivery, Voucher, Other**.
+- Cost lines are **internal only** — the customer never sees them, the suppliers, or the margin.
+- The **embassy is just another supplier** (no special embassy field). Multiple suppliers per application = multiple cost lines.
+- Cost lines are added by **staff during processing** (not the customer at apply-time). One applicant per application (multi-traveller out of scope for now).
+
+**Pricing:**
+- **Total cost** = sum of all cost lines.
+- **Margin** = entered as a **₹ amount OR a %** (whichever staff type; the other is calculated).
+- **Customer Selling Price** = total cost + margin.
+- **GST** = flexible per application (**on margin / on full selling price / none**), **added on top**. CGST/SGST (intra-state) vs IGST (inter-state) by `applications.state` vs finance home state.
+- **Customer Total (what they pay)** = selling price + GST. **Customer sees ONE price (+GST)** — receipt shows a single "Visa service charges" line + GST + Total (no internal breakdown). _(Receipt single-line is the working default; confirm if you want a govt-fee line.)_
+
+**Supplier side — proper LEDGER (running balance):**
+- Every cost line is a **payable** to its supplier. Supplier payments (lump-sum or against an invoice) **reduce the balance**.
+- A **per-supplier Statement of Account** shows total outstanding across **all** applications = opening balance + Σ payables − Σ payments. **No per-line paid/unpaid flags** (ledger nets it).
+
+**Customer payments:**
+- Part-payments + numbered receipts + proof upload + auto status (unpaid/partial/paid/refunded) — as built in F1c, but against the new single selling price.
+
+**Customer REFUNDS — request → finance approves workflow:**
+- Any case-handling staff (Operations/Sales/Finance) can **raise a refund request** with a **reason** → status **Pending**.
+- **Finance** reviews, enters the **refund payment details** (method + destination/reference), and **approves** (or **rejects** with a reason).
+- **Only an APPROVED refund** affects the customer's balance/receipt/numbers; a pending request changes nothing.
+- Finance gets a **pending-refunds queue/badge**; every step audit-logged (requested_by, approved_by, reason, timestamps).
+
+**Permissions (refined):** Finance/Admin = full finance (cost lines, margin, supplier ledger, supplier payments, approve refunds, see margin). Operations/Sales = view application + **raise refund requests only**; never see cost/supplier cost/margin. Owner/Admin = delete/override.
+
+**Deferred (not now):** customer discounts/waivers (raised, not adopted — add later if needed); per-applicant/group cost scaling; credit notes; online payments.
+
+**Rebuild steps (revising what's built):**
+- **F1a** (roles, suppliers master, finance_settings, audit log) — **keep as-is.**
+- **F1b-rev** — add `application_cost_lines` table (category, supplier_id, cost); revise the Finance panel to manage **multiple cost lines** + **margin (₹ or %)** → selling + GST → customer total. (Old single government_fee/service_charge/supplier_id/supplier_cost on `application_finance` superseded; tables are empty so safe to migrate.)
+- **F1c-rev** — refunds become a **request→approve** workflow (status + requested_by/approved_by/reason/refund-payment-details; recompute counts only approved refunds); add a finance pending-refunds view. Part-payments/receipts carry over.
+- **F1d** — supplier payments + **per-supplier ledger / Statement of Account** (running balance from cost-line payables − payments). _(This pulls the old "F2 supplier ledger" forward, since cost lines already are the payables.)_
+- **F1e** — reports: pending customer payments, supplier outstanding (per supplier), application/supplier/visa-type margin; CSV.
+
+---
+
 ## 1. Guiding principles
 - **Don't overbuild.** A practical MVP that grows into a ledger system — not a full accounting suite.
 - **Separation of concerns (mandatory):** application/operational status, customer-payment status, supplier-payment status, and ledger status are **separate** and never overload each other (especially never overload `applications.status`).
