@@ -860,7 +860,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','supview','refunds','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','supview','refunds','reports','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -878,7 +878,8 @@
       emailcfg:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
       team:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
       suppliers:'<path d="M3 7h13v10H3zM16 10h3l2 3v4h-5"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>',
-      refunds:'<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/>'
+      refunds:'<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/>',
+      reports:'<path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/>'
     };
     return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[key]||'')+'</svg></span>';
   }
@@ -888,7 +889,7 @@
     var g=[
       ['Customers',[['admin','Applications',canViewApps()],['enquiries','Enquiries',state.role==='admin'],['customers','Customers',state.role==='admin']]],
       ['Messaging',[['comms','Communications',state.role==='admin']]],
-      ['Finance',[['suppliers','Suppliers',isFinance()],['refunds','Refund requests',isFinance()]]],
+      ['Finance',[['suppliers','Suppliers',isFinance()],['refunds','Refund requests',isFinance()],['reports','Finance reports',isFinance()]]],
       ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()]]],
       ['Content',[['articles','Articles',canManageContent()],['content','Content',canManageContent()],['siteseo','Site SEO',canManageContent()]]],
       ['Settings',[['brand','Brand & Settings',state.role==='admin'],['emailcfg','Email',state.role==='admin'],['team','Team',state.role==='admin']]]
@@ -2424,6 +2425,59 @@
   }
 
   // ============================================================
+  //  FINANCE REPORTS (Finance) — pending payments, outstanding, margins + CSV
+  // ============================================================
+  function renderFinReports(){
+    if(!isFinance()){ go(defaultStaffView()); return; }
+    if(!VISAS.length) loadVisaTypes();
+    root.innerHTML='<div class="app-main">'+adminSections('reports')+
+      '<div class="app-head"><h1>Finance reports</h1><p>Pending payments, supplier outstanding and margins. Download any table as CSV.</p></div>'+
+      '<div id="frArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    function section(title,csvId,inner){ return '<div style="margin-bottom:22px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="font-size:16px;font-weight:800;margin:0">'+esc(title)+'</h3><button class="btn btn-ghost" id="'+csvId+'">Download CSV</button></div>'+inner+'</div>'; }
+    function emptyMsg(m){ return '<div class="panel empty-state"><p>'+esc(m)+'</p></div>'; }
+    function tbl(headers, rows){ return '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="color:var(--muted)">'+headers.map(function(h,i){return '<th style="padding:0 8px 4px 0;text-align:'+(i>0?'right':'left')+'">'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c,i){return '<td style="padding:5px 8px 5px 0;border-top:1px solid var(--line)'+(i>0?';text-align:right':'')+'">'+esc(c)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>'; }
+    function wireCsv(id,fname,headers,rows){ var b=document.getElementById(id); if(b) b.onclick=function(){ downloadCsv(fname,headers,rows); }; }
+    Promise.all([
+      sb.from('application_finance').select('application_id, customer_total, total_cost, margin, customer_payment_status, applications(full_name,reference_code,visa_type)'),
+      sb.from('customer_payments').select('application_id, kind, amount, status'),
+      sb.from('suppliers').select('id,name,opening_balance'),
+      sb.from('application_cost_lines').select('supplier_id, cost'),
+      sb.from('supplier_payments').select('supplier_id, amount')
+    ]).then(function(res){
+      var area=document.getElementById('frArea'); if(!area) return;
+      if(res[0].error){ area.innerHTML='<div class="empty-state"><p>Could not load reports.</p></div>'; console.error(res[0].error); return; }
+      var afs=res[0].data||[], pays=res[1].data||[], sups=res[2].data||[], lines=res[3].data||[], sppays=res[4].data||[];
+      var vn=function(slug){ return (visaById(slug)?visaById(slug).name:slug)||''; };
+      var netByApp={}; pays.forEach(function(p){ if((p.status||'approved')!=='approved') return; netByApp[p.application_id]=(netByApp[p.application_id]||0)+(p.kind==='refund'?-Number(p.amount||0):Number(p.amount||0)); });
+      var payable={}, paid={}; lines.forEach(function(l){ if(l.supplier_id) payable[l.supplier_id]=(payable[l.supplier_id]||0)+Number(l.cost||0); }); sppays.forEach(function(p){ if(p.supplier_id) paid[p.supplier_id]=(paid[p.supplier_id]||0)+Number(p.amount||0); });
+      var pendingCust=[]; afs.forEach(function(f){ var app=f.applications||{}; var net=netByApp[f.application_id]||0; var bal=Number(f.customer_total||0)-net; if(bal>0.5) pendingCust.push({ name:app.full_name||'', ref:app.reference_code||'', visa:vn(app.visa_type), total:Number(f.customer_total||0), paid:net, balance:bal, status:f.customer_payment_status||'' }); });
+      var supRows=sups.map(function(s){ var p=payable[s.id]||0, pd=paid[s.id]||0; var op=Number(s.opening_balance||0); return { name:s.name, opening:op, payable:p, paid:pd, outstanding:op+p-pd }; });
+      var supPending=supRows.filter(function(r){return r.outstanding>0.5;});
+      var appMargin=afs.map(function(f){ var app=f.applications||{}; return { name:app.full_name||'', ref:app.reference_code||'', visa:vn(app.visa_type), selling:Number(f.customer_total||0), cost:Number(f.total_cost||0), margin:Number(f.margin||0) }; });
+      var vtMap={}; afs.forEach(function(f){ var app=f.applications||{}; var v=vn(app.visa_type)||'(none)'; var m=vtMap[v]||(vtMap[v]={visa:v,count:0,margin:0,selling:0}); m.count++; m.margin+=Number(f.margin||0); m.selling+=Number(f.customer_total||0); });
+      var vtRows=Object.keys(vtMap).map(function(k){return vtMap[k];}).sort(function(a,b){return b.margin-a.margin;});
+      var sum=function(arr,k){ return arr.reduce(function(s,r){return s+Number(r[k]||0);},0); };
+      var totReceivable=sum(pendingCust,'balance'), totPayable=sum(supPending,'outstanding'), totMargin=sum(appMargin,'margin');
+      area.innerHTML=
+        '<div class="grid2" style="margin-bottom:8px">'+
+          '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Receivable (customers owe)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totReceivable)+'</div></div>'+
+          '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Payable (we owe suppliers)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totPayable)+'</div></div>'+
+        '</div>'+
+        '<div class="panel" style="text-align:center;margin-bottom:18px"><div class="phint" style="margin:0">Total margin (all applications)</div><div style="font-size:22px;font-weight:800;color:var(--green)">'+money(totMargin)+'</div></div>'+
+        section('Pending customer payments','frCsv1', pendingCust.length? tbl(['Customer','Total','Paid','Balance','Status'], pendingCust.map(function(r){return [r.name+' ('+r.ref+')', money(r.total), money(r.paid), money(r.balance), r.status];})) : emptyMsg('No pending customer payments. 🎉'))+
+        section('Supplier outstanding','frCsv2', supPending.length? tbl(['Supplier','Payable','Paid','Outstanding'], supPending.map(function(r){return [r.name, money(r.opening+r.payable), money(r.paid), money(r.outstanding)];})) : emptyMsg('No supplier dues. 🎉'))+
+        section('Application margin','frCsv3', appMargin.length? tbl(['Application','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name+' ('+r.ref+')', money(r.selling), money(r.cost), money(r.margin)];})) : emptyMsg('No finance entries yet.'))+
+        section('Visa-type margin','frCsv4', vtRows.length? tbl(['Visa type','Apps','Selling','Margin'], vtRows.map(function(r){return [r.visa, r.count, money(r.selling), money(r.margin)];})) : emptyMsg('No data yet.'));
+      wireCsv('frCsv1','pending-customer-payments.csv',['Customer','Reference','Visa','Total','Paid','Balance','Status'], pendingCust.map(function(r){return [r.name,r.ref,r.visa,r.total,r.paid,r.balance,r.status];}));
+      wireCsv('frCsv2','supplier-outstanding.csv',['Supplier','Opening','Payable','Paid','Outstanding'], supRows.map(function(r){return [r.name,r.opening,r.payable,r.paid,r.outstanding];}));
+      wireCsv('frCsv3','application-margin.csv',['Customer','Reference','Visa','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name,r.ref,r.visa,r.selling,r.cost,r.margin];}));
+      wireCsv('frCsv4','visa-type-margin.csv',['Visa type','Applications','Selling','Margin'], vtRows.map(function(r){return [r.visa,r.count,r.selling,r.margin];}));
+    });
+  }
+
+  // ============================================================
   //  TEAM MANAGEMENT (admins only)
   // ============================================================
   var ROLE_OPTS=[['agent','Agent / Processor'],['finance','Finance'],['sales','Sales / Support'],['content','Content / SEO editor'],['viewer','Viewer (read-only)'],['admin','Admin (full access)']];
@@ -3605,7 +3659,7 @@
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
-    if((v==='suppliers'||v==='refunds'||v==='supview') && !isFinance()) v=defaultStaffView();
+    if((v==='suppliers'||v==='refunds'||v==='supview'||v==='reports') && !isFinance()) v=defaultStaffView();
     if(v==='supview' && !supViewId) v='suppliers';
     state.view=v;
 
@@ -3631,6 +3685,7 @@
     else if(v==='suppliers') renderSuppliers();
     else if(v==='refunds') renderRefunds();
     else if(v==='supview') renderSupplierDetail(supViewId);
+    else if(v==='reports') renderFinReports();
     else if(v==='team') renderTeam();
     else if(v==='setpw') renderSetPassword();
     else renderApply();
@@ -3640,7 +3695,7 @@
     var h=(location.hash||'').replace('#','');
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','refunds','team','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','refunds','reports','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
