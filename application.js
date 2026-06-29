@@ -860,7 +860,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','refunds','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','supview','refunds','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -2166,8 +2166,91 @@
   // ============================================================
   //  SUPPLIERS (Finance) — supplier master
   // ============================================================
-  var supList=[], supEditing=null, rfList=[];
+  var supList=[], supEditing=null, rfList=[], supViewId=null;
   var SUP_TYPES=['Embassy','Processing partner','Other'];
+
+  // ---- Supplier statement / ledger page (record payments + running balance) ----
+  function openSupplier(id){ supViewId=id; state.view='supview'; location.hash='supview/'+encodeURIComponent(id); renderHeader(); render(); }
+  function renderSupplierDetail(id){
+    if(!isFinance()){ go(defaultStaffView()); return; }
+    if(!id){ go('suppliers'); return; }
+    root.innerHTML='<div class="app-main">'+adminSections('suppliers')+
+      '<button class="link-btn" id="supBack2" style="margin-bottom:10px">← Back to suppliers</button>'+
+      '<div id="supDetail"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    document.getElementById('supBack2').onclick=function(){ go('suppliers'); };
+    Promise.all([
+      sb.from('suppliers').select('*').eq('id',id).single(),
+      sb.from('application_cost_lines').select('category,cost,created_at,application_id, applications(reference_code,full_name)').eq('supplier_id',id),
+      sb.from('supplier_payments').select('*').eq('supplier_id',id)
+    ]).then(function(res){
+      var s=res[0].data;
+      if(res[0].error||!s){ document.getElementById('supDetail').innerHTML='<div class="panel empty-state"><p>Could not load this supplier.</p></div>'; return; }
+      paintSupplierDetail(s, res[1].data||[], res[2].data||[]);
+    });
+  }
+  function paintSupplierDetail(s, costLines, payments){
+    var box=document.getElementById('supDetail'); if(!box) return;
+    var opening=Number(s.opening_balance||0);
+    // build chronological entries: opening, payables (cost lines), payments
+    var entries=[];
+    if(opening!==0) entries.push({ when:s.created_at, label:'Opening balance', debit:opening });
+    costLines.forEach(function(l){ var app=l.applications||{}; entries.push({ when:l.created_at, label:'Payable — '+(l.category||'cost')+(app.reference_code?(' ('+app.reference_code+')'):''), debit:Number(l.cost||0) }); });
+    payments.forEach(function(p){ entries.push({ when:p.paid_at||p.created_at, label:'Payment'+(p.method?(' ('+p.method+')'):'')+(p.reference?(' · '+p.reference):''), credit:Number(p.amount||0), receipt:p.receipt_path }); });
+    entries.sort(function(a,b){ return new Date(a.when)-new Date(b.when); });
+    var run=0;
+    var rows=entries.map(function(e){
+      run += (Number(e.debit||0) - Number(e.credit||0));
+      var amt = e.debit ? ('+'+money(e.debit)) : ('−'+money(e.credit||0));
+      var rcpt = e.receipt ? (' · <a href="#" class="sp-proof" data-path="'+esc(e.receipt)+'">receipt</a>') : '';
+      return '<tr><td style="padding:6px 0;border-top:1px solid var(--line)">'+esc(new Date(e.when).toLocaleDateString())+'</td>'+
+        '<td style="padding:6px 8px;border-top:1px solid var(--line)">'+esc(e.label)+rcpt+'</td>'+
+        '<td style="padding:6px 0;border-top:1px solid var(--line);text-align:right">'+amt+'</td>'+
+        '<td style="padding:6px 0 6px 8px;border-top:1px solid var(--line);text-align:right;font-weight:600">'+money(run)+'</td></tr>';
+    }).join('');
+    var outstanding=run;
+    var meta=[s.supplier_type, s.contact_name, s.phone, s.email].filter(Boolean).map(esc).join(' · ');
+    box.innerHTML=
+      '<div class="panel"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h2 style="font-size:22px;font-weight:800;margin:0 0 4px">'+esc(s.name)+'</h2>'+
+        (meta?('<div class="meta">'+meta+'</div>'):'')+
+        (s.payment_terms?('<div class="meta">Terms: '+esc(s.payment_terms)+'</div>'):'')+'</div>'+
+        '<div style="text-align:right;white-space:nowrap"><div class="phint" style="margin:0">Outstanding</div><div style="font-size:22px;font-weight:800;color:'+(outstanding>0?'var(--red)':'var(--green)')+'">'+money(outstanding)+'</div></div>'+
+      '</div>'+
+        '<button class="btn btn-primary" id="spAdd" style="margin-top:8px">+ Record payment</button>'+
+        '<div id="spForm" style="display:none;margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px">'+
+          '<div class="grid2"><div class="field"><label class="ulabel">Amount (₹)</label><input id="spAmt" type="number" min="0"></div>'+
+          '<div class="field"><label class="ulabel">Method</label><select id="spMethod"><option value="bank">Bank transfer</option><option value="upi">UPI</option><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="card">Card</option><option value="other">Other</option></select></div></div>'+
+          '<div class="grid2"><div class="field"><label class="ulabel">Reference (optional)</label><input id="spRef" type="text"></div>'+
+          '<div class="field"><label class="ulabel">Supplier receipt (optional)</label><input id="spReceipt" type="file" accept="image/*,application/pdf"></div></div>'+
+          '<div class="field"><label class="ulabel">Remarks (optional)</label><input id="spRemarks" type="text"></div>'+
+          '<div style="display:flex;gap:10px"><button class="btn btn-primary" id="spSave">Save payment</button><button class="link-btn" id="spCancel">Cancel</button></div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="margin-top:18px"><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Statement of account</h3>'+
+        (entries.length
+          ? ('<table style="width:100%;border-collapse:collapse;font-size:13.5px"><thead><tr style="text-align:left;color:var(--muted)"><th style="padding:0 0 4px">Date</th><th style="padding:0 8px 4px">Details</th><th style="padding:0 0 4px;text-align:right">Amount</th><th style="padding:0 0 4px 8px;text-align:right">Balance</th></tr></thead><tbody>'+rows+'</tbody></table>')
+          : '<div class="panel empty-state"><p>No entries yet. Costs assigned to this supplier and payments will appear here.</p></div>')+
+      '</div>';
+    document.getElementById('spAdd').onclick=function(){ var fm=document.getElementById('spForm'); fm.style.display=fm.style.display==='none'?'block':'none'; };
+    document.getElementById('spCancel').onclick=function(){ document.getElementById('spForm').style.display='none'; };
+    box.querySelectorAll('.sp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var p=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; sb.storage.from('finance-files').createSignedUrl(p,3600).then(function(r){ l.textContent=o; if(r.error||!r.data){ toast('Could not open receipt.'); return; } window.open(r.data.signedUrl,'_blank','noopener'); }); }; });
+    document.getElementById('spSave').onclick=function(){
+      var amt=Number(document.getElementById('spAmt').value);
+      if(!(amt>0)){ toast('Enter a valid amount.'); return; }
+      var btn=document.getElementById('spSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+      var fileEl=document.getElementById('spReceipt'); var file=fileEl&&fileEl.files[0];
+      var ins=function(rp){ return sb.from('supplier_payments').insert({ supplier_id:s.id, amount:amt, method:document.getElementById('spMethod').value, reference:(document.getElementById('spRef').value||'').trim()||null, remarks:(document.getElementById('spRemarks').value||'').trim()||null, receipt_path:rp||null, paid_by:(state.user&&state.user.id)||null }); };
+      var up=Promise.resolve(null);
+      if(file){ if(file.size>10485760){ toast('Receipt file is over 10 MB.'); btn.disabled=false; btn.innerHTML='Save payment'; return; }
+        var ext=(file.name.split('.').pop()||'dat').toLowerCase(); var path='finance/supplier/'+s.id+'/pay_'+Date.now()+'.'+ext;
+        up=sb.storage.from('finance-files').upload(path,file,{upsert:false}).then(function(u){ if(u.error) throw u.error; return path; });
+      }
+      up.then(ins).then(function(r){ if(r.error) throw r.error; logFinance('supplier_payment', s.id, 'create', 'Paid supplier '+s.name+' '+money(amt)); toast('Payment recorded'); renderSupplierDetail(s.id); })
+        .catch(function(err){ btn.disabled=false; btn.innerHTML='Save payment'; toast('Could not save.'); console.error(err); });
+    };
+  }
 
   // Append-only finance audit entry (who/what/when + remarks).
   function logFinance(entity_type, entity_id, action, remarks){
@@ -2184,9 +2267,17 @@
     '</div>';
     wireAdminSections();
     document.getElementById('supAdd').onclick=function(){ supEditing={ id:null, name:'', supplier_type:'', contact_name:'', email:'', phone:'', address:'', payment_terms:'', credit_limit:'', opening_balance:0, tax_no:'', notes:'', active:true }; paintSup(); };
-    sb.from('suppliers').select('*').order('name').then(function(r){
-      if(r.error){ document.getElementById('supArea').innerHTML='<div class="empty-state"><p>Could not load suppliers.</p></div>'; console.error(r.error); return; }
-      supList=r.data||[]; paintSup();
+    Promise.all([
+      sb.from('suppliers').select('*').order('name'),
+      sb.from('application_cost_lines').select('supplier_id,cost'),
+      sb.from('supplier_payments').select('supplier_id,amount')
+    ]).then(function(res){
+      if(res[0].error){ document.getElementById('supArea').innerHTML='<div class="empty-state"><p>Could not load suppliers.</p></div>'; console.error(res[0].error); return; }
+      var payable={}, paid={};
+      (res[1].data||[]).forEach(function(l){ if(l.supplier_id) payable[l.supplier_id]=(payable[l.supplier_id]||0)+Number(l.cost||0); });
+      (res[2].data||[]).forEach(function(p){ if(p.supplier_id) paid[p.supplier_id]=(paid[p.supplier_id]||0)+Number(p.amount||0); });
+      supList=(res[0].data||[]).map(function(s){ s._outstanding=Number(s.opening_balance||0)+(payable[s.id]||0)-(paid[s.id]||0); return s; });
+      paintSup();
     });
   }
 
@@ -2196,18 +2287,22 @@
     if(!supList.length){ area.innerHTML='<div class="panel empty-state"><p>No suppliers yet. Add your first supplier.</p></div>'; return; }
     area.innerHTML=supList.map(function(s){
       var meta=[s.supplier_type, s.contact_name, s.phone, s.email].filter(Boolean).map(esc).join(' · ');
-      var bal=[];
-      if(s.opening_balance && Number(s.opening_balance)!==0) bal.push('Opening balance: '+money(s.opening_balance));
-      if(s.credit_limit!=null && s.credit_limit!=='') bal.push('Credit limit: '+money(s.credit_limit));
+      var out=Number(s._outstanding||0);
+      var outPill=out>0
+        ? '<span class="status-pill sp-action" style="font-size:12px">Outstanding: '+money(out)+'</span>'
+        : '<span class="status-pill sp-done" style="font-size:12px">Settled</span>';
+      var extra=(s.credit_limit!=null&&s.credit_limit!=='')?(' · Credit limit: '+money(s.credit_limit)):'';
       return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
         '<h4>'+esc(s.name)+(s.active?'':' <span class="status-pill" style="background:#eef2f7;color:#64748b;font-size:11px">Inactive</span>')+'</h4>'+
         (meta?('<div class="meta">'+meta+'</div>'):'')+
-        (bal.length?('<div class="meta">'+bal.join(' · ')+'</div>'):'')+'</div>'+
+        '<div style="margin-top:6px">'+outPill+'<span class="phint" style="display:inline;margin-left:8px">'+extra.replace(/^ · /,'')+'</span></div></div>'+
         '<div style="display:flex;gap:8px">'+
+          '<button class="btn btn-ghost" data-supview="'+esc(s.id)+'">Statement</button>'+
           '<button class="btn btn-ghost" data-supedit="'+esc(s.id)+'">Edit</button>'+
           (state.role==='admin'?('<button class="btn btn-ghost" data-supdel="'+esc(s.id)+'" style="color:var(--red)">Delete</button>'):'')+
         '</div></div></div>';
     }).join('');
+    area.querySelectorAll('[data-supview]').forEach(function(b){ b.onclick=function(){ openSupplier(b.getAttribute('data-supview')); }; });
     area.querySelectorAll('[data-supedit]').forEach(function(b){ b.onclick=function(){ supEditing=JSON.parse(JSON.stringify(supList.filter(function(x){return x.id===b.getAttribute('data-supedit');})[0])); paintSup(); }; });
     area.querySelectorAll('[data-supdel]').forEach(function(b){ b.onclick=function(){
       var s=supList.filter(function(x){return x.id===b.getAttribute('data-supdel');})[0]; if(!s) return;
@@ -3510,7 +3605,8 @@
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
-    if((v==='suppliers'||v==='refunds') && !isFinance()) v=defaultStaffView();
+    if((v==='suppliers'||v==='refunds'||v==='supview') && !isFinance()) v=defaultStaffView();
+    if(v==='supview' && !supViewId) v='suppliers';
     state.view=v;
 
     // Backend sidebar layout: shift content right only on staff console screens.
@@ -3534,6 +3630,7 @@
     else if(v==='comms') renderComms();
     else if(v==='suppliers') renderSuppliers();
     else if(v==='refunds') renderRefunds();
+    else if(v==='supview') renderSupplierDetail(supViewId);
     else if(v==='team') renderTeam();
     else if(v==='setpw') renderSetPassword();
     else renderApply();
@@ -3542,6 +3639,7 @@
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
+    if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
     if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','refunds','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
