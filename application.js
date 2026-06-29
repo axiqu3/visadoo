@@ -836,7 +836,7 @@
   }
   // Customer payment status from payment lines vs a given total (mirrors the DB trigger).
   function cpStatus(a, total){
-    var pays=cpListOf(a);
+    var pays=cpListOf(a).filter(function(p){return (p.status||'approved')==='approved';});
     var paid=pays.filter(function(p){return p.kind!=='refund';}).reduce(function(s,p){return s+Number(p.amount||0);},0);
     var ref=pays.filter(function(p){return p.kind==='refund';}).reduce(function(s,p){return s+Number(p.amount||0);},0);
     var net=paid-ref;
@@ -847,7 +847,7 @@
   }
   function finOf(a){ var f=a&&a.application_finance; if(Array.isArray(f)) return f[0]||null; return f||null; }
   function cpListOf(a){ var c=(a&&a.customer_payments)||[]; return c.slice().sort(function(x,y){ return new Date(x.created_at)-new Date(y.created_at); }); }
-  function cpNetPaid(a){ return cpListOf(a).reduce(function(n,p){ return n + (p.kind==='refund' ? -Number(p.amount||0) : Number(p.amount||0)); }, 0); }
+  function cpNetPaid(a){ return cpListOf(a).reduce(function(n,p){ if((p.status||'approved')!=='approved') return n; return n + (p.kind==='refund' ? -Number(p.amount||0) : Number(p.amount||0)); }, 0); }
   function receiptNo(p){ var pre=(p.kind==='refund')?'REF':((finSettings&&finSettings.receipt_prefix)||'RCPT'); return pre+'-'+String(p.seq==null?0:p.seq).padStart(6,'0'); }
   function payStatusPill(s){
     var map={ paid:['sp-done','Paid'], partial:['sp-progress','Partial'], unpaid:['','Unpaid'], refunded:['sp-action','Refunded'] };
@@ -860,7 +860,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','refunds','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -877,7 +877,8 @@
       brand:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
       emailcfg:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
       team:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
-      suppliers:'<path d="M3 7h13v10H3zM16 10h3l2 3v4h-5"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>'
+      suppliers:'<path d="M3 7h13v10H3zM16 10h3l2 3v4h-5"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>',
+      refunds:'<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/>'
     };
     return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[key]||'')+'</svg></span>';
   }
@@ -887,7 +888,7 @@
     var g=[
       ['Customers',[['admin','Applications',canViewApps()],['enquiries','Enquiries',state.role==='admin'],['customers','Customers',state.role==='admin']]],
       ['Messaging',[['comms','Communications',state.role==='admin']]],
-      ['Finance',[['suppliers','Suppliers',isFinance()]]],
+      ['Finance',[['suppliers','Suppliers',isFinance()],['refunds','Refund requests',isFinance()]]],
       ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()]]],
       ['Content',[['articles','Articles',canManageContent()],['content','Content',canManageContent()],['siteseo','Site SEO',canManageContent()]]],
       ['Settings',[['brand','Brand & Settings',state.role==='admin'],['emailcfg','Email',state.role==='admin'],['team','Team',state.role==='admin']]]
@@ -1073,7 +1074,23 @@
           '<input type="file" data-role="visaFile" accept="image/*,application/pdf" style="display:none">' +
         '</div>' +
       '</div>') : '') +
+      refundRequestHtml(a) +
       financePanelHtml(a) +
+    '</div>';
+  }
+
+  // "Request refund" for Operations/Sales (raises a pending request for finance).
+  function refundRequestHtml(a){
+    if(!hasRole(['agent','sales'])) return '';
+    var mine=cpListOf(a).filter(function(p){ return p.kind==='refund'; });
+    var statusLine = mine.length ? ('<div class="phint" style="margin:8px 0 0">'+mine.map(function(p){ return 'Refund '+money(p.amount)+' — '+esc(p.status||'pending'); }).join(' · ')+'</div>') : '';
+    return '<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)">'+
+      '<button class="btn btn-ghost" data-rfreq="open">Request refund</button>'+
+      '<div class="rfreq-form" style="display:none;margin-top:8px;padding:10px;border:1px dashed var(--line);border-radius:10px">'+
+        '<div class="grid2"><div class="field"><label class="ulabel">Refund amount (₹)</label><input data-rfreq="amount" type="number" min="0"></div>'+
+        '<div class="field"><label class="ulabel">Reason</label><input data-rfreq="reason" type="text" placeholder="why a refund is needed"></div></div>'+
+        '<div style="display:flex;gap:10px"><button class="btn btn-primary" data-rfreq="save">Send request to finance</button><button class="link-btn" data-rfreq="cancel">Cancel</button></div>'+
+      '</div>'+statusLine+
     '</div>';
   }
 
@@ -1110,6 +1127,17 @@
   function financePaymentsHtml(a, f){
     var pays=cpListOf(a), net=cpNetPaid(a), total=Number(f.customer_total||0), balance=total-net;
     var rows = pays.length ? pays.map(function(p){
+      var st=p.status||'approved';
+      if(p.kind==='refund' && st!=='approved'){
+        var badge = st==='pending'
+          ? '<span class="status-pill sp-progress" style="font-size:11px">Pending approval</span>'
+          : '<span class="status-pill" style="font-size:11px;background:#eef2f7;color:#64748b">Rejected</span>';
+        var extra = (st==='rejected' && p.reject_reason) ? (' · '+esc(p.reject_reason)) : (p.reason?(' · '+esc(p.reason)):'');
+        return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed var(--blue-100);font-size:13.5px">'+
+          '<div>Refund request · −'+money(p.amount)+' '+badge+extra+'</div>'+
+          '<div style="white-space:nowrap;color:var(--muted)">'+esc(new Date(p.created_at).toLocaleDateString())+'</div>'+
+        '</div>';
+      }
       var amt=(p.kind==='refund'?'−':'')+money(p.amount);
       var proof=p.proof_path?(' · <a href="#" class="cp-proof" data-path="'+esc(p.proof_path)+'">proof</a>'):'';
       return '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px dashed var(--blue-100);font-size:13.5px">'+
@@ -1122,6 +1150,7 @@
       '<div class="field"><label class="ulabel">Method</label><select data-cp="method"><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="upi">UPI</option><option value="card">Card</option><option value="cheque">Cheque</option><option value="other">Other</option></select></div></div>'+
       '<div class="grid2"><div class="field"><label class="ulabel">Reference (optional)</label><input data-cp="reference" type="text"></div>'+
       '<div class="field"><label class="ulabel">Proof (optional)</label><input data-cp="proof" type="file" accept="image/*,application/pdf"></div></div>'+
+      (kind==='refund'?'<div class="field"><label class="ulabel">Reason</label><input data-cp="reason" type="text" placeholder="why this refund"></div>':'')+
       '<div class="field"><label class="ulabel">Remarks (optional)</label><input data-cp="remarks" type="text"></div>'+
       '<div style="display:flex;gap:10px;align-items:center"><button class="btn btn-primary" data-cp="save">Save '+(kind==='refund'?'refund':'payment')+'</button><button class="link-btn" data-cp="cancel">Cancel</button></div>'+
     '</div>'; }
@@ -1269,11 +1298,15 @@
           if(!(amt>0)){ toast('Enter a valid amount.'); return; }
           var sbtn=form.querySelector('[data-cp="save"]'); sbtn.disabled=true; sbtn.innerHTML='<span class="spin"></span>';
           var fileEl=form.querySelector('[data-cp="proof"]'); var file=fileEl&&fileEl.files[0];
-          var ins=function(proofPath){ return sb.from('customer_payments').insert({ application_id:a.id, kind:kind, amount:amt,
-            method:form.querySelector('[data-cp="method"]').value,
-            reference:(form.querySelector('[data-cp="reference"]').value||'').trim()||null,
-            remarks:(form.querySelector('[data-cp="remarks"]').value||'').trim()||null,
-            proof_path:proofPath||null, received_by:(state.user&&state.user.id)||null }); };
+          var ins=function(proofPath){
+            var row={ application_id:a.id, kind:kind, amount:amt,
+              method:form.querySelector('[data-cp="method"]').value,
+              reference:(form.querySelector('[data-cp="reference"]').value||'').trim()||null,
+              remarks:(form.querySelector('[data-cp="remarks"]').value||'').trim()||null,
+              proof_path:proofPath||null, received_by:(state.user&&state.user.id)||null };
+            if(kind==='refund'){ var rs=form.querySelector('[data-cp="reason"]'); row.reason=((rs&&rs.value)||'').trim()||null; row.status='approved'; row.approved_by=(state.user&&state.user.id)||null; row.approved_at=new Date().toISOString(); }
+            return sb.from('customer_payments').insert(row);
+          };
           var up=Promise.resolve(null);
           if(file){ if(file.size>10485760){ toast('Proof file is over 10 MB.'); sbtn.disabled=false; sbtn.innerHTML='Save '+kind; return; }
             var ext=(file.name.split('.').pop()||'dat').toLowerCase(); var path='finance/'+a.id+'/pay_'+Date.now()+'.'+ext;
@@ -1285,6 +1318,29 @@
       });
       card.querySelectorAll('.cp-receipt').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var p=cpListOf(a).filter(function(x){return x.id===l.getAttribute('data-id');})[0]; if(p) openReceipt(p,a); }; });
       card.querySelectorAll('.cp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var path=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; sb.storage.from('finance-files').createSignedUrl(path,3600).then(function(s){ l.textContent=o; if(s.error||!s.data){ toast('Could not open proof.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); }; });
+    }
+
+    // Refund request (Operations/Sales) — raises a pending request for finance.
+    if(hasRole(['agent','sales'])){
+      var rfForm=card.querySelector('.rfreq-form');
+      var rfOpen=card.querySelector('[data-rfreq="open"]');
+      if(rfOpen&&rfForm){
+        rfOpen.onclick=function(){ rfForm.style.display=rfForm.style.display==='none'?'block':'none'; };
+        rfForm.querySelector('[data-rfreq="cancel"]').onclick=function(){ rfForm.style.display='none'; };
+        rfForm.querySelector('[data-rfreq="save"]').onclick=function(){
+          var amt=Number(rfForm.querySelector('[data-rfreq="amount"]').value);
+          var reason=(rfForm.querySelector('[data-rfreq="reason"]').value||'').trim();
+          if(!(amt>0)){ toast('Enter a valid amount.'); return; }
+          if(!reason){ toast('Please add a reason.'); return; }
+          var b=rfForm.querySelector('[data-rfreq="save"]'); b.disabled=true; b.innerHTML='<span class="spin"></span>';
+          sb.from('customer_payments').insert({ application_id:a.id, kind:'refund', amount:amt, status:'pending', reason:reason, requested_by:(state.user&&state.user.id)||null }).then(function(r){
+            b.disabled=false; b.innerHTML='Send request to finance';
+            if(r.error){ toast('Could not send request.'); console.error(r.error); return; }
+            logFinance('customer_payment', a.id, 'refund-request', 'Refund request '+money(amt)+' — '+reason);
+            toast('Refund request sent to finance'); renderAdmin();
+          });
+        };
+      }
     }
 
     if(!canProcessApps()) return; // viewers: read-only, no editing controls present
@@ -2110,7 +2166,7 @@
   // ============================================================
   //  SUPPLIERS (Finance) — supplier master
   // ============================================================
-  var supList=[], supEditing=null;
+  var supList=[], supEditing=null, rfList=[];
   var SUP_TYPES=['Embassy','Processing partner','Other'];
 
   // Append-only finance audit entry (who/what/when + remarks).
@@ -2213,6 +2269,63 @@
         supEditing=null; toast('Supplier saved'); renderSuppliers();
       });
     };
+  }
+
+  // ============================================================
+  //  REFUND REQUESTS QUEUE (Finance) — approve / reject
+  // ============================================================
+  function renderRefunds(){
+    if(!isFinance()){ go(defaultStaffView()); return; }
+    root.innerHTML='<div class="app-main">'+adminSections('refunds')+
+      '<div class="app-head"><h1>Refund requests</h1><p>Requests awaiting your decision. Approve with the refund payment details, or reject with a reason.</p></div>'+
+      '<div id="rfArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    sb.from('customer_payments').select('*, applications(full_name,reference_code,email,visa_type)').eq('kind','refund').eq('status','pending').order('created_at').then(function(r){
+      if(r.error){ document.getElementById('rfArea').innerHTML='<div class="empty-state"><p>Could not load refund requests.</p></div>'; console.error(r.error); return; }
+      rfList=r.data||[]; paintRefunds();
+    });
+  }
+  function paintRefunds(){
+    var area=document.getElementById('rfArea'); if(!area) return;
+    if(!rfList.length){ area.innerHTML='<div class="panel empty-state"><p>No pending refund requests. 🎉</p></div>'; return; }
+    area.innerHTML=rfList.map(function(p){
+      var app=p.applications||{};
+      var vn=visaById(app.visa_type)?visaById(app.visa_type).name:(app.visa_type||'');
+      return '<div class="admin-app" data-rfid="'+esc(p.id)+'"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h4>'+esc(app.full_name||'(customer)')+' · '+money(p.amount)+'</h4>'+
+        '<div class="meta">'+esc(app.reference_code||'')+(vn?(' · '+esc(vn)):'')+' · '+esc(app.email||'')+'</div>'+
+        '<div class="meta">Reason: '+esc(p.reason||'—')+' · requested '+esc(new Date(p.created_at).toLocaleDateString())+'</div></div></div>'+
+        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">'+
+          '<select data-rf="method" style="width:150px"><option value="bank">Bank transfer</option><option value="upi">UPI</option><option value="cash">Cash</option><option value="card">Card reversal</option><option value="cheque">Cheque</option><option value="other">Other</option></select>'+
+          '<input data-rf="reference" type="text" placeholder="reference (optional)" style="flex:1;min-width:140px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px">'+
+          '<button class="btn btn-primary" data-rf="approve">Approve &amp; process</button>'+
+          '<button class="btn btn-ghost" data-rf="reject" style="color:var(--red)">Reject</button>'+
+        '</div></div>';
+    }).join('');
+    area.querySelectorAll('[data-rf="approve"]').forEach(function(b){ b.onclick=function(){
+      var card=b.closest('[data-rfid]'); var id=card.getAttribute('data-rfid');
+      var method=card.querySelector('[data-rf="method"]').value;
+      var ref=(card.querySelector('[data-rf="reference"]').value||'').trim()||null;
+      b.disabled=true; b.innerHTML='<span class="spin"></span>';
+      sb.from('customer_payments').update({ status:'approved', method:method, reference:ref, approved_by:(state.user&&state.user.id)||null, approved_at:new Date().toISOString() }).eq('id',id).then(function(r){
+        if(r.error){ b.disabled=false; b.innerHTML='Approve & process'; toast('Could not approve.'); console.error(r.error); return; }
+        var p=rfList.filter(function(x){return x.id===id;})[0];
+        logFinance('customer_payment', p?p.application_id:null, 'refund-approve', 'Approved refund '+money(p?p.amount:0));
+        toast('Refund approved'); renderRefunds();
+      });
+    }; });
+    area.querySelectorAll('[data-rf="reject"]').forEach(function(b){ b.onclick=function(){
+      var card=b.closest('[data-rfid]'); var id=card.getAttribute('data-rfid');
+      var reason=window.prompt('Reason for rejecting this refund request?'); if(reason===null) return;
+      b.disabled=true; b.innerHTML='<span class="spin"></span>';
+      sb.from('customer_payments').update({ status:'rejected', reject_reason:(reason||'').trim()||null, approved_by:(state.user&&state.user.id)||null, approved_at:new Date().toISOString() }).eq('id',id).then(function(r){
+        if(r.error){ b.disabled=false; b.innerHTML='Reject'; toast('Could not reject.'); console.error(r.error); return; }
+        var p=rfList.filter(function(x){return x.id===id;})[0];
+        logFinance('customer_payment', p?p.application_id:null, 'refund-reject', 'Rejected refund '+money(p?p.amount:0)+(reason?(' — '+reason):''));
+        toast('Refund rejected'); renderRefunds();
+      });
+    }; });
   }
 
   // ============================================================
@@ -3397,7 +3510,7 @@
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
-    if(v==='suppliers' && !isFinance()) v=defaultStaffView();
+    if((v==='suppliers'||v==='refunds') && !isFinance()) v=defaultStaffView();
     state.view=v;
 
     // Backend sidebar layout: shift content right only on staff console screens.
@@ -3420,6 +3533,7 @@
     else if(v==='custview') renderCustomerDetail(custViewId);
     else if(v==='comms') renderComms();
     else if(v==='suppliers') renderSuppliers();
+    else if(v==='refunds') renderRefunds();
     else if(v==='team') renderTeam();
     else if(v==='setpw') renderSetPassword();
     else renderApply();
@@ -3428,7 +3542,7 @@
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','team','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','refunds','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
