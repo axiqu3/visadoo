@@ -125,6 +125,31 @@
 .doc-links a{font-size:13px;font-weight:700;color:var(--blue-700);background:var(--sky-50);border:1px solid var(--blue-100);padding:7px 13px;border-radius:9px}
 .doc-links a:hover{background:var(--blue-100)}
 
+/* Compact application list (rows → click opens full detail page) */
+.app-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.app-search{flex:1;min-width:220px;position:relative}
+.app-search input{width:100%;padding:12px 14px 12px 40px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:14.5px;color:var(--ink);background:#fff}
+.app-search input:focus{outline:none;border-color:var(--blue-500);box-shadow:0 0 0 3px var(--blue-100)}
+.app-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);pointer-events:none}
+.app-list{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+.app-row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-top:1px solid var(--line);cursor:pointer;transition:background .12s}
+.app-row:first-child{border-top:none}
+.app-row:hover{background:var(--sky-50)}
+.app-row .ar-main{flex:1;min-width:0}
+.app-row .ar-name{font-weight:700;font-size:15px;color:var(--ink);line-height:1.3}
+.app-row .ar-ref{font-weight:600;color:var(--muted);font-size:12.5px}
+.app-row .ar-sub{color:var(--muted);font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-row .ar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.app-row .ar-date{color:var(--muted);font-size:12.5px;white-space:nowrap}
+.app-row .ar-chev{color:var(--blue-400);flex-shrink:0}
+.status-pill.pill-sm{font-size:11px;padding:4px 10px}
+.app-loadmore{display:flex;justify-content:center;margin-top:16px}
+@media (max-width:640px){
+  .app-row{padding:12px 13px;gap:10px}
+  .app-row .ar-date{display:none}
+  .app-row .ar-name{font-size:14.5px}
+}
+
 @media (max-width:640px){
   .grid2,.visa-pick,.upload-row{grid-template-columns:1fr}
   .app-head h1{font-size:25px}

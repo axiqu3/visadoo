@@ -706,10 +706,23 @@
     });
   }
 
+  function statusPillClass(s){ return s==='Visa Issued'?'sp-done':(s==='Action Needed'?'sp-action':'sp-progress'); }
   function statusPill(status){
-    if(status==='Visa Issued') return '<span class="status-pill sp-done">'+esc(status)+'</span>';
-    if(status==='Action Needed') return '<span class="status-pill sp-action">'+esc(status)+'</span>';
-    return '<span class="status-pill sp-progress">'+esc(status)+'</span>';
+    return '<span class="status-pill '+statusPillClass(status)+'">'+esc(status)+'</span>';
+  }
+  // Country name for a visa (for the compact application rows). Empty if not resolvable yet.
+  function visaCountryName(a){ var v=visaById(a.visa_type); if(!v||!v.country_slug) return '';
+    for(var i=0;i<countryList.length;i++){ if(countryList[i].slug===v.country_slug) return countryList[i].name; } return ''; }
+  // Small customer-payment pill for a row (finance only). Mirrors the panel logic incl. "Advance".
+  function rowPayPill(a){
+    if(!isFinance()) return '';
+    var f=finOf(a); if(!f) return '';
+    var net=cpNetPaid(a), total=Number(f.customer_total||0);
+    if(total<=0 && net>0) return '<span class="status-pill sp-progress pill-sm">Advance</span>';
+    var s=f.customer_payment_status||'unpaid';
+    var map={paid:['sp-done','Paid'],partial:['sp-progress','Partial'],unpaid:['','Unpaid'],refunded:['sp-action','Refunded']};
+    var m=map[s]||['',s], ex=(s==='unpaid')?' style="background:#eef2f7;color:#64748b"':'';
+    return '<span class="status-pill pill-sm '+m[0]+'"'+ex+'>'+esc(m[1])+'</span>';
   }
 
   // ---- shared "Action Needed" conversation thread (staff request <-> customer reply) ----
@@ -811,6 +824,8 @@
   // ============================================================
   var ALL_STATUSES = cfg.STAGES.concat(['Action Needed']);
   var adminRows = [], finSuppliers = [], finSettings = {}, finBrand = {};
+  var appViewId = null;                 // application open on its own detail page
+  var ADMIN_PAGE = 25, adminLimit = ADMIN_PAGE; // compact-list "Load more" batching
   // Finance maths (cost lines + margin ₹/% + flexible GST). All INR.
   var COST_CATEGORIES=['Visa processing','Insurance','Express delivery','Voucher','Other'];
   function computeFin(lines, marginType, marginValue, gstMode, gstRate){
@@ -861,7 +876,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','enquiries','customers','custview','comms','suppliers','supview','refunds','reports','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','comms','suppliers','supview','refunds','reports','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -937,6 +952,7 @@
 
   function renderAdmin(){
     if(!canViewApps()){ go(defaultStaffView()); return; }
+    adminLimit=ADMIN_PAGE;
     if(!countryList.length){ loadCountriesGroups().then(function(){ var sel=document.getElementById('afCountry'); if(sel) sel.innerHTML=afCountryOptions(); }); }
     var canProc=canProcessApps();
     root.innerHTML=
@@ -947,13 +963,18 @@
           (canProc?'<button class="btn btn-primary" id="adminNewApp">+ New application for a customer</button>':'')+
         '</div>' +
         '<div style="margin-bottom:14px">'+
-          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+          '<div class="app-toolbar">'+
+            '<div class="app-search">'+
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+
+              '<input id="adminSearch" type="text" value="'+esc(adminFilters.q)+'" placeholder="Search name, reference, email, phone, passport…">'+
+            '</div>'+
             '<button class="btn btn-ghost" id="adminFiltersBtn" type="button">Filters'+(adminActiveCount()?(' ('+adminActiveCount()+')'):'')+'</button>'+
+          '</div>'+
+          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px">'+
             '<span id="adminCount" class="phint" style="margin:0"></span>'+
             '<button class="link-btn" id="adminClear" type="button" style="margin-left:auto;display:none">Clear all</button>'+
           '</div>'+
           '<div id="adminFilterPanel" class="panel" style="margin-top:12px;'+(adminFiltersOpen?'':'display:none')+'">'+
-            '<div class="field"><label>Search</label><input id="afQ" type="text" value="'+esc(adminFilters.q)+'" placeholder="Name, email, phone, passport, or reference…"></div>'+
             '<div class="grid2">'+
               '<div class="field"><label>Visa type</label><select id="afVisa">'+afVisaOptions()+'</select></div>'+
               '<div class="field"><label>Status / stage</label><select id="afStatus">'+afStatusOptions()+'</select></div>'+
@@ -988,9 +1009,10 @@
       adminFilters.custpay='all'; adminFilters.supplier=''; adminFilters.unread=false; adminFilters.pendingref=false;
       renderAdmin(); return;
     };
-    function bind(id,key,ev){ var el=document.getElementById(id); if(el) el[ev]=function(){ adminFilters[key]=el.value; paintAdminList(); }; }
-    function bindChk(id,key){ var el=document.getElementById(id); if(el) el.onchange=function(){ adminFilters[key]=el.checked; paintAdminList(); }; }
-    bind('afQ','q','oninput'); bind('afVisa','visa','onchange'); bind('afStatus','status','onchange');
+    function bind(id,key,ev){ var el=document.getElementById(id); if(el) el[ev]=function(){ adminFilters[key]=el.value; adminLimit=ADMIN_PAGE; paintAdminList(); }; }
+    function bindChk(id,key){ var el=document.getElementById(id); if(el) el.onchange=function(){ adminFilters[key]=el.checked; adminLimit=ADMIN_PAGE; paintAdminList(); }; }
+    var srch=document.getElementById('adminSearch'); if(srch) srch.oninput=function(){ adminFilters.q=srch.value; adminLimit=ADMIN_PAGE; paintAdminList(); };
+    bind('afVisa','visa','onchange'); bind('afStatus','status','onchange');
     bind('afCountry','country','onchange'); bind('afSort','sort','onchange'); bind('afFrom','from','onchange'); bind('afTo','to','onchange');
     bind('afCustpay','custpay','onchange'); bind('afSupplier','supplier','onchange');
     bindChk('afUnread','unread'); bindChk('afPendingRef','pendingref');
@@ -1046,8 +1068,32 @@
     var fb=document.getElementById('adminFiltersBtn'); if(fb) fb.textContent='Filters'+(adminActiveCount()?(' ('+adminActiveCount()+')'):'');
     if(!adminRows.length){ box.innerHTML='<div class="panel empty-state"><p>No applications yet.</p></div>'; return; }
     if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No applications match your search or filters.</p></div>'; return; }
-    box.innerHTML=rows.map(adminCard).join('');
-    rows.forEach(wireAdminCard);
+    var shown=rows.slice(0, adminLimit), remaining=rows.length-shown.length;
+    box.innerHTML='<div class="app-list">'+shown.map(adminRowHtml).join('')+'</div>'+
+      (remaining>0 ? ('<div class="app-loadmore"><button class="btn btn-ghost" id="adminMore" type="button">Load more ('+remaining+' more)</button></div>') : '');
+    box.querySelectorAll('.app-row[data-open]').forEach(function(el){ el.onclick=function(){ openApp(el.getAttribute('data-open')); }; });
+    var more=document.getElementById('adminMore'); if(more) more.onclick=function(){ adminLimit+=ADMIN_PAGE; paintAdminList(); };
+  }
+
+  // One tidy line per application in the list. Click → full detail page (renderAppDetail).
+  function adminRowHtml(a){
+    var created=new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+    var visaName=visaById(a.visa_type)?visaById(a.visa_type).name:a.visa_type;
+    var cn=visaCountryName(a);
+    var unread=a.unread_reply?' <span class="status-pill sp-action pill-sm">New reply</span>':'';
+    var pendRef=(a.customer_payments||[]).some(function(p){return p.kind==='refund'&&(p.status||'')==='pending';})
+      ? '<span class="status-pill sp-progress pill-sm">Refund req</span>' : '';
+    return '<div class="app-row" data-open="'+esc(a.id)+'">'+
+      '<div class="ar-main">'+
+        '<div class="ar-name">'+esc(a.full_name||'(no name)')+'<span class="ar-ref"> · '+esc(a.reference_code||'')+'</span>'+unread+'</div>'+
+        '<div class="ar-sub">'+esc(visaName)+(cn?(' · '+esc(cn)):'')+'</div>'+
+      '</div>'+
+      '<div class="ar-right">'+rowPayPill(a)+pendRef+
+        '<span class="status-pill pill-sm '+statusPillClass(a.status)+'">'+esc(a.status)+'</span>'+
+        '<span class="ar-date">'+created+'</span>'+
+        '<svg class="ar-chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'+
+      '</div>'+
+    '</div>';
   }
 
   function docLabel(t){ return t==='visa'?'visa':(t==='photo'?'photo':'passport'); }
@@ -1310,7 +1356,7 @@
           fsave.disabled=false; fsave.innerHTML='Save finance';
           if(r&&r.error) throw r.error;
           logFinance('application_finance', a.id, existed?'update':'create', 'Finance saved — selling '+money(c.selling)+', GST '+money(c.gst)+', total '+money(c.total)+', cost '+money(c.totalCost)+', margin '+money(c.marginAmt));
-          toast('Finance saved'); renderAdmin();
+          toast('Finance saved'); afterAppSave(a.id);
         }).catch(function(err){ fsave.disabled=false; fsave.innerHTML='Save finance'; toast('Could not save finance.'); console.error(err); });
       };
 
@@ -1340,7 +1386,7 @@
             var ext=(file.name.split('.').pop()||'dat').toLowerCase(); var path='finance/'+a.id+'/pay_'+Date.now()+'.'+ext;
             up=sb.storage.from('finance-files').upload(path,file,{upsert:false}).then(function(u){ if(u.error) throw u.error; return path; });
           }
-          up.then(ins).then(function(r){ if(r.error) throw r.error; logFinance('customer_payment', a.id, kind, (kind==='refund'?'Refund ':'Payment ')+money(amt)); toast('Saved'); renderAdmin(); })
+          up.then(ins).then(function(r){ if(r.error) throw r.error; logFinance('customer_payment', a.id, kind, (kind==='refund'?'Refund ':'Payment ')+money(amt)); toast('Saved'); afterAppSave(a.id); })
             .catch(function(err){ sbtn.disabled=false; sbtn.innerHTML='Save '+kind; toast('Could not save. Please try again.'); console.error(err); });
         };
       });
@@ -1365,7 +1411,7 @@
             b.disabled=false; b.innerHTML='Send request to finance';
             if(r.error){ toast('Could not send request.'); console.error(r.error); return; }
             logFinance('customer_payment', a.id, 'refund-request', 'Refund request '+money(amt)+' — '+reason);
-            toast('Refund request sent to finance'); renderAdmin();
+            toast('Refund request sent to finance'); afterAppSave(a.id);
           });
         };
       }
@@ -1420,7 +1466,7 @@
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
         toast('Updated '+a.full_name.split(' ')[0]+'’s application to “'+status+'”');
         if(status!==prevStatus) notifyStatusChange(a.id, status, a.full_name);
-        renderAdmin();
+        afterAppSave(a.id);
       }).catch(function(err){
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
         if(err && (''+err.message).indexOf('VISA_DOC_REQUIRED')>-1){
@@ -1431,6 +1477,39 @@
         console.error(err);
       });
     };
+  }
+
+  // Open one application on its own full detail page (compact list → detail).
+  function openApp(id){ appViewId=id; state.view='appview'; location.hash='appview/'+encodeURIComponent(id); renderHeader(); render(); }
+  // After a save, stay on the detail page if that's where we are; else refresh the list.
+  function afterAppSave(id){ if(state.view==='appview' && appViewId===id) renderAppDetail(id); else renderAdmin(); }
+
+  function renderAppDetail(id){
+    if(!canViewApps()){ go(defaultStaffView()); return; }
+    if(!id){ go('admin'); return; }
+    if(!countryList.length) loadCountriesGroups();
+    root.innerHTML='<div class="app-main">'+adminSections('admin')+
+      '<button class="link-btn" id="appBack" style="margin-bottom:10px">← Back to applications</button>'+
+      '<div id="appDetail"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    document.getElementById('appBack').onclick=function(){ go('admin'); };
+    var R=function(d){ return Promise.resolve({data:d}); };
+    Promise.all([
+      sb.from('applications').select('*, documents(*), app_messages(*), application_finance(*), customer_payments(*), application_cost_lines(*)').eq('id',id).single(),
+      isFinance() ? sb.from('suppliers').select('id,name').eq('active',true).order('name') : R([]),
+      isFinance() ? sb.from('finance_settings').select('*').eq('id','global').single() : R(null),
+      isFinance() ? sb.from('site_settings').select('brand_name,brand_color,logo_url,contact_email,contact_phone,contact_whatsapp').eq('id','global').single() : R(null)
+    ]).then(function(res){
+      var box=document.getElementById('appDetail'); if(!box) return;
+      if(res[0].error||!res[0].data){ box.innerHTML='<div class="panel empty-state"><p>Could not load this application.</p></div>'; console.error(res[0].error); return; }
+      var a=res[0].data;
+      if(res[1].data) finSuppliers=res[1].data;
+      if(res[2].data) finSettings=res[2].data;
+      if(res[3].data) finBrand=res[3].data;
+      box.innerHTML=adminCard(a);
+      wireAdminCard(a);
+    });
   }
 
   // ============================================================
@@ -3724,6 +3803,7 @@
     if(isStaff() && (v==='apply'||v==='track')) v=defaultStaffView();
     // permission guards — bounce to an allowed area
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
+    if(v==='appview' && (!canViewApps() || !appViewId)) v='admin';
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
@@ -3739,6 +3819,7 @@
     if(v==='apply') renderApply();
     else if(v==='track') renderTrack();
     else if(v==='admin') renderAdmin();
+    else if(v==='appview') renderAppDetail(appViewId);
     else if(v==='destinations') renderDestinationsAdmin();
     else if(v==='visatypes') renderVisaTypesAdmin();
     else if(v==='articles') renderArticlesAdmin();
@@ -3761,6 +3842,7 @@
 
   function resolveStartView(){
     var h=(location.hash||'').replace('#','');
+    if(h.indexOf('appview/')===0){ appViewId=decodeURIComponent(h.slice(8))||null; return appViewId?'appview':'admin'; }
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
     if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','refunds','reports','team','setpw'].indexOf(h)>-1) return h;
