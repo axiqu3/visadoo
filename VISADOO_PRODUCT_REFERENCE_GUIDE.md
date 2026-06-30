@@ -261,4 +261,12 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 ---
 
+## Revision history
+
+_This guide is kept current: it is updated whenever a major feature or new module is added._
+
+- **30 Jun 2026** — Initial Product Reference Guide created. Reflects: finance module (cost lines, margin, GST, customer payments + numbered receipts, refunds, supplier ledgers, finance reports); automated email + WhatsApp notifications (status, application received, payment received, review request); backend console redesign (compact lists → detail pages for Applications, Customers, Suppliers); INR-only pricing; mobile-number field with country picker; mobile WhatsApp-OTP verification built but switched off pending the WhatsApp template.
+
+---
+
 _End of guide. For the latest feature-by-feature history, see `START_HERE_FOR_NEW_CLAUDE_CHAT.md`; for standing rules, see `CLAUDE.md`._
