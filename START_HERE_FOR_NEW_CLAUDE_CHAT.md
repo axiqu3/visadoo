@@ -2,6 +2,8 @@
 
 _If you are a fresh Claude Code chat, read this first, then the documents listed at the bottom. Do not rely on old chat history — everything you need is in the project files + this doc + the saved memory._
 
+> 📘 **For the best plain-English overview of the whole product (what's built, integrations, roles, database, security, roadmap, handover notes), read [`VISADOO_PRODUCT_REFERENCE_GUIDE.md`](VISADOO_PRODUCT_REFERENCE_GUIDE.md)** — there is also a Word version, `VISADOO_PRODUCT_REFERENCE_GUIDE.docx`, for sharing with non-technical staff. This START_HERE file remains the detailed feature-by-feature build log.
+
 ---
 
 ## 1. What the app is & who it's for
@@ -90,8 +92,9 @@ RLS policies; auth/role functions (`set_user_role`, `handle_new_user`, `is_admin
 > "You are continuing the Visa Doo project. First read `START_HERE_FOR_NEW_CLAUDE_CHAT.md`, then `CLAUDE.md`, `FUTURE_MODULE_ROADMAP.md`, `PRODUCT_ARCHITECTURE_AUDIT.md`, `DATABASE_SCALING_REVIEW.md`, `SECURITY_AND_LAUNCH_READINESS_AUDIT.md`, and `CLAUDE_CODE_WORKFLOW_GUIDE.md`, plus the saved project memory. I'm the non-technical CEO — explain in plain English. We're starting **Phase 1: the Customer record + Consent + Notification & Automation Engine foundation**. Do NOT build yet — confirm a clean git status, create a `before-<feature>` checkpoint, tell me in plain English what tables/files you'll touch and why, ask me any business-priority questions one at a time, and wait for my go. Follow all CLAUDE.md rules; no secrets in code/chat; one feature at a time with before/after checkpoints."
 
 ## 12. Documents a fresh chat must read before making changes
-1. `START_HERE_FOR_NEW_CLAUDE_CHAT.md` (this file)
-2. `CLAUDE.md` (standing rules)
+1. `VISADOO_PRODUCT_REFERENCE_GUIDE.md` (plain-English product overview — start here for the big picture; also available as .docx)
+2. `START_HERE_FOR_NEW_CLAUDE_CHAT.md` (this file)
+3. `CLAUDE.md` (standing rules)
 3. `FUTURE_MODULE_ROADMAP.md` (phases, priorities)
 4. `PRODUCT_ARCHITECTURE_AUDIT.md`
 5. `DATABASE_SCALING_REVIEW.md`
