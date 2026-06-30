@@ -75,7 +75,7 @@ Staff sign in and use a private console (a left-hand sidebar groups everything).
   - **Suppliers** — your visa suppliers, each showing an Outstanding/Settled balance, with a Statement of Account page and the ability to record payments to them.
   - **Refund requests** — a queue where operations/sales raise refund requests and finance approves or rejects them.
   - **Finance reports** — receivables, supplier payables, and profit margins, each exportable to CSV.
-- **Catalogue group** — **Destinations** (countries/groups) and **Visa Types** (add/edit visas, prices, processing time, per-visa questions, SEO).
+- **Catalogue group** — **Destinations** (countries/groups), **Visa Types** (add/edit visas, prices, processing time, per-visa questions, SEO), and **Events** (add/edit international events that promote a country's visas — name, country, category, dates, image, on/off).
 - **Content group** — **Articles**, **Content** (pages/FAQs/reviews), and **Site SEO**.
 - **Settings group** — **Brand & Settings**, **Email**, and **Team** (invite staff, set roles).
 
@@ -86,6 +86,7 @@ Staff sign in and use a private console (a left-hand sidebar groups everything).
 ## 5. Customer-facing features
 
 - **Public website** (visadoo-uae.netlify.app): homepage with destination search, reviews, FAQs, and the brand message; individual country and visa pages built to be Google-friendly.
+- **Events** (`/events`, linked in the menu): an Atlys-style page of international events grouped by month with category tabs; each event has its own page that promotes that country's visas ("Get [Country] visa", with a recommended lead-time before the event).
 - **Sign-in:** customers use an emailed "magic link" (or Google); staff can use email + password. There's also a "set/forgot password" flow for staff.
 - **Apply flow:** choose visa → fill details → upload documents → answer any extra questions → submit → get a reference code.
 - **Mobile number with country picker** and (once switched on) WhatsApp code verification.
@@ -268,6 +269,7 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 _This guide is kept current: it is updated whenever a major feature or new module is added._
 
+- **30 Jun 2026** — Events module LIVE: public `/events` page (month timeline + category tabs) + dedicated per-event pages promoting each country's visas + "Events" menu link; backend Events manager under Catalogue. (events table; edge functions events.js + event.js.)
 - **30 Jun 2026** — Messaging split into three screens (Automations · Message templates · Message history) under the Messaging group; message history gained filters (channel/status/type/date/search) + CSV export.
 - **30 Jun 2026** — Birthday module **LIVE**: WhatsApp auto-greeting + 10% offer (code HAPPYBDAY10, 15 days) to opted-in customers, daily 9 AM IST. Template `birthday_offer` approved by Meta; tested and switched on.
 - **30 Jun 2026** — Initial Product Reference Guide created. Reflects: finance module (cost lines, margin, GST, customer payments + numbered receipts, refunds, supplier ledgers, finance reports); automated email + WhatsApp notifications (status, application received, payment received, review request); backend console redesign (compact lists → detail pages for Applications, Customers, Suppliers); INR-only pricing; mobile-number field with country picker; mobile WhatsApp-OTP verification built but switched off pending the WhatsApp template.

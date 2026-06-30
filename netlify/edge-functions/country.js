@@ -72,7 +72,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     '</head><body>'+
     '<header class="header"><div class="container nav">'+
       '<a href="/" class="brand">'+brandMark()+'</a>'+
-      '<div class="nav-actions"><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'+
+      '<div class="nav-actions"><a href="/events" class="btn btn-ghost">Events</a><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'+
     '</div></header>'+
     '<section class="hero sky"><div class="container" style="text-align:center;padding:54px 0 30px;max-width:760px">'+
       (c.iso2?'<img src="'+flag(c.iso2)+'" alt="'+esc(c.name)+' flag" style="width:84px;height:56px;object-fit:cover;border-radius:8px;box-shadow:var(--shadow-sm);margin-bottom:18px">':'')+

@@ -23,7 +23,7 @@ function card(e){
   var bg = img
     ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.78)),url('+esc(img)+')'
     : 'background:linear-gradient(160deg,var(--blue-600),var(--blue-900))';
-  return '<a class="ev-card" href="/country/'+encodeURIComponent(e.country_slug)+'" data-cat="'+esc(e.category||'')+'" style="'+bg+'">'+
+  return '<a class="ev-card" href="/event/'+encodeURIComponent(e.slug)+'" data-cat="'+esc(e.category||'')+'" style="'+bg+'">'+
     '<div class="ev-name">'+esc(e.name||'')+'</div>'+
   '</a>';
 }
@@ -74,7 +74,7 @@ function pageHtml(events, cats, brandColor){
     '</head><body>'+
     '<header class="header"><div class="container nav">'+
       '<a href="/" class="brand">'+brandMark()+'</a>'+
-      '<div class="nav-actions"><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'+
+      '<div class="nav-actions"><a href="/events" class="btn btn-ghost">Events</a><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'+
     '</div></header>'+
     '<section class="hero sky"><div class="container" style="text-align:center;padding:54px 0 26px;max-width:760px">'+
       '<h1 style="font-size:clamp(30px,4.6vw,46px);font-weight:800">International Events</h1>'+

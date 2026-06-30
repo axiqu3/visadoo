@@ -4032,8 +4032,9 @@
       '</div>'+
       '<label style="display:flex;align-items:center;gap:9px;font-weight:500;cursor:pointer;margin-top:4px"><input id="evActive" type="checkbox" '+(e.active?'checked':'')+' style="width:auto"> Show on the website (live)</label>'+
       '<div class="signin-msg" id="evMsg"></div>'+
-      '<div style="display:flex;gap:10px;margin-top:12px"><button class="btn btn-primary" id="evSave">'+(e.id?'Save changes':'Create event')+'</button>'+
+      '<div style="display:flex;gap:10px;margin-top:12px;align-items:center"><button class="btn btn-primary" id="evSave">'+(e.id?'Save changes':'Create event')+'</button>'+
         (e.id?'<button class="btn btn-ghost" id="evDel" style="color:var(--red)">Delete</button>':'')+
+        (e.id&&e.slug?'<a class="link-btn" href="/event/'+esc(e.slug)+'" target="_blank" rel="noopener" style="margin-left:auto">View live page ↗</a>':'')+
       '</div>'+
     '</div>';
   }
