@@ -67,8 +67,10 @@ Staff sign in and use a private console (a left-hand sidebar groups everything).
   - **Applications** — the heart of operations. A clean, searchable list; click any application to open its full page (documents, answers, conversation, finance, and the controls to change status, request documents, and attach the issued visa). Filters by status, payment, supplier, new reply, pending refund, and more.
   - **Enquiries** — every contact-form enquiry, logged with a reference (ENQ-000001 series).
   - **Customers** — one clean record per person (auto-gathered from applications and enquiries), with marketing on/off and CSV export.
-- **Messaging group**
-  - **Communications** — turn automations on/off, set the Google review link, edit message templates, and view the full history of every message sent.
+- **Messaging group** (three separate screens, so each can grow without clutter)
+  - **Automations** — turn the review-request automation on/off and set the Google review link. (Other automatic messages — status, application/payment confirmations, birthday — run automatically.)
+  - **Message templates** — view and edit the wording of every automatic email/WhatsApp.
+  - **Message history** — the full log of everything sent, with filters (channel, status, type, date, recipient search) and CSV export.
 - **Finance group** (finance/admin only)
   - **Suppliers** — your visa suppliers, each showing an Outstanding/Settled balance, with a Statement of Account page and the ability to record payments to them.
   - **Refund requests** — a queue where operations/sales raise refund requests and finance approves or rejects them.
@@ -266,6 +268,7 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 _This guide is kept current: it is updated whenever a major feature or new module is added._
 
+- **30 Jun 2026** — Messaging split into three screens (Automations · Message templates · Message history) under the Messaging group; message history gained filters (channel/status/type/date/search) + CSV export.
 - **30 Jun 2026** — Birthday module **LIVE**: WhatsApp auto-greeting + 10% offer (code HAPPYBDAY10, 15 days) to opted-in customers, daily 9 AM IST. Template `birthday_offer` approved by Meta; tested and switched on.
 - **30 Jun 2026** — Initial Product Reference Guide created. Reflects: finance module (cost lines, margin, GST, customer payments + numbered receipts, refunds, supplier ledgers, finance reports); automated email + WhatsApp notifications (status, application received, payment received, review request); backend console redesign (compact lists → detail pages for Applications, Customers, Suppliers); INR-only pricing; mobile-number field with country picker; mobile WhatsApp-OTP verification built but switched off pending the WhatsApp template.
 

@@ -969,7 +969,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','comms','suppliers','supview','refunds','reports','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -978,6 +978,9 @@
       enquiries:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
       customers:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
       comms:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>',
+      automations:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+      templates:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+      msghistory:'<path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-7 3.3M3 4v4h4"/><path d="M12 8v4l3 2"/>',
       destinations:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>',
       visatypes:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><path d="M14 10h4M14 14h4"/>',
       articles:'<path d="M4 4h13v16H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h5"/>',
@@ -997,7 +1000,7 @@
   function adminNavModel(){
     var g=[
       ['Customers',[['admin','Applications',canViewApps()],['enquiries','Enquiries',state.role==='admin'],['customers','Customers',state.role==='admin']]],
-      ['Messaging',[['comms','Communications',state.role==='admin']]],
+      ['Messaging',[['automations','Automations',state.role==='admin'],['templates','Message templates',state.role==='admin'],['msghistory','Message history',state.role==='admin']]],
       ['Finance',[['suppliers','Suppliers',isFinance()],['refunds','Refund requests',isFinance()],['reports','Finance reports',isFinance()]]],
       ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()]]],
       ['Content',[['articles','Articles',canManageContent()],['content','Content',canManageContent()],['siteseo','Site SEO',canManageContent()]]],
@@ -3788,55 +3791,96 @@
     return '<span class="status-pill '+m[0]+'" '+extra+'>'+esc(m[1])+'</span>';
   }
 
-  function renderComms(){
+  // ---- Messaging is split into three screens: Automations · Templates · Message history ----
+  function renderAutomations(){
     if(state.role!=='admin'){ go(defaultStaffView()); return; }
-    if(!VISAS.length) loadVisaTypes();
-    root.innerHTML='<div class="app-main">'+adminSections('comms')+
-      '<div class="app-head"><h1>Communications</h1><p>Your message engine — automations, templates and the history of everything sent.</p></div>'+
-      '<div id="commsArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
+    root.innerHTML='<div class="app-main">'+adminSections('automations')+
+      '<div class="app-head"><h1>Automations</h1><p>Messages that send themselves when something happens.</p></div>'+
+      '<div id="autoArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
     '</div>';
     wireAdminSections();
     Promise.all([
       sb.from('automation_rules').select('*').eq('key','review-request').single(),
-      sb.from('site_settings').select('google_review_url').eq('id','global').single(),
-      sb.from('message_templates').select('*').order('key'),
-      sb.from('messages').select('id,to_address,subject,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').order('created_at',{ascending:false}).limit(500)
+      sb.from('site_settings').select('google_review_url').eq('id','global').single()
     ]).then(function(res){
       commsRule=res[0].data||null;
       commsReviewUrl=(res[1].data&&res[1].data.google_review_url)||'';
-      commsTpls=res[2].data||[];
-      commsMsgs=res[3].data||[];
-      paintComms();
+      paintAutomations();
     });
   }
 
-  function paintComms(){
-    var area=document.getElementById('commsArea'); if(!area) return;
+  function renderTemplates(){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    if(!VISAS.length) loadVisaTypes();
+    root.innerHTML='<div class="app-main">'+adminSections('templates')+
+      '<div class="app-head"><h1>Message templates</h1><p>The wording of your automatic emails and WhatsApp messages.</p></div>'+
+      '<div id="tplArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
+    '</div>';
+    wireAdminSections();
+    sb.from('message_templates').select('*').order('key').then(function(r){ commsTpls=r.data||[]; commsTplEditing=null; paintTemplates(); });
+  }
+
+  function renderMsgHistory(){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    if(!VISAS.length) loadVisaTypes();
+    root.innerHTML='<div class="app-main">'+adminSections('msghistory')+
+      '<div class="app-head"><h1>Message history</h1><p>Every email and WhatsApp the system has sent.</p></div>'+
+      '<div id="histArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
+    '</div>';
+    wireAdminSections();
+    sb.from('messages').select('id,to_address,subject,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').order('created_at',{ascending:false}).limit(500)
+      .then(function(r){ commsMsgs=r.data||[]; paintMsgHistory(); });
+  }
+
+  function paintAutomations(){
+    var area=document.getElementById('autoArea'); if(!area) return;
     var ruleOn=commsRule?commsRule.active:false;
     var urlMissing=!commsReviewUrl;
-    var autoPanel='<div class="panel"><h3 style="font-size:17px;font-weight:800;margin-bottom:4px">Review-request automation</h3>'+
+    area.innerHTML='<div class="panel"><h3 style="font-size:17px;font-weight:800;margin-bottom:4px">Review-request automation</h3>'+
       '<p class="phint" style="margin-top:0">Automatically emails the customer <b>3 days after</b> you mark their visa as “Visa Issued”, asking for a Google review. Opt-outs are always respected.</p>'+
       '<label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:10px 0"><input type="checkbox" id="cmAutoOn" '+(ruleOn?'checked':'')+' style="width:auto"> <span style="font-weight:600">Turn this automation on</span></label>'+
       '<div class="field"><label>Your Google review link</label>'+
         '<input id="cmReviewUrl" type="url" value="'+esc(commsReviewUrl)+'" placeholder="https://g.page/r/your-business/review" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px">'+
         '<p class="phint">Paste the link customers use to leave you a Google review. '+(urlMissing?'<b style="color:var(--red)">Until this is set, review emails are skipped.</b>':'')+'</p></div>'+
       '<div class="signin-msg" id="cmMsg"></div>'+
-      '<button class="btn btn-primary" id="cmSave">Save settings</button></div>';
+      '<button class="btn btn-primary" id="cmSave">Save settings</button></div>'+
+      '<p class="phint" style="margin-top:16px">Your other automatic messages — status updates, application &amp; payment confirmations, and birthday greetings — send automatically and don’t need switching on here.</p>';
+    document.getElementById('cmSave').onclick=function(){
+      var on=document.getElementById('cmAutoOn').checked;
+      var url=document.getElementById('cmReviewUrl').value.trim()||null;
+      var msg=document.getElementById('cmMsg'); var btn=document.getElementById('cmSave');
+      btn.disabled=true; btn.textContent='Saving…';
+      Promise.all([
+        sb.from('automation_rules').update({active:on, updated_at:new Date().toISOString()}).eq('key','review-request'),
+        sb.from('site_settings').update({google_review_url:url}).eq('id','global')
+      ]).then(function(r){
+        btn.disabled=false; btn.textContent='Save settings';
+        if((r[0]&&r[0].error)||(r[1]&&r[1].error)){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent='Could not save.'; return; }
+        if(commsRule) commsRule.active=on; commsReviewUrl=url||''; toast('Saved'); paintAutomations();
+      });
+    };
+  }
 
-    var tplRows=commsTpls.map(function(t){
+  function paintTemplates(){
+    var area=document.getElementById('tplArea'); if(!area) return;
+    if(commsTplEditing){ area.innerHTML=tplEditorHtml(commsTplEditing); wireTplEditor(); return; }
+    area.innerHTML=commsTpls.map(function(t){
       return '<div class="admin-app"><div class="arow"><div><h4>'+esc(t.name)+(t.active?'':' <span class="status-pill" style="background:#eef2f7;color:#64748b">Off</span>')+'</h4>'+
         '<div class="meta">'+esc(t.channel)+' · '+esc(t.subject||'(no subject)')+'</div></div>'+
         '<button class="btn btn-ghost" data-tpledit="'+esc(t.key)+'">Edit</button></div></div>';
     }).join('')||'<div class="panel empty-state"><p>No templates.</p></div>';
-    var tplPanel='<div style="margin-top:26px"><h3 style="font-size:17px;font-weight:800;margin-bottom:8px">Message templates</h3>'+tplRows+'</div>';
+    area.querySelectorAll('[data-tpledit]').forEach(function(b){ b.onclick=function(){
+      var k=b.getAttribute('data-tpledit'); commsTplEditing=JSON.parse(JSON.stringify(commsTpls.filter(function(x){return x.key===k;})[0])); paintTemplates();
+    }; });
+  }
 
+  function paintMsgHistory(){
+    var area=document.getElementById('histArea'); if(!area) return;
     var chOpts=[['','All channels'],['email','Email'],['whatsapp','WhatsApp']];
     var stOpts=[['','All statuses'],['sent','Sent'],['delivered','Delivered'],['queued','Queued'],['failed','Failed'],['skipped','Skipped'],['cancelled','Cancelled']];
     var tyOpts=[['','All types'],['status','Status update'],['apprcvd','Application received'],['payment','Payment received'],['review','Review request'],['birthday','Birthday'],['other','Other']];
     function selOpts(opts,cur){ return opts.map(function(o){ return '<option value="'+esc(o[0])+'"'+(cur===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join(''); }
-    var histPanel='<div style="margin-top:26px">'+
-      '<h3 style="font-size:17px;font-weight:800;margin:0 0 10px">Message history</h3>'+
-      '<div class="app-toolbar">'+
+    area.innerHTML='<div class="app-toolbar">'+
         '<div class="app-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+
         '<input id="cmSearch" type="text" value="'+esc(commsFilters.q)+'" placeholder="Search recipient or subject…"></div>'+
         '<button class="btn btn-ghost" id="cmFiltersBtn" type="button">Filters'+(commsActiveCount()?(' ('+commsActiveCount()+')'):'')+'</button>'+
@@ -3856,33 +3900,11 @@
           '<div class="field"><label>To date</label><input id="cmfTo" type="date" value="'+esc(commsFilters.to)+'"></div>'+
         '</div>'+
       '</div>'+
-      '<div id="cmHist" style="margin-top:12px"></div></div>';
-
-    area.innerHTML=autoPanel+(commsTplEditing?'':tplPanel)+(commsTplEditing?'':histPanel);
-
-    if(commsTplEditing){ area.innerHTML=tplEditorHtml(commsTplEditing); wireTplEditor(); return; }
-
-    document.getElementById('cmSave').onclick=function(){
-      var on=document.getElementById('cmAutoOn').checked;
-      var url=document.getElementById('cmReviewUrl').value.trim()||null;
-      var msg=document.getElementById('cmMsg'); var btn=document.getElementById('cmSave');
-      btn.disabled=true; btn.textContent='Saving…';
-      Promise.all([
-        sb.from('automation_rules').update({active:on, updated_at:new Date().toISOString()}).eq('key','review-request'),
-        sb.from('site_settings').update({google_review_url:url}).eq('id','global')
-      ]).then(function(r){
-        btn.disabled=false; btn.textContent='Save settings';
-        if((r[0]&&r[0].error)||(r[1]&&r[1].error)){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent='Could not save.'; return; }
-        if(commsRule) commsRule.active=on; commsReviewUrl=url||''; toast('Saved'); paintComms();
-      });
-    };
-    area.querySelectorAll('[data-tpledit]').forEach(function(b){ b.onclick=function(){
-      var k=b.getAttribute('data-tpledit'); commsTplEditing=JSON.parse(JSON.stringify(commsTpls.filter(function(x){return x.key===k;})[0])); paintComms();
-    }; });
+      '<div id="cmHist" style="margin-top:12px"></div>';
     var search=document.getElementById('cmSearch'); if(search) search.oninput=function(){ commsFilters.q=search.value; paintHist(); };
     document.getElementById('cmFiltersBtn').onclick=function(){ commsFiltersOpen=!commsFiltersOpen; document.getElementById('cmFilterPanel').style.display=commsFiltersOpen?'':'none'; };
     document.getElementById('cmCsv').onclick=commsCsv;
-    document.getElementById('cmClear').onclick=function(){ commsFilters={ q:'', channel:'', status:'', type:'', from:'', to:'' }; paintComms(); };
+    document.getElementById('cmClear').onclick=function(){ commsFilters={ q:'', channel:'', status:'', type:'', from:'', to:'' }; paintMsgHistory(); };
     function bindCm(id,key){ var el=document.getElementById(id); if(el) el.onchange=function(){ commsFilters[key]=el.value; paintHist(); }; }
     bindCm('cmfChannel','channel'); bindCm('cmfStatus','status'); bindCm('cmfType','type'); bindCm('cmfFrom','from'); bindCm('cmfTo','to');
     paintHist();
@@ -3909,7 +3931,7 @@
   }
 
   function tplEditorHtml(t){
-    return '<div class="panel"><button class="link-btn" id="tplBack" style="margin-bottom:8px">← Back to communications</button>'+
+    return '<div class="panel"><button class="link-btn" id="tplBack" style="margin-bottom:8px">← Back to templates</button>'+
       '<h3 style="font-size:17px;font-weight:800">Edit template — '+esc(t.name)+'</h3>'+
       '<label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:8px 0"><input type="checkbox" id="tplActive" '+(t.active?'checked':'')+' style="width:auto"> <span>Active</span></label>'+
       '<div class="field"><label>Subject</label><input id="tplSubject" type="text" value="'+esc(t.subject||'')+'" style="width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px"></div>'+
@@ -3919,7 +3941,7 @@
       '<div style="display:flex;gap:10px"><button class="btn btn-primary" id="tplSave">Save template</button><button class="btn btn-ghost" id="tplCancel">Cancel</button></div></div>';
   }
   function wireTplEditor(){
-    document.getElementById('tplBack').onclick=document.getElementById('tplCancel').onclick=function(){ commsTplEditing=null; paintComms(); };
+    document.getElementById('tplBack').onclick=document.getElementById('tplCancel').onclick=function(){ commsTplEditing=null; paintTemplates(); };
     document.getElementById('tplSave').onclick=function(){
       var key=commsTplEditing.key, msg=document.getElementById('tplMsg'), btn=document.getElementById('tplSave');
       var payload={ subject:document.getElementById('tplSubject').value, body:document.getElementById('tplBody').value, active:document.getElementById('tplActive').checked, updated_at:new Date().toISOString() };
@@ -3928,7 +3950,7 @@
         btn.disabled=false; btn.textContent='Save template';
         if(r.error){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent='Could not save.'; return; }
         commsTpls.forEach(function(t){ if(t.key===key){ t.subject=payload.subject; t.body=payload.body; t.active=payload.active; } });
-        commsTplEditing=null; toast('Template saved'); paintComms();
+        commsTplEditing=null; toast('Template saved'); paintTemplates();
       });
     };
   }
@@ -3945,7 +3967,7 @@
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if(v==='appview' && (!canViewApps() || !appViewId)) v='admin';
     if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
-    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='comms') && state.role!=='admin') v=defaultStaffView();
+    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='automations'||v==='templates'||v==='msghistory') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
     if((v==='suppliers'||v==='refunds'||v==='supview'||v==='reports') && !isFinance()) v=defaultStaffView();
     if(v==='supview' && !supViewId) v='suppliers';
@@ -3970,7 +3992,9 @@
     else if(v==='enquiries') renderEnquiries();
     else if(v==='customers') renderCustomers();
     else if(v==='custview') renderCustomerDetail(custViewId);
-    else if(v==='comms') renderComms();
+    else if(v==='automations') renderAutomations();
+    else if(v==='templates') renderTemplates();
+    else if(v==='msghistory') renderMsgHistory();
     else if(v==='suppliers') renderSuppliers();
     else if(v==='refunds') renderRefunds();
     else if(v==='supview') renderSupplierDetail(supViewId);
@@ -3985,7 +4009,7 @@
     if(h.indexOf('appview/')===0){ appViewId=decodeURIComponent(h.slice(8))||null; return appViewId?'appview':'admin'; }
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','comms','suppliers','refunds','reports','team','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','automations','templates','msghistory','suppliers','refunds','reports','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
