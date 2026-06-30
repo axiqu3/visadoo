@@ -347,7 +347,11 @@
             field('passport_number','Passport number','text','',true) +
             comboHtml('passport_issuing_country','Passport Issuing Country','Search country…',true) +
             '<div id="stateWrap" style="display:none">'+comboHtml('state','State','Search state…',true)+'</div>' +
-            field('phone','Phone number','tel','',true) +
+            '<div class="field" id="mobileField">'+
+              '<label for="phone">Mobile number <span class="req-star">*</span></label>'+
+              '<input id="phone" name="phone" type="tel" autocomplete="tel" required>'+
+              '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+            '</div>' +
             field('date_of_birth','Date of birth','date','',false) +
             field('passport_expiry','Passport expiry date','date','',false) +
           '</div>' +
@@ -404,10 +408,95 @@
     stateCombo=comboInit('state', function(){ return geoIndiaStates||[]; }, { placeholder:'Search state…' });
     countryCombo=comboInit('passport_issuing_country', function(){ return geoCountries||['India']; }, { selected:'India', onSelect:toggleState });
 
+    initMobileField();
+
     document.getElementById('applyForm').onsubmit=function(e){
       e.preventDefault();
       submitApplication(selected);
     };
+  }
+
+  // ---- Mobile number field (intl-tel-input) + optional WhatsApp OTP verification ----
+  var applyIti=null, mobileOtpRequired=false, mobileVerified=false, verifiedNumber='';
+  function currentMobileE164(){ try { return applyIti ? applyIti.getNumber() : ((document.getElementById('phone')||{}).value||''); } catch(_e){ return ((document.getElementById('phone')||{}).value||''); } }
+  function mobileIsValid(){ if(applyIti && window.intlTelInputUtils){ return applyIti.isValidNumber(); } return currentMobileE164().replace(/\D/g,'').length>=8; }
+
+  function initMobileField(){
+    var input=document.getElementById('phone'); if(!input) return;
+    applyIti=null; mobileOtpRequired=false; mobileVerified=false; verifiedNumber='';
+    if(window.intlTelInput){
+      applyIti=window.intlTelInput(input,{ initialCountry:'in', separateDialCode:true,
+        preferredCountries:['in','ae','sa','qa','kw','om','bh','us','gb'],
+        utilsScript:'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+    }
+    sb.from('site_settings').select('mobile_otp_active').eq('id','global').single().then(function(r){
+      mobileOtpRequired = !!(r.data && r.data.mobile_otp_active);
+      if(mobileOtpRequired) buildOtpUI();
+    });
+    input.addEventListener('input', resetMobileVerify);
+    input.addEventListener('countrychange', resetMobileVerify);
+  }
+  function resetMobileVerify(){
+    if(!mobileOtpRequired) return;
+    if(mobileVerified && currentMobileE164()!==verifiedNumber){ mobileVerified=false; verifiedNumber=''; buildOtpUI(); }
+  }
+  function buildOtpUI(){
+    var area=document.getElementById('otpArea'); if(!area) return;
+    area.style.display='block';
+    if(mobileVerified){ area.innerHTML='<div class="otp-ok">✓ Mobile number verified</div>'; return; }
+    area.innerHTML=
+      '<div class="otp-hint">We’ll send a one-time code to this number on WhatsApp to verify it.</div>'+
+      '<div class="otp-controls"><button type="button" class="btn btn-ghost" id="otpSend">Send verification code</button></div>'+
+      '<div id="otpStep" style="display:none;margin-top:8px">'+
+        '<div class="otp-controls">'+
+          '<input id="otpCode" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code">'+
+          '<button type="button" class="btn btn-primary" id="otpVerify">Verify</button>'+
+          '<button type="button" class="link-btn" id="otpResend" disabled>Resend</button>'+
+        '</div>'+
+        '<div class="otp-msg" id="otpMsg"></div>'+
+      '</div>';
+    document.getElementById('otpSend').onclick=function(){ sendOtp(false); };
+    document.getElementById('otpVerify').onclick=function(){ doVerifyOtp(); };
+    document.getElementById('otpResend').onclick=function(){ sendOtp(true); };
+  }
+  function startResendCooldown(){
+    var resend=document.getElementById('otpResend'); if(!resend) return;
+    var left=30; resend.disabled=true; resend.textContent='Resend in '+left+'s';
+    var t=setInterval(function(){ left--; if(left<=0){ clearInterval(t); resend.disabled=false; resend.textContent='Resend'; } else { resend.textContent='Resend in '+left+'s'; } },1000);
+  }
+  function sendOtp(isResend){
+    if(!mobileIsValid()){ toast('Please enter a valid mobile number first.'); return; }
+    var num=currentMobileE164();
+    var sendBtn=document.getElementById('otpSend');
+    if(!isResend && sendBtn){ sendBtn.disabled=true; sendBtn.innerHTML='<span class="spin"></span> Sending…'; }
+    sb.functions.invoke('send-mobile-otp',{ body:{ phone:num } }).then(function(res){
+      var d=res&&res.data;
+      if(!d || !d.ok){
+        if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='Send verification code'; }
+        var reason=(d&&d.reason)||'';
+        toast(reason==='rate_limited'?'Too many attempts. Please wait a few minutes.':(reason==='bad_phone'?'Please enter a valid mobile number.':(reason==='not_configured'?'Verification is temporarily unavailable. Please try again shortly.':'Could not send the code. Please try again.')));
+        return;
+      }
+      var step=document.getElementById('otpStep'); if(step) step.style.display='block';
+      if(sendBtn) sendBtn.style.display='none';
+      var msg=document.getElementById('otpMsg'); if(msg){ msg.className='otp-msg ok'; msg.textContent='Code sent on WhatsApp to '+num+'.'; }
+      startResendCooldown();
+      var ci=document.getElementById('otpCode'); if(ci) ci.focus();
+    }).catch(function(){ if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='Send verification code'; } toast('Could not send the code. Please try again.'); });
+  }
+  function doVerifyOtp(){
+    var num=currentMobileE164();
+    var code=((document.getElementById('otpCode')||{}).value||'').replace(/\D/g,'');
+    var msg=document.getElementById('otpMsg');
+    if(code.length!==6){ if(msg){ msg.className='otp-msg err'; msg.textContent='Enter the 6-digit code.'; } return; }
+    var vb=document.getElementById('otpVerify'); if(vb){ vb.disabled=true; vb.innerHTML='<span class="spin"></span>'; }
+    sb.functions.invoke('verify-mobile-otp',{ body:{ phone:num, code:code } }).then(function(res){
+      if(vb){ vb.disabled=false; vb.innerHTML='Verify'; }
+      var d=res&&res.data;
+      if(d&&d.ok){ mobileVerified=true; verifiedNumber=num; buildOtpUI(); toast('Mobile number verified'); return; }
+      var reason=(d&&d.reason)||'';
+      if(msg){ msg.className='otp-msg err'; msg.textContent=(reason==='wrong'?'Incorrect code. Please try again.':((reason==='expired'||reason==='no_code')?'Code expired. Tap Resend for a new one.':(reason==='too_many'?'Too many tries. Tap Resend for a new code.':'Could not verify. Please try again.'))); }
+    }).catch(function(){ if(vb){ vb.disabled=false; vb.innerHTML='Verify'; } if(msg){ msg.className='otp-msg err'; msg.textContent='Could not verify. Please try again.'; } });
   }
 
   // ---- custom questions on the apply form ----
@@ -568,6 +657,8 @@
   function submitApplication(visaId){
     var f=document.getElementById('applyForm');
     if(!f.checkValidity()){ f.reportValidity(); return; }
+    if(!mobileIsValid()){ toast('Please enter a valid mobile number.'); return; }
+    if(mobileOtpRequired && (!mobileVerified || currentMobileE164()!==verifiedNumber)){ toast('Please verify your mobile number to continue.'); return; }
     if(!picked.passport || !picked.photo){ toast('Please upload both your passport copy and photo.'); return; }
     var pCountry=(document.getElementById('passport_issuing_country').value||'').trim();
     if(!pCountry){ toast('Please select your passport issuing country.'); return; }
@@ -593,7 +684,7 @@
         price_aed: v.price,
         full_name: document.getElementById('full_name').value.trim(),
         email: state.user.email || document.getElementById('full_name').value,
-        phone: document.getElementById('phone').value.trim(),
+        phone: currentMobileE164() || document.getElementById('phone').value.trim(),
         passport_issuing_country: pCountry,
         state: pCountry==='India' ? pState : null,
         passport_number: document.getElementById('passport_number').value.trim(),

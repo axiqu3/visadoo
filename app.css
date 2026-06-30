@@ -157,6 +157,19 @@
   .app-main{padding:26px 18px 70px}
 }
 
+/* ===== Mobile number field + WhatsApp OTP verification ===== */
+.iti{width:100%}
+#mobileField input#phone{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px;color:var(--ink);background:#fff}
+#mobileField input#phone:focus{outline:none;border-color:var(--blue-500);box-shadow:0 0 0 3px var(--blue-100)}
+.otp-area{margin-top:10px}
+.otp-hint{font-size:13px;color:var(--muted);margin:0 0 8px}
+.otp-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.otp-controls input#otpCode{padding:11px 13px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:16px;letter-spacing:3px;max-width:150px;background:#fff}
+.otp-msg{font-size:13px;margin-top:7px}
+.otp-msg.ok{color:#137a3a}
+.otp-msg.err{color:#b91c1c}
+.otp-ok{display:inline-flex;align-items:center;gap:7px;color:#137a3a;font-weight:700;font-size:14px;background:#eafaf0;border:1px solid #bbf7d0;border-radius:10px;padding:9px 13px}
+
 /* ===== SEO editor (RankMath-style) ===== */
 .seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
 .seo-score-ring{display:flex;align-items:center;gap:16px;margin-bottom:18px}
