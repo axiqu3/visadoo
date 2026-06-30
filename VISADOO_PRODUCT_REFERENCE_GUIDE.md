@@ -56,7 +56,6 @@ Everything below is **live and working today** unless marked otherwise.
 
 **Built but switched OFF (waiting on one approval)**
 - **Mobile number verification by WhatsApp OTP** (one-time code). The field and country picker are live; the actual code-verification is fully built but turned off until WhatsApp approves the required message template. See Sections 9 and 15.
-- **Birthday module** — an automatic WhatsApp birthday greeting with a 10% offer, sent each morning to opted-in customers whose birthday is that day. Fully built but turned off until the Marketing WhatsApp template (`birthday_offer`) is approved. See Sections 9 and 15.
 
 ---
 
@@ -167,6 +166,7 @@ Uploaded customer documents and financial proofs are **never public** — they'r
 | New application submitted | ✅ | ✅ |
 | Customer payment recorded | ✅ | ✅ |
 | 3 days after Visa Issued (review request) | ✅ | ✅ (only to customers who opted in to marketing) |
+| Customer's birthday (daily, 9 AM IST) | — | ✅ birthday greeting + 10% offer (only marketing opt-ins) |
 
 Status-update emails are also classed as "service" messages, so they reach everyone; the review request is "marketing," so it only goes to people who opted in.
 
@@ -246,7 +246,6 @@ _Rule of thumb: build one item per focused session, with before/after checkpoint
 ## 15. Pending decisions / open items
 
 - **WhatsApp OTP template (the one active blocker):** Telinfy's account currently offers only **Utility** and **Marketing** template categories (no **Authentication** category). Telinfy advised creating the OTP as a **Utility** template, which Meta approves. Wording chosen (variable can't start/end the message): _"Your Visa Doo verification code is {{1}}. It is valid for 10 minutes. For your security, please do not share this code with anyone."_ **Next:** once approved, the owner sends the template name + language; we plug it in, switch verification on, test, and go live.
-- **Birthday module template:** built and dormant. Needs a **Marketing** WhatsApp template `birthday_offer` approved in Telinfy (suggested wording: _"Happy Birthday, {{1}}! 🎉 From all of us at Visa Doo, here's our gift to you: 10% off your next visa application with code HAPPYBDAY10, valid for 15 days. Here's to your next journey!"_, sample {{1}}=Aarav). Once approved, send the name + language; it's switched on after a test.
 - **Visa prices:** the system is INR-only; the owner is re-entering the full set of visa prices in **Visa Types** (any visa without a price shows "Price on request").
 - **Finance setup:** confirm GSTIN, home state, and GST rate in **Finance settings**; assign the **finance** role to the relevant staff member.
 - **Email housekeeping:** revoke the old (pre-migration) Brevo account's keys — only after confirming nothing else uses them.
@@ -267,7 +266,7 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 _This guide is kept current: it is updated whenever a major feature or new module is added._
 
-- **30 Jun 2026** — Birthday module built (WhatsApp auto-greeting + 10% offer for opted-in customers, daily 9 AM IST; runs on the existing engine). Switched OFF pending the `birthday_offer` Marketing template approval.
+- **30 Jun 2026** — Birthday module **LIVE**: WhatsApp auto-greeting + 10% offer (code HAPPYBDAY10, 15 days) to opted-in customers, daily 9 AM IST. Template `birthday_offer` approved by Meta; tested and switched on.
 - **30 Jun 2026** — Initial Product Reference Guide created. Reflects: finance module (cost lines, margin, GST, customer payments + numbered receipts, refunds, supplier ledgers, finance reports); automated email + WhatsApp notifications (status, application received, payment received, review request); backend console redesign (compact lists → detail pages for Applications, Customers, Suppliers); INR-only pricing; mobile-number field with country picker; mobile WhatsApp-OTP verification built but switched off pending the WhatsApp template.
 
 ---
