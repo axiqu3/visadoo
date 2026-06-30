@@ -3746,7 +3746,39 @@
   //  COMMUNICATIONS (notification engine: automation, templates, history)
   // ============================================================
   var commsRule=null, commsTpls=[], commsMsgs=[], commsTplEditing=null, commsReviewUrl='';
+  var commsFilters={ q:'', channel:'', status:'', type:'', from:'', to:'' }, commsFiltersOpen=false;
   var PLACEHOLDERS='Placeholders you can use: {{first_name}}, {{name}}, {{visa}}, {{country}}, {{reference}}, {{review_url}}, {{brand}}';
+
+  // Group a template key into a friendly message "type" for filtering.
+  function msgTypeKey(tk){ tk=tk||'';
+    if(tk==='status-update'||tk==='wa-status-update') return 'status';
+    if(tk==='app-received-email'||tk==='wa-app-received') return 'apprcvd';
+    if(tk==='payment-received-email'||tk==='wa-payment') return 'payment';
+    if(tk==='review-request'||tk==='wa-review') return 'review';
+    if(tk==='wa-birthday') return 'birthday';
+    return 'other'; }
+  var MSG_TYPE_LABELS={ status:'Status update', apprcvd:'Application received', payment:'Payment received', review:'Review request', birthday:'Birthday', other:'Other' };
+  function msgWhenDate(m){ return ((m.sent_at||m.created_at||m.scheduled_for)||'').slice(0,10); }
+  function commsActiveCount(){ var f=commsFilters,n=0; if(f.q.trim())n++; if(f.channel)n++; if(f.status)n++; if(f.type)n++; if(f.from||f.to)n++; return n; }
+  function commsFiltered(){
+    var f=commsFilters, q=f.q.trim().toLowerCase();
+    return commsMsgs.filter(function(m){
+      if(f.channel && (m.channel||'')!==f.channel) return false;
+      if(f.status && (m.status||'')!==f.status) return false;
+      if(f.type && msgTypeKey(m.template_key)!==f.type) return false;
+      var d=msgWhenDate(m);
+      if(f.from && d<f.from) return false;
+      if(f.to && d>f.to) return false;
+      if(q){ var hay=((m.to_address||'')+' '+(m.subject||'')).toLowerCase(); if(hay.indexOf(q)===-1) return false; }
+      return true;
+    });
+  }
+  function commsCsv(){
+    var rows=commsFiltered().map(function(m){
+      return [ msgWhenDate(m), (m.to_address||''), (m.channel||''), MSG_TYPE_LABELS[msgTypeKey(m.template_key)]||'', (m.status||''), (m.subject||''), (m.reason||'') ];
+    });
+    downloadCsv('visadoo-messages.csv', ['Date','Recipient','Channel','Type','Status','Subject','Note'], rows);
+  }
 
   function msgStatusPill(s){
     var map={ sent:['sp-done','Sent'], delivered:['sp-done','Delivered'], queued:['sp-progress','Queued'],
@@ -3768,7 +3800,7 @@
       sb.from('automation_rules').select('*').eq('key','review-request').single(),
       sb.from('site_settings').select('google_review_url').eq('id','global').single(),
       sb.from('message_templates').select('*').order('key'),
-      sb.from('messages').select('id,to_address,subject,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').order('created_at',{ascending:false}).limit(100)
+      sb.from('messages').select('id,to_address,subject,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').order('created_at',{ascending:false}).limit(500)
     ]).then(function(res){
       commsRule=res[0].data||null;
       commsReviewUrl=(res[1].data&&res[1].data.google_review_url)||'';
@@ -3798,10 +3830,33 @@
     }).join('')||'<div class="panel empty-state"><p>No templates.</p></div>';
     var tplPanel='<div style="margin-top:26px"><h3 style="font-size:17px;font-weight:800;margin-bottom:8px">Message templates</h3>'+tplRows+'</div>';
 
-    var histPanel='<div style="margin-top:26px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">'+
-      '<h3 style="font-size:17px;font-weight:800;margin:0">Message history</h3>'+
-      '<input id="cmSearch" type="text" placeholder="Search email or subject…" style="flex:1;min-width:180px;max-width:320px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px"></div>'+
-      '<div id="cmHist"></div></div>';
+    var chOpts=[['','All channels'],['email','Email'],['whatsapp','WhatsApp']];
+    var stOpts=[['','All statuses'],['sent','Sent'],['delivered','Delivered'],['queued','Queued'],['failed','Failed'],['skipped','Skipped'],['cancelled','Cancelled']];
+    var tyOpts=[['','All types'],['status','Status update'],['apprcvd','Application received'],['payment','Payment received'],['review','Review request'],['birthday','Birthday'],['other','Other']];
+    function selOpts(opts,cur){ return opts.map(function(o){ return '<option value="'+esc(o[0])+'"'+(cur===o[0]?' selected':'')+'>'+esc(o[1])+'</option>'; }).join(''); }
+    var histPanel='<div style="margin-top:26px">'+
+      '<h3 style="font-size:17px;font-weight:800;margin:0 0 10px">Message history</h3>'+
+      '<div class="app-toolbar">'+
+        '<div class="app-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+
+        '<input id="cmSearch" type="text" value="'+esc(commsFilters.q)+'" placeholder="Search recipient or subject…"></div>'+
+        '<button class="btn btn-ghost" id="cmFiltersBtn" type="button">Filters'+(commsActiveCount()?(' ('+commsActiveCount()+')'):'')+'</button>'+
+        '<button class="btn btn-ghost" id="cmCsv" type="button">Download CSV</button>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px">'+
+        '<span id="cmCount" class="phint" style="margin:0"></span>'+
+        '<button class="link-btn" id="cmClear" type="button" style="margin-left:auto;display:none">Clear all</button>'+
+      '</div>'+
+      '<div id="cmFilterPanel" class="panel" style="margin-top:12px;'+(commsFiltersOpen?'':'display:none')+'">'+
+        '<div class="grid2">'+
+          '<div class="field"><label>Channel</label><select id="cmfChannel">'+selOpts(chOpts,commsFilters.channel)+'</select></div>'+
+          '<div class="field"><label>Delivery status</label><select id="cmfStatus">'+selOpts(stOpts,commsFilters.status)+'</select></div>'+
+          '<div class="field"><label>Message type</label><select id="cmfType">'+selOpts(tyOpts,commsFilters.type)+'</select></div>'+
+          '<div class="field"><label>&nbsp;</label><div class="phint" style="margin:0">Filter the sent-message log.</div></div>'+
+          '<div class="field"><label>From date</label><input id="cmfFrom" type="date" value="'+esc(commsFilters.from)+'"></div>'+
+          '<div class="field"><label>To date</label><input id="cmfTo" type="date" value="'+esc(commsFilters.to)+'"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="cmHist" style="margin-top:12px"></div></div>';
 
     area.innerHTML=autoPanel+(commsTplEditing?'':tplPanel)+(commsTplEditing?'':histPanel);
 
@@ -3824,16 +3879,23 @@
     area.querySelectorAll('[data-tpledit]').forEach(function(b){ b.onclick=function(){
       var k=b.getAttribute('data-tpledit'); commsTplEditing=JSON.parse(JSON.stringify(commsTpls.filter(function(x){return x.key===k;})[0])); paintComms();
     }; });
-    var search=document.getElementById('cmSearch'); if(search) search.oninput=paintHist;
+    var search=document.getElementById('cmSearch'); if(search) search.oninput=function(){ commsFilters.q=search.value; paintHist(); };
+    document.getElementById('cmFiltersBtn').onclick=function(){ commsFiltersOpen=!commsFiltersOpen; document.getElementById('cmFilterPanel').style.display=commsFiltersOpen?'':'none'; };
+    document.getElementById('cmCsv').onclick=commsCsv;
+    document.getElementById('cmClear').onclick=function(){ commsFilters={ q:'', channel:'', status:'', type:'', from:'', to:'' }; paintComms(); };
+    function bindCm(id,key){ var el=document.getElementById(id); if(el) el.onchange=function(){ commsFilters[key]=el.value; paintHist(); }; }
+    bindCm('cmfChannel','channel'); bindCm('cmfStatus','status'); bindCm('cmfType','type'); bindCm('cmfFrom','from'); bindCm('cmfTo','to');
     paintHist();
   }
 
   function paintHist(){
     var box=document.getElementById('cmHist'); if(!box) return;
-    var q=((document.getElementById('cmSearch')||{}).value||'').trim().toLowerCase();
-    var rows=commsMsgs.filter(function(m){ if(!q) return true; return ((m.to_address||'')+' '+(m.subject||'')).toLowerCase().indexOf(q)>-1; });
+    var rows=commsFiltered();
+    var cnt=document.getElementById('cmCount'); if(cnt) cnt.textContent=rows.length+' of '+commsMsgs.length+' shown';
+    var clr=document.getElementById('cmClear'); if(clr) clr.style.display=commsActiveCount()?'inline':'none';
+    var fb=document.getElementById('cmFiltersBtn'); if(fb) fb.textContent='Filters'+(commsActiveCount()?(' ('+commsActiveCount()+')'):'');
     if(!commsMsgs.length){ box.innerHTML='<div class="panel empty-state"><p>No messages yet. Sent emails (status updates and automations) will appear here.</p></div>'; return; }
-    if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No messages match your search.</p></div>'; return; }
+    if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No messages match your search or filters.</p></div>'; return; }
     box.innerHTML=rows.map(function(m){
       var when=(m.status==='queued'&&m.scheduled_for)?('Scheduled · '+new Date(m.scheduled_for).toLocaleString()):new Date(m.sent_at||m.created_at).toLocaleString();
       var tpl=m.template_key==='review-request'?'Review request':(m.template_key==='status-update'?'Status update':(m.template_key||'Message'));
