@@ -16,6 +16,11 @@
   path = "/visa/*"
   function = "visa"
 
+# Server-rendered Events page (browse international events by month/category)
+[[edge_functions]]
+  path = "/events"
+  function = "events"
+
 # Server-rendered articles list and individual article pages
 [[edge_functions]]
   path = "/articles"

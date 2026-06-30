@@ -969,7 +969,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','team'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -983,6 +983,7 @@
       msghistory:'<path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-7 3.3M3 4v4h4"/><path d="M12 8v4l3 2"/>',
       destinations:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18z"/>',
       visatypes:'<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><path d="M14 10h4M14 14h4"/>',
+      events:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="15" r="2"/>',
       articles:'<path d="M4 4h13v16H6a2 2 0 0 1-2-2z"/><path d="M17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h5"/>',
       content:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>',
       siteseo:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
@@ -1002,7 +1003,7 @@
       ['Customers',[['admin','Applications',canViewApps()],['enquiries','Enquiries',state.role==='admin'],['customers','Customers',state.role==='admin']]],
       ['Messaging',[['automations','Automations',state.role==='admin'],['templates','Message templates',state.role==='admin'],['msghistory','Message history',state.role==='admin']]],
       ['Finance',[['suppliers','Suppliers',isFinance()],['refunds','Refund requests',isFinance()],['reports','Finance reports',isFinance()]]],
-      ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()]]],
+      ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()],['events','Events',canManageContent()]]],
       ['Content',[['articles','Articles',canManageContent()],['content','Content',canManageContent()],['siteseo','Site SEO',canManageContent()]]],
       ['Settings',[['brand','Brand & Settings',state.role==='admin'],['emailcfg','Email',state.role==='admin'],['team','Team',state.role==='admin']]]
     ];
@@ -3956,6 +3957,141 @@
   }
 
   // ============================================================
+  //  ADMIN · EVENTS (international events that promote country visas)
+  // ============================================================
+  var evList=[], evEditing=null;
+  var EVENT_CATEGORIES=['Music','Sports','Art & Culture','Business & Science'];
+  function evSlugify(s){ return (s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+  function evUniqueSlug(base, exceptId){
+    var s=evSlugify(base)||'event', i=2, taken=s;
+    var exists=function(x){ return evList.some(function(e){ return e.slug===x && e.id!==exceptId; }); };
+    while(exists(taken)){ taken=s+'-'+i; i++; } return taken;
+  }
+
+  function renderEventsAdmin(){
+    if(!canManageContent()){ go(defaultStaffView()); return; }
+    root.innerHTML='<div class="app-main">'+adminSections('events')+
+      '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap">'+
+        '<div><h1>Events</h1><p>Major international events that promote your visa services. Each event links to that country’s visas.</p></div>'+
+        '<button class="btn btn-primary" id="evNew">+ Add event</button>'+
+      '</div>'+
+      '<div id="evArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    document.getElementById('evNew').onclick=function(){
+      evEditing={ id:null, slug:'', name:'', country_slug:'', category:'Music', event_date:'', end_date:'', city:'', image_url:'', blurb:'', seo_title:'', seo_description:'', active:true };
+      paintEv();
+    };
+    Promise.all([ sb.from('events').select('*').order('event_date',{ascending:true}), countryList.length?Promise.resolve(true):loadCountriesGroups() ]).then(function(res){
+      evList=res[0].data||[]; evEditing=null; paintEv();
+    });
+  }
+
+  function paintEv(){
+    var area=document.getElementById('evArea'); if(!area) return;
+    if(evEditing){ area.innerHTML=evFormHtml(evEditing); wireEvForm(); return; }
+    if(!evList.length){ area.innerHTML='<div class="panel empty-state"><p>No events yet. Click “Add event” to create your first one.</p></div>'; return; }
+    area.innerHTML='<div class="app-list">'+evList.map(evRow).join('')+'</div>';
+    area.querySelectorAll('[data-evopen]').forEach(function(el){ el.onclick=function(){ var e=evList.filter(function(x){return x.id===el.getAttribute('data-evopen');})[0]; evEditing=JSON.parse(JSON.stringify(e)); paintEv(); }; });
+  }
+
+  function evRow(e){
+    var when=e.event_date?new Date(e.event_date).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No date';
+    var sub=[countryName(e.country_slug), e.category, when].filter(Boolean).map(esc).join(' · ');
+    var inactive=e.active?'':' <span class="status-pill pill-sm" style="background:#eef2f7;color:#64748b">Hidden</span>';
+    return '<div class="app-row" data-evopen="'+esc(e.id)+'"><div class="ar-main">'+
+      '<div class="ar-name">'+esc(e.name||'(untitled)')+inactive+'</div>'+
+      '<div class="ar-sub">'+(sub||'—')+'</div></div>'+
+      '<div class="ar-right">'+CHEV+'</div></div>';
+  }
+
+  function evFormHtml(e){
+    var cOpts='<option value="">Select country…</option>'+countryList.map(function(c){ return '<option value="'+esc(c.slug)+'"'+(e.country_slug===c.slug?' selected':'')+'>'+esc(c.name)+'</option>'; }).join('');
+    var cats=EVENT_CATEGORIES.slice();
+    evList.forEach(function(x){ if(x.category && cats.indexOf(x.category)===-1) cats.push(x.category); });
+    var catList=cats.map(function(c){ return '<option value="'+esc(c)+'">'; }).join('');
+    return '<div class="panel">'+
+      '<button class="link-btn" id="evBack" style="margin-bottom:10px">← Back to events</button>'+
+      '<div class="field"><label>Event name <span class="req-star">*</span></label><input id="evName" type="text" value="'+esc(e.name||'')+'" placeholder="e.g. Exit Festival 2026"></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>Country <span class="req-star">*</span></label><select id="evCountry">'+cOpts+'</select></div>'+
+        '<div class="field"><label>Category</label><input id="evCategory" list="evCatList" value="'+esc(e.category||'')+'" placeholder="Music"><datalist id="evCatList">'+catList+'</datalist></div>'+
+      '</div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>Start date <span class="req-star">*</span></label><input id="evDate" type="date" value="'+esc(e.event_date||'')+'"></div>'+
+        '<div class="field"><label>End date (optional)</label><input id="evEnd" type="date" value="'+esc(e.end_date||'')+'"></div>'+
+      '</div>'+
+      '<div class="field"><label>City / venue (optional)</label><input id="evCity" type="text" value="'+esc(e.city||'')+'" placeholder="e.g. Novi Sad, Serbia"></div>'+
+      '<div class="field"><label>Event image</label>'+
+        '<div class="cover-drop" id="evCover"'+(e.image_url?(' style="background-image:url('+esc(e.image_url)+')"'):'')+'>'+(e.image_url?'':'<div class="ph">'+IMGICON+'<div>Click to add an event image</div></div>')+'</div>'+
+        '<input type="file" id="evCoverFile" accept="image/*" style="display:none"><div class="phint" id="evCoverHint" style="margin-top:6px"></div></div>'+
+      '<div class="field"><label>Short description (shown on the event page)</label><textarea id="evBlurb" style="min-height:80px" placeholder="A line or two about the event.">'+esc(e.blurb||'')+'</textarea></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>SEO title (optional)</label><input id="evSeoTitle" type="text" value="'+esc(e.seo_title||'')+'"></div>'+
+        '<div class="field"><label>SEO description (optional)</label><input id="evSeoDesc" type="text" value="'+esc(e.seo_description||'')+'"></div>'+
+      '</div>'+
+      '<label style="display:flex;align-items:center;gap:9px;font-weight:500;cursor:pointer;margin-top:4px"><input id="evActive" type="checkbox" '+(e.active?'checked':'')+' style="width:auto"> Show on the website (live)</label>'+
+      '<div class="signin-msg" id="evMsg"></div>'+
+      '<div style="display:flex;gap:10px;margin-top:12px"><button class="btn btn-primary" id="evSave">'+(e.id?'Save changes':'Create event')+'</button>'+
+        (e.id?'<button class="btn btn-ghost" id="evDel" style="color:var(--red)">Delete</button>':'')+
+      '</div>'+
+    '</div>';
+  }
+
+  function wireEvForm(){
+    document.getElementById('evBack').onclick=function(){ evEditing=null; paintEv(); };
+    var coverFile=document.getElementById('evCoverFile');
+    document.getElementById('evCover').onclick=function(){ coverFile.click(); };
+    coverFile.onchange=function(){
+      var f=coverFile.files[0]; if(!f) return;
+      var hint=document.getElementById('evCoverHint'); hint.textContent='Uploading…';
+      uploadPublicImage(f,'events').then(function(url){
+        evEditing.image_url=url;
+        var d=document.getElementById('evCover'); d.style.backgroundImage='url('+url+')'; d.innerHTML='';
+        hint.textContent='Image added';
+      }).catch(function(err){ hint.textContent='';
+        if(err&&err.code==='decode'){ toast('That looks like a HEIC photo — please use a JPG or PNG.'); }
+        else if(err&&err.code==='big'){ toast('That image is too large (max 10 MB).'); }
+        else { toast('Could not upload that image.'); console.error(err); } });
+    };
+    document.getElementById('evSave').onclick=function(){
+      var name=document.getElementById('evName').value.trim();
+      var country=document.getElementById('evCountry').value;
+      var date=document.getElementById('evDate').value;
+      var msg=document.getElementById('evMsg');
+      function err(t){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent=t; }
+      if(!name) return err('Please enter the event name.');
+      if(!country) return err('Please choose the country.');
+      if(!date) return err('Please set the start date.');
+      var payload={
+        name:name, country_slug:country,
+        category:document.getElementById('evCategory').value.trim()||null,
+        event_date:date, end_date:document.getElementById('evEnd').value||null,
+        city:document.getElementById('evCity').value.trim()||null,
+        image_url:evEditing.image_url||null,
+        blurb:document.getElementById('evBlurb').value.trim()||null,
+        seo_title:document.getElementById('evSeoTitle').value.trim()||null,
+        seo_description:document.getElementById('evSeoDesc').value.trim()||null,
+        active:document.getElementById('evActive').checked,
+        updated_at:new Date().toISOString()
+      };
+      var btn=document.getElementById('evSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+      var editingId=evEditing&&evEditing.id;
+      if(!editingId) payload.slug=evUniqueSlug(name,null);
+      var op = editingId ? sb.from('events').update(payload).eq('id',editingId).select().single() : sb.from('events').insert(payload).select().single();
+      op.then(function(r){
+        btn.disabled=false; btn.innerHTML='Save';
+        if(r.error){ err('Could not save. Please try again.'); console.error(r.error); return; }
+        evEditing=null; toast('Event saved'); renderEventsAdmin();
+      });
+    };
+    var del=document.getElementById('evDel'); if(del) del.onclick=function(){
+      if(!window.confirm('Delete this event? This cannot be undone.')) return;
+      sb.from('events').delete().eq('id',evEditing.id).then(function(r){ if(r.error){ toast('Could not delete.'); console.error(r.error); return; } evEditing=null; toast('Event deleted'); renderEventsAdmin(); });
+    };
+  }
+
+  // ============================================================
   //  ROUTER
   // ============================================================
   function render(){
@@ -3966,7 +4102,7 @@
     // permission guards — bounce to an allowed area
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if(v==='appview' && (!canViewApps() || !appViewId)) v='admin';
-    if((v==='visatypes'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
+    if((v==='visatypes'||v==='events'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
     if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='automations'||v==='templates'||v==='msghistory') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
     if((v==='suppliers'||v==='refunds'||v==='supview'||v==='reports') && !isFinance()) v=defaultStaffView();
@@ -3984,6 +4120,7 @@
     else if(v==='appview') renderAppDetail(appViewId);
     else if(v==='destinations') renderDestinationsAdmin();
     else if(v==='visatypes') renderVisaTypesAdmin();
+    else if(v==='events') renderEventsAdmin();
     else if(v==='articles') renderArticlesAdmin();
     else if(v==='content') renderContentAdmin();
     else if(v==='siteseo') renderSiteSeo();
@@ -4009,7 +4146,7 @@
     if(h.indexOf('appview/')===0){ appViewId=decodeURIComponent(h.slice(8))||null; return appViewId?'appview':'admin'; }
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
-    if(['track','apply','admin','destinations','visatypes','articles','content','siteseo','brand','emailcfg','enquiries','customers','automations','templates','msghistory','suppliers','refunds','reports','team','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','customers','automations','templates','msghistory','suppliers','refunds','reports','team','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 
