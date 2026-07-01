@@ -3611,7 +3611,9 @@
   // ============================================================
   var LEAD_STAGES=['new','contacted','qualified','quoted','converted','lost'];
   var LEAD_STAGE_LABELS={ 'new':'New','contacted':'Contacted','qualified':'Qualified','quoted':'Quoted','converted':'Converted','lost':'Lost' };
-  var LEAD_SOURCES=['manual','enquiry','walk-in','phone','referral','website'];
+  var LEAD_SOURCES=['manual','enquiry','walk-in','phone','referral','website','whatsapp','social-media','paid-ads'];
+  var LEAD_SOURCE_LABELS={ 'manual':'Manual','enquiry':'Website enquiry','walk-in':'Walk-in','phone':'Phone','referral':'Referral','website':'Website','whatsapp':'WhatsApp','social-media':'Social Media','paid-ads':'Paid Ads' };
+  function srcLabel(s){ return LEAD_SOURCE_LABELS[s]||s; }
   var leadList=[], leadViewId=null, LEAD_PAGE=25, leadLimit=LEAD_PAGE;
   var crmStaff=[], crmStaffLoaded=false;
   var leadFilters={ stage:'open', owner:'all', source:'all', search:'', overdue:false };
@@ -3698,7 +3700,7 @@
       crmStaff.map(function(s){ return '<option value="'+esc(s.id)+'">'+esc(s.full_name||s.email)+'</option>'; }).join('');
   }
   function leadCsv(){
-    var rows=leadFiltered().map(function(l){ return [leadRef(l.lead_no), new Date(l.created_at).toLocaleDateString(), l.full_name||'', l.email||'', l.phone||'', vLabel(l.visa_type), l.country_slug?countryName(l.country_slug):'', LEAD_STAGE_LABELS[l.stage]||l.stage, crmStaffName(l.owner), l.source||'', l.next_follow_up_at||'', (l.expected_value!=null?l.expected_value:'')]; });
+    var rows=leadFiltered().map(function(l){ return [leadRef(l.lead_no), new Date(l.created_at).toLocaleDateString(), l.full_name||'', l.email||'', l.phone||'', vLabel(l.visa_type), l.country_slug?countryName(l.country_slug):'', LEAD_STAGE_LABELS[l.stage]||l.stage, crmStaffName(l.owner), srcLabel(l.source||''), l.next_follow_up_at||'', (l.expected_value!=null?l.expected_value:'')]; });
     downloadCsv('visadoo-leads.csv', ['Lead No','Created','Name','Email','Phone','Visa Type','Country','Stage','Owner','Source','Next Follow-up','Expected Value (INR)'], rows);
   }
   function renderLeads(){
@@ -3716,7 +3718,7 @@
         '<input id="leadSearch" type="text" placeholder="Search name, email, phone, visa or LEAD no…"></div>'+
         '<select id="lfStage" class="pill-sm"></select>'+
         '<select id="lfOwner" class="pill-sm"><option value="all">All owners</option></select>'+
-        '<select id="lfSource" class="pill-sm"></select>'+
+        '<select id="lfSource" class="pill-sm"></select>'+ /* sources filled in renderLeads */
         '<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)"><input type="checkbox" id="lfOverdue"> Due/overdue only</label>'+
       '</div><div style="margin-top:6px"><span id="leadCount" class="phint" style="margin:0"></span></div></div>'+
       '<div id="leadArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
@@ -3726,7 +3728,7 @@
     st.innerHTML='<option value="open">Open (active)</option><option value="all">All stages</option>'+LEAD_STAGES.map(function(s){return '<option value="'+s+'">'+LEAD_STAGE_LABELS[s]+'</option>';}).join('');
     st.value=leadFilters.stage;
     var so=document.getElementById('lfSource');
-    so.innerHTML='<option value="all">All sources</option>'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+    so.innerHTML='<option value="all">All sources</option>'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'">'+srcLabel(s)+'</option>';}).join('');
     so.value=leadFilters.source;
     document.getElementById('lfOverdue').checked=!!leadFilters.overdue;
     document.getElementById('leadSearch').value=leadFilters.search||'';
@@ -3785,7 +3787,7 @@
         '<div class="field"><label>Full name</label><input id="lf_name" type="text" value="'+esc(l.full_name||'')+'"></div>'+
         '<div class="field"><label>Email</label><input id="lf_email" type="email" value="'+esc(l.email||'')+'"></div>'+
         '<div class="field"><label>Phone</label><input id="lf_phone" type="tel" value="'+esc(l.phone||'')+'"></div>'+
-        '<div class="field"><label>Source</label><select id="lf_source">'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'"'+((l.source||'')===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+        '<div class="field"><label>Source</label><select id="lf_source">'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'"'+((l.source||'')===s?' selected':'')+'>'+srcLabel(s)+'</option>';}).join('')+'</select></div>'+
         '<div class="field"><label>Visa type (interested in)</label><select id="lf_visa">'+leadVisaOptions(l.visa_type)+'</select></div>'+
         '<div class="field"><label>Country</label><select id="lf_country">'+leadCountryOptions(l.country_slug)+'</select></div>'+
         '<div class="field"><label>Stage</label><select id="lf_stage">'+LEAD_STAGES.map(function(s){return '<option value="'+s+'"'+(l.stage===s?' selected':'')+'>'+LEAD_STAGE_LABELS[s]+'</option>';}).join('')+'</select></div>'+
@@ -3873,7 +3875,7 @@
           '<div class="field"><label>Full name</label><input id="ln_name" type="text"></div>'+
           '<div class="field"><label>Email</label><input id="ln_email" type="email"></div>'+
           '<div class="field"><label>Phone</label><input id="ln_phone" type="tel"></div>'+
-          '<div class="field"><label>Source</label><select id="ln_source">'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'"'+(s==='walk-in'?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+          '<div class="field"><label>Source</label><select id="ln_source">'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'"'+(s==='walk-in'?' selected':'')+'>'+srcLabel(s)+'</option>';}).join('')+'</select></div>'+
           '<div class="field"><label>Visa type (interested in)</label><select id="ln_visa">'+leadVisaOptions('')+'</select></div>'+
           '<div class="field"><label>Country</label><select id="ln_country">'+leadCountryOptions('')+'</select></div>'+
           '<div class="field"><label>Owner</label><select id="ln_owner">'+leadOwnerOptions((state.user&&state.user.id)||'')+'</select></div>'+
