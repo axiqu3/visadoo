@@ -970,7 +970,7 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','team'];
+  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','team','audit'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
@@ -993,7 +993,8 @@
       team:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
       suppliers:'<path d="M3 7h13v10H3zM16 10h3l2 3v4h-5"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/>',
       refunds:'<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 7"/>',
-      reports:'<path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/>'
+      reports:'<path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/>',
+      audit:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'
     };
     return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(P[key]||'')+'</svg></span>';
   }
@@ -1006,7 +1007,8 @@
       ['Finance',[['suppliers','Suppliers',isFinance()],['refunds','Refund requests',isFinance()],['reports','Finance reports',isFinance()]]],
       ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()],['events','Events',canManageContent()]]],
       ['Content',[['articles','Articles',canManageContent()],['content','Content',canManageContent()],['siteseo','Site SEO',canManageContent()]]],
-      ['Settings',[['brand','Brand & Settings',state.role==='admin'],['emailcfg','Email',state.role==='admin'],['team','Team',state.role==='admin']]]
+      ['Settings',[['brand','Brand & Settings',state.role==='admin'],['emailcfg','Email',state.role==='admin'],['team','Team',state.role==='admin']]],
+      ['Audit',[['audit','Audit Centre',state.role==='admin']]]
     ];
     return g.map(function(x){ return [x[0], x[1].filter(function(it){return it[2];})]; }).filter(function(x){ return x[1].length; });
   }
@@ -2890,8 +2892,8 @@
           '<div class="meta">'+esc(s.email)+' · '+roleName(s.role)+'</div></div>'+
         '<div style="display:flex;gap:8px;align-items:center">'+
           (isMe?'<span class="meta">Your account</span>':
-            '<select data-role-for="'+esc(s.id)+'">'+sel+'</select>'+
-            '<button class="btn btn-ghost" data-remove="'+esc(s.id)+'" style="color:var(--red)">Remove</button>')+
+            '<select data-role-for="'+esc(s.id)+'" data-role-email="'+esc(s.email||'')+'" data-role-old="'+esc(s.role||'')+'">'+sel+'</select>'+
+            '<button class="btn btn-ghost" data-remove="'+esc(s.id)+'" data-remove-email="'+esc(s.email||'')+'" data-remove-old="'+esc(s.role||'')+'" style="color:var(--red)">Remove</button>')+
         '</div></div></div>';
     }).join('');
     if(pending.length){
@@ -2909,8 +2911,10 @@
     area.querySelectorAll('[data-role-for]').forEach(function(sel){
       sel.onchange=function(){
         var id=sel.getAttribute('data-role-for');
-        sb.rpc('set_user_role',{target_id:id,new_role:sel.value}).then(function(r){
+        var oldRole=sel.getAttribute('data-role-old')||'', email=sel.getAttribute('data-role-email')||'', newRole=sel.value;
+        sb.rpc('set_user_role',{target_id:id,new_role:newRole}).then(function(r){
           if(r.error){ toast('Could not change role.'); console.error(r.error); return; }
+          logAudit({ module:'Staff & Roles', action:'role_change', record_type:'profile', record_id:id, record_ref:email, field:'role', old_value:oldRole, new_value:newRole, remarks:'Role changed', risk:'high' });
           toast('Role updated'); loadTeam();
         });
       };
@@ -2918,8 +2922,10 @@
     area.querySelectorAll('[data-remove]').forEach(function(b){
       b.onclick=function(){
         if(!window.confirm('Remove this person\'s team access? They become a normal customer account.')) return;
-        sb.rpc('set_user_role',{target_id:b.getAttribute('data-remove'),new_role:'customer'}).then(function(r){
+        var rid=b.getAttribute('data-remove'), remail=b.getAttribute('data-remove-email')||'', rold=b.getAttribute('data-remove-old')||'';
+        sb.rpc('set_user_role',{target_id:rid,new_role:'customer'}).then(function(r){
           if(r.error){ toast('Could not remove.'); console.error(r.error); return; }
+          logAudit({ module:'Staff & Roles', action:'role_change', record_type:'profile', record_id:rid, record_ref:remail, field:'role', old_value:rold, new_value:'customer', remarks:'Team access removed', risk:'high' });
           toast('Access removed'); loadTeam();
         });
       };
@@ -4353,6 +4359,133 @@
   }
 
   // ============================================================
+  //  ADMIN · AUDIT CENTRE (platform-wide change log; admin/owner only)
+  // ============================================================
+  // Write a platform audit entry (future modules call this). Admin-gated by RLS; never pass secrets.
+  function logAudit(o){
+    try {
+      return sb.from('audit_logs').insert({
+        module:o.module, action:o.action, record_type:o.record_type||null, record_id:o.record_id||null,
+        record_ref:o.record_ref||null, field:o.field||null,
+        old_value:(o.old_value==null?null:String(o.old_value)), new_value:(o.new_value==null?null:String(o.new_value)),
+        remarks:o.remarks||null, risk:o.risk||'normal', meta:o.meta||{},
+        actor:(state.user&&state.user.id)||null, actor_email:(state.user&&state.user.email)||null, actor_role:state.role||null
+      });
+    } catch(_e){ return Promise.resolve(); }
+  }
+
+  var auditFilters={ q:'', module:'', action:'', from:'', to:'', riskonly:false }, auditFiltersOpen=false, auditRows=[], auditExpanded=null;
+  var AUDIT_ACTION_LABELS={ edit:'Edited', create:'Created', delete:'Deleted', role_change:'Role changed', status_change:'Status changed', payment_update:'Payment update', 'refund-approve':'Refund approved', 'refund-request':'Refund requested', refund:'Refund', sent:'Message sent', failed:'Message failed', skipped:'Message skipped', queued:'Message queued', delivered:'Message delivered', export:'Export', login:'Sign-in' };
+  function auditActionLabel(a){ return AUDIT_ACTION_LABELS[a]||(a?(a.charAt(0).toUpperCase()+a.slice(1)):'Action'); }
+  function auditRiskPill(r){ if(r==='high') return '<span class="status-pill sp-action pill-sm">High-risk</span>'; if(r==='sensitive') return '<span class="status-pill sp-progress pill-sm">Sensitive</span>'; return '<span class="status-pill pill-sm" style="background:#eef2f7;color:#64748b">Normal</span>'; }
+
+  function loadAuditData(){
+    var R=function(d){ return Promise.resolve({data:d}); };
+    return Promise.all([
+      sb.from('audit_logs').select('*').order('occurred_at',{ascending:false}).limit(1000),
+      sb.from('application_edits').select('*').order('edited_at',{ascending:false}).limit(1000),
+      sb.from('customer_edits').select('*').order('edited_at',{ascending:false}).limit(1000),
+      sb.from('finance_audit_log').select('*').order('created_at',{ascending:false}).limit(1000).then(function(r){return r;}, function(){return {data:[]};}),
+      sb.from('messages').select('id,channel,template_key,to_address,status,reason,sent_at,created_at').order('created_at',{ascending:false}).limit(500),
+      sb.from('applications').select('id,reference_code,full_name'),
+      sb.from('customers').select('id,full_name,email')
+    ]).then(function(res){
+      var apps={}, custs={};
+      (res[5].data||[]).forEach(function(a){ apps[a.id]=a; });
+      (res[6].data||[]).forEach(function(c){ custs[c.id]=c; });
+      var out=[];
+      (res[0].data||[]).forEach(function(e){ out.push({ ts:e.occurred_at, who:e.actor_email||e.actor_role||'—', module:e.module, action:e.action, ref:e.record_ref||'', field:e.field||'', old:e.old_value, new:e.new_value, remarks:e.remarks||'', risk:e.risk||'normal' }); });
+      (res[1].data||[]).forEach(function(e){ var a=apps[e.application_id]||{}; out.push({ ts:e.edited_at, who:e.edited_by_email||'—', module:'Applications', action:'edit', ref:(a.reference_code||a.full_name||'application'), field:appFieldLabel(e.field), old:appFieldDisplay(e.field,e.old_value), new:appFieldDisplay(e.field,e.new_value), remarks:'', risk:(['phone','email','passport_number'].indexOf(e.field)>-1?'sensitive':'normal') }); });
+      (res[2].data||[]).forEach(function(e){ var c=custs[e.customer_id]||{}; out.push({ ts:e.edited_at, who:e.edited_by_email||'—', module:'Customers', action:'edit', ref:(c.full_name||c.email||'customer'), field:custFieldLabel(e.field), old:e.old_value, new:e.new_value, remarks:'', risk:(['phone','email'].indexOf(e.field)>-1?'sensitive':'normal') }); });
+      (res[3].data||[]).forEach(function(e){ out.push({ ts:e.created_at, who:(e.actor_role?('('+e.actor_role+')'):'—'), module:'Finance', action:(e.action||'update'), ref:((e.entity_type||'')+(e.entity_id?(' '+String(e.entity_id).slice(0,8)):'')), field:e.field||'', old:e.old_value, new:e.new_value, remarks:e.remarks||'', risk:(/delete|approve|refund/i.test(e.action||'')?'high':'sensitive') }); });
+      (res[4].data||[]).forEach(function(m){ out.push({ ts:(m.sent_at||m.created_at), who:'System', module:'Messaging', action:(m.status||'message'), ref:(m.to_address||m.channel||''), field:(m.template_key||''), old:'', new:'', remarks:(m.reason||''), risk:(m.status==='failed'?'sensitive':'normal') }); });
+      out.sort(function(a,b){ return new Date(b.ts)-new Date(a.ts); });
+      auditRows=out;
+    });
+  }
+
+  function renderAudit(){
+    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    auditFilters={ q:'', module:'', action:'', from:'', to:'', riskonly:false }; auditFiltersOpen=false; auditExpanded=null;
+    root.innerHTML='<div class="app-main">'+adminSections('audit')+
+      '<div class="app-head"><h1>Audit Centre</h1><p>Every important change across the platform — who did what, and when. Admin/Owner only.</p></div>'+
+      '<div style="margin-bottom:14px"><div class="app-toolbar">'+
+        '<div class="app-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+
+        '<input id="auQ" type="text" placeholder="Search reference, person or details…"></div>'+
+        '<button class="btn btn-ghost" id="auFiltersBtn" type="button">Filters</button>'+
+      '</div>'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px"><span id="auCount" class="phint" style="margin:0"></span><button class="link-btn" id="auClear" type="button" style="margin-left:auto;display:none">Clear all</button></div>'+
+      '<div id="auFilterPanel" class="panel" style="margin-top:12px;display:none">'+
+        '<div class="grid2">'+
+          '<div class="field"><label>Module</label><select id="auModule"></select></div>'+
+          '<div class="field"><label>Action</label><select id="auAction"></select></div>'+
+          '<div class="field"><label>From date</label><input id="auFrom" type="date"></div>'+
+          '<div class="field"><label>To date</label><input id="auTo" type="date"></div>'+
+        '</div>'+
+        '<label style="display:flex;gap:7px;align-items:center;font-weight:500;cursor:pointer;margin-top:6px"><input type="checkbox" id="auRisk" style="width:auto"> Show only sensitive / high-risk actions</label>'+
+      '</div></div>'+
+      '<div id="auList"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    document.getElementById('auFiltersBtn').onclick=function(){ auditFiltersOpen=!auditFiltersOpen; document.getElementById('auFilterPanel').style.display=auditFiltersOpen?'':'none'; };
+    document.getElementById('auClear').onclick=function(){ auditFilters={ q:'', module:'', action:'', from:'', to:'', riskonly:false }; renderAuditControls(); paintAudit(); };
+    var q=document.getElementById('auQ'); q.oninput=function(){ auditFilters.q=q.value; paintAudit(); };
+    loadAuditData().then(function(){ renderAuditControls(); paintAudit(); });
+  }
+
+  function renderAuditControls(){
+    function fill(id,key,label){
+      var el=document.getElementById(id); if(!el) return;
+      var vals={}; auditRows.forEach(function(r){ if(r[key]) vals[r[key]]=true; });
+      var opts=['<option value="">'+label+'</option>'].concat(Object.keys(vals).sort().map(function(v){ return '<option value="'+esc(v)+'"'+(auditFilters[key]===v?' selected':'')+'>'+esc(key==='action'?auditActionLabel(v):v)+'</option>'; }));
+      el.innerHTML=opts.join('');
+      el.onchange=function(){ auditFilters[key]=el.value; paintAudit(); };
+    }
+    fill('auModule','module','All modules'); fill('auAction','action','All actions');
+    var f=document.getElementById('auFrom'); if(f){ f.value=auditFilters.from; f.onchange=function(){ auditFilters.from=f.value; paintAudit(); }; }
+    var t=document.getElementById('auTo'); if(t){ t.value=auditFilters.to; t.onchange=function(){ auditFilters.to=t.value; paintAudit(); }; }
+    var rk=document.getElementById('auRisk'); if(rk){ rk.checked=auditFilters.riskonly; rk.onchange=function(){ auditFilters.riskonly=rk.checked; paintAudit(); }; }
+  }
+  function auditActiveCount(){ var f=auditFilters,n=0; if(f.q.trim())n++; if(f.module)n++; if(f.action)n++; if(f.from||f.to)n++; if(f.riskonly)n++; return n; }
+  function auditFiltered(){
+    var f=auditFilters, q=f.q.trim().toLowerCase();
+    return auditRows.filter(function(r){
+      if(f.module && r.module!==f.module) return false;
+      if(f.action && r.action!==f.action) return false;
+      if(f.riskonly && r.risk==='normal') return false;
+      var d=(r.ts||'').slice(0,10);
+      if(f.from && d<f.from) return false;
+      if(f.to && d>f.to) return false;
+      if(q){ var hay=[r.who,r.module,r.action,r.ref,r.field,r.old,r.new,r.remarks].map(function(x){return (x==null?'':String(x)).toLowerCase();}).join(' '); if(hay.indexOf(q)===-1) return false; }
+      return true;
+    });
+  }
+  function paintAudit(){
+    var box=document.getElementById('auList'); if(!box) return;
+    var rows=auditFiltered();
+    var cnt=document.getElementById('auCount'); if(cnt) cnt.textContent=rows.length+' of '+auditRows.length+' events';
+    var clr=document.getElementById('auClear'); if(clr) clr.style.display=auditActiveCount()?'inline':'none';
+    var fb=document.getElementById('auFiltersBtn'); if(fb) fb.textContent='Filters'+(auditActiveCount()?(' ('+auditActiveCount()+')'):'');
+    if(!auditRows.length){ box.innerHTML='<div class="panel empty-state"><p>No audit events yet.</p></div>'; return; }
+    if(!rows.length){ box.innerHTML='<div class="panel empty-state"><p>No events match your search or filters.</p></div>'; return; }
+    var shown=rows.slice(0,200);
+    box.innerHTML=shown.map(function(r,i){
+      var exp=(auditExpanded===i);
+      var detail = exp ? ('<div style="margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fafcff;font-size:13.5px">'+
+        (r.field?('<div><b>Field:</b> '+esc(r.field)+'</div>'):'')+
+        (((r.old!=null&&r.old!=='')||(r.new!=null&&r.new!==''))?('<div><b>Change:</b> '+esc((r.old==null||r.old==='')?'(empty)':r.old)+' → '+esc((r.new==null||r.new==='')?'(empty)':r.new)+'</div>'):'')+
+        (r.remarks?('<div><b>Note:</b> '+esc(r.remarks)+'</div>'):'')+
+        '<div class="phint" style="margin:4px 0 0">'+esc(r.module)+' · '+esc(auditActionLabel(r.action))+' · '+esc(new Date(r.ts).toLocaleString())+'</div></div>') : '';
+      return '<div class="admin-app" data-auidx="'+i+'" style="cursor:pointer"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h4 style="font-size:15px">'+esc(r.module)+' · '+esc(auditActionLabel(r.action))+(r.ref?(' — '+esc(r.ref)):'')+'</h4>'+
+        '<div class="meta">'+(r.field?(esc(r.field)+' · '):'')+'by '+esc(r.who)+' · '+esc(new Date(r.ts).toLocaleString())+'</div>'+detail+'</div>'+
+        '<div style="text-align:right;white-space:nowrap">'+auditRiskPill(r.risk)+'</div>'+
+      '</div></div>';
+    }).join('')+(rows.length>200?'<div class="phint" style="text-align:center;margin-top:10px">Showing the most recent 200 of '+rows.length+' — narrow with filters to see more.</div>':'');
+    box.querySelectorAll('[data-auidx]').forEach(function(el){ el.onclick=function(){ var i=parseInt(el.getAttribute('data-auidx'),10); auditExpanded=(auditExpanded===i?null:i); paintAudit(); }; });
+  }
+
+  // ============================================================
   //  ROUTER
   // ============================================================
   function render(){
@@ -4364,7 +4497,7 @@
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if(v==='appview' && (!canViewApps() || !appViewId)) v='admin';
     if((v==='visatypes'||v==='events'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
-    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='automations'||v==='templates'||v==='msghistory') && state.role!=='admin') v=defaultStaffView();
+    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='automations'||v==='templates'||v==='msghistory'||v==='audit') && state.role!=='admin') v=defaultStaffView();
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
     if((v==='suppliers'||v==='refunds'||v==='supview'||v==='reports') && !isFinance()) v=defaultStaffView();
     if(v==='supview' && !supViewId) v='suppliers';
@@ -4398,6 +4531,7 @@
     else if(v==='supview') renderSupplierDetail(supViewId);
     else if(v==='reports') renderFinReports();
     else if(v==='team') renderTeam();
+    else if(v==='audit') renderAudit();
     else if(v==='setpw') renderSetPassword();
     else renderApply();
   }
@@ -4407,7 +4541,7 @@
     if(h.indexOf('appview/')===0){ appViewId=decodeURIComponent(h.slice(8))||null; return appViewId?'appview':'admin'; }
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
-    if(['track','apply','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','customers','automations','templates','msghistory','suppliers','refunds','reports','team','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','customers','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 

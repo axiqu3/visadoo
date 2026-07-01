@@ -78,6 +78,7 @@ Staff sign in and use a private console (a left-hand sidebar groups everything).
 - **Catalogue group** — **Destinations** (countries/groups), **Visa Types** (add/edit visas, prices, processing time, per-visa questions, SEO), and **Events** (add/edit international events that promote a country's visas — name, country, category, dates, image, on/off).
 - **Content group** — **Articles**, **Content** (pages/FAQs/reviews), and **Site SEO**.
 - **Settings group** — **Brand & Settings**, **Email**, and **Team** (invite staff, set roles).
+- **Audit group** — **Audit Centre** (Admin/Owner only): one searchable, filterable timeline of important changes across the whole platform (who · when · module · record · action · old → new · risk level), merging the existing edit histories (Applications, Customers), the Finance audit, and Messaging events with a new central audit log. Read-only and append-only; staff role changes are now recorded here.
 
 **Per-application finance panel (finance/admin only):** internal cost lines (e.g. visa processing, insurance, delivery, voucher) each optionally tied to a supplier, a margin (₹ or %), flexible GST, an automatically calculated customer price, customer payments with **numbered printable receipts**, and refunds. Customers and non-finance staff never see supplier costs or your margin.
 
@@ -269,6 +270,7 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 _This guide is kept current: it is updated whenever a major feature or new module is added._
 
+- **01 Jul 2026** — Audit Centre (Phase 1) added: admin/owner-only backend screen unifying existing edit histories + Finance audit + Messaging into one filterable log, plus a new append-only central `audit_logs` table; staff role changes now recorded. (Future modules will log to the central table.)
 - **01 Jul 2026** — Applications are now editable by admins (all applicant fields, mobile with country picker) with a field-by-field Edit history; status stays in its notifying control.
 - **01 Jul 2026** — Customer records are now editable by admins (all fields, mobile with country picker) with a field-by-field **Edit history** (who/what/when). Also: WhatsApp sender now prefers the application's number, and failed messages have a Resend-with-guidance option.
 - **30 Jun 2026** — Events module LIVE: public `/events` page (month timeline + category tabs) + dedicated per-event pages promoting each country's visas + "Events" menu link; backend Events manager under Catalogue. (events table; edge functions events.js + event.js.)
