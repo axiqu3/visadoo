@@ -74,7 +74,7 @@ Staff sign in and use a private console (a left-hand sidebar groups everything).
 - **Finance group** (finance/admin only)
   - **Suppliers** — your visa suppliers, each showing an Outstanding/Settled balance, with a Statement of Account page and the ability to record payments to them.
   - **Refund requests** — a queue where operations/sales raise refund requests and finance approves or rejects them.
-  - **Finance reports** — receivables, supplier payables, and profit margins, each exportable to CSV.
+  - **Finance reports** — receivables, supplier payables, profit margins, and a **Supplier-wise detailed report** (row per supplier cost line: date, applicant, passport, visa, country, supplier, invoice no., cost, status, reference), each exportable to CSV. Filters include date range, supplier, visa, application status, and customer payment. (Each supplier cost line now also has an **invoice no.** field in the per-application finance panel.)
 - **Catalogue group** — **Destinations** (countries/groups), **Visa Types** (add/edit visas, prices, processing time, per-visa questions, SEO), and **Events** (add/edit international events that promote a country's visas — name, country, category, dates, image, on/off).
 - **Content group** — **Articles**, **Content** (pages/FAQs/reviews), and **Site SEO**.
 - **Settings group** — **Brand & Settings**, **Email**, and **Team** (invite staff, set roles).
@@ -270,6 +270,7 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 _This guide is kept current: it is updated whenever a major feature or new module is added._
 
+- **01 Jul 2026** — Finance reports: added a **Supplier-wise detailed report** (row per supplier cost line, sample-style columns, CSV export) + an **Application status** filter; each cost line now has a **supplier invoice no.** field.
 - **01 Jul 2026** — Audit Centre (Phase 2 wiring): more actions now recorded to the central log — application status changes, catalogue & pricing (visa types, destinations, groups, events), content & settings (articles, pages, FAQs, reviews, brand, email, site SEO), CSV exports, and marketing-consent changes.
 - **01 Jul 2026** — Audit Centre (Phase 1) added: admin/owner-only backend screen unifying existing edit histories + Finance audit + Messaging into one filterable log, plus a new append-only central `audit_logs` table; staff role changes now recorded. (Future modules will log to the central table.)
 - **01 Jul 2026** — Applications are now editable by admins (all applicant fields, mobile with country picker) with a field-by-field Edit history; status stays in its notifying control.

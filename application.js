@@ -939,7 +939,8 @@
     return '<div class="cl-row" style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;align-items:center">'+
       '<select class="cl-cat" style="flex:1;min-width:130px">'+cats+'</select>'+
       '<select class="cl-sup" style="flex:1;min-width:130px">'+sups+'</select>'+
-      '<input class="cl-cost" type="number" min="0" placeholder="cost ₹" value="'+esc(l.cost!=null&&l.cost!==0?l.cost:(l.cost===0?'0':''))+'" style="width:110px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">'+
+      '<input class="cl-cost" type="number" min="0" placeholder="cost ₹" value="'+esc(l.cost!=null&&l.cost!==0?l.cost:(l.cost===0?'0':''))+'" style="width:100px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">'+
+      '<input class="cl-inv" type="text" placeholder="invoice no" value="'+esc(l.invoice_no||'')+'" style="width:120px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit">'+
       '<button type="button" class="cl-del link-btn" style="color:var(--red);padding:0 6px;font-size:16px">✕</button>'+
     '</div>';
   }
@@ -1419,7 +1420,8 @@
       var readLines=function(){ return [].map.call(card.querySelectorAll('.cl-row'), function(row){
         return { category:((row.querySelector('.cl-cat')||{}).value)||'Visa processing',
                  supplier_id:((row.querySelector('.cl-sup')||{}).value)||null,
-                 cost:Number((row.querySelector('.cl-cost')||{}).value)||0 }; }); };
+                 cost:Number((row.querySelector('.cl-cost')||{}).value)||0,
+                 invoice_no:(((row.querySelector('.cl-inv')||{}).value)||'').trim()||null }; }); };
       var recalc=function(){
         var c=computeFin(readLines(), fget('margintype'), fget('marginval'), fget('gstmode'), fget('gstrate'));
         var el=card.querySelector('[data-fin="calc"]');
@@ -1443,7 +1445,7 @@
         sb.from('application_cost_lines').delete().eq('application_id', a.id).then(function(d){
           if(d.error) throw d.error;
           if(!lines.length) return { error:null };
-          return sb.from('application_cost_lines').insert(lines.map(function(l){ return { application_id:a.id, category:l.category, supplier_id:l.supplier_id, cost:l.cost }; }));
+          return sb.from('application_cost_lines').insert(lines.map(function(l){ return { application_id:a.id, category:l.category, supplier_id:l.supplier_id, cost:l.cost, invoice_no:l.invoice_no||null }; }));
         }).then(function(ins){
           if(ins&&ins.error) throw ins.error;
           return sb.from('application_finance').upsert({ application_id:a.id, currency:'INR',
@@ -2756,8 +2758,8 @@
   // ============================================================
   //  FINANCE REPORTS (Finance) — pending payments, outstanding, margins + CSV
   // ============================================================
-  var frFilters={ from:'', to:'', visa:'', supplier:'', custpay:'all' }, frFiltersOpen=false, frData=null;
-  function frActiveCount(){ var f=frFilters,n=0; if(f.from||f.to)n++; if(f.visa)n++; if(f.supplier)n++; if(f.custpay&&f.custpay!=='all')n++; return n; }
+  var frFilters={ from:'', to:'', visa:'', supplier:'', custpay:'all', status:'all' }, frFiltersOpen=false, frData=null;
+  function frActiveCount(){ var f=frFilters,n=0; if(f.from||f.to)n++; if(f.visa)n++; if(f.supplier)n++; if(f.custpay&&f.custpay!=='all')n++; if(f.status&&f.status!=='all')n++; return n; }
   function renderFinReports(){
     if(!isFinance()){ go(defaultStaffView()); return; }
     if(!VISAS.length) loadVisaTypes();
@@ -2775,6 +2777,7 @@
             '<div class="field"><label>Visa type</label><select id="frVisa"><option value="">All visa types</option>'+VISAS.map(function(v){return '<option value="'+esc(v.id)+'"'+(frFilters.visa===v.id?' selected':'')+'>'+esc(v.name)+'</option>';}).join('')+'</select></div>'+
             '<div class="field"><label>Customer payment</label><select id="frCustpay">'+[['all','All payment statuses'],['unpaid','Unpaid'],['partial','Partial'],['paid','Paid'],['refunded','Refunded'],['advance','Advance (paid, not billed)']].map(function(o){return '<option value="'+o[0]+'"'+(frFilters.custpay===o[0]?' selected':'')+'>'+esc(o[1])+'</option>';}).join('')+'</select></div>'+
             '<div class="field"><label>Supplier</label><select id="frSupplier"><option value="">All suppliers</option></select></div>'+
+            '<div class="field"><label>Application status</label><select id="frStatus"><option value="all">All statuses</option>'+ALL_STATUSES.map(function(s){return '<option value="'+esc(s)+'"'+(frFilters.status===s?' selected':'')+'>'+esc(s)+'</option>';}).join('')+'</select></div>'+
           '</div>'+
         '</div>'+
       '</div>'+
@@ -2782,15 +2785,16 @@
     '</div>';
     wireAdminSections();
     document.getElementById('frFiltersBtn').onclick=function(){ frFiltersOpen=!frFiltersOpen; document.getElementById('frFilterPanel').style.display=frFiltersOpen?'':'none'; };
-    document.getElementById('frClear').onclick=function(){ frFilters={from:'',to:'',visa:'',supplier:'',custpay:'all'}; renderFinReports(); };
+    document.getElementById('frClear').onclick=function(){ frFilters={from:'',to:'',visa:'',supplier:'',custpay:'all',status:'all'}; renderFinReports(); };
     function fbind(id,key){ var el=document.getElementById(id); if(el) el.onchange=function(){ frFilters[key]=el.value; paintFinReports(); }; }
-    fbind('frFrom','from'); fbind('frTo','to'); fbind('frVisa','visa'); fbind('frCustpay','custpay'); fbind('frSupplier','supplier');
+    fbind('frFrom','from'); fbind('frTo','to'); fbind('frVisa','visa'); fbind('frCustpay','custpay'); fbind('frSupplier','supplier'); fbind('frStatus','status');
     Promise.all([
       sb.from('application_finance').select('application_id, customer_total, total_cost, margin, customer_payment_status, applications(full_name,reference_code,visa_type,created_at)'),
       sb.from('customer_payments').select('application_id, kind, amount, status'),
       sb.from('suppliers').select('id,name,opening_balance'),
-      sb.from('application_cost_lines').select('application_id, supplier_id, cost'),
-      sb.from('supplier_payments').select('supplier_id, amount')
+      sb.from('application_cost_lines').select('application_id, supplier_id, cost, invoice_no, remarks, applications(full_name,passport_number,visa_type,status,reference_code,created_at)'),
+      sb.from('supplier_payments').select('supplier_id, amount'),
+      (countryList.length?Promise.resolve(true):loadCountriesGroups())
     ]).then(function(res){
       var area=document.getElementById('frArea'); if(!area) return;
       if(res[0].error){ area.innerHTML='<div class="empty-state"><p>Could not load reports.</p></div>'; console.error(res[0].error); return; }
@@ -2831,12 +2835,43 @@
     var supPending=supRows.filter(function(r){return r.outstanding>0.5;});
     var sum=function(arr,k){ return arr.reduce(function(s,r){return s+Number(r[k]||0);},0); };
     var totReceivable=sum(pendingCust,'balance'), totPayable=sum(supPending,'outstanding'), totMargin=sum(appMargin,'margin');
+
+    // Supplier-wise detailed report — one row per supplier cost line (matches the sample statement).
+    var supName={}; sups.forEach(function(s){ supName[s.id]=s.name; });
+    var vcty=function(slug){ var v=visaById(slug); return v?countryName(v.country_slug):''; };
+    var detRows=[];
+    lines.forEach(function(l){
+      var app=l.applications||{};
+      var day=(app.created_at||'').slice(0,10);
+      if(f.from && day<f.from) return;
+      if(f.to && day>f.to) return;
+      if(f.supplier && l.supplier_id!==f.supplier) return;
+      if(f.status && f.status!=='all' && (app.status||'')!==f.status) return;
+      if(f.visa && app.visa_type!==f.visa) return;
+      detRows.push({ date:day, name:app.full_name||'', passport:app.passport_number||'', visa:vn(app.visa_type), country:vcty(app.visa_type), supplier:(l.supplier_id?(supName[l.supplier_id]||''):''), invoice:l.invoice_no||'', cost:Number(l.cost||0), status:app.status||'', remarks:l.remarks||'', ref:app.reference_code||'' });
+    });
+    detRows.sort(function(a,b){ return (a.date<b.date?-1:(a.date>b.date?1:0)); });
+    var detTotal=detRows.reduce(function(s,r){return s+r.cost;},0);
+    var detHead=['#','Date','PAX Name','Passport','Visa Type','Country','Supplier','Invoice No.','Cost (₹)','Currency','Status','Remarks','App No.'];
+    function detTable(){
+      var th=detHead.map(function(h){ return '<th style="padding:6px 10px 6px 0;text-align:'+(h==='Cost (₹)'?'right':'left')+';white-space:nowrap;color:var(--muted);border-bottom:1px solid var(--line)">'+esc(h)+'</th>'; }).join('');
+      var tr=detRows.map(function(r,i){
+        var cells=[String(i+1), r.date, r.name, r.passport, r.visa, r.country, (r.supplier||'—'), (r.invoice||'—'), money(r.cost), 'INR', r.status, (r.remarks||'—'), r.ref];
+        return '<tr>'+cells.map(function(c,ci){ return '<td style="padding:6px 10px 6px 0;border-top:1px solid var(--line);white-space:nowrap;text-align:'+(ci===8?'right':'left')+'">'+esc(c)+'</td>'; }).join('')+'</tr>';
+      }).join('');
+      return '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr>'+th+'</tr></thead><tbody>'+tr+'</tbody></table></div>'+
+        '<div class="phint" style="margin-top:8px">'+detRows.length+' cost lines · total supplier cost '+money(detTotal)+'</div>';
+    }
+    var detSection='<div style="margin-bottom:22px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px"><h3 style="font-size:16px;font-weight:800;margin:0">Supplier-wise detailed report</h3><button class="btn btn-ghost" id="frCsv5">Download CSV</button></div>'+
+      (detRows.length? detTable() : emptyMsg('No supplier cost lines match your filters.'))+'</div>';
+
     area.innerHTML=
       '<div class="grid2" style="margin-bottom:8px">'+
         '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Receivable (customers owe)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totReceivable)+'</div></div>'+
         '<div class="panel" style="text-align:center"><div class="phint" style="margin:0">Payable (we owe suppliers)</div><div style="font-size:22px;font-weight:800;color:var(--red)">'+money(totPayable)+'</div></div>'+
       '</div>'+
       '<div class="panel" style="text-align:center;margin-bottom:18px"><div class="phint" style="margin:0">Total margin (filtered applications)</div><div style="font-size:22px;font-weight:800;color:var(--green)">'+money(totMargin)+'</div></div>'+
+      detSection+
       section('Pending customer payments','frCsv1', pendingCust.length? tbl(['Customer','Total','Paid','Balance','Status'], pendingCust.map(function(r){return [r.name+' ('+r.ref+')', money(r.total), money(r.paid), money(r.balance), r.status];})) : emptyMsg('No pending customer payments.'))+
       section('Supplier outstanding','frCsv2', supPending.length? tbl(['Supplier','Payable','Paid','Outstanding'], supPending.map(function(r){return [r.name, money(r.opening+r.payable), money(r.paid), money(r.outstanding)];})) : emptyMsg('No supplier dues.'))+
       section('Application margin','frCsv3', appMargin.length? tbl(['Application','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name+' ('+r.ref+')', money(r.selling), money(r.cost), money(r.margin)];})) : emptyMsg('No finance entries match.'))+
@@ -2845,6 +2880,9 @@
     wireCsv('frCsv2','supplier-outstanding.csv',['Supplier','Opening','Payable','Paid','Outstanding'], supRows.map(function(r){return [r.name,r.opening,r.payable,r.paid,r.outstanding];}));
     wireCsv('frCsv3','application-margin.csv',['Customer','Reference','Visa','Selling','Cost','Margin'], appMargin.map(function(r){return [r.name,r.ref,r.visa,r.selling,r.cost,r.margin];}));
     wireCsv('frCsv4','visa-type-margin.csv',['Visa type','Applications','Selling','Margin'], vtRows.map(function(r){return [r.visa,r.count,r.selling,r.margin];}));
+    wireCsv('frCsv5','supplier-wise-detailed-report.csv',
+      ['Sl. No.','Application Date','PAX Name','Passport No.','Visa Type','Country','Supplier Name','Supplier Invoice No.','Supplier Cost','Currency','Status','Remarks','Visadoo Application No.'],
+      detRows.map(function(r,i){ return [i+1, r.date, r.name, r.passport, r.visa, r.country, r.supplier, r.invoice, r.cost, 'INR', r.status, r.remarks, r.ref]; }));
   }
 
   // ============================================================
