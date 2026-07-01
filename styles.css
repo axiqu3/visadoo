@@ -295,8 +295,8 @@ p{margin:0}
 .hero.has-banner .container{position:relative;z-index:1}
 
 /* ===== WhatsApp button label ===== */
-.wa-float.has-label{width:auto;border-radius:30px;padding:0 20px 0 14px;gap:10px}
-.wa-float.has-label .wa-label{color:#fff;font-weight:700;font-size:15px;white-space:nowrap}
+.wa-float.has-label{width:auto;height:56px;border-radius:30px;padding:0 22px;gap:10px;display:flex;align-items:center;justify-content:center}
+.wa-float.has-label .wa-label{color:#fff;font-weight:700;font-size:15px;white-space:nowrap;line-height:1}
 
 /* ===== Announcement bar ===== */
 .ann-bar{background:linear-gradient(135deg,var(--blue-600),var(--blue-500));color:#fff;font-weight:600;font-size:14.5px}
