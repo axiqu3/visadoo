@@ -1564,7 +1564,7 @@
       }).then(function(){
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
         toast('Updated '+a.full_name.split(' ')[0]+'’s application to “'+status+'”');
-        if(status!==prevStatus) notifyStatusChange(a.id, status, a.full_name);
+        if(status!==prevStatus){ notifyStatusChange(a.id, status, a.full_name); logAudit({ module:'Applications', action:'status_change', record_type:'application', record_id:a.id, record_ref:(a.reference_code||a.full_name||''), field:'status', old_value:prevStatus, new_value:status, remarks:(note||null), risk:(status==='Visa Issued'?'high':'sensitive') }); }
         afterAppSave(a.id);
       }).catch(function(err){
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
@@ -1884,6 +1884,8 @@
       op.then(function(r){
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
         if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save. Please try again.'; console.error(r.error); return; }
+        var wasEdit=!!vtEditing.id;
+        logAudit({ module:'Catalogue', action:(wasEdit?'edit':'create'), record_type:'visa_type', record_ref:name, field:'price', new_value:(payload.price_aed!=null?('₹'+payload.price_aed):''), remarks:(wasEdit?'Visa type updated':'Visa type created'), risk:'sensitive' });
         toast(vtEditing.id?'Visa type updated':'Visa type created');
         vtEditing=null;
         loadVisaTypes();
@@ -1898,6 +1900,7 @@
     if(!window.confirm('Delete “'+v.name+'”? It will be removed from your website. Existing applications are not affected.')) return;
     sb.from('visa_types').delete().eq('id',id).then(function(r){
       if(r.error){ toast('Could not delete. Please try again.'); console.error(r.error); return; }
+      logAudit({ module:'Catalogue', action:'delete', record_type:'visa_type', record_ref:v.name, remarks:'Visa type deleted', risk:'high' });
       toast('Visa type deleted');
       loadVisaTypes();
       renderVisaTypesAdmin();
@@ -2425,6 +2428,7 @@
     else { payload.slug=uniqueArticleSlug(slugify(a.title)); op=sb.from('articles').insert(payload).select().single(); }
     op.then(function(r){
       if(r.error){ var m=document.getElementById('artMsg'); if(m){m.className='signin-msg err'; m.textContent='Could not save. Please try again.';} btnIds.forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=false;}); console.error(r.error); return; }
+      logAudit({ module:'Content', action:(a.id?'edit':'create'), record_type:'article', record_ref:(a.title||'(untitled)'), remarks:('Article '+(status==='published'?'published':'saved')), risk:'normal' });
       toast(status==='published'?'Article published — live now':'Saved');
       artEditing=r.data; // keep editing with new id/slug
       if(!stayOnSeo) artTab='write';
@@ -2438,6 +2442,7 @@
     if(!window.confirm('Delete “'+(a.title||'this article')+'”? This cannot be undone.')) return;
     sb.from('articles').delete().eq('id',id).then(function(r){
       if(r.error){ toast('Could not delete.'); console.error(r.error); return; }
+      logAudit({ module:'Content', action:'delete', record_type:'article', record_ref:(a.title||'article'), remarks:'Article deleted', risk:'high' });
       toast('Article deleted'); renderArticlesAdmin();
     });
   }
@@ -3081,6 +3086,7 @@
       else { payload.slug=uniqueSlugIn(slugify(name), countryList); op=sb.from('countries').insert(payload); }
       op.then(function(r){ saveBtn.disabled=false; saveBtn.innerHTML='Save';
         if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save. Please try again.'; console.error(r.error); return; }
+        logAudit({ module:'Catalogue', action:(cEditing.id?'edit':'create'), record_type:'country', record_ref:name, remarks:'Destination saved', risk:'normal' });
         toast('Country saved'); cEditing=null; renderDestinationsAdmin();
       });
     };
@@ -3088,7 +3094,7 @@
   function countryDelete(id){
     var c=countryList.filter(function(x){return x.id===id;})[0]; if(!c) return;
     if(!window.confirm('Delete “'+c.name+'”? This also removes its visa options. This cannot be undone.')) return;
-    sb.from('countries').delete().eq('id',id).then(function(r){ if(r.error){ toast('Could not delete.'); console.error(r.error); return; } toast('Country deleted'); loadVisaTypes(); renderDestinationsAdmin(); });
+    sb.from('countries').delete().eq('id',id).then(function(r){ if(r.error){ toast('Could not delete.'); console.error(r.error); return; } logAudit({ module:'Catalogue', action:'delete', record_type:'country', record_ref:c.name, remarks:'Destination deleted', risk:'high' }); toast('Country deleted'); loadVisaTypes(); renderDestinationsAdmin(); });
   }
 
   // ---- Groups ----
@@ -3130,6 +3136,7 @@
       var op = gEditing.id ? sb.from('visa_groups').update(payload).eq('id',gEditing.id) : (function(){ payload.slug=uniqueSlugIn(slugify(name), groupList); return sb.from('visa_groups').insert(payload); })();
       op.then(function(r){ saveBtn.disabled=false; saveBtn.innerHTML='Save';
         if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save. Please try again.'; console.error(r.error); return; }
+        logAudit({ module:'Catalogue', action:(gEditing.id?'edit':'create'), record_type:'visa_group', record_ref:name, remarks:'Group saved', risk:'normal' });
         toast('Group saved'); gEditing=null; renderDestinationsAdmin();
       });
     };
@@ -3137,7 +3144,7 @@
   function groupDelete(id){
     var g=groupList.filter(function(x){return x.id===id;})[0]; if(!g) return;
     if(!window.confirm('Delete the “'+g.name+'” group? Countries in it stay, but are no longer grouped.')) return;
-    sb.from('visa_groups').delete().eq('id',id).then(function(r){ if(r.error){ toast('Could not delete.'); return; } toast('Group deleted'); renderDestinationsAdmin(); });
+    sb.from('visa_groups').delete().eq('id',id).then(function(r){ if(r.error){ toast('Could not delete.'); return; } logAudit({ module:'Catalogue', action:'delete', record_type:'visa_group', record_ref:g.name, remarks:'Group deleted', risk:'high' }); toast('Group deleted'); renderDestinationsAdmin(); });
   }
 
   function uniqueSlugIn(base, list){ var ex=list.map(function(x){return x.slug;}); var s=base||'item', i=2; while(ex.indexOf(s)>-1){ s=(base||'item')+'-'+i; i++; } return s; }
@@ -3244,6 +3251,7 @@
         var m=document.getElementById('ssMsg');
         if(r.error){ m.className='signin-msg err'; m.textContent='Could not save. Please try again.'; console.error(r.error); return; }
         m.className='signin-msg ok'; m.textContent='Saved — your homepage is updated.'; toast('Site SEO saved');
+        logAudit({ module:'Content', action:'edit', record_type:'site_seo', record_ref:'Site SEO', remarks:'Homepage SEO updated', risk:'normal' });
       });
     };
 
@@ -3408,6 +3416,7 @@
         var m=document.getElementById('bMsg');
         if(r.error){ m.className='signin-msg err'; m.textContent='Could not save. Please try again.'; console.error(r.error); return; }
         m.className='signin-msg ok'; m.textContent='Saved — your branding is updated across the site.'; toast('Brand settings saved');
+        logAudit({ module:'Settings', action:'edit', record_type:'site_settings', record_ref:'Brand & contact', remarks:'Brand/contact settings updated', risk:'sensitive' });
       });
     };
   }
@@ -3459,6 +3468,7 @@
         btn.disabled=false; btn.innerHTML='Save email settings';
         if(r.error){ m.className='signin-msg err'; m.textContent='Could not save. Please try again.'; console.error(r.error); return; }
         m.className='signin-msg ok'; m.textContent=key?'Saved — customer update emails are on.':'Saved.';
+        logAudit({ module:'Settings', action:'edit', record_type:'email_settings', record_ref:'Email settings', new_value:('status emails '+(document.getElementById('emNotify').checked?'on':'off')), remarks:'Email settings updated', risk:'sensitive' });
         toast('Email settings saved');
       });
     };
@@ -3478,6 +3488,7 @@
     a.href=url; a.download=filename; document.body.appendChild(a); a.click();
     setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 120);
     toast('Download started');
+    logAudit({ module:'Exports', action:'export', record_ref:filename, remarks:(rows.length+' rows exported'), risk:'sensitive' });
   }
 
   // ============================================================
@@ -3582,7 +3593,10 @@
   function setCustMarketing(id, val){
     var now=new Date().toISOString();
     var rows=['email','whatsapp'].map(function(ch){ return { customer_id:id, channel:ch, marketing_opted_in:val, marketing_source:'manual', marketing_updated_at:now, updated_at:now }; });
-    return sb.from('consent').upsert(rows,{onConflict:'customer_id,channel'});
+    return sb.from('consent').upsert(rows,{onConflict:'customer_id,channel'}).then(function(r){
+      if(!(r&&r.error)) logAudit({ module:'Customers', action:'edit', record_type:'customer', record_id:id, field:'marketing_consent', old_value:(val?'off':'on'), new_value:(val?'on':'off'), remarks:'Marketing consent changed', risk:'sensitive' });
+      return r;
+    });
   }
   function filteredCust(){
     var q=((document.getElementById('custSearch')||{}).value||'').trim().toLowerCase();
@@ -3858,7 +3872,7 @@
     area.innerHTML='<div style="margin-bottom:14px"><button class="btn btn-primary" id="pAdd">+ New page</button></div>'+(rows||'<div class="panel empty-state"><p>No pages yet.</p></div>');
     document.getElementById('pAdd').onclick=function(){ pEditing={id:null,title:'',content:'',status:'draft',show_in_footer:true,sort_order:(pList.length+1),seo_title:'',seo_description:''}; paintPages(); };
     area.querySelectorAll('[data-pedit]').forEach(function(b){ b.onclick=function(){ pEditing=JSON.parse(JSON.stringify(pList.filter(function(x){return x.id===b.getAttribute('data-pedit');})[0])); paintPages(); }; });
-    area.querySelectorAll('[data-pdel]').forEach(function(b){ b.onclick=function(){ var p=pList.filter(function(x){return x.id===b.getAttribute('data-pdel');})[0]; if(!window.confirm('Delete “'+p.title+'”?'))return; sb.from('pages').delete().eq('id',p.id).then(function(){ toast('Page deleted'); renderContentAdmin(); }); }; });
+    area.querySelectorAll('[data-pdel]').forEach(function(b){ b.onclick=function(){ var p=pList.filter(function(x){return x.id===b.getAttribute('data-pdel');})[0]; if(!window.confirm('Delete “'+p.title+'”?'))return; sb.from('pages').delete().eq('id',p.id).then(function(){ logAudit({ module:'Content', action:'delete', record_type:'page', record_ref:p.title, remarks:'Page deleted', risk:'high' }); toast('Page deleted'); renderContentAdmin(); }); }; });
   }
   function pageFormHtml(p){
     return '<div class="panel">'+
@@ -3893,7 +3907,7 @@
       var payload={ title:title, content:document.getElementById('pContent').innerHTML, status:status, show_in_footer:document.getElementById('pFooter').checked,
         seo_title:document.getElementById('pSeoT').value.trim()||null, seo_description:document.getElementById('pSeoD').value.trim()||null };
       var op = pEditing.id ? sb.from('pages').update(payload).eq('id',pEditing.id) : (function(){ payload.slug=uniqueSlugIn(slugify(title),pList); return sb.from('pages').insert(payload); })();
-      op.then(function(r){ if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save.'; console.error(r.error); return; } toast(status==='published'?'Page published':'Saved'); pEditing=null; renderContentAdmin(); });
+      op.then(function(r){ if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save.'; console.error(r.error); return; } logAudit({ module:'Content', action:(pEditing.id?'edit':'create'), record_type:'page', record_ref:title, remarks:('Page '+(status==='published'?'published':'saved')), risk:'normal' }); toast(status==='published'?'Page published':'Saved'); pEditing=null; renderContentAdmin(); });
     }
     if(document.getElementById('pSaveDraft')) document.getElementById('pSaveDraft').onclick=function(){ save(pEditing.status||'draft'); };
     if(document.getElementById('pPublish')) document.getElementById('pPublish').onclick=function(){ save('published'); };
@@ -3915,7 +3929,7 @@
     area.innerHTML='<div style="margin-bottom:14px"><button class="btn btn-primary" id="fAdd">+ Add question</button></div>'+(rows||'<div class="panel empty-state"><p>No FAQs yet.</p></div>');
     document.getElementById('fAdd').onclick=function(){ fEditing={id:null,question:'',answer:'',active:true,sort_order:(fList.length+1)}; paintFaqs(); };
     area.querySelectorAll('[data-fedit]').forEach(function(b){ b.onclick=function(){ fEditing=JSON.parse(JSON.stringify(fList.filter(function(x){return x.id===b.getAttribute('data-fedit');})[0])); paintFaqs(); }; });
-    area.querySelectorAll('[data-fdel]').forEach(function(b){ b.onclick=function(){ if(!window.confirm('Delete this question?'))return; sb.from('faqs').delete().eq('id',b.getAttribute('data-fdel')).then(function(){ toast('Deleted'); renderContentAdmin(); }); }; });
+    area.querySelectorAll('[data-fdel]').forEach(function(b){ b.onclick=function(){ if(!window.confirm('Delete this question?'))return; sb.from('faqs').delete().eq('id',b.getAttribute('data-fdel')).then(function(){ logAudit({ module:'Content', action:'delete', record_type:'faq', record_ref:'FAQ', remarks:'FAQ deleted', risk:'normal' }); toast('Deleted'); renderContentAdmin(); }); }; });
     area.querySelectorAll('[data-fmove]').forEach(function(b){ b.onclick=function(){ swapOrder('faqs',fList,b.getAttribute('data-fmove'),b.getAttribute('data-dir')); }; });
   }
   function faqFormHtml(q){
@@ -3932,7 +3946,7 @@
       if(!qn){ msg.className='signin-msg err'; msg.textContent='Please enter the question.'; return; }
       var payload={ question:qn, answer:document.getElementById('fA').value.trim()||null, active:document.getElementById('fActive').checked, sort_order:fEditing.sort_order||(fList.length+1) };
       var op=fEditing.id?sb.from('faqs').update(payload).eq('id',fEditing.id):sb.from('faqs').insert(payload);
-      op.then(function(r){ if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save.'; return; } toast('Saved'); fEditing=null; renderContentAdmin(); });
+      op.then(function(r){ if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save.'; return; } logAudit({ module:'Content', action:(fEditing.id?'edit':'create'), record_type:'faq', record_ref:'FAQ', remarks:'FAQ saved', risk:'normal' }); toast('Saved'); fEditing=null; renderContentAdmin(); });
     };
   }
 
@@ -3948,7 +3962,7 @@
     area.innerHTML='<div style="margin-bottom:14px"><button class="btn btn-primary" id="rvAdd">+ Add review</button></div>'+(rows||'<div class="panel empty-state"><p>No reviews yet.</p></div>');
     document.getElementById('rvAdd').onclick=function(){ rEditing={id:null,name:'',location:'',rating:5,body:'',active:true,sort_order:(rvList.length+1)}; paintReviews(); };
     area.querySelectorAll('[data-rvedit]').forEach(function(b){ b.onclick=function(){ rEditing=JSON.parse(JSON.stringify(rvList.filter(function(x){return x.id===b.getAttribute('data-rvedit');})[0])); paintReviews(); }; });
-    area.querySelectorAll('[data-rvdel]').forEach(function(b){ b.onclick=function(){ if(!window.confirm('Delete this review?'))return; sb.from('reviews').delete().eq('id',b.getAttribute('data-rvdel')).then(function(){ toast('Deleted'); renderContentAdmin(); }); }; });
+    area.querySelectorAll('[data-rvdel]').forEach(function(b){ b.onclick=function(){ if(!window.confirm('Delete this review?'))return; sb.from('reviews').delete().eq('id',b.getAttribute('data-rvdel')).then(function(){ logAudit({ module:'Content', action:'delete', record_type:'review', record_ref:'Review', remarks:'Review deleted', risk:'normal' }); toast('Deleted'); renderContentAdmin(); }); }; });
   }
   function reviewFormHtml(rv){
     var ratingOpts=[5,4,3,2,1].map(function(n){ return '<option value="'+n+'"'+(n===rv.rating?' selected':'')+'>'+n+' star'+(n===1?'':'s')+'</option>'; }).join('');
@@ -3968,7 +3982,7 @@
       var payload={ name:name, location:document.getElementById('rvLoc').value.trim()||null, rating:parseInt(document.getElementById('rvRating').value,10)||5,
         body:document.getElementById('rvBody').value.trim()||null, active:document.getElementById('rvActive').checked, sort_order:rEditing.sort_order||(rvList.length+1) };
       var op=rEditing.id?sb.from('reviews').update(payload).eq('id',rEditing.id):sb.from('reviews').insert(payload);
-      op.then(function(r){ if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save.'; return; } toast('Saved'); rEditing=null; renderContentAdmin(); });
+      op.then(function(r){ if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save.'; return; } logAudit({ module:'Content', action:(rEditing.id?'edit':'create'), record_type:'review', record_ref:'Review', remarks:'Review saved', risk:'normal' }); toast('Saved'); rEditing=null; renderContentAdmin(); });
     };
   }
 
@@ -4349,12 +4363,14 @@
       op.then(function(r){
         btn.disabled=false; btn.innerHTML='Save';
         if(r.error){ err('Could not save. Please try again.'); console.error(r.error); return; }
+        logAudit({ module:'Catalogue', action:(editingId?'edit':'create'), record_type:'event', record_ref:name, remarks:'Event saved', risk:'normal' });
         evEditing=null; toast('Event saved'); renderEventsAdmin();
       });
     };
     var del=document.getElementById('evDel'); if(del) del.onclick=function(){
       if(!window.confirm('Delete this event? This cannot be undone.')) return;
-      sb.from('events').delete().eq('id',evEditing.id).then(function(r){ if(r.error){ toast('Could not delete.'); console.error(r.error); return; } evEditing=null; toast('Event deleted'); renderEventsAdmin(); });
+      var evName=evEditing.name;
+      sb.from('events').delete().eq('id',evEditing.id).then(function(r){ if(r.error){ toast('Could not delete.'); console.error(r.error); return; } logAudit({ module:'Catalogue', action:'delete', record_type:'event', record_ref:evName, remarks:'Event deleted', risk:'high' }); evEditing=null; toast('Event deleted'); renderEventsAdmin(); });
     };
   }
 
