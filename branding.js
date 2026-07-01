@@ -85,7 +85,26 @@
     box.style.display = html ? "flex" : "none";
   }
 
+  // WhatsApp float icon — must match the homepage button (index.html) exactly.
+  var WA_ICON = '<svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg>';
+  // Global "Chat with us" button: any customer-facing page that loads branding.js
+  // inherits the exact homepage button. Pages that hard-code one (homepage, visa)
+  // are skipped so it never duplicates. It's hidden on the admin console via CSS
+  // (body.has-admin-side .wa-float). New frontend pages get it automatically.
+  function ensureFloat() {
+    if (!document.body || document.querySelector(".wa-float")) return;
+    var a = document.createElement("a");
+    a.className = "wa-float";
+    a.id = "waFloat";
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.setAttribute("aria-label", "Chat on WhatsApp");
+    a.innerHTML = WA_ICON;
+    document.body.appendChild(a);
+  }
+
   function applyWhatsApp(s) {
+    ensureFloat();
     var floats = document.querySelectorAll(".wa-float");
     if (!floats.length) return;
     var cfg = window.VISADOO_CONFIG || {};

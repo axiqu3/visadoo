@@ -269,6 +269,8 @@
   padding:14px 12px 48px;overflow-y:auto;overscroll-behavior:contain;
 }
 .has-admin-side .app-main{margin-left:236px}
+/* Keep the global "Chat with us" WhatsApp button off the staff console screens */
+.has-admin-side .wa-float{display:none !important}
 .side-group{margin-bottom:2px}
 .side-group-head{
   display:flex;align-items:center;justify-content:space-between;width:100%;
