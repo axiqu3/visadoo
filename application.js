@@ -23,6 +23,8 @@
   function canProcessApps(){ return hasRole(['admin','agent']); }
   function canManageContent(){ return hasRole(['admin','content']); }
   function isFinance(){ return hasRole(['admin','finance']); }   // sees money: suppliers, finance panels, margin
+  function canCRM(){ return hasRole(['admin','agent','sales','viewer']); }   // CRM: view leads/enquiries/follow-ups
+  function canEditCRM(){ return hasRole(['admin','agent','sales']); }        // CRM: create/edit/convert (viewer = read-only)
   function defaultStaffView(){ if(canViewApps()) return 'admin'; if(isFinance()) return 'suppliers'; if(canManageContent()) return 'visatypes'; return 'admin'; }
 
   // Visa types: loaded live from the database (config is just a fallback)
@@ -971,13 +973,15 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','appview','enquiries','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','team','audit'];
+  var ADMIN_VIEWS=['admin','appview','enquiries','leads','leadview','followups','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','team','audit'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
     var P={
       admin:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
       enquiries:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+      leads:'<path d="M22 3H2l8 9.46V19l4 2v-8.54z"/>',
+      followups:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
       customers:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
       comms:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>',
       automations:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
@@ -1003,7 +1007,8 @@
   // Groups + their items, each gated by the same role rules as before. Empty groups drop out.
   function adminNavModel(){
     var g=[
-      ['Customers',[['admin','Applications',canViewApps()],['enquiries','Enquiries',state.role==='admin'],['customers','Customers',state.role==='admin']]],
+      ['Customers',[['admin','Applications',canViewApps()],['customers','Customers',state.role==='admin']]],
+      ['CRM',[['enquiries','Enquiries',canCRM()],['leads','Leads',canCRM()],['followups','Follow-ups',canCRM()]]],
       ['Messaging',[['automations','Automations',state.role==='admin'],['templates','Message templates',state.role==='admin'],['msghistory','Message history',state.role==='admin']]],
       ['Finance',[['suppliers','Suppliers',isFinance()],['refunds','Refund requests',isFinance()],['reports','Finance reports',isFinance()]]],
       ['Catalogue',[['destinations','Destinations',canManageContent()],['visatypes','Visa Types',canManageContent()],['events','Events',canManageContent()]]],
@@ -3548,13 +3553,20 @@
     var cnt=document.getElementById('enqCount'); if(cnt) cnt.textContent=rows.length+' of '+enqRows.length+' shown';
     if(!enqRows.length){ area.innerHTML='<div class="panel empty-state"><p>No enquiries yet. Messages from the homepage contact form will appear here.</p></div>'; return; }
     if(!rows.length){ area.innerHTML='<div class="panel empty-state"><p>No enquiries match your search.</p></div>'; return; }
+    var edit=canEditCRM();
     area.innerHTML=rows.map(function(e){
       var opts=['New','Contacted','Closed'].map(function(s){ return '<option'+(s===e.status?' selected':'')+'>'+s+'</option>'; }).join('');
+      var convBtn = e.converted_lead_id
+        ? '<button class="link-btn" data-enqlead="'+esc(e.converted_lead_id)+'">View lead →</button>'
+        : (edit ? '<button class="btn btn-ghost pill-sm" data-enqconv="'+esc(e.id)+'">Convert to lead</button>' : '');
       return '<div class="admin-app"><div class="arow" style="align-items:flex-start;gap:14px"><div style="flex:1;min-width:0">'+
-        '<h4>'+esc(enqRef(e.seq))+' · '+esc(e.name||'(no name)')+'</h4>'+
+        '<h4>'+esc(enqRef(e.seq))+' · '+esc(e.name||'(no name)')+(e.converted_lead_id?' <span class="status-pill sp-done pill-sm">Lead</span>':'')+'</h4>'+
         '<div class="meta">'+esc(e.email||'')+' · '+esc(new Date(e.created_at).toLocaleString())+'</div>'+
         '<p style="margin:8px 0 0;white-space:pre-wrap">'+esc(e.message||'')+'</p></div>'+
-        '<select data-enq="'+esc(e.id)+'" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit">'+opts+'</select>'+
+        '<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">'+
+          '<select data-enq="'+esc(e.id)+'"'+(edit?'':' disabled')+' style="padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit">'+opts+'</select>'+
+          convBtn+
+        '</div>'+
       '</div></div>';
     }).join('');
     area.querySelectorAll('select[data-enq]').forEach(function(sel){
@@ -3565,9 +3577,11 @@
         });
       };
     });
+    area.querySelectorAll('[data-enqconv]').forEach(function(b){ b.onclick=function(){ var e=enqRows.filter(function(x){return x.id===b.getAttribute('data-enqconv');})[0]; if(e) convertEnquiryToLead(e); }; });
+    area.querySelectorAll('[data-enqlead]').forEach(function(b){ b.onclick=function(){ openLead(b.getAttribute('data-enqlead')); }; });
   }
   function renderEnquiries(){
-    if(state.role!=='admin'){ go(defaultStaffView()); return; }
+    if(!canCRM()){ go(defaultStaffView()); return; }
     root.innerHTML='<div class="app-main">'+adminSections('enquiries')+
       '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
         '<h1>Enquiries</h1><p>Messages from the homepage contact form. Each gets a tracking number so a missing one is easy to spot.</p></div>'+
@@ -3590,6 +3604,398 @@
       var rows=filteredEnq().map(function(e){ return [enqRef(e.seq), new Date(e.created_at).toLocaleString(), e.name||'', e.email||'', e.status||'', e.message||'']; });
       downloadCsv('visadoo-enquiries.csv', ['Enquiry No','Date','Name','Email','Status','Message'], rows);
     };
+  }
+
+  // ============================================================
+  //  CRM — Leads pipeline, follow-ups, activity trail (Phase 1)
+  // ============================================================
+  var LEAD_STAGES=['new','contacted','qualified','quoted','converted','lost'];
+  var LEAD_STAGE_LABELS={ 'new':'New','contacted':'Contacted','qualified':'Qualified','quoted':'Quoted','converted':'Converted','lost':'Lost' };
+  var LEAD_SOURCES=['manual','enquiry','walk-in','phone','referral','website'];
+  var leadList=[], leadViewId=null, LEAD_PAGE=25, leadLimit=LEAD_PAGE;
+  var crmStaff=[], crmStaffLoaded=false;
+  var leadFilters={ stage:'open', owner:'all', source:'all', search:'', overdue:false };
+  var fuList=[], fuOwner='all';
+
+  function leadRef(n){ return 'LEAD-'+pad6(n); }
+  function vLabel(id){ var v=visaById(id); return v?v.name:(id||''); }
+  function crmStaffName(uid){ if(!uid) return 'Unassigned'; for(var i=0;i<crmStaff.length;i++){ if(crmStaff[i].id===uid) return crmStaff[i].full_name||crmStaff[i].email; } return 'Staff member'; }
+  function loadCrmStaff(){
+    if(crmStaffLoaded) return Promise.resolve(crmStaff);
+    return sb.from('profiles').select('id,email,full_name,role').neq('role','customer').then(function(r){
+      crmStaff=(r.data||[]).filter(function(p){ return ['admin','agent','sales'].indexOf(p.role)>-1; }); crmStaffLoaded=true; return crmStaff;
+    });
+  }
+  function leadStagePill(s){
+    var cls={ 'new':'sp-action','contacted':'sp-progress','qualified':'sp-progress','quoted':'sp-progress','converted':'sp-done','lost':'' }[s]||'';
+    var extra=(s==='lost')?' style="background:#eef2f7;color:#64748b"':'';
+    return '<span class="status-pill '+cls+' pill-sm"'+extra+'>'+esc(LEAD_STAGE_LABELS[s]||s)+'</span>';
+  }
+  function followupBadge(d, stage){
+    if(!d || stage==='converted' || stage==='lost') return '';
+    var day=new Date(d); day.setHours(0,0,0,0);
+    var today=new Date(); today.setHours(0,0,0,0);
+    if(day.getTime()<today.getTime()) return '<span class="status-pill sp-action pill-sm">⏰ Overdue</span>';
+    if(day.getTime()===today.getTime()) return '<span class="status-pill sp-action pill-sm">📅 Today</span>';
+    return '<span class="status-pill sp-progress pill-sm">📅 '+esc(new Date(d).toLocaleDateString())+'</span>';
+  }
+  // Match an existing customer by email (or phone), else create one — never duplicates a person.
+  function ensureCustomer(info){
+    var email=(info.email||'').trim().toLowerCase();
+    var phone=(info.phone||'').trim();
+    var q;
+    if(email) q=sb.from('customers').select('id').ilike('email',email).limit(1);
+    else if(phone) q=sb.from('customers').select('id').eq('phone',phone).limit(1);
+    else q=Promise.resolve({data:[]});
+    return q.then(function(r){
+      var rows=(r&&r.data)||[];
+      if(rows.length) return rows[0].id;
+      return sb.from('customers').insert({ email:email||null, full_name:info.full_name||null, phone:phone||null, lead_source:(info.source||'lead') }).select('id').single().then(function(ir){ if(ir.error) throw ir.error; return ir.data.id; });
+    });
+  }
+  function logLeadActivity(leadId, type, body){
+    return sb.from('lead_activities').insert({ lead_id:leadId, type:type, body:(body||null), actor:(state.user&&state.user.id)||null, actor_email:(state.user&&state.user.email)||null });
+  }
+
+  // ---- Leads list ----
+  function leadFiltered(){
+    var today=new Date(); today.setHours(0,0,0,0);
+    var me=(state.user&&state.user.id)||'';
+    return leadList.filter(function(l){
+      if(leadFilters.stage==='open'){ if(l.stage==='converted'||l.stage==='lost') return false; }
+      else if(leadFilters.stage!=='all'){ if(l.stage!==leadFilters.stage) return false; }
+      if(leadFilters.owner==='mine'){ if(l.owner!==me) return false; }
+      else if(leadFilters.owner!=='all'){ if(l.owner!==leadFilters.owner) return false; }
+      if(leadFilters.source!=='all' && (l.source||'')!==leadFilters.source) return false;
+      if(leadFilters.overdue){ if(l.stage==='converted'||l.stage==='lost') return false; if(!l.next_follow_up_at) return false; var d=new Date(l.next_follow_up_at); d.setHours(0,0,0,0); if(d.getTime()>today.getTime()) return false; }
+      if(leadFilters.search){ var hay=[leadRef(l.lead_no),l.full_name,l.email,l.phone,vLabel(l.visa_type),(l.country_slug?countryName(l.country_slug):'')].map(function(x){return (x||'').toString().toLowerCase();}).join(' '); if(hay.indexOf(leadFilters.search)===-1) return false; }
+      return true;
+    });
+  }
+  function leadRowHtml(l){
+    var line2=[l.phone, vLabel(l.visa_type), (l.country_slug?countryName(l.country_slug):'')].filter(function(x){return x;}).map(esc).join(' · ');
+    var val=(l.expected_value!=null && l.expected_value!=='')?('<span class="ar-date">'+money(l.expected_value)+'</span>'):'';
+    return '<div class="app-row" data-leadopen="'+esc(l.id)+'"><div class="ar-main">'+
+      '<div class="ar-name">'+esc(l.full_name||'(no name)')+'<span class="ar-ref"> · '+esc(leadRef(l.lead_no))+'</span> '+leadStagePill(l.stage)+'</div>'+
+      '<div class="ar-sub">'+(line2||esc(l.email||'')||'—')+' · '+esc(crmStaffName(l.owner))+'</div></div>'+
+      '<div class="ar-right">'+followupBadge(l.next_follow_up_at,l.stage)+val+CHEV+'</div></div>';
+  }
+  function paintLeads(){
+    var area=document.getElementById('leadArea'); if(!area) return;
+    var rows=leadFiltered();
+    var openVal=rows.reduce(function(s,l){ return s + ((l.stage!=='converted'&&l.stage!=='lost'&&l.expected_value)?Number(l.expected_value):0); },0);
+    var cnt=document.getElementById('leadCount'); if(cnt) cnt.textContent=rows.length+' of '+leadList.length+' leads'+(openVal>0?(' · open pipeline '+money(openVal)):'');
+    if(!leadList.length){ area.innerHTML='<div class="panel empty-state"><p>No leads yet. Add a lead, or convert an enquiry into a lead.</p></div>'; return; }
+    if(!rows.length){ area.innerHTML='<div class="panel empty-state"><p>No leads match your filters.</p></div>'; return; }
+    var shown=rows.slice(0,leadLimit), remaining=rows.length-shown.length;
+    area.innerHTML='<div class="app-list">'+shown.map(leadRowHtml).join('')+'</div>'+
+      (remaining>0?('<div class="app-loadmore"><button class="btn btn-ghost" id="leadMore" type="button">Load more ('+remaining+' more)</button></div>'):'');
+    area.querySelectorAll('[data-leadopen]').forEach(function(el){ el.onclick=function(){ openLead(el.getAttribute('data-leadopen')); }; });
+    var more=document.getElementById('leadMore'); if(more) more.onclick=function(){ leadLimit+=LEAD_PAGE; paintLeads(); };
+  }
+  function ownerFilterOptions(){
+    return '<option value="all">All owners</option><option value="mine">My leads</option>'+
+      crmStaff.map(function(s){ return '<option value="'+esc(s.id)+'">'+esc(s.full_name||s.email)+'</option>'; }).join('');
+  }
+  function leadCsv(){
+    var rows=leadFiltered().map(function(l){ return [leadRef(l.lead_no), new Date(l.created_at).toLocaleDateString(), l.full_name||'', l.email||'', l.phone||'', vLabel(l.visa_type), l.country_slug?countryName(l.country_slug):'', LEAD_STAGE_LABELS[l.stage]||l.stage, crmStaffName(l.owner), l.source||'', l.next_follow_up_at||'', (l.expected_value!=null?l.expected_value:'')]; });
+    downloadCsv('visadoo-leads.csv', ['Lead No','Created','Name','Email','Phone','Visa Type','Country','Stage','Owner','Source','Next Follow-up','Expected Value (INR)'], rows);
+  }
+  function renderLeads(){
+    if(!canCRM()){ go(defaultStaffView()); return; }
+    leadLimit=LEAD_PAGE;
+    if(!VISAS.length) loadVisaTypes();
+    if(!countryList.length) loadCountriesGroups();
+    var edit=canEditCRM();
+    root.innerHTML='<div class="app-main">'+adminSections('leads')+
+      '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap"><div>'+
+        '<h1>Leads</h1><p>Potential customers you’re following up. Move each New → Contacted → Qualified → Quoted, then convert to an application.</p></div>'+
+        '<div style="display:flex;gap:8px">'+(edit?'<button class="btn btn-primary" id="leadAdd">+ Add lead</button>':'')+'<button class="btn btn-ghost" id="leadCsv">Download CSV</button></div></div>'+
+      '<div style="margin-bottom:14px"><div class="app-toolbar">'+
+        '<div class="app-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'+
+        '<input id="leadSearch" type="text" placeholder="Search name, email, phone, visa or LEAD no…"></div>'+
+        '<select id="lfStage" class="pill-sm"></select>'+
+        '<select id="lfOwner" class="pill-sm"><option value="all">All owners</option></select>'+
+        '<select id="lfSource" class="pill-sm"></select>'+
+        '<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)"><input type="checkbox" id="lfOverdue"> Due/overdue only</label>'+
+      '</div><div style="margin-top:6px"><span id="leadCount" class="phint" style="margin:0"></span></div></div>'+
+      '<div id="leadArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    var st=document.getElementById('lfStage');
+    st.innerHTML='<option value="open">Open (active)</option><option value="all">All stages</option>'+LEAD_STAGES.map(function(s){return '<option value="'+s+'">'+LEAD_STAGE_LABELS[s]+'</option>';}).join('');
+    st.value=leadFilters.stage;
+    var so=document.getElementById('lfSource');
+    so.innerHTML='<option value="all">All sources</option>'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('');
+    so.value=leadFilters.source;
+    document.getElementById('lfOverdue').checked=!!leadFilters.overdue;
+    document.getElementById('leadSearch').value=leadFilters.search||'';
+    function apply(){ leadFilters.stage=st.value; leadFilters.owner=document.getElementById('lfOwner').value; leadFilters.source=so.value; leadFilters.overdue=document.getElementById('lfOverdue').checked; leadFilters.search=(document.getElementById('leadSearch').value||'').trim().toLowerCase(); leadLimit=LEAD_PAGE; paintLeads(); }
+    document.getElementById('leadSearch').oninput=apply; st.onchange=apply; so.onchange=apply; document.getElementById('lfOverdue').onchange=apply;
+    if(edit){ var add=document.getElementById('leadAdd'); if(add) add.onclick=function(){ showLeadForm(); }; }
+    document.getElementById('leadCsv').onclick=leadCsv;
+    Promise.all([ sb.from('leads').select('*').order('created_at',{ascending:false}), loadCrmStaff() ]).then(function(res){
+      if(res[0].error){ document.getElementById('leadArea').innerHTML='<div class="empty-state"><p>Could not load leads.</p></div>'; console.error(res[0].error); return; }
+      leadList=res[0].data||[];
+      var of=document.getElementById('lfOwner'); if(of){ of.innerHTML=ownerFilterOptions(); of.value=leadFilters.owner; of.onchange=apply; }
+      paintLeads();
+    });
+  }
+
+  // ---- Lead detail ----
+  function openLead(id){ leadViewId=id; state.view='leadview'; location.hash='leadview/'+encodeURIComponent(id); renderHeader(); render(); }
+  function leadVisaOptions(sel){ return '<option value="">— Select visa —</option>'+VISAS.map(function(v){return '<option value="'+esc(v.id)+'"'+(sel===v.id?' selected':'')+'>'+esc(v.name)+'</option>';}).join(''); }
+  function leadCountryOptions(sel){ return '<option value="">— Select country —</option>'+countryList.map(function(c){return '<option value="'+esc(c.slug)+'"'+(sel===c.slug?' selected':'')+'>'+esc(c.name)+'</option>';}).join(''); }
+  function leadOwnerOptions(sel){ return '<option value="">Unassigned</option>'+crmStaff.map(function(s){return '<option value="'+esc(s.id)+'"'+(sel===s.id?' selected':'')+'>'+esc(s.full_name||s.email)+'</option>';}).join(''); }
+  function actLabel(t){ return {note:'Note',call:'Call',whatsapp:'WhatsApp',email:'Email',stage_change:'Stage change',follow_up_set:'Follow-up set',converted:'Converted',created:'Created',lost:'Marked lost',owner_change:'Owner change'}[t]||t; }
+  function renderLeadDetail(id){
+    if(!canCRM()){ go(defaultStaffView()); return; }
+    if(!id){ go('leads'); return; }
+    if(!VISAS.length) loadVisaTypes();
+    if(!countryList.length) loadCountriesGroups();
+    root.innerHTML='<div class="app-main">'+adminSections('leads')+'<button class="link-btn" id="leadBack" style="margin-bottom:8px">← Back to leads</button><div id="leadDetail"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div></div>';
+    wireAdminSections();
+    document.getElementById('leadBack').onclick=function(){ go('leads'); };
+    Promise.all([
+      sb.from('leads').select('*').eq('id',id).single(),
+      sb.from('lead_activities').select('*').eq('lead_id',id).order('created_at',{ascending:false}),
+      loadCrmStaff()
+    ]).then(function(res){
+      if(res[0].error||!res[0].data){ document.getElementById('leadDetail').innerHTML='<div class="empty-state"><p>Lead not found.</p></div>'; return; }
+      paintLeadDetail(res[0].data, res[1].data||[]);
+    });
+  }
+  function paintLeadDetail(l, acts){
+    var host=document.getElementById('leadDetail'); if(!host) return;
+    var edit=canEditCRM();
+    var closed=(l.stage==='converted'||l.stage==='lost');
+    var canConv=canProcessApps() && l.stage!=='converted';
+    var custLink=(l.customer_id && state.role==='admin')?'<button class="link-btn" id="leadCust">View customer record →</button>':'';
+    var appLink=(l.application_id)?'<button class="link-btn" id="leadApp">View application →</button>':'';
+    var head='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
+      '<div><h2 style="font-size:22px;font-weight:800;margin:0 0 4px">'+esc(l.full_name||'(no name)')+'</h2>'+
+      '<div class="meta">'+esc(leadRef(l.lead_no))+' · '+leadStagePill(l.stage)+' · Owner: '+esc(crmStaffName(l.owner))+'</div>'+
+      '<div class="meta" style="margin-top:4px">'+([l.email,l.phone].filter(function(x){return x;}).map(esc).join(' · ')||'—')+'</div></div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+(canConv?'<button class="btn btn-primary" id="leadConvert">Convert to application</button>':'')+(edit&&!closed?'<button class="btn btn-ghost" id="leadLost" style="color:var(--red)">Mark lost</button>':'')+'</div></div>'+
+      ((custLink||appLink)?('<div style="margin-top:8px;display:flex;gap:14px;flex-wrap:wrap">'+custLink+appLink+'</div>'):'')+
+      (l.stage==='lost'&&l.lost_reason?('<div class="meta" style="margin-top:8px">Lost reason: '+esc(l.lost_reason)+'</div>'):'')+'</div>';
+    var form;
+    if(edit){
+      form='<div class="panel"><h3>Lead details</h3><div class="grid2">'+
+        '<div class="field"><label>Full name</label><input id="lf_name" type="text" value="'+esc(l.full_name||'')+'"></div>'+
+        '<div class="field"><label>Email</label><input id="lf_email" type="email" value="'+esc(l.email||'')+'"></div>'+
+        '<div class="field"><label>Phone</label><input id="lf_phone" type="tel" value="'+esc(l.phone||'')+'"></div>'+
+        '<div class="field"><label>Source</label><select id="lf_source">'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'"'+((l.source||'')===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+        '<div class="field"><label>Visa type (interested in)</label><select id="lf_visa">'+leadVisaOptions(l.visa_type)+'</select></div>'+
+        '<div class="field"><label>Country</label><select id="lf_country">'+leadCountryOptions(l.country_slug)+'</select></div>'+
+        '<div class="field"><label>Stage</label><select id="lf_stage">'+LEAD_STAGES.map(function(s){return '<option value="'+s+'"'+(l.stage===s?' selected':'')+'>'+LEAD_STAGE_LABELS[s]+'</option>';}).join('')+'</select></div>'+
+        '<div class="field"><label>Owner</label><select id="lf_owner">'+leadOwnerOptions(l.owner)+'</select></div>'+
+        '<div class="field"><label>Next follow-up</label><input id="lf_followup" type="date" value="'+esc(l.next_follow_up_at||'')+'"></div>'+
+        '<div class="field"><label>Expected value (₹)</label><input id="lf_value" type="number" min="0" step="1" value="'+(l.expected_value!=null?esc(l.expected_value):'')+'"></div>'+
+        '</div><div class="field"><label>Notes</label><textarea id="lf_notes" rows="3">'+esc(l.notes||'')+'</textarea></div>'+
+        '<button class="btn btn-primary" id="lf_save">Save changes</button></div>';
+    } else {
+      form='<div class="panel"><h3>Lead details</h3><table style="width:100%;border-collapse:collapse">'+
+        '<tr><td class="muted">Visa</td><td style="text-align:right">'+esc(vLabel(l.visa_type)||'—')+'</td></tr>'+
+        '<tr><td class="muted">Country</td><td style="text-align:right">'+esc(l.country_slug?countryName(l.country_slug):'—')+'</td></tr>'+
+        '<tr><td class="muted">Source</td><td style="text-align:right">'+esc(l.source||'—')+'</td></tr>'+
+        '<tr><td class="muted">Next follow-up</td><td style="text-align:right">'+esc(l.next_follow_up_at||'—')+'</td></tr>'+
+        '<tr><td class="muted">Expected value</td><td style="text-align:right">'+(l.expected_value!=null?money(l.expected_value):'—')+'</td></tr>'+
+        '<tr><td class="muted" style="vertical-align:top">Notes</td><td style="text-align:right;white-space:pre-wrap">'+esc(l.notes||'—')+'</td></tr></table></div>';
+    }
+    var actComposer=edit?('<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<select id="la_type" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit"><option value="note">Note</option><option value="call">Call</option><option value="whatsapp">WhatsApp</option><option value="email">Email</option></select>'+
+      '<input id="la_body" type="text" placeholder="Log a note or call…" style="flex:1;min-width:200px;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px">'+
+      '<button class="btn btn-ghost" id="la_add">Add</button></div>'):'';
+    var timeline=acts.length?acts.map(function(a){
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="font-size:13px"><strong>'+esc(actLabel(a.type))+'</strong>'+(a.body?(' — '+esc(a.body)):'')+'</div>'+
+        '<div class="meta" style="font-size:12px">'+esc(a.actor_email||'')+' · '+esc(new Date(a.created_at).toLocaleString())+'</div></div>';
+    }).join(''):'<p class="phint">No activity yet.</p>';
+    host.innerHTML=head+form+'<div class="panel"><h3>Activity &amp; follow-ups</h3>'+actComposer+'<div>'+timeline+'</div></div>';
+    if(custLink){ var cb=document.getElementById('leadCust'); if(cb) cb.onclick=function(){ openCustomer(l.customer_id); }; }
+    if(appLink){ var ab=document.getElementById('leadApp'); if(ab) ab.onclick=function(){ openApp(l.application_id); }; }
+    if(canConv){ var cv=document.getElementById('leadConvert'); if(cv) cv.onclick=function(){ showLeadConvert(l); }; }
+    if(edit&&!closed){ var lb=document.getElementById('leadLost'); if(lb) lb.onclick=function(){ markLeadLost(l); }; }
+    if(edit){ document.getElementById('lf_save').onclick=function(){ saveLead(l); }; var la=document.getElementById('la_add'); if(la) la.onclick=function(){ addLeadNote(l); }; }
+  }
+  function saveLead(l){
+    var patch={
+      full_name:document.getElementById('lf_name').value.trim()||null,
+      email:document.getElementById('lf_email').value.trim().toLowerCase()||null,
+      phone:document.getElementById('lf_phone').value.trim()||null,
+      source:document.getElementById('lf_source').value,
+      visa_type:document.getElementById('lf_visa').value||null,
+      country_slug:document.getElementById('lf_country').value||null,
+      stage:document.getElementById('lf_stage').value,
+      owner:document.getElementById('lf_owner').value||null,
+      next_follow_up_at:document.getElementById('lf_followup').value||null,
+      expected_value:(document.getElementById('lf_value').value!==''?Number(document.getElementById('lf_value').value):null),
+      notes:document.getElementById('lf_notes').value.trim()||null
+    };
+    var btn=document.getElementById('lf_save'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Saving…';
+    sb.from('leads').update(patch).eq('id',l.id).then(function(r){
+      btn.disabled=false; btn.innerHTML='Save changes';
+      if(r.error){ toast('Could not save.'); console.error(r.error); return; }
+      var proms=[];
+      if(patch.stage!==l.stage){ proms.push(logLeadActivity(l.id,'stage_change',(LEAD_STAGE_LABELS[l.stage]||l.stage)+' → '+(LEAD_STAGE_LABELS[patch.stage]||patch.stage))); logAudit({ module:'CRM', action:'stage_change', record_type:'lead', record_id:l.id, record_ref:leadRef(l.lead_no), field:'stage', old_value:l.stage, new_value:patch.stage, remarks:'Lead stage changed', risk:'normal' }); }
+      if((patch.owner||'')!==(l.owner||'')){ proms.push(logLeadActivity(l.id,'owner_change',crmStaffName(l.owner)+' → '+crmStaffName(patch.owner))); logAudit({ module:'CRM', action:'owner_change', record_type:'lead', record_id:l.id, record_ref:leadRef(l.lead_no), field:'owner', old_value:crmStaffName(l.owner), new_value:crmStaffName(patch.owner), remarks:'Lead reassigned', risk:'normal' }); }
+      if((patch.next_follow_up_at||'')!==(l.next_follow_up_at||'') && patch.next_follow_up_at){ proms.push(logLeadActivity(l.id,'follow_up_set','Next follow-up: '+patch.next_follow_up_at)); }
+      toast('Lead saved');
+      Promise.all(proms).then(function(){ openLead(l.id); });
+    });
+  }
+  function addLeadNote(l){
+    var type=document.getElementById('la_type').value;
+    var body=document.getElementById('la_body').value.trim();
+    if(!body){ toast('Type a note first.'); return; }
+    var btn=document.getElementById('la_add'); btn.disabled=true;
+    logLeadActivity(l.id,type,body).then(function(r){ btn.disabled=false; if(r&&r.error){ toast('Could not save note.'); console.error(r.error); return; } openLead(l.id); });
+  }
+  function markLeadLost(l){
+    var reason=window.prompt('Reason for marking this lead as lost? (optional)','');
+    if(reason===null) return;
+    sb.from('leads').update({ stage:'lost', lost_reason:reason||null }).eq('id',l.id).then(function(r){
+      if(r.error){ toast('Could not update.'); console.error(r.error); return; }
+      logLeadActivity(l.id,'lost',reason||null);
+      logAudit({ module:'CRM', action:'lost', record_type:'lead', record_id:l.id, record_ref:leadRef(l.lead_no), field:'stage', old_value:l.stage, new_value:'lost', remarks:(reason||null), risk:'normal' });
+      toast('Lead marked lost'); openLead(l.id);
+    });
+  }
+  // ---- Add lead (manual) ----
+  function showLeadForm(){
+    if(!canEditCRM()){ go('leads'); return; }
+    if(!VISAS.length) loadVisaTypes();
+    if(!countryList.length) loadCountriesGroups();
+    loadCrmStaff().then(function(){
+      root.innerHTML='<div class="app-main">'+adminSections('leads')+
+        '<button class="link-btn" id="lnBack" style="margin-bottom:8px">← Back to leads</button>'+
+        '<div class="panel"><h3>Add a lead</h3><p class="phint">For a walk-in, phone or referral enquiry. We’ll match or create the customer record automatically.</p><div class="grid2">'+
+          '<div class="field"><label>Full name</label><input id="ln_name" type="text"></div>'+
+          '<div class="field"><label>Email</label><input id="ln_email" type="email"></div>'+
+          '<div class="field"><label>Phone</label><input id="ln_phone" type="tel"></div>'+
+          '<div class="field"><label>Source</label><select id="ln_source">'+LEAD_SOURCES.map(function(s){return '<option value="'+s+'"'+(s==='walk-in'?' selected':'')+'>'+s+'</option>';}).join('')+'</select></div>'+
+          '<div class="field"><label>Visa type (interested in)</label><select id="ln_visa">'+leadVisaOptions('')+'</select></div>'+
+          '<div class="field"><label>Country</label><select id="ln_country">'+leadCountryOptions('')+'</select></div>'+
+          '<div class="field"><label>Owner</label><select id="ln_owner">'+leadOwnerOptions((state.user&&state.user.id)||'')+'</select></div>'+
+          '<div class="field"><label>Next follow-up</label><input id="ln_followup" type="date"></div>'+
+          '<div class="field"><label>Expected value (₹)</label><input id="ln_value" type="number" min="0" step="1"></div>'+
+        '</div><div class="field"><label>Notes</label><textarea id="ln_notes" rows="3"></textarea></div>'+
+        '<div class="signin-msg" id="ln_msg"></div>'+
+        '<div style="display:flex;gap:10px"><button class="btn btn-primary" id="ln_save">Create lead</button><button class="btn btn-ghost" id="ln_cancel">Cancel</button></div></div></div>';
+      wireAdminSections();
+      document.getElementById('lnBack').onclick=document.getElementById('ln_cancel').onclick=function(){ go('leads'); };
+      document.getElementById('ln_save').onclick=function(){ createLead(); };
+    });
+  }
+  function createLead(){
+    var name=document.getElementById('ln_name').value.trim();
+    var email=document.getElementById('ln_email').value.trim();
+    var phone=document.getElementById('ln_phone').value.trim();
+    var msg=document.getElementById('ln_msg');
+    if(!name || (!email && !phone)){ msg.className='signin-msg err'; msg.textContent='Please enter a name and at least an email or phone number.'; return; }
+    var btn=document.getElementById('ln_save'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Creating…';
+    var source=document.getElementById('ln_source').value;
+    ensureCustomer({ email:email, full_name:name, phone:phone, source:source }).then(function(custId){
+      return sb.from('leads').insert({
+        customer_id:custId||null, full_name:name, email:(email.toLowerCase()||null), phone:phone||null,
+        visa_type:document.getElementById('ln_visa').value||null, country_slug:document.getElementById('ln_country').value||null,
+        source:source, owner:document.getElementById('ln_owner').value||null,
+        next_follow_up_at:document.getElementById('ln_followup').value||null,
+        expected_value:(document.getElementById('ln_value').value!==''?Number(document.getElementById('ln_value').value):null),
+        notes:document.getElementById('ln_notes').value.trim()||null, stage:'new'
+      }).select().single();
+    }).then(function(r){
+      if(r.error) throw r.error;
+      var lead=r.data;
+      logLeadActivity(lead.id,'created','Lead created ('+source+')');
+      logAudit({ module:'CRM', action:'create', record_type:'lead', record_id:lead.id, record_ref:leadRef(lead.lead_no), remarks:'Lead created ('+source+')', risk:'normal' });
+      toast('Lead created'); openLead(lead.id);
+    }).catch(function(err){ btn.disabled=false; btn.innerHTML='Create lead'; msg.className='signin-msg err'; msg.textContent='Could not create the lead. Please try again.'; console.error(err); });
+  }
+  // ---- Convert enquiry -> lead ----
+  function convertEnquiryToLead(e){
+    if(!canEditCRM()) return;
+    if(e.converted_lead_id){ openLead(e.converted_lead_id); return; }
+    ensureCustomer({ email:e.email, full_name:e.name, source:'enquiry' }).then(function(custId){
+      return sb.from('leads').insert({ customer_id:custId||null, full_name:e.name||null, email:(e.email?e.email.toLowerCase():null), source:'enquiry', enquiry_id:e.id, stage:'new', notes:e.message||null, owner:(state.user&&state.user.id)||null }).select().single();
+    }).then(function(r){
+      if(r.error) throw r.error;
+      var lead=r.data;
+      sb.from('enquiries').update({ converted_lead_id:lead.id, status:'Contacted' }).eq('id',e.id).then(function(){ e.converted_lead_id=lead.id; e.status='Contacted'; });
+      logLeadActivity(lead.id,'created','Created from enquiry '+enqRef(e.seq));
+      logAudit({ module:'CRM', action:'convert_enquiry', record_type:'lead', record_id:lead.id, record_ref:leadRef(lead.lead_no), remarks:'Enquiry '+enqRef(e.seq)+' converted to lead', risk:'normal' });
+      toast('Enquiry converted to lead'); openLead(lead.id);
+    }).catch(function(err){ toast('Could not convert.'); console.error(err); });
+  }
+  // ---- Convert lead -> application (admin/agent only; collects passport) ----
+  function showLeadConvert(l){
+    if(!canProcessApps()){ openLead(l.id); return; }
+    if(!VISAS.length) loadVisaTypes();
+    var visaOpts=VISAS.map(function(v){ return '<option value="'+esc(v.id)+'"'+(l.visa_type===v.id?' selected':'')+'>'+esc(v.name)+' — '+visaPriceText(v)+'</option>'; }).join('');
+    root.innerHTML='<div class="app-main">'+adminSections('leads')+
+      '<button class="link-btn" id="lcBack" style="margin-bottom:8px">← Back to lead</button>'+
+      '<div class="panel"><h3>Convert lead to application</h3><p class="phint">Creates a visa application for this customer. The lead is marked Converted and linked to it.</p>'+
+      '<div class="field"><label>Visa type</label><select id="lc_visa" style="width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;font-family:inherit;font-size:15px">'+visaOpts+'</select></div><div class="grid2">'+
+        field('lc_email','Customer email','email',l.email||'',true)+
+        field('lc_name','Full name (as in passport)','text',l.full_name||'',true)+
+        field('lc_phone','Phone number','tel',l.phone||'',true)+
+        field('lc_nationality','Nationality','text','',true)+
+        field('lc_passport','Passport number','text','',true)+
+        field('lc_dob','Date of birth','date','',false)+
+      '</div><div class="signin-msg" id="lc_msg"></div>'+
+      '<div style="display:flex;gap:10px"><button class="btn btn-primary" id="lc_save">Create application</button><button class="btn btn-ghost" id="lc_cancel">Cancel</button></div></div></div>';
+    wireAdminSections();
+    document.getElementById('lcBack').onclick=document.getElementById('lc_cancel').onclick=function(){ openLead(l.id); };
+    var save=document.getElementById('lc_save');
+    save.onclick=function(){
+      var email=document.getElementById('lc_email').value.trim();
+      var name=document.getElementById('lc_name').value.trim();
+      var phone=document.getElementById('lc_phone').value.trim();
+      var nat=document.getElementById('lc_nationality').value.trim();
+      var pass=document.getElementById('lc_passport').value.trim();
+      var msg=document.getElementById('lc_msg');
+      if(!/.+@.+\..+/.test(email)||!name||!phone||!nat||!pass){ msg.className='signin-msg err'; msg.textContent='Please fill in email, name, phone, nationality and passport number.'; return; }
+      save.disabled=true; save.innerHTML='<span class="spin"></span> Creating…';
+      sb.from('applications').insert({ user_id:null, visa_type:document.getElementById('lc_visa').value, full_name:name, email:email, phone:phone, nationality:nat, passport_number:pass, date_of_birth:document.getElementById('lc_dob').value||null, status:'Submitted' }).select().single().then(function(r){
+        if(r.error){ save.disabled=false; save.innerHTML='Create application'; msg.className='signin-msg err'; msg.textContent='Could not create the application.'; console.error(r.error); return; }
+        var app=r.data;
+        sb.from('leads').update({ stage:'converted', application_id:app.id }).eq('id',l.id).then(function(){
+          logLeadActivity(l.id,'converted','Converted to application '+(app.reference_code||''));
+          logAudit({ module:'CRM', action:'convert', record_type:'lead', record_id:l.id, record_ref:leadRef(l.lead_no), field:'application', new_value:(app.reference_code||app.id), remarks:'Lead converted to application', risk:'sensitive' });
+          toast('Application created (Ref '+app.reference_code+')'); openApp(app.id);
+        });
+      });
+    };
+  }
+  // ---- Follow-ups ----
+  function renderFollowups(){
+    if(!canCRM()){ go(defaultStaffView()); return; }
+    if(!VISAS.length) loadVisaTypes();
+    if(!countryList.length) loadCountriesGroups();
+    root.innerHTML='<div class="app-main">'+adminSections('followups')+
+      '<div class="app-head"><h1>Follow-ups</h1><p>Leads due today or overdue. Keep this list at zero.</p></div>'+
+      '<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--muted)">Owner: </label> <select id="fuOwner" class="pill-sm"><option value="all">All owners</option></select></div>'+
+      '<div id="fuArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div></div>';
+    wireAdminSections();
+    Promise.all([ sb.from('leads').select('*').not('next_follow_up_at','is',null).not('stage','in','(converted,lost)').order('next_follow_up_at',{ascending:true}), loadCrmStaff() ]).then(function(res){
+      if(res[0].error){ document.getElementById('fuArea').innerHTML='<div class="empty-state"><p>Could not load.</p></div>'; console.error(res[0].error); return; }
+      fuList=res[0].data||[];
+      var of=document.getElementById('fuOwner'); of.innerHTML='<option value="all">All owners</option><option value="mine">My follow-ups</option>'+crmStaff.map(function(s){return '<option value="'+esc(s.id)+'">'+esc(s.full_name||s.email)+'</option>';}).join(''); of.value=fuOwner; of.onchange=function(){ fuOwner=of.value; paintFollowups(); };
+      paintFollowups();
+    });
+  }
+  function paintFollowups(){
+    var area=document.getElementById('fuArea'); if(!area) return;
+    var me=(state.user&&state.user.id)||'';
+    var today=new Date(); today.setHours(0,0,0,0);
+    var rows=fuList.filter(function(l){ if(fuOwner==='mine'){ if(l.owner!==me) return false; } else if(fuOwner!=='all'){ if(l.owner!==fuOwner) return false; } return true; });
+    var overdue=[], todayR=[];
+    rows.forEach(function(l){ var d=new Date(l.next_follow_up_at); d.setHours(0,0,0,0); if(d.getTime()<today.getTime()) overdue.push(l); else if(d.getTime()===today.getTime()) todayR.push(l); });
+    function sec(title,arr){ if(!arr.length) return ''; return '<h3 style="margin:16px 0 8px">'+title+' ('+arr.length+')</h3><div class="app-list">'+arr.map(leadRowHtml).join('')+'</div>'; }
+    var html=sec('⏰ Overdue',overdue)+sec('📅 Due today',todayR);
+    if(!html){ area.innerHTML='<div class="panel empty-state"><p>🎉 Nothing due. You’re all caught up.</p></div>'; return; }
+    area.innerHTML=html;
+    area.querySelectorAll('[data-leadopen]').forEach(function(el){ el.onclick=function(){ openLead(el.getAttribute('data-leadopen')); }; });
   }
 
   // ============================================================
@@ -4551,7 +4957,9 @@
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if(v==='appview' && (!canViewApps() || !appViewId)) v='admin';
     if((v==='visatypes'||v==='events'||v==='articles'||v==='siteseo'||v==='destinations'||v==='content') && !canManageContent()) v=defaultStaffView();
-    if((v==='team'||v==='brand'||v==='emailcfg'||v==='enquiries'||v==='customers'||v==='automations'||v==='templates'||v==='msghistory'||v==='audit') && state.role!=='admin') v=defaultStaffView();
+    if((v==='team'||v==='brand'||v==='emailcfg'||v==='customers'||v==='automations'||v==='templates'||v==='msghistory'||v==='audit') && state.role!=='admin') v=defaultStaffView();
+    if((v==='enquiries'||v==='leads'||v==='followups') && !canCRM()) v=defaultStaffView();
+    if(v==='leadview' && (!canCRM() || !leadViewId)) v='leads';
     if(v==='custview' && (state.role!=='admin' || !custViewId)) v='customers';
     if((v==='suppliers'||v==='refunds'||v==='supview'||v==='reports') && !isFinance()) v=defaultStaffView();
     if(v==='supview' && !supViewId) v='suppliers';
@@ -4575,6 +4983,9 @@
     else if(v==='brand') renderBrand();
     else if(v==='emailcfg') renderEmailSettings();
     else if(v==='enquiries') renderEnquiries();
+    else if(v==='leads') renderLeads();
+    else if(v==='leadview') renderLeadDetail(leadViewId);
+    else if(v==='followups') renderFollowups();
     else if(v==='customers') renderCustomers();
     else if(v==='custview') renderCustomerDetail(custViewId);
     else if(v==='automations') renderAutomations();
@@ -4595,7 +5006,8 @@
     if(h.indexOf('appview/')===0){ appViewId=decodeURIComponent(h.slice(8))||null; return appViewId?'appview':'admin'; }
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
-    if(['track','apply','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','customers','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
+    if(h.indexOf('leadview/')===0){ leadViewId=decodeURIComponent(h.slice(9))||null; return leadViewId?'leadview':'leads'; }
+    if(['track','apply','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','leads','followups','customers','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 

@@ -65,8 +65,11 @@ Staff sign in and use a private console (a left-hand sidebar groups everything).
 
 - **Customers group**
   - **Applications** — the heart of operations. A clean, searchable list; click any application to open its full page (documents, answers, conversation, finance, and the controls to change status, request documents, and attach the issued visa). Filters by status, payment, supplier, new reply, pending refund, and more. **Admins can Edit** the applicant's details (name, mobile with country picker, email, passport, dates, country, visa type, notes) with a field-by-field **Edit history** (status is changed via its own control, which notifies the customer).
-  - **Enquiries** — every contact-form enquiry, logged with a reference (ENQ-000001 series).
   - **Customers** — one clean record per person (auto-gathered from applications and enquiries), with marketing on/off and CSV export. Admins can **Edit** any field (name, mobile with country picker, email, date of birth, country, state, notes, status), and an **Edit history** tab logs every change (old → new, who, when).
+- **CRM group** (Admin/Agent/Sales full; Viewer read-only) — the internal sales pipeline for turning interest into applications.
+  - **Enquiries** — every contact-form enquiry, logged with a reference (ENQ-000001 series). Staff can mark status (New/Contacted/Closed) and press **Convert to lead** to start a pipeline record (the person is matched or created automatically).
+  - **Leads** — potential customers you are following up. Each lead has a number (LEAD-000001), a **stage** (New → Contacted → Qualified → Quoted → Converted / Lost), an **owner** (defaults to whoever created it), a **next follow-up date**, an optional **expected value (₹)**, notes, and an **activity trail** (log notes/calls; every stage/owner change is recorded). Compact searchable list with filters (stage, owner, source, due/overdue) and CSV export, plus an open-pipeline value total. **Add lead** captures walk-in/phone/referral leads. **Convert to application** (Admin/Agent) turns a qualified lead into a real application — pre-filled from the lead, collecting passport/nationality — and links the two so no data is re-typed.
+  - **Follow-ups** — a focused list of leads **due today or overdue**, filterable by owner, so nothing slips.
 - **Messaging group** (three separate screens, so each can grow without clutter)
   - **Automations** — turn the review-request automation on/off and set the Google review link. (Other automatic messages — status, application/payment confirmations, birthday — run automatically.)
   - **Message templates** — view and edit the wording of every automatic email/WhatsApp.
@@ -120,10 +123,11 @@ Visa Doo uses role-based access so people only see what they should. The system 
 
 ## 7. Database and data structure summary
 
-All data lives in the Supabase database. **There are 29 data tables, and every single one has Row-Level Security turned ON** (meaning each request is checked against the rules above). In plain English, the main groups are:
+All data lives in the Supabase database. **There are 31 data tables, and every single one has Row-Level Security turned ON** (meaning each request is checked against the rules above). In plain English, the main groups are:
 
 - **People & access:** `profiles` (staff/customer accounts + role), `customers` (one clean record per person), `team_invites` (staff invitations), `consent` (per-channel marketing/service permission with an audit trail).
-- **Applications & documents:** `applications` (each visa application), `documents` (uploaded files — stored privately), `app_messages` (the "Action Needed" conversation), `enquiries` (contact-form leads).
+- **Applications & documents:** `applications` (each visa application), `documents` (uploaded files — stored privately), `app_messages` (the "Action Needed" conversation), `enquiries` (contact-form enquiries).
+- **CRM:** `leads` (sales pipeline records — stage, owner, follow-up date, value, links to the customer/enquiry/application), `lead_activities` (append-only notes/calls and stage/owner history for each lead).
 - **Catalogue:** `countries`, `visa_groups`, `visa_types` (the visas + prices), `visa_questions` (extra per-visa questions).
 - **Content & site:** `articles`, `pages`, `faqs`, `reviews`, `site_settings`.
 - **Finance:** `finance_settings`, `suppliers`, `application_finance` (per-application pricing), `application_cost_lines` (internal costs), `customer_payments` (payments/refunds + receipts), `supplier_payments` (money paid to suppliers), `finance_audit_log` (a permanent record of every financial change).
@@ -270,6 +274,7 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 _This guide is kept current: it is updated whenever a major feature or new module is added._
 
+- **02 Jul 2026** — **CRM (Phase 1) LIVE**: new **CRM** sidebar group containing **Enquiries** (moved here, now with **Convert to lead**), **Leads** (pipeline — stage New→Contacted→Qualified→Quoted→Converted/Lost, owner, next follow-up, expected ₹ value, activity trail, Add lead, Convert to application), and **Follow-ups** (due-today/overdue list). Access: Admin/Agent/Sales full, Viewer read-only. New append-only tables `leads` + `lead_activities`; Enquiries & Customers table access widened to the CRM roles so Sales can match/create the linked person. CRM actions are recorded in the Audit Centre.
 - **01 Jul 2026** — Finance reports: added a **Supplier-wise detailed report** (row per supplier cost line, sample-style columns, CSV export) + an **Application status** filter; each cost line now has a **supplier invoice no.** field.
 - **01 Jul 2026** — Audit Centre (Phase 2 wiring): more actions now recorded to the central log — application status changes, catalogue & pricing (visa types, destinations, groups, events), content & settings (articles, pages, FAQs, reviews, brand, email, site SEO), CSV exports, and marketing-consent changes.
 - **01 Jul 2026** — Audit Centre (Phase 1) added: admin/owner-only backend screen unifying existing edit histories + Finance audit + Messaging into one filterable log, plus a new append-only central `audit_logs` table; staff role changes now recorded. (Future modules will log to the central table.)
