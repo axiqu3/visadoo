@@ -66,7 +66,7 @@ Staff sign in and use a private console (a left-hand sidebar groups everything).
 - **Customers group**
   - **Applications** — the heart of operations. A clean, searchable list; click any application to open its full page (documents, answers, conversation, finance, and the controls to change status, request documents, and attach the issued visa). Filters by status, payment, supplier, new reply, pending refund, and more.
   - **Enquiries** — every contact-form enquiry, logged with a reference (ENQ-000001 series).
-  - **Customers** — one clean record per person (auto-gathered from applications and enquiries), with marketing on/off and CSV export.
+  - **Customers** — one clean record per person (auto-gathered from applications and enquiries), with marketing on/off and CSV export. Admins can **Edit** any field (name, mobile with country picker, email, date of birth, country, state, notes, status), and an **Edit history** tab logs every change (old → new, who, when).
 - **Messaging group** (three separate screens, so each can grow without clutter)
   - **Automations** — turn the review-request automation on/off and set the Google review link. (Other automatic messages — status, application/payment confirmations, birthday — run automatically.)
   - **Message templates** — view and edit the wording of every automatic email/WhatsApp.
@@ -269,6 +269,7 @@ Paste this into a fresh Claude Code session to bring it up to speed:
 
 _This guide is kept current: it is updated whenever a major feature or new module is added._
 
+- **01 Jul 2026** — Customer records are now editable by admins (all fields, mobile with country picker) with a field-by-field **Edit history** (who/what/when). Also: WhatsApp sender now prefers the application's number, and failed messages have a Resend-with-guidance option.
 - **30 Jun 2026** — Events module LIVE: public `/events` page (month timeline + category tabs) + dedicated per-event pages promoting each country's visas + "Events" menu link; backend Events manager under Catalogue. (events table; edge functions events.js + event.js.)
 - **30 Jun 2026** — Messaging split into three screens (Automations · Message templates · Message history) under the Messaging group; message history gained filters (channel/status/type/date/search) + CSV export.
 - **30 Jun 2026** — Birthday module **LIVE**: WhatsApp auto-greeting + 10% offer (code HAPPYBDAY10, 15 days) to opted-in customers, daily 9 AM IST. Template `birthday_offer` approved by Meta; tested and switched on.

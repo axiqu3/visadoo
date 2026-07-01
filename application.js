@@ -3419,6 +3419,7 @@
   //  CUSTOMERS (admins only) — text-only applicant data for outreach (downloadable)
   // ============================================================
   var custList=[], custViewId=null, CUST_PAGE=25, custLimit=CUST_PAGE;
+  var custTab='profile', custEditing=false, custEdits=[], custIti=null;
   // Build the customer list from the real customers table, merging in
   // each person's application count + latest visa/status from applications.
   function buildCustList(customers, apps, consents){
@@ -3520,6 +3521,7 @@
   function renderCustomerDetail(id){
     if(state.role!=='admin'){ go(defaultStaffView()); return; }
     if(!id){ go('customers'); return; }
+    custEditing=false; custTab='profile';
     if(!VISAS.length) loadVisaTypes();
     root.innerHTML='<div class="app-main">'+adminSections('customers')+
       '<button class="link-btn" id="custBack" style="margin-bottom:10px">← Back to customers</button>'+
@@ -3531,16 +3533,40 @@
       sb.from('customers').select('*').eq('id',id).single(),
       sb.from('applications').select('id,visa_type,status,reference_code,created_at').eq('customer_id',id).order('created_at',{ascending:false}),
       sb.from('messages').select('id,to_address,subject,body,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').eq('customer_id',id).order('created_at',{ascending:false}).limit(200),
-      sb.from('consent').select('channel,marketing_opted_in,service_opted_out').eq('customer_id',id)
+      sb.from('consent').select('channel,marketing_opted_in,service_opted_out').eq('customer_id',id),
+      sb.from('customer_edits').select('*').eq('customer_id',id).order('edited_at',{ascending:false}).limit(300)
     ]).then(function(res){
       var c=res[0].data;
       if(res[0].error||!c){ document.getElementById('custDetail').innerHTML='<div class="panel empty-state"><p>Could not load this customer.</p></div>'; return; }
+      custEdits=res[4].data||[];
       paintCustomerDetail(c, res[1].data||[], res[2].data||[], res[3].data||[]);
     });
   }
 
+  // Human labels for the editable customer fields (used by the form + history).
+  var CUST_FIELDS=[
+    ['full_name','Full name','text'],
+    ['phone','Mobile number','tel'],
+    ['email','Email','email'],
+    ['date_of_birth','Date of birth','date'],
+    ['passport_issuing_country','Passport issuing country','text'],
+    ['state','State','text'],
+    ['notes','Internal notes','textarea'],
+    ['status','Status','status']
+  ];
+  function custFieldLabel(k){ for(var i=0;i<CUST_FIELDS.length;i++){ if(CUST_FIELDS[i][0]===k) return CUST_FIELDS[i][1]; } return k; }
+
   function paintCustomerDetail(c, apps, msgs, consents){
     var box=document.getElementById('custDetail'); if(!box) return;
+    var tabs='<div class="subnav" style="margin-bottom:18px">'+
+      '<button data-ctab="profile" class="'+((custTab==='profile'&&!custEditing)?'active':'')+'">Profile</button>'+
+      '<button data-ctab="history" class="'+((custTab==='history'&&!custEditing)?'active':'')+'">Edit history ('+custEdits.length+')</button>'+
+    '</div>';
+    function wireTabs(){ box.querySelectorAll('[data-ctab]').forEach(function(b){ b.onclick=function(){ custEditing=false; custTab=b.getAttribute('data-ctab'); paintCustomerDetail(c,apps,msgs,consents); }; }); }
+
+    if(custEditing){ box.innerHTML=tabs+custEditFormHtml(c); wireTabs(); wireCustEdit(c); return; }
+    if(custTab==='history'){ box.innerHTML=tabs+custHistoryHtml(); wireTabs(); return; }
+
     var marketing=consents.some(function(x){ return x.marketing_opted_in; });
     var srcLabel={application:'Applied',enquiry:'Enquiry','walk-in':'Walk-in',manual:'Added manually'};
     var line=[c.passport_issuing_country,c.state].filter(function(x){return x;}).map(esc).join(' · ');
@@ -3552,7 +3578,8 @@
       '<div style="margin-top:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+mPill+
         '<button class="link-btn" id="cdMkt" data-mval="'+(marketing?'0':'1')+'" style="padding:0;font-size:12px">'+(marketing?'Turn off':'Turn on')+'</button>'+
         (c.lead_source?('<span class="phint" style="margin:0">'+esc(srcLabel[c.lead_source]||c.lead_source)+'</span>'):'')+'</div></div>'+
-      '<div class="phint" style="margin:0;white-space:nowrap">Since '+esc(new Date(c.created_at).toLocaleDateString())+'</div></div>';
+      '<div style="text-align:right;white-space:nowrap"><button class="btn btn-ghost" id="custEditBtn">Edit details</button>'+
+        '<div class="phint" style="margin:8px 0 0">Since '+esc(new Date(c.created_at).toLocaleDateString())+'</div></div></div>';
 
     var appsHtml='';
     if(apps.length){
@@ -3565,8 +3592,9 @@
     var histHtml='<div style="margin-top:22px"><h3 style="font-size:16px;font-weight:800;margin-bottom:8px">Message history ('+msgs.length+')</h3>'+
       (msgs.length? msgs.map(msgRowHtml).join('') : '<div class="panel empty-state"><p>No messages sent to this customer yet.</p></div>')+'</div>';
 
-    box.innerHTML=header+appsHtml+histHtml;
-
+    box.innerHTML=tabs+header+appsHtml+histHtml;
+    wireTabs();
+    document.getElementById('custEditBtn').onclick=function(){ custEditing=true; paintCustomerDetail(c,apps,msgs,consents); };
     var mk=document.getElementById('cdMkt'); if(mk) mk.onclick=function(){
       var val=mk.getAttribute('data-mval')==='1'; mk.disabled=true; mk.textContent='Saving…';
       setCustMarketing(c.id,val).then(function(r){ if(r&&r.error){ toast('Could not update consent.'); mk.disabled=false; return; } toast(val?'Marketing turned on':'Marketing turned off'); renderCustomerDetail(c.id); });
@@ -3575,6 +3603,82 @@
       var d=document.getElementById('mv_'+b.getAttribute('data-msgview')); if(!d) return;
       var show=d.style.display==='none'; d.style.display=show?'block':'none'; b.textContent=show?'Hide content':'View content';
     }; });
+  }
+
+  function custEditFormHtml(c){
+    return '<div class="panel">'+
+      '<h3 style="font-size:17px;font-weight:800;margin-bottom:12px">Edit customer</h3>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>Full name</label><input id="cef_full_name" type="text" value="'+esc(c.full_name||'')+'"></div>'+
+        '<div class="field"><label>Mobile number</label><input id="custfPhone" type="tel" value="'+esc(c.phone||'')+'"></div>'+
+        '<div class="field"><label>Email <span class="req-star">*</span></label><input id="cef_email" type="email" value="'+esc(c.email||'')+'"></div>'+
+        '<div class="field"><label>Date of birth</label><input id="cef_dob" type="date" value="'+esc(c.date_of_birth||'')+'"></div>'+
+        '<div class="field"><label>Passport issuing country</label><input id="cef_country" type="text" value="'+esc(c.passport_issuing_country||'')+'"></div>'+
+        '<div class="field"><label>State</label><input id="cef_state" type="text" value="'+esc(c.state||'')+'"></div>'+
+      '</div>'+
+      '<div class="field"><label>Internal notes</label><textarea id="cef_notes" style="min-height:70px">'+esc(c.notes||'')+'</textarea></div>'+
+      '<div class="field"><label>Status</label><select id="cef_status"><option value="active"'+((c.status||'active')==='active'?' selected':'')+'>Active</option><option value="archived"'+(c.status==='archived'?' selected':'')+'>Archived</option></select></div>'+
+      '<div class="signin-msg" id="cefMsg"></div>'+
+      '<div style="display:flex;gap:10px;margin-top:10px"><button class="btn btn-primary" id="cefSave">Save changes</button><button class="btn btn-ghost" id="cefCancel">Cancel</button></div>'+
+    '</div>';
+  }
+
+  function wireCustEdit(c){
+    custIti=null;
+    var pin=document.getElementById('custfPhone');
+    if(pin && window.intlTelInput){
+      custIti=window.intlTelInput(pin,{ initialCountry:'in', separateDialCode:true,
+        preferredCountries:['in','ae','sa','qa','kw','om','bh','us','gb'],
+        utilsScript:'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+    }
+    document.getElementById('cefCancel').onclick=function(){ custEditing=false; renderCustomerDetail(c.id); };
+    document.getElementById('cefSave').onclick=function(){
+      var msg=document.getElementById('cefMsg');
+      function err(t){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent=t; }
+      var phoneRaw=(pin.value||'').trim();
+      var email=document.getElementById('cef_email').value.trim();
+      if(!email || !/.+@.+\..+/.test(email)) return err('Please enter a valid email address.');
+      if(phoneRaw && custIti && window.intlTelInputUtils && !custIti.isValidNumber()) return err('Please enter a valid mobile number, or clear the box.');
+      var newVals={
+        full_name: document.getElementById('cef_full_name').value.trim()||null,
+        phone: phoneRaw ? ((custIti && custIti.getNumber())||phoneRaw) : null,
+        email: email,
+        date_of_birth: document.getElementById('cef_dob').value||null,
+        passport_issuing_country: document.getElementById('cef_country').value.trim()||null,
+        state: document.getElementById('cef_state').value.trim()||null,
+        notes: document.getElementById('cef_notes').value.trim()||null,
+        status: document.getElementById('cef_status').value
+      };
+      var btn=document.getElementById('cefSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+      function fin(){ btn.disabled=false; btn.innerHTML='Save changes'; }
+      sb.from('customers').select('id').ilike('email',email).neq('id',c.id).limit(1).then(function(dup){
+        if(dup.data && dup.data.length){ fin(); return err('Another customer already uses that email address.'); }
+        var fields=['full_name','phone','email','date_of_birth','passport_issuing_country','state','notes','status'];
+        var changes=[];
+        fields.forEach(function(f){ var ov=(c[f]==null?'':String(c[f])), nv=(newVals[f]==null?'':String(newVals[f])); if(ov!==nv) changes.push({ field:f, old_value:(c[f]==null?null:String(c[f])), new_value:(newVals[f]==null?null:String(newVals[f])) }); });
+        if(!changes.length){ fin(); custEditing=false; toast('No changes'); renderCustomerDetail(c.id); return; }
+        sb.from('customers').update(Object.assign({}, newVals, { updated_at:new Date().toISOString() })).eq('id',c.id).then(function(r){
+          if(r.error){ fin(); err('Could not save. Please try again.'); console.error(r.error); return; }
+          var uid=(state.user&&state.user.id)||null, uem=(state.user&&state.user.email)||null, now=new Date().toISOString();
+          var rows=changes.map(function(ch){ return { customer_id:c.id, field:ch.field, old_value:ch.old_value, new_value:ch.new_value, edited_by:uid, edited_by_email:uem, edited_at:now }; });
+          sb.from('customer_edits').insert(rows).then(function(){ custEditing=false; toast('Customer updated'); renderCustomerDetail(c.id); });
+        });
+      });
+    };
+  }
+
+  function custHistoryHtml(){
+    if(!custEdits.length) return '<div class="panel empty-state"><p>No edits recorded yet. Changes you make with “Edit details” will be logged here.</p></div>';
+    return '<div>'+custEdits.map(function(e){
+      var when=new Date(e.edited_at).toLocaleString();
+      var ov=(e.old_value==null||e.old_value==='')?'<i style="color:var(--muted)">(empty)</i>':esc(e.old_value);
+      var nv=(e.new_value==null||e.new_value==='')?'<i style="color:var(--muted)">(empty)</i>':esc(e.new_value);
+      return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h4 style="font-size:15px">'+esc(custFieldLabel(e.field))+'</h4>'+
+        '<div class="meta">'+ov+' → '+nv+'</div></div>'+
+        '<div style="text-align:right;white-space:nowrap"><div class="phint" style="margin:0">'+esc(e.edited_by_email||'staff')+'</div><div class="phint" style="margin:2px 0 0">'+esc(when)+'</div></div>'+
+      '</div></div>';
+    }).join('')+'</div>';
   }
 
   function msgRowHtml(m){
