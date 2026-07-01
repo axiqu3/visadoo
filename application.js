@@ -3829,7 +3829,7 @@
       '<div id="histArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
     '</div>';
     wireAdminSections();
-    sb.from('messages').select('id,to_address,subject,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').order('created_at',{ascending:false}).limit(500)
+    sb.from('messages').select('id,customer_id,application_id,to_address,subject,status,reason,template_key,purpose,channel,created_at,sent_at,scheduled_for').order('created_at',{ascending:false}).limit(500)
       .then(function(r){ commsMsgs=r.data||[]; paintMsgHistory(); });
   }
 
@@ -3911,6 +3911,30 @@
     paintHist();
   }
 
+  // Turn a raw failure reason into a plain-English explanation + suggested fix.
+  function msgFailInfo(m){
+    var r=(m.reason||'').toLowerCase();
+    if(r.indexOf('invalid phone')>-1 || (r.indexOf('telinfy')>-1 && r.indexOf('phone')>-1) || r.indexOf('no whatsapp number')>-1){
+      return { why:'WhatsApp didn’t accept the phone number.', fix:'The number on file looks invalid. Open the customer’s profile, correct their WhatsApp number, then Resend.', cust:true };
+    }
+    if(r.indexOf('no valid email')>-1){ return { why:'No valid email address on file.', fix:'Add or correct the customer’s email on their profile, then Resend.', cust:true }; }
+    if(r==='no consent'||r.indexOf('consent')>-1){ return { why:'The customer hasn’t opted in to this type of message.', fix:'Marketing messages only go to opted-in customers — no action needed unless they opt in.', cust:true }; }
+    if(r.indexOf('not configured')>-1||r.indexOf('not_configured')>-1){ return { why:'WhatsApp/email sending isn’t fully set up.', fix:'Check the WhatsApp template or email settings, then Resend.', cust:false }; }
+    if(r.indexOf('template')>-1){ return { why:'The message template is missing or switched off.', fix:'Turn the template on in Message templates, then Resend.', cust:false }; }
+    if(r.indexOf('telinfy')>-1){ return { why:'WhatsApp provider rejected the message.', fix:'Provider said: “'+esc(m.reason)+'”. Fix the cause, then Resend.', cust:true }; }
+    if(r.indexOf('brevo')>-1){ return { why:'The email provider rejected the message.', fix:'Provider said: “'+esc(m.reason)+'”. Then Resend.', cust:true }; }
+    return { why:'The message could not be sent.', fix:(m.reason?('Details: “'+esc(m.reason)+'”. '):'')+'Try Resend, or check the customer’s details.', cust:true };
+  }
+  function msgFailBox(m){
+    var fi=msgFailInfo(m);
+    var openBtn=(fi.cust && m.customer_id)?'<button class="btn btn-ghost" data-openc="'+esc(m.customer_id)+'" style="padding:6px 12px;font-size:13px">Open customer profile</button>':'';
+    return '<div style="margin-top:10px;padding:11px 13px;border:1px solid #fde0e0;background:#fff6f6;border-radius:10px">'+
+      '<div style="font-weight:700;font-size:13.5px;color:#b91c1c">Why it failed: '+esc(fi.why)+'</div>'+
+      '<div class="phint" style="margin:5px 0 9px">'+fi.fix+'</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+openBtn+'<button class="btn btn-primary" data-resend="'+esc(m.id)+'" style="padding:6px 14px;font-size:13px">Resend</button></div>'+
+    '</div>';
+  }
+
   function paintHist(){
     var box=document.getElementById('cmHist'); if(!box) return;
     var rows=commsFiltered();
@@ -3922,13 +3946,23 @@
     box.innerHTML=rows.map(function(m){
       var when=(m.status==='queued'&&m.scheduled_for)?('Scheduled · '+new Date(m.scheduled_for).toLocaleString()):new Date(m.sent_at||m.created_at).toLocaleString();
       var tpl=m.template_key==='review-request'?'Review request':(m.template_key==='status-update'?'Status update':(m.template_key||'Message'));
-      var reason=m.reason?(' · <span class="phint" style="display:inline">'+esc(m.reason)+'</span>'):'';
+      var failed=(m.status==='failed');
+      var reason=(m.reason && !failed)?(' · <span class="phint" style="display:inline">'+esc(m.reason)+'</span>'):'';
       return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
         '<h4 style="font-size:15px">'+esc(m.subject||tpl)+'</h4>'+
         '<div class="meta">'+esc(m.to_address||'')+' · '+esc(tpl)+' · '+esc(m.channel)+reason+'</div></div>'+
         '<div style="text-align:right;white-space:nowrap">'+msgStatusPill(m.status)+'<div class="phint" style="margin:4px 0 0">'+esc(when)+'</div></div>'+
-      '</div></div>';
+      '</div>'+(failed?msgFailBox(m):'')+'</div>';
     }).join('');
+    box.querySelectorAll('[data-openc]').forEach(function(b){ b.onclick=function(){ openCustomer(b.getAttribute('data-openc')); }; });
+    box.querySelectorAll('[data-resend]').forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-resend'); b.disabled=true; b.innerHTML='<span class="spin"></span> Resending…';
+      sb.from('messages').update({ status:'queued', scheduled_for:new Date().toISOString(), reason:null, updated_at:new Date().toISOString() }).eq('id',id).then(function(r){
+        if(r.error){ b.disabled=false; b.innerHTML='Resend'; toast('Could not resend.'); console.error(r.error); return; }
+        return fetch(fnUrl('process-due-messages'),{ method:'POST', headers:{ 'Content-Type':'application/json','apikey':cfg.SUPABASE_ANON_KEY }, body:'{}' })
+          .then(function(){ toast('Resending…'); setTimeout(function(){ renderMsgHistory(); }, 2000); });
+      });
+    }; });
   }
 
   function tplEditorHtml(t){
