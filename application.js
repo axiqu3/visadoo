@@ -918,6 +918,7 @@
   var ALL_STATUSES = cfg.STAGES.concat(['Action Needed']);
   var adminRows = [], finSuppliers = [], finSettings = {}, finBrand = {};
   var appViewId = null;                 // application open on its own detail page
+  var appTab='detail', appEditing=false, appEdits=[], appIti=null;  // application edit + history
   var ADMIN_PAGE = 25, adminLimit = ADMIN_PAGE; // compact-list "Load more" batching
   // Finance maths (cost lines + margin ₹/% + flexible GST). All INR.
   var COST_CATEGORIES=['Visa processing','Insurance','Express delivery','Voucher','Other'];
@@ -1583,6 +1584,7 @@
   function renderAppDetail(id){
     if(!canViewApps()){ go(defaultStaffView()); return; }
     if(!id){ go('admin'); return; }
+    appEditing=false; appTab='detail';
     if(!countryList.length) loadCountriesGroups();
     root.innerHTML='<div class="app-main">'+adminSections('admin')+
       '<button class="link-btn" id="appBack" style="margin-bottom:10px">← Back to applications</button>'+
@@ -1595,7 +1597,8 @@
       sb.from('applications').select('*, documents(*), app_messages(*), application_finance(*), customer_payments(*), application_cost_lines(*)').eq('id',id).single(),
       isFinance() ? sb.from('suppliers').select('id,name').eq('active',true).order('name') : R([]),
       isFinance() ? sb.from('finance_settings').select('*').eq('id','global').single() : R(null),
-      isFinance() ? sb.from('site_settings').select('brand_name,brand_color,logo_url,contact_email,contact_phone,contact_whatsapp').eq('id','global').single() : R(null)
+      isFinance() ? sb.from('site_settings').select('brand_name,brand_color,logo_url,contact_email,contact_phone,contact_whatsapp').eq('id','global').single() : R(null),
+      (state.role==='admin') ? sb.from('application_edits').select('*').eq('application_id',id).order('edited_at',{ascending:false}).limit(300) : R([])
     ]).then(function(res){
       var box=document.getElementById('appDetail'); if(!box) return;
       if(res[0].error||!res[0].data){ box.innerHTML='<div class="panel empty-state"><p>Could not load this application.</p></div>'; console.error(res[0].error); return; }
@@ -1603,9 +1606,128 @@
       if(res[1].data) finSuppliers=res[1].data;
       if(res[2].data) finSettings=res[2].data;
       if(res[3].data) finBrand=res[3].data;
-      box.innerHTML=adminCard(a);
-      wireAdminCard(a);
+      appEdits=res[4].data||[];
+      paintAppDetail(a);
     });
+  }
+
+  // Editable applicant fields (extensible). Status stays in its own notifying control.
+  var APP_FIELDS=[
+    ['full_name','Full name','text'],
+    ['phone','Mobile number','tel'],
+    ['email','Email','email'],
+    ['passport_number','Passport number','text'],
+    ['date_of_birth','Date of birth','date'],
+    ['passport_expiry','Passport expiry','date'],
+    ['nationality','Nationality','text'],
+    ['passport_issuing_country','Passport issuing country','text'],
+    ['state','State','text'],
+    ['visa_type','Visa type','visa'],
+    ['notes','Internal notes','textarea']
+  ];
+  function appFieldLabel(k){ for(var i=0;i<APP_FIELDS.length;i++){ if(APP_FIELDS[i][0]===k) return APP_FIELDS[i][1]; } return k; }
+  function appFieldDisplay(k,v){ if(v==null||v==='') return ''; if(k==='visa_type'){ var vv=visaById(v); return vv?vv.name:v; } return String(v); }
+
+  function paintAppDetail(a){
+    var box=document.getElementById('appDetail'); if(!box) return;
+    var admin=(state.role==='admin');
+    var bar = admin ? ('<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">'+
+        '<div class="subnav" style="margin:0">'+
+          '<button data-atab="detail" class="'+((appTab==='detail'&&!appEditing)?'active':'')+'">Details</button>'+
+          '<button data-atab="history" class="'+((appTab==='history'&&!appEditing)?'active':'')+'">Edit history ('+appEdits.length+')</button>'+
+        '</div>'+
+        ((appTab==='detail'&&!appEditing)?'<button class="btn btn-ghost" id="appEditBtn">Edit details</button>':'')+
+      '</div>') : '';
+    function wireTabs(){ box.querySelectorAll('[data-atab]').forEach(function(b){ b.onclick=function(){ appEditing=false; appTab=b.getAttribute('data-atab'); paintAppDetail(a); }; }); }
+
+    if(admin && appEditing){ box.innerHTML=bar+appEditFormHtml(a); wireTabs(); wireAppEdit(a); return; }
+    if(admin && appTab==='history'){ box.innerHTML=bar+appHistoryHtml(); wireTabs(); return; }
+
+    box.innerHTML=bar+adminCard(a);
+    wireTabs();
+    var eb=document.getElementById('appEditBtn'); if(eb) eb.onclick=function(){ appEditing=true; paintAppDetail(a); };
+    wireAdminCard(a);
+  }
+
+  function appEditFormHtml(a){
+    var visaOpts=VISAS.map(function(v){ return '<option value="'+esc(v.id)+'"'+(a.visa_type===v.id?' selected':'')+'>'+esc(v.name)+'</option>'; }).join('');
+    return '<div class="panel">'+
+      '<h3 style="font-size:17px;font-weight:800;margin-bottom:4px">Edit application</h3>'+
+      '<p class="phint" style="margin-top:0">Correct the applicant’s details. Status is changed from the Details tab (it notifies the customer).</p>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>Full name</label><input id="aef_full_name" type="text" value="'+esc(a.full_name||'')+'"></div>'+
+        '<div class="field"><label>Mobile number</label><input id="appfPhone" type="tel" value="'+esc(a.phone||'')+'"></div>'+
+        '<div class="field"><label>Email</label><input id="aef_email" type="email" value="'+esc(a.email||'')+'"></div>'+
+        '<div class="field"><label>Passport number</label><input id="aef_passport_number" type="text" value="'+esc(a.passport_number||'')+'"></div>'+
+        '<div class="field"><label>Date of birth</label><input id="aef_date_of_birth" type="date" value="'+esc(a.date_of_birth||'')+'"></div>'+
+        '<div class="field"><label>Passport expiry</label><input id="aef_passport_expiry" type="date" value="'+esc(a.passport_expiry||'')+'"></div>'+
+        '<div class="field"><label>Nationality</label><input id="aef_nationality" type="text" value="'+esc(a.nationality||'')+'"></div>'+
+        '<div class="field"><label>Passport issuing country</label><input id="aef_passport_issuing_country" type="text" value="'+esc(a.passport_issuing_country||'')+'"></div>'+
+        '<div class="field"><label>State</label><input id="aef_state" type="text" value="'+esc(a.state||'')+'"></div>'+
+        '<div class="field"><label>Visa type</label><select id="aef_visa_type">'+visaOpts+'</select></div>'+
+      '</div>'+
+      '<div class="field"><label>Internal notes</label><textarea id="aef_notes" style="min-height:70px">'+esc(a.notes||'')+'</textarea></div>'+
+      '<div class="signin-msg" id="aefMsg"></div>'+
+      '<div style="display:flex;gap:10px;margin-top:10px"><button class="btn btn-primary" id="aefSave">Save changes</button><button class="btn btn-ghost" id="aefCancel">Cancel</button></div>'+
+    '</div>';
+  }
+
+  function wireAppEdit(a){
+    appIti=null;
+    var pin=document.getElementById('appfPhone');
+    if(pin && window.intlTelInput){
+      appIti=window.intlTelInput(pin,{ initialCountry:'in', separateDialCode:true,
+        preferredCountries:['in','ae','sa','qa','kw','om','bh','us','gb'],
+        utilsScript:'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+    }
+    document.getElementById('aefCancel').onclick=function(){ appEditing=false; renderAppDetail(a.id); };
+    document.getElementById('aefSave').onclick=function(){
+      var msg=document.getElementById('aefMsg');
+      function err(t){ msg.className='signin-msg err'; msg.style.display='block'; msg.textContent=t; }
+      var phoneRaw=(pin.value||'').trim();
+      var email=document.getElementById('aef_email').value.trim();
+      if(email && !/.+@.+\..+/.test(email)) return err('Please enter a valid email address, or clear it.');
+      if(phoneRaw && appIti && window.intlTelInputUtils && !appIti.isValidNumber()) return err('Please enter a valid mobile number, or clear the box.');
+      var newVals={
+        full_name: document.getElementById('aef_full_name').value.trim()||null,
+        phone: phoneRaw ? ((appIti && appIti.getNumber())||phoneRaw) : null,
+        email: email||null,
+        passport_number: document.getElementById('aef_passport_number').value.trim()||null,
+        date_of_birth: document.getElementById('aef_date_of_birth').value||null,
+        passport_expiry: document.getElementById('aef_passport_expiry').value||null,
+        nationality: document.getElementById('aef_nationality').value.trim()||null,
+        passport_issuing_country: document.getElementById('aef_passport_issuing_country').value.trim()||null,
+        state: document.getElementById('aef_state').value.trim()||null,
+        visa_type: document.getElementById('aef_visa_type').value||a.visa_type,
+        notes: document.getElementById('aef_notes').value.trim()||null
+      };
+      var fields=['full_name','phone','email','passport_number','date_of_birth','passport_expiry','nationality','passport_issuing_country','state','visa_type','notes'];
+      var changes=[];
+      fields.forEach(function(f){ var ov=(a[f]==null?'':String(a[f])), nv=(newVals[f]==null?'':String(newVals[f])); if(ov!==nv) changes.push({ field:f, old_value:(a[f]==null?null:String(a[f])), new_value:(newVals[f]==null?null:String(newVals[f])) }); });
+      var btn=document.getElementById('aefSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
+      function fin(){ btn.disabled=false; btn.innerHTML='Save changes'; }
+      if(!changes.length){ fin(); appEditing=false; toast('No changes'); renderAppDetail(a.id); return; }
+      sb.from('applications').update(Object.assign({}, newVals, { updated_at:new Date().toISOString() })).eq('id',a.id).then(function(r){
+        if(r.error){ fin(); err('Could not save. Please try again.'); console.error(r.error); return; }
+        var uid=(state.user&&state.user.id)||null, uem=(state.user&&state.user.email)||null, now=new Date().toISOString();
+        var rows=changes.map(function(ch){ return { application_id:a.id, field:ch.field, old_value:ch.old_value, new_value:ch.new_value, edited_by:uid, edited_by_email:uem, edited_at:now }; });
+        sb.from('application_edits').insert(rows).then(function(){ appEditing=false; toast('Application updated'); renderAppDetail(a.id); });
+      });
+    };
+  }
+
+  function appHistoryHtml(){
+    if(!appEdits.length) return '<div class="panel empty-state"><p>No edits recorded yet. Changes you make with “Edit details” will be logged here.</p></div>';
+    return '<div>'+appEdits.map(function(e){
+      var when=new Date(e.edited_at).toLocaleString();
+      var ov=appFieldDisplay(e.field,e.old_value), nv=appFieldDisplay(e.field,e.new_value);
+      ov=ov?esc(ov):'<i style="color:var(--muted)">(empty)</i>'; nv=nv?esc(nv):'<i style="color:var(--muted)">(empty)</i>';
+      return '<div class="admin-app"><div class="arow" style="align-items:flex-start"><div style="flex:1;min-width:0">'+
+        '<h4 style="font-size:15px">'+esc(appFieldLabel(e.field))+'</h4>'+
+        '<div class="meta">'+ov+' → '+nv+'</div></div>'+
+        '<div style="text-align:right;white-space:nowrap"><div class="phint" style="margin:0">'+esc(e.edited_by_email||'staff')+'</div><div class="phint" style="margin:2px 0 0">'+esc(when)+'</div></div>'+
+      '</div></div>';
+    }).join('')+'</div>';
   }
 
   // ============================================================
