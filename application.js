@@ -5028,7 +5028,12 @@
       '<div id="dashBody"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
     '</div>';
     wireAdminSections();
-    if(dashRaw){ paintDashFilters(); paintDashTabs(); paintDash(); return; }
+    // Show cached view instantly (no flicker) if we have one, then ALWAYS re-fetch from the
+    // server so newly added leads/applications/payments appear without needing a hard refresh.
+    if(dashRaw){ paintDashFilters(); paintDashTabs(); paintDash(); }
+    loadDashData();
+  }
+  function loadDashData(){
     if(dashLoading) return; dashLoading=true;
     var Rz=function(d){ return Promise.resolve({data:d}); };
     Promise.all([
@@ -5040,10 +5045,11 @@
       dashSeeMoney()? sb.from('customer_payments').select('amount,kind,status,created_at,application_id').limit(8000) : Rz([])
     ]).then(function(res){
       dashLoading=false;
+      if(state.view!=='dashboard') return; // user navigated away while loading
       var staff=(res[4].data||[]); var staffById={}; staff.forEach(function(s){ staffById[s.id]=s; });
       dashRaw={ leads:res[0].data||[], enquiries:res[1].data||[], apps:res[2].data||[], acts:res[3].data||[], staff:staff, staffById:staffById, pays:res[5].data||[] };
       paintDashFilters(); paintDashTabs(); paintDash();
-    }).catch(function(e){ dashLoading=false; var b=document.getElementById('dashBody'); if(b) b.innerHTML='<div class="panel empty-state"><p>Could not load the dashboard. Please refresh.</p></div>'; console.error(e); });
+    }).catch(function(e){ dashLoading=false; if(!dashRaw){ var b=document.getElementById('dashBody'); if(b) b.innerHTML='<div class="panel empty-state"><p>Could not load the dashboard. Please refresh.</p></div>'; } console.error(e); });
   }
 
   function paintDashFilters(){
@@ -5065,6 +5071,7 @@
       (staffSel?('<div class="dff"><label>Staff</label>'+staffSel+'</div>'):'')+
       '<div class="dff"><label>Country</label>'+countrySel+'</div>'+
       '<div class="dff"><label>Lead source</label>'+srcSel+'</div>'+
+      '<button class="btn btn-ghost btn-sm" id="dfRefresh" type="button">↻ Refresh</button>'+
       '<button class="link-btn" id="dfReset" type="button">Clear</button>'+
     '</div>';
     document.getElementById('dfPreset').onchange=function(){ dashFilters.preset=this.value; document.getElementById('dfCustom').style.display=(this.value==='custom')?'':'none'; if(this.value!=='custom') paintDash(); };
@@ -5074,6 +5081,7 @@
     var ds=document.getElementById('dfStaff'); if(ds) ds.onchange=function(){ dashFilters.staff=ds.value; paintDash(); };
     document.getElementById('dfCountry').onchange=function(){ dashFilters.country=this.value; paintDash(); };
     document.getElementById('dfSource').onchange=function(){ dashFilters.source=this.value; paintDash(); };
+    var dref=document.getElementById('dfRefresh'); if(dref) dref.onclick=function(){ loadDashData(); toast('Refreshing…'); };
     document.getElementById('dfReset').onclick=function(){ dashFilters={ preset:'thisMonth', from:'', to:'', staff:'all', country:'', source:'all' }; paintDashFilters(); paintDash(); };
   }
 
