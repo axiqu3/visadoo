@@ -169,6 +169,7 @@
 .otp-msg.ok{color:#137a3a}
 .otp-msg.err{color:#b91c1c}
 .otp-ok{display:inline-flex;align-items:center;gap:7px;color:#137a3a;font-weight:700;font-size:14px;background:#eafaf0;border:1px solid #bbf7d0;border-radius:10px;padding:9px 13px}
+.otp-help{font-size:12.5px;color:var(--muted);margin-top:10px}
 
 /* ===== SEO editor (RankMath-style) ===== */
 .seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}

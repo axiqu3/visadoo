@@ -446,6 +446,8 @@
     var area=document.getElementById('otpArea'); if(!area) return;
     area.style.display='block';
     if(mobileVerified){ area.innerHTML='<div class="otp-ok">✓ Mobile number verified</div>'; return; }
+    var waNum=((window.VISADOO_CONFIG&&window.VISADOO_CONFIG.WHATSAPP)||'919895226697').replace(/[^0-9]/g,'');
+    var waHelp='https://wa.me/'+waNum+'?text='+encodeURIComponent('Hi Visa Doo, I need help verifying my mobile number for my visa application.');
     area.innerHTML=
       '<div class="otp-hint">We’ll send a one-time code to this number on WhatsApp to verify it.</div>'+
       '<div class="otp-controls"><button type="button" class="btn btn-ghost" id="otpSend">Send verification code</button></div>'+
@@ -456,7 +458,8 @@
           '<button type="button" class="link-btn" id="otpResend" disabled>Resend</button>'+
         '</div>'+
         '<div class="otp-msg" id="otpMsg"></div>'+
-      '</div>';
+      '</div>'+
+      '<div class="otp-help">Not receiving the code? <a href="'+waHelp+'" target="_blank" rel="noopener">Contact us on WhatsApp</a> — our team can help or complete your application for you.</div>';
     document.getElementById('otpSend').onclick=function(){ sendOtp(false); };
     document.getElementById('otpVerify').onclick=function(){ doVerifyOtp(); };
     document.getElementById('otpResend').onclick=function(){ sendOtp(true); };
@@ -1224,7 +1227,7 @@
       '<div class="arow">' +
         '<div><h4>'+esc(a.full_name)+' '+statusPill(a.status)+(a.unread_reply?' <span class="status-pill sp-action" style="font-size:11px">New reply</span>':'')+'</h4>' +
         '<div class="meta">'+esc(visaName)+' · '+appPriceText(a)+' · Ref '+esc(a.reference_code)+' · '+created+'</div>' +
-        '<div class="meta">'+esc(a.passport_issuing_country||a.nationality||'')+(a.state?(' ('+esc(a.state)+')'):'')+' · Passport '+esc(a.passport_number)+' · '+esc(a.phone)+' · '+esc(a.email)+'</div></div>' +
+        '<div class="meta">'+esc(a.passport_issuing_country||a.nationality||'')+(a.state?(' ('+esc(a.state)+')'):'')+' · Passport '+esc(a.passport_number)+' · '+esc(a.phone)+(a.mobile_verified?(' <span class="status-pill sp-done" style="font-size:10px;padding:1px 7px" title="Mobile verified by WhatsApp OTP'+(a.mobile_verified_at?(' on '+new Date(a.mobile_verified_at).toLocaleDateString()):'')+'">Mobile ✓</span>'):'')+' · '+esc(a.email)+'</div></div>' +
       '</div>' +
       '<div class="doc-links">'+docBtns+'</div>' +
       answersHtml +
