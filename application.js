@@ -25,7 +25,7 @@
   function isFinance(){ return hasRole(['admin','finance']); }   // sees money: suppliers, finance panels, margin
   function canCRM(){ return hasRole(['admin','agent','sales','viewer']); }   // CRM: view leads/enquiries/follow-ups
   function canEditCRM(){ return hasRole(['admin','agent','sales']); }        // CRM: create/edit/convert (viewer = read-only)
-  function defaultStaffView(){ if(canViewApps()) return 'admin'; if(isFinance()) return 'suppliers'; if(canManageContent()) return 'visatypes'; return 'admin'; }
+  function defaultStaffView(){ return 'dashboard'; }   // all staff land on the read-only Dashboard
 
   // Visa types: loaded live from the database (config is just a fallback)
   var VISAS = (cfg.VISAS || []).slice();
@@ -976,11 +976,12 @@
 
   // Backend console navigation: a grouped left sidebar (collapses to a slide-out
   // drawer on phones). Same data-section keys + routing as before — nothing breaks.
-  var ADMIN_VIEWS=['admin','appview','enquiries','leads','leadview','followups','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','team','audit'];
+  var ADMIN_VIEWS=['dashboard','admin','appview','enquiries','leads','leadview','followups','customers','custview','automations','templates','msghistory','suppliers','supview','refunds','reports','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','team','audit'];
 
   // Inline-SVG icon per item (brand-coloured via currentColor).
   function sideIcon(key){
     var P={
+      dashboard:'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
       admin:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
       enquiries:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
       leads:'<path d="M22 3H2l8 9.46V19l4 2v-8.54z"/>',
@@ -1010,6 +1011,7 @@
   // Groups + their items, each gated by the same role rules as before. Empty groups drop out.
   function adminNavModel(){
     var g=[
+      ['Dashboard',[['dashboard','Dashboard',isStaff()]]],
       ['Customers',[['admin','Applications',canViewApps()],['customers','Customers',state.role==='admin']]],
       ['CRM',[['enquiries','Enquiries',canCRM()],['leads','Leads',canCRM()],['followups','Follow-ups',canCRM()]]],
       ['Messaging',[['automations','Automations',state.role==='admin'],['templates','Message templates',state.role==='admin'],['msghistory','Message history',state.role==='admin']]],
@@ -4951,6 +4953,294 @@
   }
 
   // ============================================================
+  //  ADMIN DASHBOARD (read-only, role-aware) — Phase 1
+  // ============================================================
+  var dashTab='overview', dashRaw=null, dashLoading=false, dashCharts={};
+  var dashFilters={ preset:'thisMonth', from:'', to:'', staff:'all', country:'', source:'all' };
+  function dashSeeMoney(){ return isFinance(); }            // admin/finance see revenue
+  function dashSeeAll(){ return hasRole(['admin','finance']); } // see everyone; else own performance only
+  function dashPad(n){ return (n<10?'0':'')+n; }
+  function dashFmt(d){ return d.getFullYear()+'-'+dashPad(d.getMonth()+1)+'-'+dashPad(d.getDate()); }
+  function dashRange(){
+    var now=new Date(), y=now.getFullYear(), m=now.getMonth(), d=now.getDate(), q=Math.floor(m/3)*3;
+    switch(dashFilters.preset){
+      case 'today': return [dashFmt(now),dashFmt(now)];
+      case 'thisWeek': { var dow=(now.getDay()+6)%7; return [dashFmt(new Date(y,m,d-dow)),dashFmt(now)]; }
+      case 'thisMonth': return [dashFmt(new Date(y,m,1)),dashFmt(now)];
+      case 'lastMonth': return [dashFmt(new Date(y,m-1,1)),dashFmt(new Date(y,m,0))];
+      case 'thisQuarter': return [dashFmt(new Date(y,q,1)),dashFmt(now)];
+      case 'thisYear': return [dashFmt(new Date(y,0,1)),dashFmt(now)];
+      case 'custom': return [dashFilters.from||'2000-01-01', dashFilters.to||dashFmt(now)];
+      default: return ['2000-01-01', dashFmt(now)]; // all
+    }
+  }
+  function dashInRange(ts){ if(!ts) return false; var d=String(ts).slice(0,10); var r=dashRange(); return d>=r[0] && d<=r[1]; }
+  function dashCountrySlug(a){ var v=visaById(a.visa_type); return v?v.country_slug:''; }
+  function dashStaffName(uid){ if(!uid) return 'Unassigned'; if(state.user&&uid===state.user.id) return 'You'; var s=(dashRaw&&dashRaw.staffById&&dashRaw.staffById[uid]); return s?(s.full_name||s.email||'Staff'):'Staff'; }
+  function dashLockedStaff(){ return dashSeeAll()? (dashFilters.staff) : ((state.user&&state.user.id)||'__none__'); }
+
+  function dashLeads(){ var staff=dashLockedStaff();
+    return (dashRaw.leads||[]).filter(function(l){
+      if(!dashInRange(l.created_at)) return false;
+      if(staff!=='all' && (l.owner||'')!==staff) return false;
+      if(dashFilters.country && (l.country_slug||'')!==dashFilters.country) return false;
+      if(dashFilters.source!=='all' && (l.source||'')!==dashFilters.source) return false;
+      return true; });
+  }
+  function dashEnq(){ return (dashRaw.enquiries||[]).filter(function(e){
+      if(!dashInRange(e.created_at)) return false;
+      if(dashFilters.source!=='all' && (e.source||'')!==dashFilters.source) return false;
+      return true; });
+  }
+  function dashApps(){ return (dashRaw.apps||[]).filter(function(a){
+      if(!dashInRange(a.created_at)) return false;
+      if(dashFilters.country && dashCountrySlug(a)!==dashFilters.country) return false;
+      return true; });
+  }
+  function dashActs(){ var staff=dashLockedStaff();
+    return (dashRaw.acts||[]).filter(function(a){
+      if(!dashInRange(a.created_at)) return false;
+      if(staff!=='all' && (a.actor||'')!==staff) return false;
+      return true; });
+  }
+  function dashPays(){ if(!dashSeeMoney()) return [];
+    return (dashRaw.pays||[]).filter(function(p){ return dashInRange(p.created_at); });
+  }
+
+  function dChart(id,cfg){ if(!window.Chart){ return; } var el=document.getElementById(id); if(!el) return;
+    if(dashCharts[id]){ try{dashCharts[id].destroy();}catch(_e){} } dashCharts[id]=new window.Chart(el,cfg); }
+  var DASH_C={ blue:'#2456C4', teal:'#0E7C6B', amber:'#C98A12', red:'#B3402E', violet:'#6C4AB0', grey:'#94a3b8', ink:'#16233B' };
+  function dashKpisHtml(items){ return '<div class="dash-kpis">'+items.map(function(k){
+      return '<div class="dash-kpi '+(k.tone||'')+'"><div class="dv">'+k.v+'</div><div class="dl">'+esc(k.l)+'</div>'+(k.s?('<div class="ds">'+esc(k.s)+'</div>'):'')+'</div>'; }).join('')+'</div>'; }
+  function dashBars(rows){ // rows:[{label,n,color}] horizontal css bars
+    var max=Math.max.apply(null,rows.map(function(r){return r.n;}).concat([1]));
+    return '<div class="dash-barlist">'+rows.map(function(r){
+      return '<div class="dbrow"><div class="dblabel">'+esc(r.label)+'</div><div class="dbtrack"><div class="dbfill" style="width:'+Math.max(2,Math.round(r.n/max*100))+'%;background:'+(r.color||DASH_C.blue)+'"></div></div><div class="dbval">'+r.n+'</div></div>';
+    }).join('')+'</div>'; }
+
+  function renderDashboard(){
+    if(!isStaff()){ go('apply'); return; }
+    if(!VISAS.length) loadVisaTypes();
+    if(!countryList.length) loadCountriesGroups();
+    root.innerHTML='<div class="app-main">'+adminSections('dashboard')+
+      '<div class="app-head"><h1>Dashboard</h1><p>Your daily view of leads, operations'+(dashSeeMoney()?', revenue':'')+' and team activity. Read-only.</p></div>'+
+      '<div id="dashFilters"></div><div id="dashTabs" class="dash-tabs"></div>'+
+      '<div id="dashBody"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
+    '</div>';
+    wireAdminSections();
+    if(dashRaw){ paintDashFilters(); paintDashTabs(); paintDash(); return; }
+    if(dashLoading) return; dashLoading=true;
+    var Rz=function(d){ return Promise.resolve({data:d}); };
+    Promise.all([
+      sb.from('leads').select('id,stage,source,owner,created_at,expected_value,application_id,country_slug,visa_type').limit(5000),
+      sb.from('enquiries').select('id,status,source,created_at').limit(5000),
+      sb.from('applications').select('id,status,visa_type,created_at,reference_code').limit(5000),
+      sb.from('lead_activities').select('actor,type,created_at').limit(8000),
+      sb.from('profiles').select('id,full_name,email,role').neq('role','customer'),
+      dashSeeMoney()? sb.from('customer_payments').select('amount,kind,status,created_at,application_id').limit(8000) : Rz([])
+    ]).then(function(res){
+      dashLoading=false;
+      var staff=(res[4].data||[]); var staffById={}; staff.forEach(function(s){ staffById[s.id]=s; });
+      dashRaw={ leads:res[0].data||[], enquiries:res[1].data||[], apps:res[2].data||[], acts:res[3].data||[], staff:staff, staffById:staffById, pays:res[5].data||[] };
+      paintDashFilters(); paintDashTabs(); paintDash();
+    }).catch(function(e){ dashLoading=false; var b=document.getElementById('dashBody'); if(b) b.innerHTML='<div class="panel empty-state"><p>Could not load the dashboard. Please refresh.</p></div>'; console.error(e); });
+  }
+
+  function paintDashFilters(){
+    var host=document.getElementById('dashFilters'); if(!host) return;
+    var presets=[['today','Today'],['thisWeek','This week'],['thisMonth','This month'],['lastMonth','Last month'],['thisQuarter','This quarter'],['thisYear','This year'],['all','All time'],['custom','Custom']];
+    var presetSel='<select id="dfPreset" class="dash-sel">'+presets.map(function(p){return '<option value="'+p[0]+'"'+(dashFilters.preset===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join('')+'</select>';
+    var custom='<span id="dfCustom" style="'+(dashFilters.preset==='custom'?'':'display:none')+'"><input type="date" id="dfFrom" class="dash-date" value="'+esc(dashFilters.from)+'"> to <input type="date" id="dfTo" class="dash-date" value="'+esc(dashFilters.to)+'"></span>';
+    var staffSel='';
+    if(dashSeeAll()){
+      staffSel='<select id="dfStaff" class="dash-sel"><option value="all">All staff</option>'+
+        (dashRaw.staff||[]).map(function(s){return '<option value="'+esc(s.id)+'"'+(dashFilters.staff===s.id?' selected':'')+'>'+esc(s.full_name||s.email)+'</option>';}).join('')+'</select>';
+    }
+    var countrySel='<select id="dfCountry" class="dash-sel"><option value="">All countries</option>'+
+      countryList.map(function(c){return '<option value="'+esc(c.slug)+'"'+(dashFilters.country===c.slug?' selected':'')+'>'+esc(c.name)+'</option>';}).join('')+'</select>';
+    var srcSel='<select id="dfSource" class="dash-sel"><option value="all">All sources</option>'+
+      LEAD_SOURCES.map(function(s){return '<option value="'+s+'"'+(dashFilters.source===s?' selected':'')+'>'+srcLabel(s)+'</option>';}).join('')+'</select>';
+    host.innerHTML='<div class="dash-filterbar">'+
+      '<div class="dff"><label>Period</label>'+presetSel+' '+custom+'</div>'+
+      (staffSel?('<div class="dff"><label>Staff</label>'+staffSel+'</div>'):'')+
+      '<div class="dff"><label>Country</label>'+countrySel+'</div>'+
+      '<div class="dff"><label>Lead source</label>'+srcSel+'</div>'+
+      '<button class="link-btn" id="dfReset" type="button">Clear</button>'+
+    '</div>';
+    document.getElementById('dfPreset').onchange=function(){ dashFilters.preset=this.value; document.getElementById('dfCustom').style.display=(this.value==='custom')?'':'none'; if(this.value!=='custom') paintDash(); };
+    var ff=document.getElementById('dfFrom'), ft=document.getElementById('dfTo');
+    if(ff) ff.onchange=function(){ dashFilters.from=ff.value; if(ft.value) paintDash(); };
+    if(ft) ft.onchange=function(){ dashFilters.to=ft.value; if(ff.value) paintDash(); };
+    var ds=document.getElementById('dfStaff'); if(ds) ds.onchange=function(){ dashFilters.staff=ds.value; paintDash(); };
+    document.getElementById('dfCountry').onchange=function(){ dashFilters.country=this.value; paintDash(); };
+    document.getElementById('dfSource').onchange=function(){ dashFilters.source=this.value; paintDash(); };
+    document.getElementById('dfReset').onclick=function(){ dashFilters={ preset:'thisMonth', from:'', to:'', staff:'all', country:'', source:'all' }; paintDashFilters(); paintDash(); };
+  }
+
+  function paintDashTabs(){
+    var host=document.getElementById('dashTabs'); if(!host) return;
+    var tabs=[['overview','Overview'],['leads','Leads'],['ops','Operations'],['staff','Staff performance']];
+    if(dashSeeMoney()) tabs.push(['revenue','Revenue']);
+    if(!tabs.some(function(t){return t[0]===dashTab;})) dashTab='overview';
+    host.innerHTML=tabs.map(function(t){ return '<button class="dash-tab'+(dashTab===t[0]?' active':'')+'" data-dtab="'+t[0]+'">'+esc(t[1])+'</button>'; }).join('');
+    host.querySelectorAll('[data-dtab]').forEach(function(b){ b.onclick=function(){ dashTab=b.getAttribute('data-dtab'); paintDashTabs(); paintDash(); }; });
+  }
+
+  function paintDash(){
+    var b=document.getElementById('dashBody'); if(!b) return;
+    if(dashTab==='overview') paintDashOverview(b);
+    else if(dashTab==='leads') paintDashLeads(b);
+    else if(dashTab==='ops') paintDashOps(b);
+    else if(dashTab==='staff') paintDashStaff(b);
+    else if(dashTab==='revenue' && dashSeeMoney()) paintDashRevenue(b);
+    else paintDashOverview(b);
+  }
+
+  function paintDashOverview(b){
+    var leads=dashLeads(), enq=dashEnq(), apps=dashApps();
+    var converted=leads.filter(function(l){ return l.stage==='converted' || l.application_id; }).length;
+    var issued=apps.filter(function(a){ return a.status==='Visa Issued'; }).length;
+    var needAction=apps.filter(function(a){ return a.status==='Action Needed'; }).length;
+    var inProg=apps.filter(function(a){ return a.status!=='Visa Issued'; }).length;
+    var kpis=[
+      {v:leads.length, l:'New leads', tone:'blue'},
+      {v:enq.length, l:'New enquiries'},
+      {v:inProg, l:'Applications in progress', tone:'blue'},
+      {v:needAction, l:'Needing action', tone:(needAction?'amber':'')},
+      {v:issued, l:'Visas issued', tone:'teal'},
+      {v:converted, l:'Leads converted', tone:'teal'}
+    ];
+    if(dashSeeMoney()){
+      var pays=dashPays();
+      var collected=pays.filter(function(p){return p.kind==='payment'&&p.status==='approved';}).reduce(function(x,p){return x+Number(p.amount||0);},0);
+      var pend=pays.filter(function(p){return p.kind==='payment'&&p.status==='pending';}).reduce(function(x,p){return x+Number(p.amount||0);},0);
+      kpis.push({v:money(collected), l:'Money collected', tone:'teal'});
+      kpis.push({v:money(pend), l:'Payments pending', tone:(pend?'amber':'')});
+    }
+    // lead funnel
+    var funnel=LEAD_STAGES.map(function(s){ return { label:LEAD_STAGE_LABELS[s], n:leads.filter(function(l){return l.stage===s;}).length, color:(s==='lost'?DASH_C.red:(s==='converted'?DASH_C.teal:DASH_C.blue)) }; });
+    // apps by status
+    var stRows=ALL_STATUSES.map(function(s){ return { label:s, n:apps.filter(function(a){return a.status===s;}).length, color:(s==='Visa Issued'?DASH_C.teal:(s==='Action Needed'?DASH_C.amber:DASH_C.blue)) }; }).filter(function(r){return r.n>0;});
+    b.innerHTML=dashKpisHtml(kpis)+
+      '<div class="dash-grid2">'+
+        '<div class="panel"><h3>Lead funnel</h3><p class="phint">Where your leads sit right now'+(dashSeeAll()?'':' (your leads)')+'.</p>'+dashBars(funnel)+'</div>'+
+        '<div class="panel"><h3>Applications by stage</h3><p class="phint">Live operational workload.</p>'+(stRows.length?dashBars(stRows):'<p class="phint">No applications in this period.</p>')+'</div>'+
+      '</div>';
+  }
+
+  function paintDashLeads(b){
+    var leads=dashLeads();
+    var srcs={}; LEAD_SOURCES.forEach(function(s){ srcs[s]=0; });
+    leads.forEach(function(l){ var s=l.source||'manual'; srcs[s]=(srcs[s]||0)+1; });
+    var srcRows=Object.keys(srcs).filter(function(s){return srcs[s]>0;}).map(function(s){
+      var mine=leads.filter(function(l){return (l.source||'manual')===s;});
+      var conv=mine.filter(function(l){return l.stage==='converted'||l.application_id;}).length;
+      return { s:s, total:mine.length, conv:conv, rate: mine.length?Math.round(conv/mine.length*100):0 };
+    }).sort(function(a,b){return b.total-a.total;});
+    var converted=leads.filter(function(l){ return l.stage==='converted'||l.application_id; }).length;
+    var lost=leads.filter(function(l){ return l.stage==='lost'; }).length;
+    var kpis=[
+      {v:leads.length, l:'Total leads', tone:'blue'},
+      {v:converted, l:'Converted', tone:'teal'},
+      {v: leads.length?Math.round(converted/leads.length*100)+'%':'0%', l:'Conversion rate', tone:'teal'},
+      {v:lost, l:'Lost', tone:(lost?'red':'')}
+    ];
+    var funnel=LEAD_STAGES.map(function(s){ return { label:LEAD_STAGE_LABELS[s], n:leads.filter(function(l){return l.stage===s;}).length, color:(s==='lost'?DASH_C.red:(s==='converted'?DASH_C.teal:DASH_C.blue)) }; });
+    var table='<table class="dash-table"><thead><tr><th>Source</th><th class="num">Leads</th><th class="num">Converted</th><th class="num">Rate</th></tr></thead><tbody>'+
+      (srcRows.length?srcRows.map(function(r){ return '<tr><td>'+esc(srcLabel(r.s))+'</td><td class="num">'+r.total+'</td><td class="num">'+r.conv+'</td><td class="num">'+r.rate+'%</td></tr>'; }).join(''):'<tr><td colspan="4" class="phint" style="text-align:center;padding:16px">No leads in this period.</td></tr>')+
+      '</tbody></table>';
+    b.innerHTML=dashKpisHtml(kpis)+
+      '<div class="dash-grid2">'+
+        '<div class="panel"><h3>Lead funnel</h3>'+dashBars(funnel)+'</div>'+
+        '<div class="panel"><h3>Leads by source</h3><div class="dash-chartbox"><canvas id="dcLeadSrc"></canvas></div></div>'+
+      '</div>'+
+      '<div class="panel" style="margin-top:14px"><h3>Source performance</h3>'+table+'</div>';
+    dChart('dcLeadSrc',{ type:'doughnut', data:{ labels:srcRows.map(function(r){return srcLabel(r.s);}), datasets:[{ data:srcRows.map(function(r){return r.total;}), backgroundColor:[DASH_C.blue,DASH_C.teal,DASH_C.amber,DASH_C.violet,DASH_C.red,DASH_C.grey,DASH_C.ink,'#0891b2','#db2777'], borderWidth:2, borderColor:'#fff' }]}, options:{ maintainAspectRatio:false, cutout:'58%', plugins:{legend:{position:'bottom',labels:{boxWidth:12}}} } });
+  }
+
+  function paintDashOps(b){
+    var apps=dashApps();
+    var g=function(s){ return apps.filter(function(a){return a.status===s;}).length; };
+    var kpis=[
+      {v:apps.length, l:'Total applications', tone:'blue'},
+      {v:g('Action Needed'), l:'Needing action', tone:(g('Action Needed')?'amber':'')},
+      {v:apps.filter(function(a){return a.status!=='Visa Issued';}).length, l:'In progress', tone:'blue'},
+      {v:g('Visa Issued'), l:'Visas issued', tone:'teal'}
+    ];
+    var stRows=ALL_STATUSES.map(function(s){ return { label:s, n:g(s), color:(s==='Visa Issued'?DASH_C.teal:(s==='Action Needed'?DASH_C.amber:DASH_C.blue)) }; }).filter(function(r){return r.n>0;});
+    // by country
+    var cmap={}; apps.forEach(function(a){ var c=dashCountrySlug(a)||'—'; cmap[c]=(cmap[c]||0)+1; });
+    var cRows=Object.keys(cmap).map(function(c){ return { label:(c==='—'?'—':countryName(c)), n:cmap[c], color:DASH_C.blue }; }).sort(function(a,b){return b.n-a.n;}).slice(0,10);
+    // recent issued (no passport/doc details)
+    var recent=apps.filter(function(a){return a.status==='Visa Issued';}).sort(function(a,b){return String(b.created_at).localeCompare(String(a.created_at));}).slice(0,8);
+    var recentT='<table class="dash-table"><thead><tr><th>Ref</th><th>Country</th><th>Status</th></tr></thead><tbody>'+
+      (recent.length?recent.map(function(a){ return '<tr><td>'+esc(a.reference_code||'')+'</td><td>'+esc(countryName(dashCountrySlug(a))||'—')+'</td><td>'+statusPill(a.status)+'</td></tr>'; }).join(''):'<tr><td colspan="3" class="phint" style="text-align:center;padding:16px">No visas issued in this period.</td></tr>')+'</tbody></table>';
+    b.innerHTML=dashKpisHtml(kpis)+
+      '<div class="dash-grid2">'+
+        '<div class="panel"><h3>Applications by stage</h3>'+(stRows.length?dashBars(stRows):'<p class="phint">No applications in this period.</p>')+'</div>'+
+        '<div class="panel"><h3>Applications by country</h3>'+(cRows.length?dashBars(cRows):'<p class="phint">No applications in this period.</p>')+'</div>'+
+      '</div>'+
+      '<div class="panel" style="margin-top:14px"><h3>Recent visas issued</h3>'+recentT+'</div>';
+  }
+
+  function paintDashStaff(b){
+    var leads=dashLeads(), acts=dashActs();
+    var ids;
+    if(dashSeeAll()){ ids=(dashRaw.staff||[]).map(function(s){return s.id;}); }
+    else { ids=[(state.user&&state.user.id)]; }
+    var rows=ids.map(function(uid){
+      var mine=leads.filter(function(l){return (l.owner||'')===uid;});
+      var conv=mine.filter(function(l){return l.stage==='converted'||l.application_id;}).length;
+      var act=acts.filter(function(a){return (a.actor||'')===uid;}).length;
+      return { uid:uid, name:dashStaffName(uid), total:mine.length, conv:conv, rate:mine.length?Math.round(conv/mine.length*100):0, act:act };
+    }).filter(function(r){ return dashSeeAll()? (r.total>0||r.act>0) : true; })
+      .sort(function(a,b){return b.conv-a.conv;});
+    var kpis=[
+      {v:leads.length, l:(dashSeeAll()?'Team leads':'Your leads'), tone:'blue'},
+      {v:leads.filter(function(l){return l.stage==='converted'||l.application_id;}).length, l:'Converted', tone:'teal'},
+      {v:acts.length, l:'Activities logged'}
+    ];
+    var table='<table class="dash-table"><thead><tr><th>Staff</th><th class="num">Leads</th><th class="num">Converted</th><th class="num">Rate</th><th class="num">Activities</th></tr></thead><tbody>'+
+      (rows.length?rows.map(function(r){ return '<tr><td>'+esc(r.name)+'</td><td class="num">'+r.total+'</td><td class="num">'+r.conv+'</td><td class="num">'+r.rate+'%</td><td class="num">'+r.act+'</td></tr>'; }).join(''):'<tr><td colspan="5" class="phint" style="text-align:center;padding:16px">No activity in this period.</td></tr>')+'</tbody></table>';
+    b.innerHTML=dashKpisHtml(kpis)+
+      '<div class="panel" style="margin-top:14px"><h3>'+(dashSeeAll()?'Team performance':'Your performance')+'</h3><p class="phint">Leads handled, conversions and logged activity for the selected period.</p>'+table+'</div>';
+  }
+
+  function paintDashRevenue(b){
+    if(!dashSeeMoney()){ b.innerHTML='<div class="panel empty-state"><p>Revenue is available to Admin and Finance only.</p></div>'; return; }
+    var pays=dashPays();
+    var payColl=pays.filter(function(p){return p.kind==='payment'&&p.status==='approved';});
+    var collected=payColl.reduce(function(x,p){return x+Number(p.amount||0);},0);
+    var pend=pays.filter(function(p){return p.kind==='payment'&&p.status==='pending';}).reduce(function(x,p){return x+Number(p.amount||0);},0);
+    var refReq=pays.filter(function(p){return p.kind==='refund'&&p.status==='pending';});
+    var refPaid=pays.filter(function(p){return p.kind==='refund'&&p.status==='approved';}).reduce(function(x,p){return x+Number(p.amount||0);},0);
+    var refPendAmt=refReq.reduce(function(x,p){return x+Number(p.amount||0);},0);
+    var kpis=[
+      {v:money(collected), l:'Money collected', s:payColl.length+' payments', tone:'teal'},
+      {v:money(pend), l:'Payments pending', tone:(pend?'amber':'')},
+      {v:money(refPendAmt), l:'Refunds pending', s:refReq.length+' requests', tone:(refPendAmt?'red':'')},
+      {v:money(refPaid), l:'Refunds paid out'}
+    ];
+    // by country (via application -> visa -> country)
+    var appById={}; (dashRaw.apps||[]).forEach(function(a){ appById[a.id]=a; });
+    var cmap={};
+    payColl.forEach(function(p){ var a=appById[p.application_id]; var c=a?(dashCountrySlug(a)||'—'):'—'; cmap[c]=(cmap[c]||0)+Number(p.amount||0); });
+    var cRows=Object.keys(cmap).map(function(c){ return { c:c, label:(c==='—'?'Other':countryName(c)), amt:cmap[c] }; }).sort(function(a,b){return b.amt-a.amt;});
+    // monthly trend
+    var mmap={}; payColl.forEach(function(p){ var mk=String(p.created_at).slice(0,7); mmap[mk]=(mmap[mk]||0)+Number(p.amount||0); });
+    var mk=Object.keys(mmap).sort();
+    var table='<table class="dash-table"><thead><tr><th>Country</th><th class="num">Collected</th><th class="num">Share</th></tr></thead><tbody>'+
+      (cRows.length?cRows.map(function(r){ return '<tr><td>'+esc(r.label)+'</td><td class="num">'+money(r.amt)+'</td><td class="num">'+(collected?Math.round(r.amt/collected*100):0)+'%</td></tr>'; }).join(''):'<tr><td colspan="3" class="phint" style="text-align:center;padding:16px">No payments in this period.</td></tr>')+'</tbody></table>';
+    b.innerHTML=dashKpisHtml(kpis)+
+      '<div class="dash-grid2">'+
+        '<div class="panel"><h3>Collected over time</h3><div class="dash-chartbox"><canvas id="dcRevTrend"></canvas></div></div>'+
+        '<div class="panel"><h3>Collected by country</h3>'+table+'</div>'+
+      '</div>'+
+      (refReq.length?('<div class="panel" style="margin-top:14px"><h3>Refunds pending</h3><p class="phint">'+refReq.length+' refund request(s) awaiting action, totalling '+money(refPendAmt)+'. Manage these in Finance → Refund requests.</p></div>'):'');
+    dChart('dcRevTrend',{ type:'bar', data:{ labels:mk, datasets:[{ label:'Collected', data:mk.map(function(k){return mmap[k];}), backgroundColor:DASH_C.teal, borderRadius:4 }]}, options:{ maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(ctx){return ' '+money(ctx.parsed.y);}}}}, scales:{ y:{beginAtZero:true, ticks:{callback:function(v){return money(v);}}}, x:{grid:{display:false}} } } });
+  }
+
+  // ============================================================
   //  ROUTER
   // ============================================================
   function render(){
@@ -4977,6 +5267,7 @@
 
     if(v==='apply') renderApply();
     else if(v==='track') renderTrack();
+    else if(v==='dashboard') renderDashboard();
     else if(v==='admin') renderAdmin();
     else if(v==='appview') renderAppDetail(appViewId);
     else if(v==='destinations') renderDestinationsAdmin();
@@ -5012,7 +5303,7 @@
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
     if(h.indexOf('leadview/')===0){ leadViewId=decodeURIComponent(h.slice(9))||null; return leadViewId?'leadview':'leads'; }
-    if(['track','apply','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','leads','followups','customers','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','dashboard','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','leads','followups','customers','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 

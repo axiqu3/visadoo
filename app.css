@@ -272,6 +272,40 @@
 .has-admin-side .app-main{margin-left:236px}
 /* Keep the global "Chat with us" WhatsApp button off the staff console screens */
 .has-admin-side .wa-float{display:none !important}
+
+/* ===== Admin Dashboard ===== */
+.dash-filterbar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+.dash-filterbar .dff{display:flex;flex-direction:column;gap:4px}
+.dash-filterbar label{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.dash-sel,.dash-date{padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;background:#fff}
+.dash-filterbar .link-btn{margin-left:auto;align-self:center}
+.dash-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:2px}
+.dash-tab{border:none;background:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--muted);padding:9px 14px;border-radius:8px 8px 0 0;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px}
+.dash-tab:hover{color:var(--ink,#16233b)}
+.dash-tab.active{color:var(--blue-600,#2563eb);border-bottom-color:var(--blue-600,#2563eb)}
+.dash-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.dash-kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;border-top:3px solid #cbd5e1}
+.dash-kpi .dv{font-size:28px;font-weight:800;line-height:1.1;color:#0f172a}
+.dash-kpi .dl{font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:4px}
+.dash-kpi .ds{font-size:12px;color:var(--muted);margin-top:3px}
+.dash-kpi.blue{border-top-color:#2563eb} .dash-kpi.blue .dv{color:#2563eb}
+.dash-kpi.teal{border-top-color:#0E7C6B} .dash-kpi.teal .dv{color:#0E7C6B}
+.dash-kpi.amber{border-top-color:#C98A12} .dash-kpi.amber .dv{color:#B26E00}
+.dash-kpi.red{border-top-color:#B3402E} .dash-kpi.red .dv{color:#B3402E}
+.dash-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:860px){.dash-grid2{grid-template-columns:1fr}}
+.dash-chartbox{position:relative;height:260px}
+.dash-barlist{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+.dbrow{display:flex;align-items:center;gap:10px}
+.dblabel{width:130px;min-width:130px;font-size:13px;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dbtrack{flex:1;height:12px;background:#eef2f7;border-radius:6px;overflow:hidden}
+.dbfill{height:100%;border-radius:6px;min-width:2px}
+.dbval{width:40px;text-align:right;font-size:13px;font-weight:700;color:#0f172a}
+.dash-table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+.dash-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;border-bottom:1.5px solid var(--line);font-weight:600}
+.dash-table td{padding:9px 10px;border-bottom:1px solid #eef0ea}
+.dash-table tr:last-child td{border-bottom:none}
+.dash-table .num{text-align:right}
 .side-group{margin-bottom:2px}
 .side-group-head{
   display:flex;align-items:center;justify-content:space-between;width:100%;
