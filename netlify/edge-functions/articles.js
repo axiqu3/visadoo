@@ -15,14 +15,14 @@ var LOGO="", FAVICON="", APPICON="", BNAME="Visa Doo";
 function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME||"logo")+'" style="height:34px;width:auto;max-width:180px;display:block">') : ('<span class="logo">'+PLANE+'</span>Visa<b>Doo</b>'); }
 function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
 
-function head(title, desc, canonical, ogImage, jsonld){
+function head(title, desc, canonical, ogImage, jsonld, ogAlt){
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'+
     '<title>'+esc(title)+'</title><meta name="description" content="'+esc(desc)+'">'+
     '<link rel="canonical" href="'+esc(canonical)+'">'+
     '<meta property="og:type" content="article"><meta property="og:site_name" content="Visa Doo">'+
     '<meta property="og:title" content="'+esc(title)+'"><meta property="og:description" content="'+esc(desc)+'">'+
-    '<meta property="og:url" content="'+esc(canonical)+'">'+(ogImage?'<meta property="og:image" content="'+esc(ogImage)+'">':'')+
-    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+esc(title)+'">'+(ogImage?'<meta name="twitter:image" content="'+esc(ogImage)+'">':'')+
+    '<meta property="og:url" content="'+esc(canonical)+'">'+(ogImage?'<meta property="og:image" content="'+esc(ogImage)+'">'+(ogAlt?'<meta property="og:image:alt" content="'+esc(ogAlt)+'">':''):'')+
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+esc(title)+'">'+(ogImage?'<meta name="twitter:image" content="'+esc(ogImage)+'">'+(ogAlt?'<meta name="twitter:image:alt" content="'+esc(ogAlt)+'">':''):'')+
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
     '<link rel="stylesheet" href="/styles.css">'+
@@ -42,8 +42,9 @@ function foot(){
 function listPage(rows, defaultImg){
   const cards = rows.length ? rows.map(function(a){
     const img = a.cover_image || a.social_image;
+    const alt = a.cover_alt || a.title || '';
     return '<a class="art-card" href="/article/'+esc(a.slug)+'">'+
-      '<div class="art-cover"'+(img?(' style="background-image:url('+esc(img)+')"'):'')+'>'+(img?'':PLANE)+'</div>'+
+      '<div class="art-cover"'+(img?(' style="background-image:url('+esc(img)+')" role="img" aria-label="'+esc(alt)+'"'):'')+'>'+(img?'':PLANE)+'</div>'+
       '<div class="art-card-body"><h3>'+esc(a.title)+'</h3><p>'+esc(a.excerpt||'')+'</p>'+
       '<span class="art-readmore">Read more →</span></div></a>';
   }).join('') : '<div class="empty-state" style="grid-column:1/-1"><p>No articles published yet. Check back soon.</p></div>';
@@ -67,12 +68,13 @@ function articlePage(a, defaultImg){
   const jsonld = { "@context":"https://schema.org","@type":"Article","headline":a.title,"description":desc,
     "datePublished":date.toISOString(),"image":ogImage,"author":{"@type":"Organization","name":"Visa Doo"},
     "publisher":{"@type":"Organization","name":"Visa Doo"},"mainEntityOfPage":canonical };
-  return head(title, desc, canonical, ogImage, jsonld)+
+  const coverAlt = a.cover_alt || a.title || '';
+  return head(title, desc, canonical, ogImage, jsonld, coverAlt)+
     '<article class="article-wrap"><div class="container article-inner">'+
       '<a href="/articles" class="art-back">← All articles</a>'+
       '<h1 class="article-title">'+esc(a.title)+'</h1>'+
       '<div class="article-meta">'+esc(dateStr)+' · Visa Doo</div>'+
-      (a.cover_image?('<div class="article-cover" style="background-image:url('+esc(a.cover_image)+')"></div>'):'')+
+      (a.cover_image?('<div class="article-cover"><img src="'+esc(a.cover_image)+'" alt="'+esc(coverAlt)+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block"></div>'):'')+
       '<div class="article-body">'+(a.content||'')+'</div>'+
       '<div class="article-cta"><h3>Ready to apply for your UAE visa?</h3>'+
         '<a href="/app.html" class="btn btn-primary btn-lg">Start my application</a></div>'+
@@ -98,14 +100,19 @@ export default async (request) => {
   LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
 
   if (parts[0] === "articles") {
-    const rows = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&order=published_at.desc&select=slug,title,excerpt,cover_image,social_image");
+    const rows = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&order=published_at.desc&select=slug,title,excerpt,cover_image,cover_alt,social_image");
     return new Response(listPage(rows||[], defaultImg), { headers });
   }
   // /article/<slug>
   const slug = parts[1] ? decodeURIComponent(parts[1]) : "";
   if (!slug) return notFound();
   const rows = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&slug=eq."+encodeURIComponent(slug)+"&select=*");
-  if (!rows || !rows.length) return notFound();
+  if (!rows || !rows.length) {
+    // Address changed? Forward the old address to the current one (301).
+    const moved = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&past_slugs=cs.%7B"+encodeURIComponent(slug)+"%7D&select=slug&limit=1");
+    if (moved && moved.length) return Response.redirect(SITE+"/article/"+moved[0].slug, 301);
+    return notFound();
+  }
   return new Response(articlePage(rows[0], defaultImg), { headers });
 };
 

@@ -2280,6 +2280,9 @@
           (a.cover_image?'':'<div class="ph">'+IMGICON+'<div>Click to add a cover image</div></div>')+'</div>'+
         '<input type="file" id="artCoverFile" accept="image/*" style="display:none">'+
         '<div class="phint" id="artCoverHint" style="margin-top:6px"></div></div>'+
+      '<div class="field"><label>Cover image description (alt text)</label>'+
+        '<input id="artCoverAlt" type="text" value="'+esc(a.cover_alt||'')+'" placeholder="Describe the image — e.g. Dubai skyline at sunset">'+
+        '<div class="phint" style="margin-top:4px">Helps Google Images &amp; screen readers. Leave blank to use the article title.</div></div>'+
       '<div class="field"><label>Article content</label>'+
         '<div class="rte-toolbar" id="rteBar">'+
           '<button type="button" data-cmd="bold" title="Bold"><b>B</b></button>'+
@@ -2313,6 +2316,8 @@
     return '<div class="seo-grid">'+
       '<div>'+
         '<div class="field"><label>Focus keyword</label><input id="aSeoKw" type="text" value="'+esc(vals.focus_keyword)+'" placeholder="e.g. uae visa requirements"></div>'+
+        '<div class="field"><label>Page address</label><div style="display:flex;align-items:center;gap:6px"><span class="phint" style="margin:0;white-space:nowrap">/article/</span><input id="aSlug" type="text" value="'+esc(a.slug||'')+'" placeholder="auto from the title"></div>'+
+          '<div class="phint" style="margin-top:4px">Change the web address here. The old one automatically forwards to the new one, so nothing breaks.</div></div>'+
         '<div class="field"><label>SEO title</label><input id="aSeoTitle" type="text" value="'+esc(vals.seo_title)+'" placeholder="'+esc(d.title)+'"><div class="char-counter" id="aSeoTitleCount"></div></div>'+
         '<div class="field"><label>Meta description</label><textarea id="aSeoDesc" style="min-height:90px" placeholder="'+esc(d.desc)+'">'+esc(vals.seo_description)+'</textarea><div class="char-counter" id="aSeoDescCount"></div></div>'+
         '<div class="field"><label>Social share image</label><div class="img-drop"><div class="img-thumb" id="aSeoThumb">'+(vals.social_image?'<img src="'+esc(vals.social_image)+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">':IMGICON)+'</div>'+
@@ -2322,7 +2327,7 @@
       '<div>'+
         '<div class="seo-score-ring"><div class="ring" id="aSeoRing"><span id="aSeoScore">0</span></div><div class="lbl"><b>SEO score</b><div id="aSeoScoreText"></div></div></div>'+
         '<div class="preview-label">Google result preview</div>'+
-        '<div class="gpreview"><div class="gp-url"><span class="dot">VD</span><div class="gp-crumb">visadoo-uae.netlify.app › article › '+esc(a.slug||'…')+'</div></div><div class="gp-title" id="aGpTitle"></div><div class="gp-desc" id="aGpDesc"></div></div>'+
+        '<div class="gpreview"><div class="gp-url"><span class="dot">VD</span><div class="gp-crumb" id="aGpCrumb">visadoo-uae.netlify.app › article › '+esc(a.slug||'…')+'</div></div><div class="gp-title" id="aGpTitle"></div><div class="gp-desc" id="aGpDesc"></div></div>'+
         '<div class="preview-label">Social share preview</div>'+
         '<div class="spreview"><div class="sp-img" id="aSpImg">'+IMGICON+'</div><div class="sp-body"><div class="sp-site">visadoo-uae.netlify.app</div><div class="sp-title" id="aSpTitle"></div><div class="sp-desc" id="aSpDesc"></div></div></div>'+
         '<ul class="seo-checks" id="aSeoChecks"></ul>'+
@@ -2347,11 +2352,13 @@
     artEditing.title=t.value;
     artEditing.excerpt=document.getElementById('artExcerpt').value;
     artEditing.content=document.getElementById('artContent').innerHTML;
+    var ca=document.getElementById('artCoverAlt'); if(ca) artEditing.cover_alt=ca.value;
   }
   function captureArtSeo(){
     if(artTab!=='seo') return;
     var t=document.getElementById('aSeoTitle'); if(!t) return;
     artEditing.seo_title=t.value; artEditing.seo_description=document.getElementById('aSeoDesc').value; artEditing.focus_keyword=document.getElementById('aSeoKw').value;
+    var sl=document.getElementById('aSlug'); if(sl) artEditing.slug=sl.value;
   }
 
   function wireArtWrite(){
@@ -2366,7 +2373,9 @@
       var f=inlineImg.files[0]; if(!f) return;
       var msg=document.getElementById('artMsg'); msg.className='signin-msg info'; msg.textContent='Uploading image…';
       uploadPublicImage(f,'article/inline').then(function(url){
-        msg.className='signin-msg'; document.execCommand('insertImage',false,url);
+        msg.className='signin-msg';
+        var alt=(window.prompt('Describe this image for SEO & screen readers (optional):','')||'').trim();
+        document.execCommand('insertHTML',false,'<img src="'+esc(url)+'" alt="'+esc(alt)+'" style="max-width:100%;height:auto">');
       }).catch(function(err){ msg.className='signin-msg err'; msg.innerHTML = (err&&err.code==='decode')?'That image couldn’t be used — please use a JPG or PNG (an iPhone HEIC won’t work here; take a screenshot instead).':'Could not upload that image.'; });
     };
 
@@ -2395,6 +2404,7 @@
       var res=computeSeo(vals, a.slug||'', d);
       document.getElementById('aGpTitle').textContent=res.title; document.getElementById('aGpDesc').textContent=res.desc;
       document.getElementById('aSpTitle').textContent=res.title; document.getElementById('aSpDesc').textContent=res.desc;
+      var slEl=document.getElementById('aSlug'), crumbEl=document.getElementById('aGpCrumb'); if(crumbEl) crumbEl.textContent='visadoo-uae.netlify.app › article › '+((slEl&&slugify(slEl.value))||(a.slug||'…'));
       function setCount(id,len,lo,hi){ var e=document.getElementById(id); e.textContent=len+' characters'; e.className='char-counter '+((len>=lo&&len<=hi)?'ok':((len>0&&len<lo)?'warn':(len>hi?'bad':''))); }
       setCount('aSeoTitleCount',(vals.seo_title||d.title).length,40,60);
       setCount('aSeoDescCount',(vals.seo_description||d.desc).length,120,160);
@@ -2406,7 +2416,7 @@
     function setImg(url){ vals.social_image=url; artEditing.social_image=url;
       document.getElementById('aSeoThumb').innerHTML=url?('<img src="'+esc(url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">'):IMGICON;
       var sp=document.getElementById('aSpImg'); if(url){ sp.style.backgroundImage='url('+url+')'; sp.innerHTML=''; } else { sp.style.backgroundImage=''; sp.innerHTML=IMGICON; } recompute(); }
-    ['aSeoTitle','aSeoDesc','aSeoKw'].forEach(function(id){ document.getElementById(id).addEventListener('input',recompute); });
+    ['aSeoTitle','aSeoDesc','aSeoKw','aSlug'].forEach(function(id){ var el=document.getElementById(id); if(el) el.addEventListener('input',recompute); });
     var imgFile=document.getElementById('aSeoImgFile');
     document.getElementById('aSeoImgBtn').onclick=function(){ imgFile.click(); };
     imgFile.onchange=function(){
@@ -2420,6 +2430,15 @@
 
   function articleSlugs(){ return artList.filter(function(x){return x.id!==artEditing.id;}).map(function(x){return x.slug;}); }
   function uniqueArticleSlug(base){ var ex=articleSlugs(); var s=base||'article',i=2; while(ex.indexOf(s)>-1){ s=(base||'article')+'-'+i; i++; } return s; }
+  // Sanitise a desired address, keep it unique among the others, and remember the old
+  // address (so it can auto-forward). Returns {slug, past_slugs}.
+  function seoSlugPayload(desired, current, pastSlugs, others, fallbackBase){
+    var s=slugify(desired||'')||slugify(fallbackBase||'')||'page';
+    var base=s, i=2; while(others.indexOf(s)>-1){ s=base+'-'+i; i++; }
+    var past=(pastSlugs||[]).slice().filter(function(x){ return x && x!==s; });
+    if(current && current!==s && past.indexOf(current)===-1) past.push(current);
+    return { slug:s, past_slugs:past };
+  }
 
   function saveArticle(status, stayOnSeo){
     captureArtWrite(); captureArtSeo();
@@ -2427,17 +2446,22 @@
     if(!(a.title||'').trim()){ var m=document.getElementById('artMsg'); if(m){m.className='signin-msg err'; m.textContent='Please add a title first.';} if(artTab!=='write'){artTab='write';paintArt();} return; }
     var payload={
       title:a.title.trim(), excerpt:(a.excerpt||'').trim()||null, content:a.content||null, cover_image:a.cover_image||null,
+      cover_alt:(a.cover_alt||'').trim()||null,
       status:status, seo_title:(a.seo_title||'').trim()||null, seo_description:(a.seo_description||'').trim()||null,
       focus_keyword:(a.focus_keyword||'').trim()||null, social_image:a.social_image||null
     };
     if(status==='published' && !a.published_at) payload.published_at=new Date().toISOString();
+    // Web address: sanitise + keep unique + auto-forward the old address if it changed.
+    var _cur = a.id ? (artList.filter(function(x){return x.id===a.id;})[0]||{}) : {};
+    var _sp = seoSlugPayload((a.slug!=null && String(a.slug).trim())?a.slug:a.title, _cur.slug||'', _cur.past_slugs||[], articleSlugs(), a.title);
+    payload.slug = _sp.slug; payload.past_slugs = _sp.past_slugs;
 
     var btnIds=['artSaveDraft','artPublish','artUnpub','aSeoSave'];
     btnIds.forEach(function(id){ var b=document.getElementById(id); if(b){ b.disabled=true; } });
 
     var op;
     if(a.id){ op=sb.from('articles').update(payload).eq('id',a.id).select().single(); }
-    else { payload.slug=uniqueArticleSlug(slugify(a.title)); op=sb.from('articles').insert(payload).select().single(); }
+    else { op=sb.from('articles').insert(payload).select().single(); }
     op.then(function(r){
       if(r.error){ var m=document.getElementById('artMsg'); if(m){m.className='signin-msg err'; m.textContent='Could not save. Please try again.';} btnIds.forEach(function(id){var b=document.getElementById(id);if(b)b.disabled=false;}); console.error(r.error); return; }
       logAudit({ module:'Content', action:(a.id?'edit':'create'), record_type:'article', record_ref:(a.title||'(untitled)'), remarks:('Article '+(status==='published'?'published':'saved')), risk:'normal' });
@@ -3096,6 +3120,7 @@
       '<div class="field"><label>Card image (optional)</label><div class="img-drop"><div class="img-thumb" id="cImgThumb" style="width:84px;height:54px">'+(c.image_url?'<img src="'+esc(c.image_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">':IMGICON)+'</div>'+
         '<div><button type="button" class="btn btn-ghost" id="cImgBtn">'+(c.image_url?'Replace image':'Upload image')+'</button>'+(c.image_url?' <button type="button" class="link-btn" id="cImgRm" style="color:var(--red)">Remove</button>':'')+'<div class="phint" style="margin:6px 0 0">Shown on the homepage card instead of the flag. Leave empty to use the flag.</div></div>'+
         '<input type="file" id="cImgFile" accept="image/*" style="display:none"></div></div>'+
+      '<div class="field"><label>Image description (alt text)</label><input id="cImgAlt" type="text" value="'+esc(c.image_alt||'')+'" placeholder="e.g. Sheikh Zayed Mosque, Abu Dhabi"><div class="phint" style="margin-top:4px">Describes the image for Google &amp; screen readers. Leave blank to use the country name.</div></div>'+
       '<div class="grid2">'+
         '<div class="field"><label>SEO title (optional)</label><input id="cSeoT" type="text" value="'+esc(c.seo_title||'')+'" placeholder="Leave blank for a sensible default"></div>'+
         '<div class="field"><label>SEO description (optional)</label><input id="cSeoD" type="text" value="'+esc(c.seo_description||'')+'"></div>'+
@@ -3126,7 +3151,7 @@
       var msg=document.getElementById('cMsg');
       if(!name){ msg.className='signin-msg err'; msg.textContent='Please enter the country name.'; return; }
       var payload={ name:name, iso2:(document.getElementById('cIso').value.trim().toUpperCase()||null), group_slug:document.getElementById('cGroup').value||null,
-        summary:document.getElementById('cSummary').value.trim()||null, image_url:cImageUrl, seo_title:document.getElementById('cSeoT').value.trim()||null, seo_description:document.getElementById('cSeoD').value.trim()||null,
+        summary:document.getElementById('cSummary').value.trim()||null, image_url:cImageUrl, image_alt:document.getElementById('cImgAlt').value.trim()||null, seo_title:document.getElementById('cSeoT').value.trim()||null, seo_description:document.getElementById('cSeoD').value.trim()||null,
         featured:document.getElementById('cFeat').checked, active:document.getElementById('cActive').checked, sort_order:parseInt(document.getElementById('cSort').value,10)||0 };
       saveBtn.disabled=true; saveBtn.innerHTML='<span class="spin"></span>';
       var op;
@@ -3379,6 +3404,7 @@
           imgField('bShare', s.default_social_image, 'Default link-share image', 'Shown when a link is shared and the page has no image. Best 1200×630.')+
           imgField('bHero', s.hero_image_url, 'Homepage banner image', 'Optional background image behind the homepage search. Best wide, e.g. 1600×600.')+
         '</div>'+
+        '<div class="field" style="margin-top:6px"><label>Homepage banner description (alt text)</label><input id="bHeroAlt" type="text" value="'+esc(s.hero_image_alt||'')+'" placeholder="Describe the banner image for Google &amp; screen readers"></div>'+
       '</div>'+
       // WhatsApp button
       '<div class="panel"><h3>WhatsApp button</h3>'+
@@ -3441,6 +3467,7 @@
         brand_color:/^#[0-9a-fA-F]{6}$/.test(colorVal)?colorVal:null,
         logo_url:urls.logo_url, favicon_url:urls.favicon_url, app_icon_url:urls.app_icon_url,
         default_social_image:urls.default_social_image, hero_image_url:urls.hero_image_url,
+        hero_image_alt:document.getElementById('bHeroAlt').value.trim()||null,
         contact_whatsapp:document.getElementById('bWa').value.trim()||null,
         contact_phone:document.getElementById('bPhone').value.trim()||null,
         contact_email:document.getElementById('bEmail').value.trim()||null,
@@ -4339,6 +4366,8 @@
         '<div class="rte" id="pContent" contenteditable="true" data-ph="Write your page content…">'+(p.content||'')+'</div></div>'+
       '<div class="grid2"><div class="field"><label>SEO title (optional)</label><input id="pSeoT" type="text" value="'+esc(p.seo_title||'')+'"></div>'+
         '<div class="field"><label>SEO description (optional)</label><input id="pSeoD" type="text" value="'+esc(p.seo_description||'')+'"></div></div>'+
+      '<div class="field"><label>Page address</label><div style="display:flex;align-items:center;gap:6px"><span class="phint" style="margin:0;white-space:nowrap">/p/</span><input id="pSlug" type="text" value="'+esc(p.slug||'')+'" placeholder="auto from the title"></div>'+
+        '<div class="phint" style="margin-top:4px">Change the web address here. The old one automatically forwards to the new one, so nothing breaks.</div></div>'+
       '<div class="field"><label style="display:flex;align-items:center;gap:9px;font-weight:500;cursor:pointer"><input id="pFooter" type="checkbox" '+(p.show_in_footer?'checked':'')+' style="width:auto"> Show a link in the footer</label></div>'+
       '<div class="signin-msg" id="pMsg"></div>'+
       '<div style="display:flex;gap:10px"><button class="btn btn-primary" id="pSaveDraft">'+(p.status==='published'?'Save changes':'Save draft')+'</button>'+
@@ -4357,7 +4386,12 @@
       if(!title){ msg.className='signin-msg err'; msg.textContent='Please add a title.'; return; }
       var payload={ title:title, content:document.getElementById('pContent').innerHTML, status:status, show_in_footer:document.getElementById('pFooter').checked,
         seo_title:document.getElementById('pSeoT').value.trim()||null, seo_description:document.getElementById('pSeoD').value.trim()||null };
-      var op = pEditing.id ? sb.from('pages').update(payload).eq('id',pEditing.id) : (function(){ payload.slug=uniqueSlugIn(slugify(title),pList); return sb.from('pages').insert(payload); })();
+      var _cur = pEditing.id ? (pList.filter(function(x){return x.id===pEditing.id;})[0]||{}) : {};
+      var _others = pList.filter(function(x){return x.id!==pEditing.id;}).map(function(x){return x.slug;});
+      var _slIn = document.getElementById('pSlug'); var _desired = (_slIn && _slIn.value.trim()) ? _slIn.value : title;
+      var _sp = seoSlugPayload(_desired, _cur.slug||'', _cur.past_slugs||[], _others, title);
+      payload.slug=_sp.slug; payload.past_slugs=_sp.past_slugs;
+      var op = pEditing.id ? sb.from('pages').update(payload).eq('id',pEditing.id) : sb.from('pages').insert(payload);
       op.then(function(r){ if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save.'; console.error(r.error); return; } logAudit({ module:'Content', action:(pEditing.id?'edit':'create'), record_type:'page', record_ref:title, remarks:('Page '+(status==='published'?'published':'saved')), risk:'normal' }); toast(status==='published'?'Page published':'Saved'); pEditing=null; renderContentAdmin(); });
     }
     if(document.getElementById('pSaveDraft')) document.getElementById('pSaveDraft').onclick=function(){ save(pEditing.status||'draft'); };
@@ -4756,6 +4790,7 @@
       '<div class="field"><label>Event image</label>'+
         '<div class="cover-drop" id="evCover"'+(e.image_url?(' style="background-image:url('+esc(e.image_url)+')"'):'')+'>'+(e.image_url?'':'<div class="ph">'+IMGICON+'<div>Click to add an event image</div></div>')+'</div>'+
         '<input type="file" id="evCoverFile" accept="image/*" style="display:none"><div class="phint" id="evCoverHint" style="margin-top:6px"></div></div>'+
+      '<div class="field"><label>Image description (alt text)</label><input id="evImgAlt" type="text" value="'+esc(e.image_alt||'')+'" placeholder="Describe the event image"><div class="phint" style="margin-top:4px">For Google &amp; screen readers. Leave blank to use the event name.</div></div>'+
       '<div class="field"><label>Short description (shown on the event page)</label><textarea id="evBlurb" style="min-height:80px" placeholder="A line or two about the event.">'+esc(e.blurb||'')+'</textarea></div>'+
       '<div class="grid2">'+
         '<div class="field"><label>SEO title (optional)</label><input id="evSeoTitle" type="text" value="'+esc(e.seo_title||'')+'"></div>'+
@@ -4801,6 +4836,7 @@
         event_date:date, end_date:document.getElementById('evEnd').value||null,
         city:document.getElementById('evCity').value.trim()||null,
         image_url:evEditing.image_url||null,
+        image_alt:document.getElementById('evImgAlt').value.trim()||null,
         blurb:document.getElementById('evBlurb').value.trim()||null,
         seo_title:document.getElementById('evSeoTitle').value.trim()||null,
         seo_description:document.getElementById('evSeoDesc').value.trim()||null,

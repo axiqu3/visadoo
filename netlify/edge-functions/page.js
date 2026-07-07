@@ -38,6 +38,11 @@ export default async (request) => {
   LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
   const rows = slug ? await fetchJson(SUPABASE_URL+"/rest/v1/pages?slug=eq."+encodeURIComponent(slug)+"&status=eq.published&select=*") : null;
   if(!rows || !rows.length){
+    if(slug){
+      // Address changed? Forward the old address to the current one (301).
+      const moved = await fetchJson(SUPABASE_URL+"/rest/v1/pages?status=eq.published&past_slugs=cs.%7B"+encodeURIComponent(slug)+"%7D&select=slug&limit=1");
+      if(moved && moved.length) return Response.redirect(SITE+"/p/"+moved[0].slug, 301);
+    }
     return new Response(shell("Page not found | Visa Doo","",SITE,
       '<div style="min-height:60vh;display:grid;place-items:center;text-align:center;padding:40px"><div><h1 style="font-size:30px">Page not found</h1><p style="color:#5b6b85;margin:12px 0 22px">This page doesn\'t exist.</p><a href="/" class="btn btn-primary btn-lg">Back to home</a></div></div>'),
       { status:404, headers:{ "content-type":"text/html; charset=utf-8" } });

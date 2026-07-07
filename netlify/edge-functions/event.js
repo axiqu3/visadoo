@@ -50,7 +50,7 @@ function pageHtml(ev, c, visas, brandColor){
     '<link rel="canonical" href="'+esc(canonical)+'">'+
     '<meta property="og:type" content="website"><meta property="og:site_name" content="Visa Doo">'+
     '<meta property="og:title" content="'+esc(title)+'"><meta property="og:description" content="'+esc(desc)+'"><meta property="og:url" content="'+esc(canonical)+'">'+
-    (ogImage?'<meta property="og:image" content="'+esc(ogImage)+'">':'')+
+    (ogImage?'<meta property="og:image" content="'+esc(ogImage)+'">'+'<meta property="og:image:alt" content="'+esc(ev.image_alt||ev.name||'')+'">':'')+
     '<meta name="twitter:card" content="summary_large_image">'+
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
@@ -61,7 +61,7 @@ function pageHtml(ev, c, visas, brandColor){
     '<header class="header"><div class="container nav">'+
       '<a href="/" class="brand">'+brandMark()+'</a>'+navActions()+
     '</div></header>'+
-    '<section style="'+heroBg+';background-size:cover;background-position:center"><div class="container" style="max-width:820px;text-align:center;padding:70px 0 60px;color:#fff">'+
+    '<section style="'+heroBg+';background-size:cover;background-position:center"'+(ev.image_url?' role="img" aria-label="'+esc(ev.image_alt||ev.name||'')+'"':'')+'><div class="container" style="max-width:820px;text-align:center;padding:70px 0 60px;color:#fff">'+
       '<a href="/events" style="display:inline-block;color:#fff;opacity:.9;font-weight:600;font-size:14px;margin-bottom:14px">← All events</a>'+
       (c&&c.iso2?'<div style="margin-bottom:14px"><img src="'+flag(c.iso2)+'" alt="'+esc(cname)+' flag" style="width:64px;height:43px;object-fit:cover;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.4)"></div>':'')+
       '<h1 style="font-size:clamp(30px,5vw,50px);font-weight:800;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.4)">'+esc(ev.name)+'</h1>'+

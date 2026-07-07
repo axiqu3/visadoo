@@ -68,7 +68,7 @@
     var price = (c.minPrice!=null) ? ('<div class="from">from '+money(c.minPrice)+' <span>/ visa</span></div>') : '';
     var n = c.visaCount||0;
     return '<a class="dest-card" href="/country/'+encodeURIComponent(c.slug)+'">'+
-      '<img class="dest-flag" src="'+(c.image_url||flag(c.iso2))+'" alt="'+ (c.name||'') +'" loading="lazy">'+
+      '<img class="dest-flag" src="'+(c.image_url||flag(c.iso2))+'" alt="'+ ((c.image_url && c.image_alt) || c.name || '') +'" loading="lazy">'+
       '<div class="dest-body"><h3>'+(c.name||'')+'</h3>'+
       '<div class="meta">'+n+' visa option'+(n===1?'':'s')+'</div>'+etaPill(c.eta)+price+'</div></a>';
   }
@@ -122,12 +122,12 @@
         sb.from('countries').select('*').eq('active',true).order('sort_order'),
         sb.from('visa_types').select('slug,country_slug,price_aed,prices,processing_time_value,processing_time_unit').eq('active',true),
         sb.from('visa_groups').select('*').eq('active',true).order('sort_order'),
-        sb.from('site_settings').select('hero_image_url,active_currency,currencies').eq('id','global').single()
+        sb.from('site_settings').select('hero_image_url,hero_image_alt,active_currency,currencies').eq('id','global').single()
       ]).then(function(res){
         var countries=(res[0].data)||[], visas=(res[1].data)||[], groups=(res[2].data)||[];
         var ss=res[3].data||{};
         var heroImg=ss.hero_image_url||null;
-        if(heroImg){ var hero=document.querySelector('.hero'); if(hero){ hero.style.backgroundImage='linear-gradient(rgba(244,249,255,.78),rgba(255,255,255,.9)), url('+heroImg+')'; hero.classList.add('has-banner'); } }
+        if(heroImg){ var hero=document.querySelector('.hero'); if(hero){ hero.style.backgroundImage='linear-gradient(rgba(244,249,255,.78),rgba(255,255,255,.9)), url('+heroImg+')'; hero.classList.add('has-banner'); if(ss.hero_image_alt){ hero.setAttribute('role','img'); hero.setAttribute('aria-label', ss.hero_image_alt); } } }
         // compute min price + count per country (in the active currency)
         countries.forEach(function(c){
           var cv=visas.filter(function(v){return v.country_slug===c.slug;});
