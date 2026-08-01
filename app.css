@@ -13,23 +13,84 @@
 .link-btn:hover{color:var(--blue-600)}
 
 /* ---- Sign in ---- */
-.signin-wrap{min-height:calc(100vh - 72px);display:grid;place-items:center;padding:30px 20px}
-.signin-card{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:38px 34px;text-align:center}
-.signin-card .logo-lg{width:60px;height:60px;border-radius:17px;margin:0 auto 18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue-600),var(--blue-400));color:#fff}
+.signin-page{--signin-coral:#ef6f61;--signin-coral-dark:#dc5e52;background:#fff}
+.signin-page .header{background:rgba(255,255,255,.94);border-color:var(--line)}
+.signin-home-link{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;font-weight:700;transition:color .15s ease}
+.signin-home-link span{font-size:18px;line-height:1;transition:transform .15s ease}
+.signin-home-link:hover{color:var(--signin-coral)}
+.signin-home-link:hover span{transform:translateX(3px)}
+.signin-wrap{min-height:calc(100vh - 72px);min-height:calc(100dvh - 72px);display:grid;place-items:center;padding:28px 22px;background:#fff}
+.signin-card{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 16px 40px -12px rgba(15,23,42,0.08);padding:36px 32px;text-align:center;transition:all .2s ease}
+.signin-card .logo-lg{width:60px;height:60px;border-radius:18px;margin:0 auto 16px;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue-600),var(--blue-400));color:#fff;box-shadow:0 8px 20px -4px rgba(37,99,235,0.3)}
 .signin-card .logo-lg svg{width:32px;height:32px}
-.signin-card h2{font-size:24px;font-weight:800}
-.signin-card .muted{color:var(--muted);font-size:15px;margin-top:8px;margin-bottom:26px}
-.btn-google{width:100%;background:#fff;color:#1f2937;border:1.5px solid var(--line);font-weight:700;gap:11px}
-.btn-google:hover{background:#f8fafc;border-color:#cdd8e8}
-.btn-google svg{width:20px;height:20px}
-.or-divider{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:13px;margin:22px 0}
+.signin-card h2{font-size:24px;font-weight:800;letter-spacing:-0.02em}
+.signin-card .muted{color:var(--muted);font-size:14.5px;margin-top:6px;margin-bottom:20px;line-height:1.45}
+.signin-shell{width:min(420px,100%);background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 40px -32px rgba(15,43,64,.22);overflow:hidden}
+.signin-form-panel{padding:29px 28px 27px;background:#fff}
+.signin-shell .signin-card{max-width:364px;padding:0;border:0;border-radius:0;box-shadow:none;text-align:left}
+.signin-shell .signin-card h2{font-size:27px;letter-spacing:-.04em}
+.signin-shell .signin-card .muted{max-width:390px;margin-top:9px;margin-bottom:24px;line-height:1.55}
+.signin-shell .fine{margin-top:17px;padding-top:2px;border-top:0;color:#8996a6;font-size:10px;line-height:1.45;text-align:center}
+
+@media (max-width:900px){
+  .signin-wrap{padding:30px 20px}
+}
+
+@media (max-width:560px){
+  .signin-page .nav{height:64px}
+  .signin-page .brand{font-size:19px}
+  .signin-page .brand .logo{width:34px;height:34px}
+  .signin-home-link{font-size:13px}
+  .signin-wrap{min-height:calc(100dvh - 64px);padding:18px 14px}
+  .signin-shell{max-width:380px;border-radius:16px}
+  .signin-form-panel{padding:25px 20px}
+  .signin-shell .signin-card h2{font-size:26px}
+  .signin-shell .signin-card .muted{margin-bottom:20px}
+}
+
+/* Email-first account step */
+#continueEmailBtn{margin-top:4px}
+.signin-account-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:17px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.signin-account-row>span{min-width:0;color:var(--ink);font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.signin-step-back{flex:none;padding:0;border:0;background:none;color:var(--signin-coral);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.signin-step-back:hover{color:var(--signin-coral-dark)}
+.signin-forgot{display:block;margin:8px 0 0 auto;padding:0;font-size:12px}
+.signin-link-option{width:fit-content;min-width:208px;margin:0 auto;border-radius:999px;padding:8px 16px;font-size:14px}
+#accountStep .or-divider{margin:16px 0 13px;font-size:11px}
+#googleGroup{text-align:center}
+#googleGroup .or-divider{margin:21px 0 15px}
+.signin-page .signin-shell .btn-primary{background:var(--signin-coral);box-shadow:0 7px 18px -9px rgba(239,111,97,.65)}
+.signin-page .signin-shell .btn-primary:hover{background:var(--signin-coral-dark);box-shadow:0 10px 22px -10px rgba(239,111,97,.7)}
+.signin-page .signin-shell .btn-ghost{border-color:#f1c9c5;color:var(--signin-coral-dark)}
+.signin-page .signin-shell .btn-ghost:hover{border-color:var(--signin-coral);background:#fff7f6}
+.signin-page .signin-shell .field input:focus{border-color:var(--signin-coral);box-shadow:0 0 0 3px rgba(239,111,97,.14)}
+.signin-page .signin-shell .pw-toggle:hover,
+.signin-page .signin-shell .link-btn:hover{color:var(--signin-coral)}
+
+/* Input Fields with icons */
+.input-icon-wrap{position:relative;display:flex;align-items:center}
+.input-icon-wrap input{padding-left:40px !important;width:100%}
+.input-icon-wrap .field-icon{position:absolute;left:13px;color:#94a3b8;pointer-events:none;display:flex;align-items:center}
+.input-icon-wrap .pw-toggle{position:absolute;right:10px;background:none;border:none;color:#94a3b8;cursor:pointer;padding:6px;display:flex;align-items:center;border-radius:6px;transition:color .15s}
+.input-icon-wrap .pw-toggle:hover{color:var(--blue-600)}
+
+.btn-google{width:fit-content;margin:0 auto;background:#fff;color:#1f2937;border:1.5px solid var(--line);font-size:14px;font-weight:700;gap:9px;border-radius:999px;padding:8px 16px;box-shadow:0 1px 2px rgba(0,0,0,0.04);transition:all .15s ease}
+.btn-google:hover{background:#f8fafc;border-color:#cdd8e8;transform:translateY(-1px)}
+.btn-google svg{width:18px;height:18px}
+.or-divider{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:13px;margin:20px 0}
 .or-divider::before,.or-divider::after{content:"";height:1px;background:var(--line);flex:1}
-.signin-card .field{text-align:left}
+.signin-card .field{text-align:left;margin-bottom:14px}
+.signin-card .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--ink)}
 .otp-input{letter-spacing:.4em;text-align:center !important;font-size:22px !important;font-weight:700}
-.signin-msg{font-size:14px;border-radius:11px;padding:11px 14px;margin-bottom:14px;display:none;text-align:left}
-.signin-msg.err{background:#fdecec;color:#b42318;border:1px solid #f6c9c4;display:block}
-.signin-msg.ok{background:#eafaf0;color:#137a3a;border:1px solid #b6e6c9;display:block}
+
+/* Error/Info messages with action buttons */
+.signin-msg{font-size:13px;border-radius:10px;padding:10px 12px;margin-bottom:15px;display:none;text-align:left;line-height:1.4}
+.signin-msg.err{background:#fff7f6;color:#a63b32;border:1px solid #f5cbc7;display:block}
+.signin-msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;display:block}
 .signin-msg.info{background:var(--sky-50);color:var(--blue-700);border:1px solid var(--blue-100);display:block}
+.signin-msg-btn{display:block;margin-top:5px;padding:0;background:none;color:var(--signin-coral-dark);font-size:12.5px;font-weight:700;border:0;cursor:pointer;transition:color .15s;text-decoration:underline;text-underline-offset:2px}
+.signin-msg-btn:hover{color:#b9473d}
+
 .fine{font-size:12.5px;color:var(--muted);margin-top:20px;line-height:1.5}
 
 /* ---- Apply form ---- */
@@ -153,7 +214,7 @@
 @media (max-width:640px){
   .grid2,.visa-pick,.upload-row{grid-template-columns:1fr}
   .app-head h1{font-size:25px}
-  .signin-card{padding:30px 22px}
+  .signin-wrap>.signin-card{padding:30px 22px}
   .app-main{padding:26px 18px 70px}
 }
 
@@ -269,7 +330,18 @@
   background:#fff;border-right:1px solid var(--line);
   padding:14px 12px 48px;overflow-y:auto;overscroll-behavior:contain;
 }
-.has-admin-side .app-main{margin-left:236px}
+.has-admin-side .app-main{
+  width:calc(100% - 236px);
+  max-width:none;
+  margin:0 0 0 236px;
+  padding:28px 24px 80px;
+  min-width:0;
+}
+.has-admin-side .header .container{max-width:none}
+.has-admin-side .header .nav{position:relative}
+.has-admin-side .header .nav-actions{
+  position:absolute;left:50%;transform:translateX(-50%);
+}
 /* Keep the global "Chat with us" WhatsApp button off the staff console screens */
 .has-admin-side .wa-float{display:none !important}
 
@@ -307,6 +379,10 @@
 .dash-table tr:last-child td{border-bottom:none}
 .dash-table .num{text-align:right}
 .side-group{margin-bottom:2px}
+.side-group-pinned{
+  position:sticky;top:0;z-index:3;background:#fff;
+}
+.side-group-static{cursor:default}
 .side-group-head{
   display:flex;align-items:center;justify-content:space-between;width:100%;
   border:none;background:none;cursor:pointer;font-family:inherit;
@@ -330,7 +406,15 @@
 .side-item svg{width:18px;height:18px;flex:none}
 
 @media (max-width:900px){
-  .has-admin-side .app-main{margin-left:0}
+  .has-admin-side .app-main{
+    width:100%;
+    margin-left:0;
+    padding:26px 18px 70px;
+  }
+  .has-admin-side .header .nav-actions{
+    position:static;transform:none;margin-left:auto;
+  }
+  .side-group-pinned{position:static}
   .side-toggle{
     display:inline-flex;align-items:center;gap:8px;margin-bottom:18px;
     border:1px solid var(--line);background:#fff;border-radius:10px;

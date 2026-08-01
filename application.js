@@ -142,8 +142,41 @@
   }
 
   // ---------- header ----------
+  function clearStoredAuthSession(){
+    try{
+      var projectRef=(new URL(cfg.SUPABASE_URL)).hostname.split('.')[0];
+      var authKey='sb-'+projectRef+'-auth-token';
+      Object.keys(localStorage).forEach(function(key){
+        if(key===authKey || key.indexOf(authKey+'.')===0) localStorage.removeItem(key);
+      });
+    }catch(_e){}
+  }
+  function signOutCurrentUser(btn){
+    if(!btn || btn.disabled) return;
+    btn.disabled=true;
+    btn.textContent='Signing out…';
+    var finished=false;
+    var timer=setTimeout(function(){ finish(true); },5000);
+    function finish(useFallback){
+      if(finished) return;
+      finished=true;
+      clearTimeout(timer);
+      if(useFallback) clearStoredAuthSession();
+      location.replace(location.pathname);
+    }
+    Promise.resolve().then(function(){
+      return sb.auth.signOut({scope:'local'});
+    }).then(function(result){
+      finish(!!(result && result.error));
+    }).catch(function(){
+      finish(true);
+    });
+  }
   function renderHeader(){
-    if(!state.user){ headerActions.innerHTML=''; return; }
+    if(!state.user){
+      headerActions.innerHTML='<a class="signin-home-link" href="index.html">Back to home <span aria-hidden="true">&rarr;</span></a>';
+      return;
+    }
     var meta = state.user.user_metadata || {};
     var name = meta.full_name || meta.name || state.user.email || 'You';
     var initial = (name[0]||'U').toUpperCase();
@@ -151,8 +184,7 @@
     var roleLabels = { admin:'Admin', agent:'Agent', content:'Content', viewer:'Viewer', finance:'Finance', sales:'Sales' };
     var links = '';
     if(isStaff()){
-      links = '<button class="link-btn" data-go="'+defaultStaffView()+'">Dashboard</button>' +
-              '<button class="link-btn" data-go="setpw">Set password</button>';
+      links = '<button class="link-btn" data-go="setpw">Set password</button>';
     } else {
       links = '<button class="link-btn" data-go="apply">New application</button>' +
               '<button class="link-btn" data-go="track">My applications</button>';
@@ -161,9 +193,9 @@
     headerActions.innerHTML =
       links +
       '<span class="user-chip"><span class="avatar">'+av+'</span><span class="uname">'+esc(name.split(' ')[0])+'</span>'+roleBadge+'</span>' +
-      '<button class="link-btn" id="signOutBtn">Sign out</button>';
+      '<button class="link-btn" id="signOutBtn" type="button">Sign out</button>';
     headerActions.querySelectorAll('[data-go]').forEach(function(b){ b.onclick=function(){ go(b.getAttribute('data-go')); }; });
-    document.getElementById('signOutBtn').onclick=function(){ sb.auth.signOut(); };
+    document.getElementById('signOutBtn').onclick=function(){ signOutCurrentUser(this); };
   }
 
   function go(view){ state.view=view; location.hash=view; renderHeader(); render(); }
@@ -171,105 +203,298 @@
   // ============================================================
   //  SIGN IN
   // ============================================================
+  function finishGooglePopup(user){
+    if(!user || window.name!=='visadoo-google-signin' || !window.opener) return false;
+    try{
+      window.opener.postMessage({type:'visadoo-google-auth-complete'},location.origin);
+      setTimeout(function(){ window.close(); },120);
+      return true;
+    }catch(_popupCloseError){
+      return false;
+    }
+  }
+  function authRedirectUrl(intended){
+    var url = new URL('/app.html', location.origin);
+    if(intended) url.searchParams.set('visa', intended);
+    return url.toString();
+  }
+  function authSettings(){
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function(){ controller.abort(); }, 6000) : null;
+    return fetch(cfg.SUPABASE_URL.replace(/\/$/,'') + '/auth/v1/settings', {
+      headers:{ apikey:cfg.SUPABASE_ANON_KEY },
+      signal:controller ? controller.signal : undefined
+    }).then(function(response){
+      if(!response.ok) throw new Error('Could not check login settings.');
+      return response.json();
+    }).finally(function(){ if(timer) clearTimeout(timer); });
+  }
+  function oauthErrorFromLocation(){
+    var query = new URLSearchParams(location.search);
+    var hash = new URLSearchParams((location.hash||'').replace(/^#/,''));
+    return query.get('error_description') || hash.get('error_description') ||
+           query.get('error') || hash.get('error') || '';
+  }
   function renderSignIn(){
+    document.body.classList.add('signin-page');
+    document.body.classList.remove('has-admin-side','side-open');
     renderHeader();
     var intended = qParam('visa');
     root.innerHTML='';
     var card = el(
-      '<div class="signin-wrap"><div class="signin-card">' +
-        '<div class="logo-lg">'+planeLogo()+'</div>' +
-        '<h2>Sign in to continue</h2>' +
-        '<p class="muted">Sign in to start your UAE tourist visa application and track its progress — your details stay private to you.</p>' +
+      '<main class="signin-wrap"><div class="signin-shell">' +
+        '<section class="signin-form-panel">' +
+          '<div class="signin-card">' +
+        '<h2 id="signinTitle">Sign in</h2>' +
+        '<p class="muted" id="signinSubtitle">Enter your email to continue.</p>' +
         '<div class="signin-msg" id="siMsg"></div>' +
-        '<button class="btn btn-google" id="googleBtn">' +
-          '<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z"/></svg>' +
-          'Continue with Google' +
-        '</button>' +
-        '<div class="or-divider">or sign in with email</div>' +
         '<div id="emailStep">' +
           '<div class="field"><label for="siEmail">Email address</label>' +
-          '<input id="siEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>' +
+            '<div class="input-icon-wrap">' +
+              '<span class="field-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>' +
+              '<input id="siEmail" type="email" placeholder="you@example.com" autocomplete="email">' +
+            '</div>' +
+          '</div>' +
+          '<button class="btn btn-primary btn-block" id="continueEmailBtn">Continue</button>' +
+        '</div>' +
+        '<div id="accountStep" style="display:none">' +
+          '<div class="signin-account-row"><span id="accountEmail"></span><button class="signin-step-back" id="editEmailBtn" type="button">Change</button></div>' +
           '<div class="field"><label for="siPass">Password</label>' +
-          '<input id="siPass" type="password" placeholder="Your password" autocomplete="current-password"></div>' +
-          '<button class="btn btn-primary btn-block" id="pwBtn">Sign in</button>' +
-          '<div style="text-align:right;margin-top:8px"><button class="link-btn" id="forgotBtn" style="padding:0;font-size:13px">Forgot password?</button></div>' +
-          '<div class="or-divider" style="margin-top:14px">or</div>' +
-          '<button class="btn btn-ghost btn-block" id="sendCodeBtn">Email me a sign-in link</button>' +
-          '<p class="phint" style="text-align:center;margin-top:10px">New here or a customer? Just use the email link — no password needed. Staff can set a password once signed in.</p>' +
+            '<div class="input-icon-wrap">' +
+              '<span class="field-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>' +
+              '<input id="siPass" type="password" placeholder="Enter your password" autocomplete="current-password">' +
+              '<button type="button" class="pw-toggle" id="togglePwBtn" title="Toggle password visibility">' +
+                '<svg id="eyeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<button class="btn btn-primary btn-block" id="pwBtn">Sign in with password</button>' +
+          '<button class="link-btn signin-forgot" id="forgotBtn" type="button">Forgot password?</button>' +
+          '<div class="or-divider">or</div>' +
+          '<button class="btn btn-ghost btn-block signin-link-option" id="sendCodeBtn">Email me a sign-in link</button>' +
         '</div>' +
         '<div id="sentStep" style="display:none">' +
-          '<div style="text-align:center;padding:6px 0 14px">' +
-            '<div style="width:54px;height:54px;border-radius:50%;background:var(--sky-50);display:grid;place-items:center;margin:0 auto 14px;color:var(--blue-600)">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28"><path d="M22 6l-10 7L2 6"/><rect x="2" y="6" width="20" height="13" rx="2"/></svg></div>' +
-            '<b style="font-size:16px">Check your email</b>' +
-            '<p style="color:var(--muted);font-size:14px;margin-top:6px">Tap the <b>Sign in</b> link in the email we just sent and you\'ll be brought right back here, signed in.</p>' +
+          '<div style="text-align:center;padding:10px 0 16px">' +
+            '<div style="width:58px;height:58px;border-radius:50%;background:var(--sky-50);display:grid;place-items:center;margin:0 auto 14px;color:var(--blue-600);box-shadow:0 4px 12px rgba(37,99,235,0.15)">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="30" height="30"><path d="M22 6l-10 7L2 6"/><rect x="2" y="6" width="20" height="13" rx="2"/></svg></div>' +
+            '<b style="font-size:18px">Check your email</b>' +
+            '<p style="color:var(--muted);font-size:14.5px;margin-top:6px;line-height:1.5">We sent a sign-in link to <b id="sentTargetEmail" style="color:var(--ink)"></b>.<br>Tap the link in your email to sign in instantly.</p>' +
           '</div>' +
-          '<button class="link-btn" id="backToEmail" style="margin-top:4px">← Use a different email</button>' +
+          '<button class="link-btn" id="backToEmail" style="margin-top:4px;font-weight:700">← Back to sign in</button>' +
+        '</div>' +
+        '<div id="googleGroup">' +
+          '<div class="or-divider">or</div>' +
+          '<button class="btn btn-google" id="googleBtn">' +
+            '<svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.23 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38z"/></svg>' +
+            'Continue with Google' +
+          '</button>' +
         '</div>' +
         '<p class="fine">By continuing you agree to let Visa Doo process your application details. ' +
         (intended ? 'You\'re applying for the <b>'+esc((visaById(intended)||{}).name||'')+'</b>.' : '') +
         '</p>' +
-      '</div></div>'
+          '</div>' +
+        '</section>' +
+      '</div></main>'
     );
     root.appendChild(card);
 
     var msg=document.getElementById('siMsg');
     function showMsg(t,cls){ msg.className='signin-msg '+cls; msg.innerHTML=t; }
 
-    document.getElementById('googleBtn').onclick=function(){
-      showMsg('Opening Google sign-in…','info');
-      sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/app.html' + (intended?('?visa='+encodeURIComponent(intended)):'') } })
-        .then(function(r){ if(r.error){ showMsg('Google sign-in isn\'t switched on yet. Please use the email option below for now.','err'); } });
+    var oauthError = oauthErrorFromLocation();
+    if(oauthError) showMsg('Google sign-in could not be completed: '+esc(oauthError),'err');
+
+    if(!window.__visadooGooglePopupListener){
+      window.__visadooGooglePopupListener=true;
+      window.addEventListener('message',function(event){
+        if(event.origin!==location.origin || !event.data || event.data.type!=='visadoo-google-auth-complete') return;
+        location.reload();
+      });
+    }
+
+    // Google Sign-In
+    var googleBtn=document.getElementById('googleBtn');
+    googleBtn.onclick=function(){
+      if(googleBtn.disabled) return;
+      var originalHtml=googleBtn.innerHTML;
+      var popupWidth=520, popupHeight=700;
+      var popupLeft=Math.max(0,Math.round((window.screen.width-popupWidth)/2));
+      var popupTop=Math.max(0,Math.round((window.screen.height-popupHeight)/2));
+      var popupFeatures='popup=yes,width='+popupWidth+',height='+popupHeight+',left='+popupLeft+',top='+popupTop+',resizable=yes,scrollbars=yes';
+      var authPopup=window.open('','visadoo-google-signin',popupFeatures);
+      if(authPopup){
+        try{
+          authPopup.document.title='Sign in with Google';
+          authPopup.document.body.innerHTML='<div style="min-height:90vh;display:grid;place-items:center;font:600 15px Arial,sans-serif;color:#475569">Connecting to Google…</div>';
+        }catch(_popupPreviewError){}
+      }
+      googleBtn.disabled=true;
+      googleBtn.innerHTML='<span class="spin"></span> Connecting to Google…';
+      showMsg('Checking Google sign-in status…','info');
+      var redirectTo = authRedirectUrl(intended);
+
+      function resetGoogleButton(message){
+        if(authPopup && !authPopup.closed) authPopup.close();
+        googleBtn.disabled=false;
+        googleBtn.innerHTML=originalHtml;
+        if(message) showMsg(message,'err');
+      }
+      function openGoogleChooser(){
+        return sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectTo,
+            skipBrowserRedirect: true,
+            queryParams: { prompt: 'select_account' }
+          }
+        }).then(function(result){
+          if(result && result.error){
+            resetGoogleButton(esc(result.error.message || 'Google sign-in could not start. Please use the email option below.'));
+            return;
+          }
+          var chooserUrl=result && result.data && result.data.url;
+          if(!chooserUrl){
+            resetGoogleButton('Google sign-in could not start. Please use the email option below.');
+            return;
+          }
+          showMsg('Choose your Google account in the sign-in window.','info');
+          if(authPopup && !authPopup.closed) authPopup.location.replace(chooserUrl);
+          else location.assign(chooserUrl);
+        }).catch(function(){
+          resetGoogleButton('Google sign-in could not start. Please use the email option below.');
+        });
+      }
+
+      authSettings().then(function(settings){
+        if(settings && settings.external && settings.external.google === false){
+          resetGoogleButton('Google sign-in is not enabled yet. Please use the email option above.');
+          return;
+        }
+        openGoogleChooser();
+      }).catch(function(){
+        openGoogleChooser();
+      });
     };
 
-    var redirectTo = location.origin + '/app.html' + (intended?('?visa='+encodeURIComponent(intended)):'');
+    var redirectTo = authRedirectUrl(intended);
 
-    // Password sign-in (staff/admins who've set one) — instant, no email wait.
+    // Email-first account flow. Password sign-in includes a safe email-link fallback.
+    var emailStep=document.getElementById('emailStep');
+    var accountStep=document.getElementById('accountStep');
+    var googleGroup=document.getElementById('googleGroup');
+    var emailInput=document.getElementById('siEmail');
+    var siPass=document.getElementById('siPass');
+    var sendBtn=document.getElementById('sendCodeBtn');
+    function showAccountStep(){
+      var email=emailInput.value.trim();
+      if(!/.+@.+\..+/.test(email)){ showMsg('Please enter a valid email address.','err'); return; }
+      document.getElementById('accountEmail').textContent=email;
+      emailStep.style.display='none';
+      accountStep.style.display='block';
+      googleGroup.style.display='none';
+      document.getElementById('signinSubtitle').textContent='Enter your password or request a sign-in link.';
+      msg.className='signin-msg';
+      siPass.focus();
+    }
+    document.getElementById('continueEmailBtn').onclick=showAccountStep;
+    document.getElementById('editEmailBtn').onclick=function(){
+      accountStep.style.display='none';
+      emailStep.style.display='block';
+      googleGroup.style.display='block';
+      document.getElementById('signinSubtitle').textContent='Enter your email to continue.';
+      siPass.value='';
+      msg.className='signin-msg';
+      emailInput.focus();
+    };
+
+    // Password Show/Hide Toggle
+    var togglePwBtn=document.getElementById('togglePwBtn');
+    var eyeIcon=document.getElementById('eyeIcon');
+    if(togglePwBtn){
+      togglePwBtn.onclick=function(){
+        if(siPass.type==='password'){
+          siPass.type='text';
+          eyeIcon.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+        } else {
+          siPass.type='password';
+          eyeIcon.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+        }
+      };
+    }
+
+    // Password sign-in
     var pwBtn=document.getElementById('pwBtn');
     function doPasswordSignIn(){
       var email=document.getElementById('siEmail').value.trim();
-      var pass=document.getElementById('siPass').value;
+      var pass=siPass.value;
       if(!/.+@.+\..+/.test(email)){ showMsg('Please enter a valid email address.','err'); return; }
-      if(!pass){ showMsg('Enter your password, or use the email link below.','err'); return; }
+      if(!pass){ showMsg('Enter your password, or choose the sign-in link option below.','err'); return; }
       pwBtn.disabled=true; pwBtn.innerHTML='<span class="spin"></span> Signing in…';
       sb.auth.signInWithPassword({ email:email, password:pass }).then(function(r){
         pwBtn.disabled=false; pwBtn.innerHTML='Sign in';
-        if(r.error){ showMsg('Wrong email or password — or you haven’t set a password yet. Use the email link below, then set a password from inside the app.','err'); return; }
+        if(r.error){
+          var errHtml='Email or password is incorrect.';
+          errHtml+='<button type="button" class="signin-msg-btn" id="fallbackMagicBtn">Send me a sign-in link</button>';
+          showMsg(errHtml,'err');
+          var fbBtn=document.getElementById('fallbackMagicBtn');
+          if(fbBtn){
+            fbBtn.onclick=function(){
+              sendBtn.click();
+            };
+          }
+          return;
+        }
         // onAuthStateChange handles routing
       });
     }
     pwBtn.onclick=doPasswordSignIn;
-    document.getElementById('siPass').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); doPasswordSignIn(); } });
 
-    // Forgot / set password — one-time reset email.
+    // Keyboard ENTER listeners
+    emailInput.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){
+        e.preventDefault();
+        showAccountStep();
+      }
+    });
+    siPass.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){ e.preventDefault(); doPasswordSignIn(); }
+    });
+
+    // Forgot / set password
     document.getElementById('forgotBtn').onclick=function(){
       var email=document.getElementById('siEmail').value.trim();
-      if(!/.+@.+\..+/.test(email)){ showMsg('Enter your email above first, then tap “Forgot password?”.','err'); return; }
+      if(!/.+@.+\..+/.test(email)){ showMsg('Enter your email address above first, then tap “Forgot password?”.','err'); return; }
       sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/app.html' }).then(function(r){
         if(r.error){ showMsg(esc(r.error.message||'Could not send the reset email.'),'err'); return; }
         showMsg('Password reset link sent to <b>'+esc(email)+'</b>. Open it to set a new password.','ok');
       });
     };
 
-    // Email sign-in link (customers / no password).
-    var sendBtn=document.getElementById('sendCodeBtn');
+    // Email magic link sign-in
     sendBtn.onclick=function(){
-      var email=document.getElementById('siEmail').value.trim();
+      var email=emailInput.value.trim();
       if(!/.+@.+\..+/.test(email)){ showMsg('Please enter a valid email address.','err'); return; }
       sendBtn.disabled=true; sendBtn.innerHTML='<span class="spin"></span> Sending…';
       sb.auth.signInWithOtp({ email:email, options:{ shouldCreateUser:true, emailRedirectTo: redirectTo } }).then(function(r){
         sendBtn.disabled=false; sendBtn.innerHTML='Email me a sign-in link';
         if(r.error){ showMsg(esc(r.error.message||'Could not send the email. Please try again in a minute.'),'err'); return; }
-        document.getElementById('emailStep').style.display='none';
+        document.getElementById('sentTargetEmail').textContent = email;
+        emailStep.style.display='none';
+        accountStep.style.display='none';
         document.getElementById('sentStep').style.display='block';
-        showMsg('Sign-in link sent to <b>'+esc(email)+'</b>. It can take a minute to arrive — check your spam folder too.','ok');
+        googleGroup.style.display='none';
+        msg.className='signin-msg';
       });
     };
 
     document.getElementById('backToEmail').onclick=function(){
       document.getElementById('sentStep').style.display='none';
-      document.getElementById('emailStep').style.display='block';
+      emailStep.style.display='block';
+      accountStep.style.display='none';
+      googleGroup.style.display='block';
+      document.getElementById('signinSubtitle').textContent='Enter your email to continue.';
       msg.className='signin-msg';
+      emailInput.focus();
     };
   }
 
@@ -1033,6 +1258,11 @@
       var items=g[1].map(function(it){
         return '<button class="side-item'+(active===it[0]?' active':'')+'" data-section="'+it[0]+'">'+sideIcon(it[0])+'<span>'+esc(it[1])+'</span></button>';
       }).join('');
+      if(g[0]==='Dashboard'){
+        return '<div class="side-group side-group-pinned open">'+
+          '<div class="side-group-head side-group-static"><span>'+esc(g[0])+'</span></div>'+
+          '<div class="side-group-items">'+items+'</div></div>';
+      }
       return '<div class="side-group'+(hasActive?' open':'')+'">'+
         '<button class="side-group-head" data-group-toggle><span>'+esc(g[0])+'</span>'+
           '<svg class="caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>'+
@@ -5289,6 +5519,7 @@
   // ============================================================
   function render(){
     if(!state.user){ renderSignIn(); return; }
+    document.body.classList.remove('signin-page');
     var v=state.view;
     // staff never land on the customer apply/track screens
     if(isStaff() && (v==='apply'||v==='track')) v=defaultStaffView();
@@ -5369,6 +5600,7 @@
   loadCurrency().then(function(){ if(state.user) render(); });
   sb.auth.getSession().then(function(r){
     state.user = r.data.session ? r.data.session.user : null;
+    if(state.user && finishGooglePopup(state.user)) return;
     state.view = resolveStartView();
     if(state.user) loadProfileThenRender(); else { renderHeader(); render(); }
   });
@@ -5376,6 +5608,7 @@
   sb.auth.onAuthStateChange(function(event, session){
     var was = state.user;
     state.user = session ? session.user : null;
+    if(state.user && finishGooglePopup(state.user)) return;
     if(event==='PASSWORD_RECOVERY' && state.user){
       // arrived via the password-reset email link — go straight to "set a new password"
       state._recovery=true;

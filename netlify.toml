@@ -21,6 +21,10 @@
   path = "/events"
   function = "events"
 
+[[edge_functions]]
+  path = "/events.html"
+  function = "events"
+
 # Server-rendered individual event pages (event details + that country's visas)
 [[edge_functions]]
   path = "/event/*"
@@ -29,6 +33,10 @@
 # Server-rendered articles list and individual article pages
 [[edge_functions]]
   path = "/articles"
+  function = "articles"
+
+[[edge_functions]]
+  path = "/articles.html"
   function = "articles"
 
 [[edge_functions]]

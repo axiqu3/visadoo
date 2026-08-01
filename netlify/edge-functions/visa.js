@@ -47,8 +47,11 @@ function priceText(row) { const p = priceNum(row); return p == null ? "Price on 
 const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const PLANE = '<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>';
 
-function pageHtml(v, others, defaultImg, active, brandColor) {
-  const name = v.name || "UAE Tourist Visa";
+function pageHtml(v, others, country, defaultImg, active, brandColor) {
+  const countryName = (country && country.name) || "your destination";
+  const countryCode = (country && country.iso2) || "";
+  const visaCategory = v.category ? (countryName + " " + v.category + " Visa") : (countryName + " Visa");
+  const name = v.name || visaCategory;
   const title = (v.seo_title && v.seo_title.trim()) || (name + " — Apply Online | Visa Doo");
   const desc = (v.seo_description && v.seo_description.trim()) ||
     (v.blurb || ("Apply online for your " + name + " with Visa Doo. Fast, secure and 100% online.")).slice(0, 160);
@@ -56,20 +59,34 @@ function pageHtml(v, others, defaultImg, active, brandColor) {
   const ogImage = v.social_image || defaultImg || "";
   const feats = (v.features || []);
   const wa = "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent("Hi Visa Doo, I'd like to apply for the " + name + ".");
+  const numericPrice = priceNum(v);
+  const requirementItems = feats.length ? feats : [
+    "Valid passport copy",
+    "Recent passport-size photograph",
+    "Travel and contact details"
+  ];
+  const audienceText = "For travellers planning a " + (v.category ? String(v.category).toLowerCase() + " visit" : "visit") +
+    " to " + countryName + ". Apply online, upload your details securely and follow every update from one account.";
+  const optionRows = [v].concat(others);
+  const visaOptions = optionRows.map(function(o){
+    return '<option value="/visa/'+encodeURIComponent(o.slug)+'"'+(o.slug===v.slug?' selected':'')+'>'+esc(o.name)+' - '+esc(priceText(o,active))+'</option>';
+  }).join('');
 
   const jsonld = {
     "@context": "https://schema.org",
     "@type": "Service",
     "name": name,
-    "serviceType": "UAE Tourist Visa",
+    "serviceType": visaCategory,
     "description": desc,
-    "areaServed": "AE",
-    "provider": { "@type": "Organization", "name": "Visa Doo", "url": SITE },
-    "offers": { "@type": "Offer", "price": String(priceNum(v, active)), "priceCurrency": active.code, "url": canonical }
+    "areaServed": countryCode,
+    "provider": { "@type": "Organization", "name": "Visa Doo", "url": SITE }
   };
+  if(numericPrice!=null){
+    jsonld.offers={ "@type":"Offer", "price":String(numericPrice), "priceCurrency":active.code, "url":canonical };
+  }
 
   const related = others.map(function (o) {
-    return '<a class="vcard" href="/visa/' + esc(o.slug) + '" style="text-decoration:none">' +
+    return '<a class="vcard" href="/visa/' + encodeURIComponent(o.slug) + '" style="text-decoration:none">' +
       (o.popular ? '<span class="tag">Most popular</span>' : '') +
       '<h3>' + esc(o.name) + '</h3>' +
       '<div class="vsub">' + esc(o.sub || '') + '</div>' +
@@ -97,51 +114,90 @@ function pageHtml(v, others, defaultImg, active, brandColor) {
     iconTags() +
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">' +
-    '<link rel="stylesheet" href="/styles.css">' +
+    '<link rel="stylesheet" href="/styles.css?v=20260731-visa-detail">' +
     brandVars(brandColor) +
     '<script src="/branding.js"></scr' + 'ipt>' +
     '<script type="application/ld+json">' + JSON.stringify(jsonld) + '</scr' + 'ipt>' +
-    '</head><body>' +
+    '</head><body class="visa-page">' +
 
     '<header class="header"><div class="container nav">' +
       '<a href="/" class="brand">' + brandMark() + '</a>' +
       '<div class="nav-actions">' +
         '<a href="/app.html#track" class="btn btn-ghost">Track application</a>' +
-        '<a href="/app.html?visa=' + esc(v.slug) + '" class="btn btn-primary">Apply now</a>' +
+        '<a href="/app.html?visa=' + encodeURIComponent(v.slug) + '" class="btn btn-primary">Apply now</a>' +
       '</div>' +
     '</div></header>' +
 
-    '<section class="hero sky"><div class="container hero-grid">' +
-      '<div class="hero-copy">' +
-        '<span class="eyebrow">UAE Tourist Visa</span>' +
-        '<h1>' + esc(name) + '</h1>' +
-        '<p class="sub">' + esc(v.blurb || '') + '</p>' +
-        '<div class="hero-cta">' +
-          '<a href="/app.html?visa=' + esc(v.slug) + '" class="btn btn-primary btn-lg">Apply now — ' + esc(priceText(v, active)) + '</a>' +
-          '<a href="' + esc(wa) + '" target="_blank" rel="noopener" class="btn btn-ghost btn-lg">Ask a question</a>' +
+    '<main class="visa-detail-page">' +
+      '<section class="visa-detail-intro"><div class="container">' +
+        '<a href="/country/' + encodeURIComponent(v.country_slug) + '" class="visa-detail-back">&larr; All ' + esc(countryName) + ' visas</a>' +
+        '<div class="visa-detail-intro-grid">' +
+          '<div>' +
+            '<span class="visa-detail-kicker">' + esc(visaCategory) + '</span>' +
+            '<h1>' + esc(name) + '</h1>' +
+            '<p>' + esc(v.blurb || desc) + '</p>' +
+          '</div>' +
+          '<div class="visa-detail-quickfacts">' +
+            (etaStr(v) ? '<span><small>Processing</small><b>' + esc(etaStr(v)) + '</b></span>' : '') +
+            (v.days ? '<span><small>Stay</small><b>Up to ' + esc(v.days) + ' days</b></span>' : '') +
+            (v.sub ? '<span><small>Entry</small><b>' + esc(v.sub) + '</b></span>' : '') +
+          '</div>' +
         '</div>' +
-      '</div>' +
-      '<div class="hero-art"><div class="hero-blob"></div>' +
-        '<div class="passport-card">' +
-          '<div class="passport-head"><span class="flag">' + PLANE + '</span><div><h4>' + esc(name) + '</h4><span>United Arab Emirates</span></div></div>' +
-          '<div class="passport-row"><span>Price</span><b>' + esc(priceText(v, active)) + '</b></div>' +
-          (v.days ? '<div class="passport-row"><span>Length of stay</span><b>Up to ' + esc(v.days) + ' days</b></div>' : '') +
-          (v.sub ? '<div class="passport-row"><span>Entry</span><b>' + esc(v.sub) + '</b></div>' : '') +
-          (etaStr(v) ? '<div class="passport-row"><span>Est. processing</span><b>' + esc(etaStr(v)) + '</b></div>' : '') +
-        '</div>' +
-        (etaStr(v) ? '<p style="font-size:12px;color:#94a3b8;margin:10px 2px 0;text-align:center">Estimated processing time — not a guaranteed approval time.</p>' : '') +
-      '</div>' +
-    '</div></section>' +
+      '</div></section>' +
 
-    (feats.length ? ('<section class="section"><div class="container center">' +
-      '<span class="eyebrow">What\'s included</span><h2>Your ' + esc(name) + '</h2>' +
-      '<div class="req-wrap" style="grid-template-columns:1fr;max-width:640px;margin:34px auto 0">' +
-        '<div class="req-list">' + feats.map(function (f) {
-          return '<div class="req-item"><div class="ic" style="color:var(--green)">' + CHECK + '</div><div><h4>' + esc(f) + '</h4></div></div>';
-        }).join('') + '</div>' +
-      '</div>' +
-      '<a href="/app.html?visa=' + esc(v.slug) + '" class="btn btn-primary btn-lg" style="margin-top:32px">Start my application</a>' +
-    '</div></section>') : '') +
+      '<section class="visa-detail-content-section"><div class="container visa-detail-layout">' +
+        '<div class="visa-detail-main">' +
+          '<div class="visa-audience-card">' +
+            '<span class="visa-audience-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>' +
+            '<div><small>Who this visa is for</small><p>' + esc(audienceText) + '</p></div>' +
+          '</div>' +
+
+          '<div class="visa-timeline-heading">' +
+            '<span>Simple online process</span><h2>Your visa application timeline</h2>' +
+          '</div>' +
+          '<div class="visa-timeline">' +
+            '<article class="visa-timeline-step">' +
+              '<span class="visa-timeline-dot"></span><div><div class="visa-step-meta"><b>Step 1</b><span>Documents</span></div>' +
+              '<h3>Prepare your documents</h3><p>' + esc(requirementItems.slice(0,3).join(' | ')) + '</p>' +
+              '<div class="visa-requirement-chips">' + requirementItems.map(function(item){return '<span>'+CHECK+esc(item)+'</span>';}).join('') + '</div></div>' +
+            '</article>' +
+            '<article class="visa-timeline-step">' +
+              '<span class="visa-timeline-dot"></span><div><div class="visa-step-meta"><b>Step 2</b><span>Online</span></div>' +
+              '<h3>Submit your application</h3><p>Complete the secure online form and upload clear copies of your documents. You can return to your account whenever you need.</p></div>' +
+            '</article>' +
+            '<article class="visa-timeline-step">' +
+              '<span class="visa-timeline-dot"></span><div><div class="visa-step-meta"><b>Step 3</b><span>' + esc(etaStr(v) || 'Processing') + '</span></div>' +
+              '<h3>Verification and processing</h3><p>Our team checks your submission and keeps you informed while your visa is processed.</p></div>' +
+            '</article>' +
+            '<article class="visa-timeline-step">' +
+              '<span class="visa-timeline-dot"></span><div><div class="visa-step-meta"><b>Step 4</b><span>Ready to travel</span></div>' +
+              '<h3>Receive your visa</h3><p>Your issued visa and important travel guidance will be shared with you securely.</p></div>' +
+            '</article>' +
+          '</div>' +
+        '</div>' +
+
+        '<aside class="visa-apply-panel">' +
+          '<div class="visa-apply-price">' +
+            '<small>From</small><div><strong>' + esc(priceText(v,active)) + '</strong><span>/visa</span></div>' +
+            '<p>Clear pricing for your online application</p>' +
+          '</div>' +
+          '<div class="visa-apply-body">' +
+            '<label for="visaOptionSelect">Select visa type</label>' +
+            '<select id="visaOptionSelect" onchange="if(this.value)window.location.href=this.value">' + visaOptions + '</select>' +
+            '<span class="visa-apply-label">Your visa details</span>' +
+            '<div class="visa-apply-facts">' +
+              (etaStr(v) ? '<div class="active"><span class="visa-fact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><small>Estimated processing</small><b>' + esc(etaStr(v)) + '</b></span><em>Selected</em></div>' : '') +
+              (v.days ? '<div><span class="visa-fact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span><span><small>Permitted stay</small><b>Up to ' + esc(v.days) + ' days</b></span></div>' : '') +
+              (v.sub ? '<div><span class="visa-fact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3v18M19 3v18M5 7h14M5 17h14"/></svg></span><span><small>Entry type</small><b>' + esc(v.sub) + '</b></span></div>' : '') +
+            '</div>' +
+            (etaStr(v) ? '<p class="visa-estimate-note">Processing times are estimates and do not guarantee approval by a specific date.</p>' : '') +
+            '<a href="/app.html?visa=' + encodeURIComponent(v.slug) + '" class="btn btn-primary btn-block visa-apply-cta">Start application</a>' +
+            '<a href="' + esc(wa) + '" target="_blank" rel="noopener" class="visa-help-link">Have a question? Chat with our team &rarr;</a>' +
+            '<div class="visa-safe-note">' + CHECK + '<span><b>Secure application</b><small>Your details stay private and protected.</small></span></div>' +
+          '</div>' +
+        '</aside>' +
+      '</div></section>' +
+    '</main>' +
 
     (related ? ('<section class="section sky"><div class="container center">' +
       '<span class="eyebrow">Other visas</span><h2>Compare other options</h2>' +
@@ -178,6 +234,8 @@ export default async (request) => {
   const v = rows.find(function (x) { return x.slug === slug; });
   if (!v) return notFound();
   const others = rows.filter(function (x) { return x.slug !== slug && x.country_slug === v.country_slug; });
+  const countries = await fetchJson(SUPABASE_URL + "/rest/v1/countries?slug=eq." + encodeURIComponent(v.country_slug) + "&active=eq.true&select=name,iso2,slug");
+  const country = (countries && countries[0]) || { name: v.country_slug, iso2: "", slug: v.country_slug };
 
   const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name");
   const defaultImg = (settings && settings[0] && settings[0].default_social_image) || "";
@@ -186,7 +244,7 @@ export default async (request) => {
   const ss0 = (settings && settings[0]) || {};
   LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
 
-  return new Response(pageHtml(v, others, defaultImg, active, brandColor), {
+  return new Response(pageHtml(v, others, country, defaultImg, active, brandColor), {
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" }
   });
 };

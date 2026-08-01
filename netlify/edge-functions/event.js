@@ -29,7 +29,7 @@ function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--
 var LOGO="", FAVICON="", APPICON="", BNAME="Visa Doo";
 function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME||"logo")+'" style="height:34px;width:auto;max-width:180px;display:block">') : ('<span class="logo">'+PLANE+'</span>Visa<b>Doo</b>'); }
 function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
-function navActions(){ return '<div class="nav-actions"><a href="/events" class="btn btn-ghost">Events</a><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'; }
+function navActions(){ return '<div class="nav-actions"><a href="/events" class="btn btn-ghost">Events</a><a href="/#contact" class="btn btn-ghost">Contact us</a><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'; }
 
 function pageHtml(ev, c, visas, brandColor){
   var cname=(c&&c.name)||"";
@@ -39,9 +39,8 @@ function pageHtml(ev, c, visas, brandColor){
   var ogImage=ev.social_image||ev.image_url||'';
   var when=dateRange(ev.event_date, ev.end_date);
   var lead=leadDays(ev, visas);
-  var leadBadge = lead ? ('<div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:999px;padding:7px 15px;font-size:13px;font-weight:800;letter-spacing:.5px;margin-top:16px">⚡ GET YOUR VISA AT LEAST '+lead+' DAY'+(lead===1?'':'S')+' BEFORE THE EVENT</div>') : '';
-  var metaLine=[when, ev.city].filter(Boolean).map(esc).join('  ·  ');
-  var heroBg = ev.image_url ? ('background-image:linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,.74)),url('+esc(ev.image_url)+')') : 'background:linear-gradient(160deg,var(--blue-600),var(--blue-900))';
+  var heroImage=ev.image_url||(c&&c.image_url)||(c&&c.social_image)||'';
+  var about=ev.blurb||('Plan your trip to '+ev.name+' with the right '+cname+' visa, clear timelines and everything ready before you travel.');
 
   var cards = (visas&&visas.length) ? visas.map(visaCard).join('') : '<div class="empty-state" style="grid-column:1/-1"><p>Visa options for '+esc(cname)+' are coming soon. <a href="/#contact" style="color:var(--blue-600);font-weight:700">Contact us</a> and we\'ll help.</p></div>';
 
@@ -54,25 +53,43 @@ function pageHtml(ev, c, visas, brandColor){
     '<meta name="twitter:card" content="summary_large_image">'+
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
-    '<link rel="stylesheet" href="/styles.css">'+
+    '<link rel="stylesheet" href="/styles.css?v=20260801-back-text">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
-    '</head><body>'+
+    '</head><body class="event-page">'+
     '<header class="header"><div class="container nav">'+
       '<a href="/" class="brand">'+brandMark()+'</a>'+navActions()+
     '</div></header>'+
-    '<section style="'+heroBg+';background-size:cover;background-position:center"'+(ev.image_url?' role="img" aria-label="'+esc(ev.image_alt||ev.name||'')+'"':'')+'><div class="container" style="max-width:820px;text-align:center;padding:70px 0 60px;color:#fff">'+
-      '<a href="/events" style="display:inline-block;color:#fff;opacity:.9;font-weight:600;font-size:14px;margin-bottom:14px">← All events</a>'+
-      (c&&c.iso2?'<div style="margin-bottom:14px"><img src="'+flag(c.iso2)+'" alt="'+esc(cname)+' flag" style="width:64px;height:43px;object-fit:cover;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.4)"></div>':'')+
-      '<h1 style="font-size:clamp(30px,5vw,50px);font-weight:800;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.4)">'+esc(ev.name)+'</h1>'+
-      (metaLine?'<p style="font-size:18px;margin:14px 0 0;opacity:.95">'+metaLine+'</p>':'')+
-      leadBadge+
-      '<div style="margin-top:26px"><a href="#visas" class="btn btn-primary btn-lg">Get your '+esc(cname)+' visa</a></div>'+
+    '<section class="event-detail-hero"><div class="container event-detail-grid">'+
+      '<div class="event-detail-copy">'+
+        '<a href="/events#events-list" class="event-back"><span aria-hidden="true">&#8592;</span> All events</a>'+
+        '<div class="event-detail-badges">'+
+          (c&&c.iso2?'<img src="'+flag(c.iso2)+'" alt="'+esc(cname)+' flag">':'')+
+          (ev.category?'<span class="event-category">'+esc(ev.category)+'</span>':'')+
+        '</div>'+
+        '<h1>'+esc(ev.name)+'</h1>'+
+        '<div class="event-meta-line">'+
+          (when?'<span><small>Date</small><b>'+esc(when)+'</b></span>':'')+
+          (ev.city?'<span><small>Location</small><b>'+esc(ev.city)+', '+esc(cname)+'</b></span>':'')+
+        '</div>'+
+        (lead?'<div class="event-lead"><span>⚡</span><div><small>Plan ahead</small><b>Apply at least '+lead+' day'+(lead===1?'':'s')+' before the event</b></div></div>':'')+
+        '<div class="event-actions"><a href="#visas" class="btn btn-primary btn-lg">Get your '+esc(cname)+' visa</a><a href="/country/'+encodeURIComponent(ev.country_slug)+'" class="btn btn-light btn-lg">View destination</a><a href="/#contact" class="btn btn-contact btn-lg">Contact us</a></div>'+
+      '</div>'+
+      '<figure class="event-detail-visual">'+
+        (heroImage?'<img src="'+esc(heroImage)+'" alt="'+esc(ev.image_alt||ev.name)+'" fetchpriority="high">':'<div class="event-detail-placeholder">✦</div>')+
+        '<figcaption><small>Mark your calendar</small><strong>'+esc(when||ev.name)+'</strong><span>'+esc(ev.city||cname)+'</span></figcaption>'+
+      '</figure>'+
     '</div></section>'+
-    (ev.blurb?'<section class="section" style="padding:34px 0 0"><div class="container" style="max-width:720px;text-align:center"><p style="font-size:17px;color:var(--muted);line-height:1.7">'+esc(ev.blurb)+'</p></div></section>':'')+
-    '<section class="section" id="visas" style="padding-top:36px"><div class="container">'+
-      '<h2 style="text-align:center;font-size:clamp(24px,3.4vw,34px);font-weight:800;margin-bottom:8px">Get your '+esc(cname)+' visa for '+esc(ev.name)+'</h2>'+
-      '<p style="text-align:center;color:var(--muted);max-width:560px;margin:0 auto 28px">Apply online with Visa Doo — upload your documents and track every step until your visa is issued.</p>'+
+    '<section class="section event-about"><div class="container event-about-grid">'+
+      '<div><span class="eyebrow">About the event</span><h2>'+esc(ev.name)+'</h2><p>'+esc(about)+'</p></div>'+
+      '<div class="event-plan-card">'+
+        '<span class="event-plan-number">01</span><div><b>Choose the right visa</b><small>Compare the available '+esc(cname)+' visa options for your trip.</small></div>'+
+        '<span class="event-plan-number">02</span><div><b>Prepare ahead</b><small>'+(lead?'Start at least '+lead+' day'+(lead===1?'':'s')+' early to stay comfortable.':'Apply early to leave time for processing.')+'</small></div>'+
+        '<span class="event-plan-number">03</span><div><b>Travel with confidence</b><small>Upload securely and track every step online.</small></div>'+
+      '</div>'+
+    '</div></section>'+
+    '<section class="section sky country-options" id="visas"><div class="container">'+
+      '<div class="center"><span class="eyebrow">Travel ready</span><h2>'+esc(cname)+' visas for '+esc(ev.name)+'</h2><p class="lead">Choose a visa, apply online and track every step before your event.</p></div>'+
       '<div class="cards">'+cards+'</div>'+
     '</div></section>'+
     '<footer class="footer"><div class="container footer-bottom">© '+new Date().getFullYear()+' Visa Doo. All rights reserved. · <a href="/">Home</a> · <a href="/events">Events</a> · <a href="/articles">Articles</a></div></footer>'+

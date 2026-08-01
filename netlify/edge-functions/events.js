@@ -18,13 +18,23 @@ var MONTHS=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","S
 function monthKey(d){ return d.slice(0,7); }                 // "2026-07"
 function monthLabel(key){ var p=key.split("-"); return MONTHS[parseInt(p[1],10)-1]+" "+p[0]; }
 
+function fmtDate(d){ if(!d) return ""; var p=d.split("-"); return parseInt(p[2],10)+" "+MONTHS[parseInt(p[1],10)-1].slice(0,3)+" "+p[0]; }
+
 function card(e){
   var img=e.image_url||"";
   var bg = img
-    ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.78)),url('+esc(img)+')'
+    ? 'background-image:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.82)),url('+esc(img)+')'
     : 'background:linear-gradient(160deg,var(--blue-600),var(--blue-900))';
-  return '<a class="ev-card" href="/event/'+encodeURIComponent(e.slug)+'" data-cat="'+esc(e.category||'')+'" style="'+bg+'">'+
-    '<div class="ev-name">'+esc(e.name||'')+'</div>'+
+  var catBadge = e.category ? '<span class="ev-category">'+esc(e.category)+'</span>' : '';
+  var meta = [e.city, e.event_date ? fmtDate(e.event_date) : ''].filter(Boolean).map(esc).join(' · ');
+  var searchable=[e.name,e.category,e.city,e.country_name||e.country,e.event_date?fmtDate(e.event_date):''].filter(Boolean).join(' ').toLowerCase();
+  return '<a class="ev-card" href="/event/'+encodeURIComponent(e.slug)+'" data-cat="'+esc(e.category||'')+'" data-search="'+esc(searchable)+'" style="'+bg+'">'+
+    '<div class="ev-card-content">'+
+      catBadge+
+      '<div class="ev-name">'+esc(e.name||'')+'</div>'+
+      (meta?'<div class="ev-meta">'+meta+'</div>':'')+
+      '<span class="ev-card-link">Plan my trip <b>→</b></span>'+
+    '</div>'+
   '</a>';
 }
 
@@ -33,8 +43,19 @@ function pageHtml(events, cats, brandColor){
   var desc="Browse major international events — festivals, sports, culture and business — and get the right visa, on time, with Visa Doo.";
   var canonical=SITE+"/events";
 
-  var tabs='<button data-tab="all" class="ev-tab active">All Events</button>'+
-    cats.map(function(c){ return '<button data-tab="'+esc(c)+'" class="ev-tab">'+esc(c)+'</button>'; }).join('');
+  var tabs='<button type="button" data-tab="all" class="ev-tab active" aria-pressed="true">All Events</button>'+
+    cats.map(function(c){ return '<button type="button" data-tab="'+esc(c)+'" class="ev-tab" aria-pressed="false">'+esc(c)+'</button>'; }).join('');
+
+  var quick=[],seen={};
+  events.forEach(function(e){ var label=(e.name||'').trim(),key=label.toLowerCase(); if(label&&!seen[key]&&quick.length<4){seen[key]=true;quick.push(label);} });
+  cats.forEach(function(c){ var key=c.toLowerCase(); if(!seen[key]&&quick.length<6){seen[key]=true;quick.push(c);} });
+  var quickHtml=quick.length?'<div class="event-quick-suggestions">'+quick.map(function(label){return '<button type="button" data-suggestion="'+esc(label)+'"><i>✦</i>'+esc(label)+'</button>';}).join('')+'</div>':'';
+  var resultOptions=events.map(function(e){
+    var place=[e.city,e.country_name||e.country].filter(Boolean).join(', ');
+    var details=[e.category,place,e.event_date?fmtDate(e.event_date):''].filter(Boolean).join(' · ');
+    var searchable=[e.name,e.category,place,details].filter(Boolean).join(' ').toLowerCase();
+    return '<a class="event-search-result" role="option" href="/event/'+encodeURIComponent(e.slug)+'" data-search="'+esc(searchable)+'"><span class="event-result-mark">'+esc((e.category||'Event').charAt(0))+'</span><span><b>'+esc(e.name||'Event')+'</b><small>'+esc(details)+'</small></span><i>→</i></a>';
+  }).join('');
 
   // group by month
   var groups={}, order=[];
@@ -53,7 +74,7 @@ function pageHtml(events, cats, brandColor){
     '<meta name="twitter:card" content="summary_large_image">'+
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
-    '<link rel="stylesheet" href="/styles.css">'+
+    '<link rel="stylesheet" href="/styles.css?v=20260801-header-compact">'+
     brandVars(brandColor)+
     '<style>'+
       '.ev-wrap{max-width:1100px;margin:0 auto;padding:0 22px 70px}'+
@@ -66,32 +87,52 @@ function pageHtml(events, cats, brandColor){
       '.ev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}'+
       '.ev-card{position:relative;display:flex;align-items:flex-end;min-height:300px;border-radius:18px;background-size:cover;background-position:center;text-decoration:none;overflow:hidden;box-shadow:var(--shadow-sm);transition:transform .18s,box-shadow .18s}'+
       '.ev-card:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(2,12,27,.18)}'+
-      '.ev-name{color:#fff;font-weight:800;font-size:20px;line-height:1.25;padding:20px;text-shadow:0 1px 10px rgba(0,0,0,.5)}'+
+      '.ev-name{color:#fff;font-weight:800;font-size:20px;line-height:1.25;text-shadow:0 1px 10px rgba(0,0,0,.5)}'+
+      '.event-search-area{position:relative;z-index:5;max-width:820px;margin:-29px auto 34px;padding:0 10px}'+
+      '.event-search-dock{position:relative;overflow:visible;border:1px solid #dfe7ed;border-radius:16px;background:#fff;box-shadow:0 14px 38px rgba(12,42,67,.13)}'+
+      '.event-search-row{position:relative;min-height:58px;display:flex;align-items:center;gap:7px;padding:7px 7px 7px 48px}'+
+      '.event-search-icon{position:absolute;left:20px;width:16px;height:16px;border:2px solid #718294;border-radius:50%}.event-search-icon:after{content:"";position:absolute;right:-6px;bottom:-3px;width:7px;height:2px;background:#718294;transform:rotate(45deg)}'+
+      '.event-search-row input{min-width:0;flex:1;padding:11px 8px;border:0;outline:0;background:#fff;color:#18324a;font:inherit;font-size:15px}#eventSearchButton{width:42px;height:42px;flex:0 0 42px;border:1px solid #d8e0e6;border-radius:50%;background:#fff;cursor:pointer}'+
+      '.event-search-results{position:absolute;z-index:10;top:calc(100% + 9px);right:0;left:0;max-height:390px;overflow-y:auto;padding:8px;border:1px solid #dce5eb;border-radius:16px;background:#fff;box-shadow:0 22px 55px rgba(8,42,68,.18)}.event-search-results[hidden]{display:none}'+
+      '.event-search-result{display:grid;grid-template-columns:38px minmax(0,1fr) 24px;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;color:#17344d}.event-search-result:hover{background:#f0f7fb}.event-search-result[hidden]{display:none}'+
+      '.event-result-mark{width:38px;height:38px;display:grid;place-items:center;border-radius:11px;background:#e8f4fb;color:#176fc1;font-size:12px;font-weight:850}.event-search-result>span:nth-child(2){min-width:0;display:flex;flex-direction:column}.event-search-result b,.event-search-result small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.event-search-result b{font-size:12px}.event-search-result small{margin-top:3px;color:#7b8c99;font-size:9.5px}.event-search-result i{color:#2c7fbb;font-style:normal}'+
+      '.event-quick-suggestions{display:flex;align-items:center;justify-content:flex-start;gap:7px;margin:0 7px;padding:11px 2px 12px;overflow-x:auto;border-top:1px solid #e8edf1}.event-quick-suggestions button{max-width:205px;flex:none;display:inline-flex;align-items:center;gap:7px;overflow:hidden;padding:6px 10px 6px 7px;border:1px solid #dde7ed;border-radius:999px;background:#fff;color:#506a7f;font:700 9.5px inherit;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}.event-quick-suggestions button i{width:18px;height:18px;flex:none;display:grid;place-items:center;border-radius:5px;background:#e8f4fb;color:#176fc1;font-size:9px;font-style:normal}'+
       '@media(max-width:880px){.ev-grid{grid-template-columns:repeat(2,1fr)}}'+
-      '@media(max-width:560px){.ev-grid{grid-template-columns:1fr}.ev-card{min-height:240px}}'+
+      '@media(max-width:560px){.events-page .ev-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.events-page .ev-tabs{grid-column:1/-1}.events-page .ev-month,.events-page .ev-grid{display:contents}.events-page .ev-month-label{display:none}.events-page .empty-state{grid-column:1/-1}.events-page .ev-card{min-width:0;min-height:230px;border-radius:14px}.events-page .ev-name{font-size:15px}.events-page .ev-card-content{padding:12px}.events-page .ev-meta{font-size:10px}.events-page .ev-date{top:9px;right:9px;padding:5px 7px;font-size:8px}.event-search-area{margin-top:-27px;padding:0 18px}.event-search-row{min-height:54px;padding:6px 6px 6px 44px}.event-quick-suggestions{padding:10px 0 11px}}'+
     '</style>'+
     '<script src="/branding.js"></scr'+'ipt>'+
-    '</head><body>'+
+    '</head><body class="events-page">'+
     '<header class="header"><div class="container nav">'+
       '<a href="/" class="brand">'+brandMark()+'</a>'+
-      '<div class="nav-actions"><a href="/events" class="btn btn-ghost">Events</a><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'+
+      '<div class="nav-actions"><a href="/events" class="btn btn-ghost">Events</a><a href="/#contact" class="btn btn-ghost">Contact us</a><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'+
     '</div></header>'+
-    '<section class="hero sky"><div class="container" style="text-align:center;padding:54px 0 26px;max-width:760px">'+
-      '<h1 style="font-size:clamp(30px,4.6vw,46px);font-weight:800">International Events</h1>'+
-      '<p class="sub" style="font-size:18px;color:var(--muted);margin:16px auto 0;max-width:560px">Festivals, sports, culture and business events around the world — and the visa to get you there, on time.</p>'+
+    '<section class="events-hero"><div class="container events-hero-grid">'+
+      '<div class="events-hero-copy"><span class="eyebrow">Plan around what excites you</span>'+
+        '<h1>Go where the world is <span>happening.</span></h1>'+
+        '<p>From music festivals and global sports to culture and business, discover the events worth travelling for—and get your visa ready on time.</p>'+
+        '<a href="#events-list" class="btn btn-primary btn-lg">Explore upcoming events</a>'+
+      '</div>'+
+      '<div class="events-hero-visual" aria-label="International event categories">'+
+        '<div class="event-orbit event-orbit-one" aria-hidden="true"></div><div class="event-orbit event-orbit-two" aria-hidden="true"></div>'+
+        '<div class="events-calendar"><div class="events-calendar-top"><span>Worldwide calendar</span><b>2026</b></div>'+
+          '<div class="events-calendar-feature"><small>Your next experience</small><strong>Something unforgettable</strong><span>is happening somewhere</span></div>'+
+          '<div class="events-calendar-types"><span>♫<b>Music</b></span><span>●<b>Sports</b></span><span>✦<b>Culture</b></span><span>↗<b>Business</b></span></div>'+
+        '</div><div class="events-pass"><small>Travel ready</small><b>Visa planned ✓</b></div>'+
+      '</div>'+
     '</div></section>'+
-    '<section class="section" style="padding-top:34px"><div class="ev-wrap">'+
+    '<section class="events-list-section" id="events-list"><div class="event-search-area"><div class="event-search-dock"><div class="event-search-row"><span class="event-search-icon" aria-hidden="true"></span><input id="eventSearch" type="text" placeholder="Search events, cities or categories" autocomplete="off" aria-label="Search events, cities or categories" aria-controls="eventSearchResults" aria-expanded="false"><button type="button" id="eventSearchButton" aria-label="Search events">⌕</button></div>'+quickHtml+'<div class="event-search-results" id="eventSearchResults" role="listbox" hidden>'+resultOptions+'</div></div></div><div class="ev-wrap">'+
       '<div class="ev-tabs">'+tabs+'</div>'+body+
     '</div></section>'+
     '<footer class="footer"><div class="container footer-bottom">© '+new Date().getFullYear()+' Visa Doo. All rights reserved. · <a href="/">Home</a> · <a href="/articles">Articles</a></div></footer>'+
-    '<script>(function(){var tabs=[].slice.call(document.querySelectorAll(".ev-tab"));function apply(cat){[].forEach.call(document.querySelectorAll(".ev-card"),function(c){c.style.display=(cat==="all"||c.getAttribute("data-cat")===cat)?"":"none";});[].forEach.call(document.querySelectorAll(".ev-month"),function(m){var vis=0;[].forEach.call(m.querySelectorAll(".ev-card"),function(c){if(c.style.display!=="none")vis++;});m.style.display=vis?"":"none";});tabs.forEach(function(t){t.classList.toggle("active",t.getAttribute("data-tab")===cat);});}tabs.forEach(function(t){t.addEventListener("click",function(){apply(t.getAttribute("data-tab"));});});})();</scr'+'ipt>'+
+    '<script>(function(){var tabs=[].slice.call(document.querySelectorAll(".ev-tab")),input=document.getElementById("eventSearch"),panel=document.getElementById("eventSearchResults"),button=document.getElementById("eventSearchButton"),cat="all";function apply(){var q=(input.value||"").trim().toLowerCase();[].forEach.call(document.querySelectorAll(".ev-card"),function(c){var ok=(cat==="all"||c.getAttribute("data-cat")===cat)&&(!q||(c.getAttribute("data-search")||"").indexOf(q)>-1);c.style.display=ok?"":"none";});[].forEach.call(document.querySelectorAll(".ev-month"),function(m){var vis=0;[].forEach.call(m.querySelectorAll(".ev-card"),function(c){if(c.style.display!=="none")vis++;});m.style.display=vis?"":"none";});tabs.forEach(function(t){var active=t.getAttribute("data-tab")===cat;t.classList.toggle("active",active);t.setAttribute("aria-pressed",active?"true":"false");});}function suggest(){var q=(input.value||"").trim().toLowerCase(),shown=0;if(!q){panel.hidden=true;input.setAttribute("aria-expanded","false");return;}[].forEach.call(panel.querySelectorAll(".event-search-result"),function(r){var show=shown<6&&(r.getAttribute("data-search")||"").indexOf(q)>-1;r.hidden=!show;if(show)shown++;});panel.hidden=false;input.setAttribute("aria-expanded","true");}tabs.forEach(function(t){t.addEventListener("click",function(){cat=t.getAttribute("data-tab")||"all";apply();});});input.addEventListener("input",function(){apply();suggest();});input.addEventListener("keydown",function(e){if(e.key==="Escape"){panel.hidden=true;input.setAttribute("aria-expanded","false");}});button.addEventListener("click",function(){apply();suggest();input.focus();});[].forEach.call(document.querySelectorAll("[data-suggestion]"),function(b){b.addEventListener("click",function(){input.value=b.getAttribute("data-suggestion")||"";cat="all";panel.hidden=true;apply();input.focus();});});document.addEventListener("click",function(e){if(!e.target.closest(".event-search-dock")){panel.hidden=true;input.setAttribute("aria-expanded","false");}});})();</scr'+'ipt>'+
     '</body></html>';
 }
 
 export default async (request) => {
-  const events=await fetchJson(SUPABASE_URL+"/rest/v1/events?active=eq.true&order=event_date.asc&select=*")||[];
+  const eventsRes=await fetchJson(SUPABASE_URL+"/rest/v1/events?active=eq.true&order=event_date.asc&select=*");
+  const events=Array.isArray(eventsRes)?eventsRes:[];
   const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=brand_color,logo_url,favicon_url,app_icon_url,brand_name");
-  const ss0=(settings&&settings[0])||{};
+  const ss0=(Array.isArray(settings)&&settings[0])||{};
   const brandColor=ss0.brand_color||"";
   LOGO=ss0.logo_url||""; FAVICON=ss0.favicon_url||""; APPICON=ss0.app_icon_url||""; BNAME=ss0.brand_name||"Visa Doo";
 
@@ -105,4 +146,4 @@ export default async (request) => {
   });
 };
 
-export const config = { path: "/events" };
+export const config = { path: ["/events", "/events.html"] };
