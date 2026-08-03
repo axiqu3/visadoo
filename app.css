@@ -13,7 +13,7 @@
 .link-btn:hover{color:var(--blue-600)}
 
 /* ---- Sign in ---- */
-.signin-page{--signin-coral:#ef6f61;--signin-coral-dark:#dc5e52;background:#fff}
+.signin-page{--signin-coral:#000;--signin-coral-dark:#1a1a1a;background:#fff}
 .signin-page .header{background:rgba(255,255,255,.94);border-color:var(--line)}
 .signin-home-link{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;font-weight:700;transition:color .15s ease}
 .signin-home-link span{font-size:18px;line-height:1;transition:transform .15s ease}
@@ -70,11 +70,11 @@
 #accountStep .or-divider{margin:16px 0 13px;font-size:11px}
 #googleGroup{text-align:center}
 #googleGroup .or-divider{margin:21px 0 15px}
-.signin-page .signin-shell .btn-primary{background:var(--signin-coral);box-shadow:0 7px 18px -9px rgba(239,111,97,.65)}
-.signin-page .signin-shell .btn-primary:hover{background:var(--signin-coral-dark);box-shadow:0 10px 22px -10px rgba(239,111,97,.7)}
+.signin-page .signin-shell .btn-primary{background:var(--signin-coral);box-shadow:0 7px 18px -9px rgba(0,0,0,.35)}
+.signin-page .signin-shell .btn-primary:hover{background:var(--signin-coral-dark);box-shadow:0 10px 22px -10px rgba(0,0,0,.4)}
 .signin-page .signin-shell .btn-ghost{border-color:#f1c9c5;color:var(--signin-coral-dark)}
 .signin-page .signin-shell .btn-ghost:hover{border-color:var(--signin-coral);background:#fff7f6}
-.signin-page .signin-shell .field input:focus{border-color:var(--signin-coral);box-shadow:0 0 0 3px rgba(239,111,97,.14)}
+.signin-page .signin-shell .field input:focus{border-color:var(--signin-coral);box-shadow:0 0 0 3px rgba(0,0,0,.09)}
 .signin-page .signin-shell .pw-toggle:hover,
 .signin-page .signin-shell .link-btn:hover{color:var(--signin-coral)}
 
@@ -142,6 +142,401 @@
 .submit-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .total-line{font-size:15px;color:var(--muted)}
 .total-line b{font-size:22px;color:var(--ink);font-weight:800}
+
+/* ---- Simple application wizard + passport OCR ---- */
+.apply-wizard-main{max-width:960px}
+.apply-wizard-head{display:flex;justify-content:space-between;gap:24px;align-items:flex-end}
+.apply-wizard-head>div:first-child{min-width:0}
+.apply-kicker{display:block;margin-bottom:7px;color:var(--blue-700);font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+.apply-visa-mini{min-width:210px;padding:13px 16px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow-sm)}
+.apply-visa-mini small,.apply-visa-mini b,.apply-visa-mini span{display:block}
+.apply-visa-mini small{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.apply-visa-mini b{margin-top:3px;color:var(--ink);font-size:13px}
+.apply-visa-mini span{margin-top:4px;color:var(--blue-700);font-size:16px;font-weight:800}
+.apply-progress{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 22px;padding:12px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:var(--shadow-sm)}
+.apply-progress>div{min-width:0;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:11px;color:#83919e}
+.apply-progress>div>b{width:30px;height:30px;flex:none;display:grid;place-items:center;border:1.5px solid #d4dce2;border-radius:50%;background:#f8fafb;font-size:11px}
+.apply-progress>div>span{min-width:0;display:flex;flex-direction:column}
+.apply-progress strong{font-size:12px;white-space:nowrap}
+.apply-progress small{margin-top:2px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.apply-progress>div.active{background:var(--sky-50);color:var(--blue-700)}
+.apply-progress>div.active>b{border-color:var(--blue-600);background:var(--blue-600);color:#fff}
+.apply-progress>div.complete{color:#177245}
+.apply-progress>div.complete>b{border-color:#178653;background:#e9f8ef;color:#177245}
+.apply-step[hidden],#applyStep4[hidden]{display:none!important}
+.apply-step h2{margin:0;color:var(--ink);font-size:25px;line-height:1.2}
+.apply-step h2:focus{outline:none}
+.apply-step-intro{max-width:640px;margin:8px 0 22px;color:var(--muted);font-size:14px;line-height:1.55}
+.apply-name-field{max-width:520px}
+.apply-name-field .field{margin-bottom:18px}
+.apply-next{min-width:220px}
+.apply-document-upload .drop{min-height:190px;display:flex;flex-direction:column;justify-content:center}
+.apply-single-upload{max-width:620px;grid-template-columns:1fr;margin-right:auto;margin-left:auto}
+.passport-ocr-status{display:grid;grid-template-columns:46px minmax(0,1fr);gap:13px;align-items:center;margin-top:17px;padding:14px 16px;border:1px solid #dfe7ec;border-radius:14px;background:#f8fafb}
+.passport-ocr-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:#e8f0f5;color:#557080;font-size:10px;font-weight:900;letter-spacing:.05em}
+.passport-ocr-status b,.passport-ocr-status small{display:block}
+.passport-ocr-status b{color:var(--ink);font-size:13px}
+.passport-ocr-status small{margin-top:3px;color:var(--muted);font-size:11px;line-height:1.45}
+.passport-ocr-status.reading{border-color:#bfd5f5;background:#f3f8ff}
+.passport-ocr-status.reading .passport-ocr-mark{background:var(--blue-600);color:#fff}
+.passport-ocr-status.success{border-color:#bfe2ce;background:#f1faf4}
+.passport-ocr-status.success .passport-ocr-mark{background:#178653;color:#fff}
+.passport-ocr-status.warning{border-color:#efd8aa;background:#fff9ed}
+.passport-ocr-status.warning .passport-ocr-mark{background:#b7791f;color:#fff}
+.passport-ocr-progress{height:5px;margin-top:9px;overflow:hidden;border-radius:999px;background:#dfe9f5}
+.passport-ocr-progress span{display:block;width:3%;height:100%;border-radius:inherit;background:var(--blue-600);transition:width .2s ease}
+.apply-step-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:20px}
+.ocr-review-note{margin:0 0 20px;padding:11px 13px;border-left:3px solid var(--blue-500);border-radius:0 10px 10px 0;background:var(--sky-50);color:#516779;font-size:11.5px;line-height:1.5}
+.apply-submit-actions{display:flex;gap:10px;align-items:center}
+
+@media (max-width:640px){
+  .apply-wizard-head{align-items:stretch;flex-direction:column;gap:14px}
+  .apply-visa-mini{min-width:0}
+  .apply-progress{gap:4px;padding:7px}
+  .apply-progress>div{justify-content:center;gap:6px;padding:7px 4px;text-align:left}
+  .apply-progress>div>b{width:25px;height:25px;font-size:9px}
+  .apply-progress strong{font-size:10px}
+  .apply-progress small{display:none}
+  .apply-step{padding:20px}
+  .apply-step h2{font-size:22px}
+  .apply-step-intro{margin-bottom:18px;font-size:12px}
+  .apply-next{width:100%;min-width:0}
+  .apply-document-upload .drop{min-height:150px}
+  .apply-step-actions{align-items:stretch;flex-direction:column-reverse}
+  .apply-step-actions .btn{width:100%}
+  .passport-ocr-status{grid-template-columns:40px minmax(0,1fr);padding:12px}
+  .passport-ocr-mark{width:38px;height:38px}
+  .submit-bar{align-items:stretch;flex-direction:column}
+  .apply-submit-actions{align-items:stretch;flex-direction:column-reverse}
+  .apply-submit-actions .btn{width:100%}
+}
+
+/* Focused application mode: no site header until the application is submitted */
+body.apply-focus{
+  --blue-900:#000;
+  --blue-700:#000;
+  --blue-600:#000;
+  --blue-500:#111;
+  --blue-400:#333;
+  --blue-100:#f1f1f1;
+  --sky-50:#fff;
+  min-height:100vh;
+  min-height:100dvh;
+  background:#f7f9f8;
+}
+.apply-focus .header,
+.apply-focus .wa-float,
+.apply-focus .cookie-bar{display:none!important}
+.apply-focus #appRoot{min-height:100vh;min-height:100dvh}
+.apply-focus .apply-wizard-main{
+  position:relative;
+  max-width:none;
+  min-height:100vh;
+  min-height:100dvh;
+  padding:24px 34px 70px;
+  overflow:hidden;
+  background:#fff;
+}
+.apply-focus .apply-wizard-main::before{display:none}
+.apply-focus .apply-wizard-main>*{position:relative;z-index:1}
+.apply-focus-top{display:grid;grid-template-columns:1fr 240px 1fr;gap:20px;align-items:start}
+.apply-exit{
+  width:max-content;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:8px 12px;
+  border:0;
+  border-radius:999px;
+  background:#fff;
+  color:#435461;
+  font:700 12px/1 Inter,sans-serif;
+  box-shadow:0 7px 22px rgba(24,47,56,.08);
+  cursor:pointer;
+}
+.apply-exit:hover{color:var(--blue-700);transform:translateY(-1px)}
+.apply-progress-minimal{display:flex;flex-direction:column;align-items:center;gap:7px}
+.apply-progress-minimal small{color:#778792;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.apply-progress-minimal>span{width:100%;height:4px;overflow:hidden;border-radius:999px;background:#dfe6e5}
+.apply-progress-minimal i{display:block;width:0;height:100%;border-radius:inherit;background:#000;transition:width .35s ease}
+.apply-selected-line{display:flex;justify-content:center;gap:8px;align-items:center;margin-top:18px;color:#778792;font-size:10px}
+.apply-selected-line span::after{content:"·";margin-left:8px}
+.apply-selected-line b{color:#274653;font-size:10px}
+.apply-focus #applyForm{max-width:1120px;margin:0 auto}
+.apply-focus #applyStep1{
+  max-width:1120px;
+  margin:6vh auto 0;
+  padding:0;
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  text-align:left;
+}
+.traveller-start-shell{
+  min-height:470px;
+  display:grid;
+  grid-template-columns:minmax(240px,.68fr) minmax(0,1.32fr);
+  gap:72px;
+  overflow:visible;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.traveller-start-visual{
+  position:relative;
+  overflow:visible;
+  padding:30px 48px 30px 0;
+  border-right:1px solid #e8edef;
+  background:transparent;
+  color:#132a38;
+}
+.traveller-start-visual::before,.traveller-start-visual::after{display:none}
+.traveller-journey-kicker{position:relative;z-index:1;display:block;color:#000;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.traveller-start-visual h2{position:relative;z-index:1;max-width:270px;margin-top:12px;color:#132a38;font-size:clamp(29px,3vw,35px);line-height:1.08;letter-spacing:-.045em}
+.traveller-start-visual>p{position:relative;z-index:1;max-width:285px;margin-top:13px;color:#6d7d87;font-size:12px;line-height:1.6}
+.traveller-route{position:relative;z-index:1;display:grid;gap:14px;margin:30px 0 0;padding:0;list-style:none}
+.traveller-route::before{content:"";position:absolute;top:17px;bottom:17px;left:14px;width:1px;background:#e4d5d2}
+.traveller-route li{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;align-items:center}
+.traveller-route i{width:29px;height:29px;display:grid;place-items:center;border:1px solid #d7e0e4;border-radius:50%;background:#fff;color:#829098;font-size:10px;font-style:normal;font-weight:800}
+.traveller-route li.active i{border-color:#000;background:#000;color:#fff;box-shadow:none}
+.traveller-route b,.traveller-route small{display:block}
+.traveller-route b{color:#273c47;font-size:11px}
+.traveller-route small{margin-top:1px;color:#8a989f;font-size:8.5px}
+.traveller-visa-chip{position:relative;z-index:1;margin-top:28px;padding:15px 0 0;border:0;border-top:1px solid #e8edef;border-radius:0;background:transparent;backdrop-filter:none}
+.traveller-visa-chip small,.traveller-visa-chip b{display:block}
+.traveller-visa-chip small{color:#8a989f;font-size:8px;text-transform:uppercase;letter-spacing:.08em}
+.traveller-visa-chip b{margin-top:3px;color:#273c47;font-size:11px}
+.traveller-start-form{display:flex;flex-direction:column;justify-content:center;padding:30px 0}
+.apply-focus #applyStep1 .step-badge{width:max-content;margin-bottom:17px;padding:0;border-radius:0;background:transparent;color:#000;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.apply-focus #applyStep1 .traveller-start-form>h2{max-width:570px;color:#132a38;font-size:clamp(32px,4vw,48px);letter-spacing:-.048em}
+.apply-focus #applyStep1 .apply-step-intro{max-width:540px;margin:13px 0 31px;font-size:14px}
+.traveller-name-card{position:relative;padding:12px 0 0 45px;border:0;border-radius:0;background:transparent}
+.traveller-field-number{position:absolute;top:13px;left:0;width:28px;height:28px;display:grid;place-items:center;border:1px solid #000;border-radius:50%;background:#fff;color:#000;font-size:9px;font-weight:850}
+.apply-focus #applyStep1 .apply-name-field{max-width:none;margin:0}
+.apply-focus #applyStep1 .traveller-name-card .field{margin:0}
+.apply-focus #applyStep1 .traveller-name-card .field label{position:static;width:auto;height:auto;display:block;margin:0;color:#7c665f;font-size:9px;font-weight:800;letter-spacing:.075em;text-transform:uppercase;clip:auto;overflow:visible;white-space:normal}
+.apply-focus #applyStep1 .field input{
+  width:100%;
+  padding:7px 0 10px;
+  border:0;
+  border-bottom:1px solid #d8bdb8;
+  border-radius:0;
+  background:transparent;
+  color:#172f3c;
+  font-size:21px;
+  font-weight:650;
+  text-align:left;
+  box-shadow:none;
+}
+.apply-focus #applyStep1 .field input:focus{outline:none;border-bottom-color:#000;box-shadow:none}
+.apply-focus #applyStep1 .field input::placeholder{color:#a89a96;opacity:1}
+.traveller-name-card>small{display:block;margin-top:8px;color:#93837e;font-size:9px}
+.apply-focus #applyStep1 .apply-next{width:max-content;max-width:100%;margin-top:25px;padding-right:25px;padding-left:25px;border-radius:10px;background:#000;box-shadow:none}
+.apply-focus #applyStep1 .apply-next:hover{background:#1a1a1a}
+.apply-focus #applyStep2,
+.apply-focus #applyStep3,
+.apply-focus #applyStep4{margin-top:46px}
+.apply-focus #applyStep2,
+.apply-focus #applyStep3{
+  max-width:760px;
+  margin-right:auto;
+  margin-left:auto;
+  padding:18px 0 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.apply-focus #applyStep2>h2,
+.apply-focus #applyStep3>h2,
+.apply-focus #applyStep2>.apply-step-intro,
+.apply-focus #applyStep3>.apply-step-intro{text-align:center;margin-right:auto;margin-left:auto}
+.apply-focus #applyStep2>.step-badge,
+.apply-focus #applyStep3>.step-badge,
+.apply-focus #applyStep4 .step-badge{
+  display:flex;
+  width:max-content;
+  margin-right:auto;
+  margin-left:auto;
+  padding:0;
+  border-radius:0;
+  background:transparent;
+  color:#000;
+  font-size:10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+}
+.apply-focus .apply-document-upload .drop{
+  min-height:auto;
+  padding:30px 0;
+  border:0;
+  border-top:1px solid #e5eaec;
+  border-bottom:1px solid #e5eaec;
+  border-radius:0;
+  background:transparent;
+}
+.apply-focus .apply-document-upload .drop:hover,
+.apply-focus .apply-document-upload .drop.has{border-color:#000;background:transparent}
+.apply-focus .apply-document-upload .drop .di{
+  width:34px;
+  height:34px;
+  margin-bottom:8px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:#000;
+}
+.apply-focus .apply-document-upload .drop .di svg{width:27px;height:27px}
+.apply-focus .apply-document-upload .drop b{color:#1c3440;font-size:16px}
+.apply-focus .apply-document-upload .drop small{font-size:11px}
+.apply-focus .apply-document-upload .drop .fname{color:#000;font-size:12px}
+.apply-focus #applyStep3 .passport-ocr-status{max-width:620px;margin-right:auto;margin-left:auto}
+.apply-focus .passport-ocr-status{
+  grid-template-columns:42px minmax(0,1fr);
+  padding:17px 0;
+  border:0;
+  border-bottom:1px solid #e5eaec;
+  border-radius:0;
+  background:transparent;
+}
+.apply-focus .passport-ocr-status.reading,
+.apply-focus .passport-ocr-status.success,
+.apply-focus .passport-ocr-status.warning{border-color:#e5eaec;background:transparent}
+.apply-focus .passport-ocr-mark,
+.apply-focus .passport-ocr-status.reading .passport-ocr-mark,
+.apply-focus .passport-ocr-status.success .passport-ocr-mark,
+.apply-focus .passport-ocr-status.warning .passport-ocr-mark{
+  width:38px;
+  height:38px;
+  border:1px solid #000;
+  border-radius:50%;
+  background:transparent;
+  color:#000;
+}
+.apply-focus .apply-step-actions{justify-content:center}
+.apply-focus .apply-step-actions .btn{min-width:230px}
+.apply-focus .apply-submit-actions .btn{min-width:210px}
+.apply-focus.signin-page .signin-wrap{position:relative;min-height:100vh;min-height:100dvh;background:linear-gradient(145deg,#fbfcfb,#eff8f6)}
+.application-auth-back{position:absolute;top:22px;left:24px;z-index:3;padding:8px 12px;border-radius:999px;background:#fff;color:#435461;font-size:12px;font-weight:700;box-shadow:0 7px 22px rgba(24,47,56,.08)}
+
+/* Passport review: uploaded images beside editable OCR details */
+.apply-focus.apply-reviewing,
+.apply-focus.apply-reviewing .apply-wizard-main{background:#fff}
+.apply-focus.apply-reviewing .apply-wizard-main::before{display:none}
+.apply-reviewing .apply-selected-line{color:#89959c}
+.apply-reviewing #applyForm{max-width:1120px}
+.apply-focus.apply-reviewing #applyStep4{max-width:1120px;margin:38px auto 0}
+.passport-review-layout{display:grid;grid-template-columns:350px minmax(0,1fr);gap:50px;align-items:start}
+.passport-review-previews{position:sticky;top:82px;min-width:0}
+.review-preview-card{padding:0;border:0;border-radius:0;background:transparent}
+.review-preview-card+.review-preview-card{margin-top:14px}
+.review-preview-media{overflow:hidden;border-radius:0;background:transparent}
+.review-preview-media img{width:100%;height:100%;display:block}
+.review-passport-card .review-preview-media{aspect-ratio:1.42/1}
+.review-passport-card .review-preview-media img{object-fit:contain}
+.review-photo-card{display:grid;grid-template-columns:105px minmax(0,1fr);gap:14px;align-items:center}
+.review-photo-card .review-preview-media{width:105px;height:105px}
+.review-photo-card .review-preview-media img{object-fit:cover}
+.review-preview-card>div+div{padding:9px 0 2px}
+.review-preview-card b,.review-preview-card small{display:block}
+.review-preview-card b{color:#17313e;font-size:13px}
+.review-preview-card small{margin-top:3px;color:#849198;font-size:10px}
+.passport-review-previews>p{margin:13px 2px 0;color:#87939a;font-size:10px;text-align:center}
+.passport-review-content{min-width:0}
+.passport-review-form{padding:0 0 24px;border-bottom:1px solid #e4e9eb}
+.passport-review-form h2{font-size:clamp(28px,3.3vw,40px);letter-spacing:-.04em}
+.passport-review-form .apply-step-intro{margin-bottom:12px}
+.review-traveller-name{margin:0 0 17px;color:#839098;font-size:11px}
+.review-traveller-name b{margin-left:5px;color:#17313e;font-size:12px}
+.apply-reviewing #applyStep4 .ocr-review-note{margin-bottom:23px;padding:0;border:0;border-radius:0;background:transparent;color:#55706f}
+.apply-reviewing #applyStep4 .grid2{gap:20px 26px}
+.review-passport-dates{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:20px 26px}
+.review-phone-field{grid-column:1/-1}
+.apply-reviewing #applyStep4 .field{margin:0}
+.apply-reviewing #applyStep4 .field label,
+.apply-reviewing #applyStep4 .ulabel{display:block;margin:0 0 5px;color:#263b45;font-size:9px;font-weight:800;letter-spacing:.075em;text-transform:uppercase}
+.apply-reviewing #applyStep4 .field input,
+.apply-reviewing #applyStep4 .field select{
+  width:100%;
+  padding:10px 0 11px;
+  border:0;
+  border-bottom:1px solid #d6dde0;
+  border-radius:0;
+  background:transparent;
+  color:#101f27;
+  font-family:inherit;
+  font-size:14px;
+  font-weight:600;
+  box-shadow:none;
+}
+.apply-reviewing #applyStep4 .field input:focus,
+.apply-reviewing #applyStep4 .field select:focus{outline:none;border-bottom-color:#168177;box-shadow:none}
+.apply-reviewing #applyStep4 .field input[readonly]{color:#65747c;background:transparent}
+.apply-reviewing #applyStep4 #mobileField input#phone{padding-top:10px;padding-bottom:11px;border:0;border-bottom:1px solid #d6dde0;border-radius:0;background:transparent;box-shadow:none}
+.apply-reviewing #applyStep4 #mobileField input#phone:focus{border-bottom-color:#168177;box-shadow:none}
+.apply-reviewing #applyStep4 #qPanel,
+.apply-reviewing #applyStep4 .passport-review-content>.panel{margin:0;padding:22px 0;border:0;border-bottom:1px solid #e4e9eb;border-radius:0;background:#fff;box-shadow:none}
+.apply-reviewing #applyStep4 .submit-bar{padding-top:24px;border-bottom:0}
+.apply-reviewing #applyStep4 .total-line{display:flex;flex-direction:column;gap:3px}
+.apply-reviewing #applyStep4 .apply-submit-actions{flex:1;justify-content:flex-end}
+.apply-reviewing #applyStep4 .apply-submit-actions .btn{width:100%;max-width:330px;background:#168177;border-radius:13px}
+
+@media (max-width:900px){
+  .traveller-start-shell{grid-template-columns:240px minmax(0,1fr);gap:42px}
+  .traveller-start-visual{padding:30px 30px 30px 0}
+  .traveller-start-form{padding:30px 0}
+  .passport-review-layout{grid-template-columns:285px minmax(0,1fr);gap:30px}
+  .review-photo-card{grid-template-columns:82px minmax(0,1fr)}
+  .review-photo-card .review-preview-media{width:82px;height:82px}
+}
+
+@media (max-width:720px){
+  .apply-focus #applyStep1{margin-top:32px}
+  .traveller-start-shell{min-height:0;grid-template-columns:1fr;gap:28px;border-radius:0}
+  .traveller-start-visual{padding:0 0 24px;border-right:0;border-bottom:1px solid #e8edef}
+  .traveller-start-visual h2{max-width:none;font-size:28px}
+  .traveller-start-visual>p{max-width:520px}
+  .traveller-route{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:22px}
+  .traveller-route::before{display:none}
+  .traveller-route li{display:block;min-width:0}
+  .traveller-route i{width:26px;height:26px;margin-bottom:7px}
+  .traveller-route small{display:none}
+  .traveller-visa-chip{display:none}
+  .traveller-start-form{padding:0 0 12px}
+  .apply-focus.apply-reviewing #applyStep4{margin-top:24px}
+  .passport-review-layout{grid-template-columns:1fr;gap:28px}
+  .passport-review-previews{position:static;display:grid;grid-template-columns:minmax(0,1.65fr) minmax(110px,.75fr);gap:10px;align-items:stretch}
+  .review-preview-card+.review-preview-card{margin-top:0}
+  .review-photo-card{display:block}
+  .review-photo-card .review-preview-media{width:100%;height:auto;aspect-ratio:1/1}
+  .passport-review-previews>p{grid-column:1/-1;margin-top:0}
+  .passport-review-form h2{font-size:28px}
+  .apply-reviewing #applyStep4 .grid2{grid-template-columns:1fr;gap:17px}
+  .review-passport-dates{grid-template-columns:1fr;gap:17px}
+  .apply-reviewing #applyStep4 .submit-bar{gap:18px}
+  .apply-reviewing #applyStep4 .apply-submit-actions .btn{max-width:none}
+}
+
+@media (max-width:640px){
+  .apply-focus .apply-wizard-main{padding:18px 16px 50px}
+  .apply-focus-top{grid-template-columns:auto minmax(130px,210px);justify-content:space-between;gap:14px}
+  .apply-focus-top-spacer{display:none}
+  .apply-selected-line{margin-top:16px}
+  .apply-focus #applyStep1{margin-top:28px}
+  .apply-focus #applyStep1 .traveller-start-form>h2{font-size:29px;line-height:1.13}
+  .apply-focus #applyStep1 .apply-step-intro{margin:10px 0 25px}
+  .apply-focus #applyStep1 .field input{font-size:19px}
+  .traveller-start-form{padding:0 0 10px}
+  .traveller-name-card{padding:12px 0 0 42px}
+  .traveller-field-number{top:13px;left:0}
+  .apply-focus #applyStep1 .apply-next{width:100%;justify-content:center}
+  .apply-focus #applyStep2,
+  .apply-focus #applyStep3,
+  .apply-focus #applyStep4{margin-top:28px}
+  .application-auth-back{top:14px;left:14px}
+  .apply-focus.signin-page .signin-wrap{padding-top:70px}
+}
 
 /* ---- Success ---- */
 .success{text-align:center;padding:18px}

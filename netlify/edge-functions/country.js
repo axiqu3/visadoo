@@ -64,6 +64,93 @@ function visaCard(v, active){
   '</div>';
 }
 
+function uaeVisaSelector(visas, active){
+  if(!visas.length) return '';
+  var first=visas[0];
+  var choices=visas.map(function(v,index){
+    return '<label class="uae-visa-option'+(index===0?' selected':'')+'">'+
+      '<input class="uae-visa-option-input" type="radio" name="visa" value="'+esc(v.slug)+'"'+(index===0?' checked':'')+' required'+
+      ' data-name="'+esc(v.name||'UAE visa')+'"'+
+      ' data-category="'+esc(v.category||'UAE visa')+'"'+
+      ' data-stay="'+esc(stayText(v)||'See visa details')+'"'+
+      ' data-entry="'+esc(v.sub||v.category||'See visa details')+'"'+
+      ' data-processing="'+esc(processingText(v)||'To be confirmed')+'"'+
+      ' data-price="'+esc(priceText(v, active))+'" data-uae-choice>'+
+      '<span class="uae-option-top"><span><b>'+esc(v.name||'UAE visa')+'</b><small>'+esc(v.category||'UAE visa')+'</small></span><strong>'+esc(priceText(v, active))+'<small>per applicant</small></strong></span>'+
+      '<span class="uae-option-facts">'+
+        '<span><small>Stay</small><b>'+esc(stayText(v)||'See details')+'</b></span>'+
+        '<span><small>Entry</small><b>'+esc(v.sub||v.category||'See details')+'</b></span>'+
+        '<span><small>Processing</small><b>'+esc(processingText(v)||'To be confirmed')+'</b></span>'+
+      '</span>'+
+      '<span class="uae-option-action"><i aria-hidden="true">&#10003;</i><span>Choose this visa</span></span>'+
+    '</label>';
+  }).join('');
+  return '<form class="uae-visa-picker" action="/app.html" method="get" data-uae-visa-selector>'+
+    '<fieldset class="uae-visa-catalogue">'+
+      '<legend class="uae-visually-hidden">Choose a UAE visa type</legend>'+
+      '<div class="uae-catalogue-heading"><div><span>Available visa types</span><h3>Compare all UAE visas</h3></div><b>'+visas.length+' option'+(visas.length===1?'':'s')+'</b></div>'+
+      '<div class="uae-visa-list">'+choices+'</div>'+
+    '</fieldset>'+
+    '<aside class="uae-picker-summary" aria-live="polite" aria-atomic="true">'+
+      '<span class="uae-picker-kicker">Your selection</span>'+
+      '<h3 data-uae-name>'+esc(first.name||'UAE visa')+'</h3>'+
+      '<p data-uae-category>'+esc(first.category||'UAE visa')+'</p>'+
+      '<div class="uae-picker-price"><span>Visa fee</span><strong data-uae-price>'+esc(priceText(first, active))+'</strong><small>per applicant</small></div>'+
+      '<div class="uae-picker-facts">'+
+        '<div><span>Stay</span><b data-uae-stay>'+esc(stayText(first)||'See visa details')+'</b></div>'+
+        '<div><span>Entry</span><b data-uae-entry>'+esc(first.sub||first.category||'See visa details')+'</b></div>'+
+        '<div><span>Processing</span><b data-uae-processing>'+esc(processingText(first)||'To be confirmed')+'</b></div>'+
+      '</div>'+
+      '<div class="uae-picker-assurance"><span aria-hidden="true">&#10003;</span><p><b>Simple and secure</b><small>Review your details before submitting.</small></p></div>'+
+      '<button class="btn btn-primary btn-block uae-picker-submit" type="submit">Continue application <span aria-hidden="true">&#8594;</span></button>'+
+    '</aside>'+
+  '</form>';
+}
+
+function uaeDocuments(){
+  function card(label,title,text,image){
+    return '<article class="uae-document-card uae-document-card-simple">'+
+      '<div class="uae-document-photo"><img src="'+image+'" alt="" loading="lazy" decoding="async"></div>'+
+      '<div class="uae-document-copy"><div><h3>'+title+'</h3><span class="uae-document-status">'+label+'</span></div><p>'+text+'</p></div>'+
+    '</article>';
+  }
+  return '<div class="container uae-documents-simple">'+
+    '<div class="uae-documents-overview">'+
+      '<div class="uae-documents-heading"><span class="eyebrow">Documents</span><h2>Simple documents to get started</h2><p>Prepare clear copies of the basics. If your selected visa needs anything else, VisaDoo will tell you.</p></div>'+
+      '<div class="uae-documents-quick" aria-label="Document preparation summary">'+
+        '<div><strong>3</strong><span>essential items</span></div>'+
+        '<div><strong>~5 min</strong><span>to prepare</span></div>'+
+        '<div><strong>Phone</strong><span>uploads accepted</span></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="uae-document-grid">'+
+      card('Required','Passport bio page','A clear copy of the page with your photo and details.','/assets/uae-documents/passport-bio-page.png')+
+      card('Required','Recent photo','A clear, front-facing photo on a plain background.','/assets/uae-documents/recent-photo.png')+
+      card('Trip details','Travel information','Your intended travel dates and accommodation details.','/assets/uae-documents/travel-information.png')+
+      card('If requested','Supporting document','We will tell you if your selected visa needs this.','/assets/uae-documents/supporting-document.png')+
+    '</div>'+
+    '<div class="uae-documents-footer">'+
+      '<div><span aria-hidden="true">&#8593;</span><p><b>Upload from any device</b><small>Clear phone photos or scans are accepted.</small></p></div>'+
+      '<a href="#visa-info" class="btn btn-primary">Choose visa &amp; start <span aria-hidden="true">&#8594;</span></a>'+
+    '</div>'+
+  '</div>';
+}
+
+function uaeProcess(){
+  return '<div class="container uae-process-simple">'+
+    '<div class="uae-process-heading">'+
+      '<span class="eyebrow">Visa Process</span>'+
+      '<h2>Your UAE visa in 3 simple steps</h2>'+
+      '<p>Choose, upload and track. VisaDoo guides you through the rest.</p>'+
+    '</div>'+
+    '<div class="uae-process-steps" role="list" aria-label="UAE visa application steps">'+
+      '<article class="uae-process-step" role="listitem"><span>01</span><div><h3>Choose your visa</h3><p>Compare the options and select the one that fits your trip.</p></div></article>'+
+      '<article class="uae-process-step" role="listitem"><span>02</span><div><h3>Upload documents</h3><p>Add clear passport and photo copies from your phone.</p></div></article>'+
+      '<article class="uae-process-step" role="listitem"><span>03</span><div><h3>Track your visa</h3><p>Follow every update online until your visa is ready.</p></div></article>'+
+    '</div>'+
+  '</div>';
+}
+
 // Brand colour palette — must match branding.js applyColor() so first paint is the saved colour (no flash).
 function shade(hex,p){ hex=(hex||"").replace("#",""); if(hex.length===3) hex=hex.split("").map(function(c){return c+c;}).join(""); if(hex.length!==6) return "#"+hex; var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16); var t=p<0?0:255,a=Math.abs(p)/100; r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b); return "#"+[r,g,b].map(function(v){return ("0"+v.toString(16)).slice(-2);}).join(""); }
 function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--blue-600:'+p+';--blue-700:'+shade(p,-14)+';--blue-900:'+shade(p,-34)+';--blue-500:'+shade(p,8)+';--blue-400:'+shade(p,24)+';--blue-100:'+shade(p,82)+';--sky-50:'+shade(p,93)+';}</style>'; }
@@ -73,11 +160,24 @@ function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME|
 function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
 
 function pageHtml(c, visas, defaultImg, active, brandColor){
+  var isUae=String(c.iso2||'').toUpperCase()==='AE'||c.slug==='uae'||c.slug==='united-arab-emirates';
+  var visaSectionTitle=isUae?'Visa types':'Visa options';
   var title=(c.seo_title&&c.seo_title.trim())||(c.name+' Visas — Apply Online | Visa Doo');
   var desc=(c.seo_description&&c.seo_description.trim())||(c.summary||('Apply online for your '+c.name+' visa with Visa Doo. Tourist and business visas, document upload and live tracking.')).slice(0,160);
   var canonical=SITE+'/country/'+c.slug;
   var ogImage=c.social_image||defaultImg||'';
   var cards = visas.length ? visas.map(function(v){return visaCard(v, active);}).join('') : '<div class="country-empty"><h3>Options coming soon</h3><a href="/#contact" class="btn btn-primary">Contact us</a></div>';
+  var visaContent=isUae&&visas.length?uaeVisaSelector(visas,active):'<div class="cards">'+cards+'</div>';
+  var documentsContent=isUae?uaeDocuments():
+    '<div class="container country-documents-grid">'+
+      '<div><span class="eyebrow">Documents</span><h2>Keep these ready</h2></div>'+
+      '<div class="country-doc-list">'+
+        '<div>'+CHECK+'<span><b>Passport</b></span></div>'+
+        '<div>'+CHECK+'<span><b>Photo</b></span></div>'+
+        '<div>'+CHECK+'<span><b>Travel details</b></span></div>'+
+        '<div>'+CHECK+'<span><b>Extra documents, if needed</b></span></div>'+
+      '</div>'+
+    '</div>';
   var heroImage=c.image_url||c.social_image||defaultImg||'';
   var priced=visas.map(function(v){
     var p=(v.prices&&v.prices.INR!=null&&v.prices.INR!=='')?v.prices.INR:v.price_aed;
@@ -109,7 +209,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     '<meta name="twitter:card" content="summary_large_image">'+
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
-    '<link rel="stylesheet" href="/styles.css?v=20260801-back-text">'+
+    '<link rel="stylesheet" href="/styles.css?v=20260803-footer-top-line">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
     '</head><body class="country-page">'+
@@ -149,30 +249,16 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
       '<a href="#documents">Documents</a>'+
       '<a href="#visa-process">Visa Process</a>'+
     '</div></nav>'+
-    '<section class="section sky country-options" id="visa-info"><div class="container">'+
-      '<div class="country-section-heading"><span class="eyebrow">Choose a visa</span><h2>Visa options</h2></div>'+
-      '<div class="cards">'+cards+'</div>'+
+    '<section class="section sky country-options'+(isUae?' uae-country-options':'')+'" id="visa-info"><div class="container">'+
+      '<div class="country-section-heading"><span class="eyebrow">Choose a visa</span><h2>'+visaSectionTitle+'</h2>'+(isUae?'<p>Compare UAE visa types, check the key details and continue with the option that fits your trip.</p>':'')+'</div>'+
+      visaContent+
     '</div></section>'+
-    '<section class="section country-documents" id="documents"><div class="container country-documents-grid">'+
-      '<div><span class="eyebrow">Documents</span><h2>Keep these ready</h2></div>'+
-      '<div class="country-doc-list">'+
-        '<div>'+CHECK+'<span><b>Passport</b></span></div>'+
-        '<div>'+CHECK+'<span><b>Photo</b></span></div>'+
-        '<div>'+CHECK+'<span><b>Travel details</b></span></div>'+
-        '<div>'+CHECK+'<span><b>Extra documents, if needed</b></span></div>'+
-      '</div>'+
-    '</div></section>'+
-    '<section class="section country-process" id="visa-process"><div class="container">'+
-      '<div class="country-process-heading"><span class="eyebrow">Visa Process</span><h2>What to do next</h2><p>Choose your visa, upload the documents and track every update online.</p></div>'+
-      '<div class="country-process-flow" role="list" aria-label="Visa application steps">'+
-        '<div class="country-process-step" role="listitem"><i aria-hidden="true">&#10003;</i><b>Choose visa</b><small>Pick the right option</small></div>'+
-        '<div class="country-process-step" role="listitem"><i aria-hidden="true">&#8593;</i><b>Upload files</b><small>Add passport and photo</small></div>'+
-        '<div class="country-process-step" role="listitem"><i aria-hidden="true">&#9678;</i><b>Track status</b><small>See updates online</small></div>'+
-      '</div>'+
-    '</div></section>'+
+    '<section class="section country-documents'+(isUae?' uae-documents':'')+'" id="documents">'+documentsContent+'</section>'+
+    '<section class="section country-process'+(isUae?' uae-country-process':'')+'" id="visa-process">'+
+      (isUae?uaeProcess():'<div class="container"><div class="country-process-heading"><span class="eyebrow">Visa Process</span><h2>What to do next</h2><p>Choose your visa, upload the documents and track every update online.</p></div><div class="country-process-flow" role="list" aria-label="Visa application steps"><div class="country-process-step" role="listitem"><i aria-hidden="true">&#10003;</i><b>Choose visa</b><small>Pick the right option</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#8593;</i><b>Upload files</b><small>Add passport and photo</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#9678;</i><b>Track status</b><small>See updates online</small></div></div></div>')+
+    '</section>'+
     '</main>'+
     '<footer class="footer home-footer"><div class="container">'+
-      '<div class="footer-route-line" aria-hidden="true"><span></span></div>'+
       '<div class="footer-grid footer-grid--expanded">'+
         '<div class="footer-intro">'+
           '<a href="/#top" class="brand">'+brandMark()+'</a>'+
@@ -205,18 +291,19 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     '</div></footer>'+
     '<script src="/destination-images.js"></scr'+'ipt>'+
     '<script>(function(){var b=document.getElementById("menuBtn"),n=document.getElementById("navLinks");if(!b||!n)return;b.addEventListener("click",function(){var o=n.classList.toggle("open");b.setAttribute("aria-expanded",String(o))});n.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){n.classList.remove("open");b.setAttribute("aria-expanded","false")})})})();</scr'+'ipt>'+
+    '<script>(function(){var w=document.querySelector("[data-uae-visa-selector]"),c=w&&w.querySelectorAll("[data-uae-choice]");if(!w||!c.length)return;function u(o){if(!o)return;["name","category","stay","entry","processing","price"].forEach(function(k){w.querySelectorAll("[data-uae-"+k+"]").forEach(function(n){n.textContent=o.getAttribute("data-"+k)||""})});c.forEach(function(i){var l=i.closest(".uae-visa-option");if(l)l.classList.toggle("selected",i===o)})}c.forEach(function(i){i.addEventListener("change",function(){if(i.checked)u(i)})});u(w.querySelector("[data-uae-choice]:checked"))})();</scr'+'ipt>'+
     '</body></html>';
 }
 
 function notFound(){
-  return new Response('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Destination not found | Visa Doo</title><link rel="stylesheet" href="/styles.css?v=20260801-back-text"></head><body>'+
+  return new Response('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Destination not found | Visa Doo</title><link rel="stylesheet" href="/styles.css?v=20260803-footer-top-line"></head><body>'+
     '<div style="min-height:70vh;display:grid;place-items:center;text-align:center;padding:40px"><div><h1 style="font-size:30px">Destination not found</h1>'+
     '<p style="color:#5b6b85;margin:12px 0 22px">We don\'t have this destination yet.</p><a href="/" class="btn btn-primary btn-lg">Browse destinations</a></div></div></body></html>',
     { status:404, headers:{ "content-type":"text/html; charset=utf-8" } });
 }
 
 function serviceUnavailable(){
-  return new Response('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Please try again | Visa Doo</title><link rel="stylesheet" href="/styles.css?v=20260801-back-text"></head><body>'+
+  return new Response('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Please try again | Visa Doo</title><link rel="stylesheet" href="/styles.css?v=20260803-footer-top-line"></head><body>'+
     '<div style="min-height:70vh;display:grid;place-items:center;text-align:center;padding:40px"><div><h1 style="font-size:30px">We could not load this destination</h1>'+
     '<p style="color:#5b6b85;margin:12px auto 22px;max-width:480px">This is usually temporary. Please refresh the page, browse another destination, or contact us if you need help now.</p>'+
     '<a href="" class="btn btn-primary btn-lg">Try again</a> <a href="/#contact" class="btn btn-ghost btn-lg">Contact us</a></div></div></body></html>',
