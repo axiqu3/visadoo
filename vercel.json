@@ -11,7 +11,7 @@
     },
     {
       "source": "/country/:slug",
-      "destination": "/app.html"
+      "destination": "/country.html"
     }
   ]
 }
