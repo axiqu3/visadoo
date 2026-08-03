@@ -17,6 +17,10 @@ const types = {
 http.createServer((request, response) => {
   let urlPath = decodeURIComponent(request.url.split("?")[0]);
   if (urlPath === "/") urlPath = "/index.html";
+  if (urlPath === "/events" || urlPath === "/events/") urlPath = "/events.html";
+  if (urlPath === "/articles" || urlPath === "/articles/") urlPath = "/articles.html";
+  if (/^\/event\/[^/]+\/?$/.test(urlPath)) urlPath = "/event.html";
+  if (/^\/article\/[^/]+\/?$/.test(urlPath)) urlPath = "/article.html";
   const filePath = path.join(root, urlPath);
   fs.readFile(filePath, (error, contents) => {
     if (error) {

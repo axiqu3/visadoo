@@ -218,6 +218,17 @@
     if(intended) url.searchParams.set('visa', intended);
     return url.toString();
   }
+  function rememberOAuthReturn(redirectTo){
+    try{
+      var url=new URL(redirectTo,location.origin);
+      var returnTo=url.pathname+url.search;
+      sessionStorage.setItem('visadoo-oauth-return',returnTo);
+      localStorage.setItem('visadoo-oauth-pending',JSON.stringify({returnTo:returnTo,createdAt:Date.now()}));
+    }catch(_storageError){}
+  }
+  function clearOAuthPending(){
+    try{ localStorage.removeItem('visadoo-oauth-pending'); }catch(_storageError){}
+  }
   function authSettings(){
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
     var timer = controller ? setTimeout(function(){ controller.abort(); }, 6000) : null;
@@ -332,9 +343,11 @@
       googleBtn.innerHTML='<span class="spin"></span> Connecting to Google…';
       showMsg('Checking Google sign-in status…','info');
       var redirectTo = authRedirectUrl(intended);
+      rememberOAuthReturn(redirectTo);
 
       function resetGoogleButton(message){
         if(authPopup && !authPopup.closed) authPopup.close();
+        clearOAuthPending();
         googleBtn.disabled=false;
         googleBtn.innerHTML=originalHtml;
         if(message) showMsg(message,'err');
@@ -2536,7 +2549,9 @@
         (a.status==='published'
           ? '<button class="btn btn-ghost" id="artUnpub">Unpublish</button>'
           : '<button class="btn btn-primary" id="artPublish" style="background:var(--green)">Publish</button>')+
-        '<a class="link-btn" id="artPreview" href="/article/'+esc(a.slug||'')+'" target="_blank" rel="noopener"'+(a.id&&a.slug?'':' style="display:none"')+'>View live page ↗</a>'+
+        (a.id&&a.slug?(a.status==='published'
+          ? '<a class="link-btn" id="artPreview" href="'+esc(publicDetailHref('article',a.slug))+'" target="_blank" rel="noopener">View live page ↗</a>'
+          : '<span class="phint">Publish this article to view its live page.</span>'):'')+
       '</div>';
   }
 
@@ -2660,6 +2675,11 @@
 
   function articleSlugs(){ return artList.filter(function(x){return x.id!==artEditing.id;}).map(function(x){return x.slug;}); }
   function uniqueArticleSlug(base){ var ex=articleSlugs(); var s=base||'article',i=2; while(ex.indexOf(s)>-1){ s=(base||'article')+'-'+i; i++; } return s; }
+  function publicDetailHref(kind, slug){
+    var local=window.location.protocol==='file:'||window.location.hostname==='127.0.0.1'||window.location.hostname==='localhost';
+    var safeSlug=encodeURIComponent(slug||'');
+    return local?(kind+'.html?slug='+safeSlug):('/'+kind+'/'+safeSlug);
+  }
   // Sanitise a desired address, keep it unique among the others, and remember the old
   // address (so it can auto-forward). Returns {slug, past_slugs}.
   function seoSlugPayload(desired, current, pastSlugs, others, fallbackBase){
@@ -5030,7 +5050,7 @@
       '<div class="signin-msg" id="evMsg"></div>'+
       '<div style="display:flex;gap:10px;margin-top:12px;align-items:center"><button class="btn btn-primary" id="evSave">'+(e.id?'Save changes':'Create event')+'</button>'+
         (e.id?'<button class="btn btn-ghost" id="evDel" style="color:var(--red)">Delete</button>':'')+
-        (e.id&&e.slug?'<a class="link-btn" href="/event/'+esc(e.slug)+'" target="_blank" rel="noopener" style="margin-left:auto">View live page ↗</a>':'')+
+        (e.id&&e.slug?'<a class="link-btn" href="'+esc(publicDetailHref('event',e.slug))+'" target="_blank" rel="noopener" style="margin-left:auto">View live page ↗</a>':'')+
       '</div>'+
     '</div>';
   }
@@ -5600,6 +5620,7 @@
   loadCurrency().then(function(){ if(state.user) render(); });
   sb.auth.getSession().then(function(r){
     state.user = r.data.session ? r.data.session.user : null;
+    clearOAuthPending();
     if(state.user && finishGooglePopup(state.user)) return;
     state.view = resolveStartView();
     if(state.user) loadProfileThenRender(); else { renderHeader(); render(); }

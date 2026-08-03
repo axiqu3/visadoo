@@ -31,18 +31,20 @@ function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME|
 function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
 function navActions(){ return '<div class="nav-actions"><a href="/events" class="btn btn-ghost">Events</a><a href="/#contact" class="btn btn-ghost">Contact us</a><a href="/app.html#track" class="btn btn-ghost">Track application</a><a href="/app.html" class="btn btn-primary">Sign in</a></div>'; }
 
+function scriptJson(value){
+  return JSON.stringify(value)
+    .replace(/</g,"\\u003c")
+    .replace(/\u2028/g,"\\u2028")
+    .replace(/\u2029/g,"\\u2029");
+}
+
 function pageHtml(ev, c, visas, brandColor){
   var cname=(c&&c.name)||"";
   var title=(ev.seo_title&&ev.seo_title.trim())||(ev.name+(cname?(' — '+cname+' Visa'):'')+' | Visa Doo');
   var desc=(ev.seo_description&&ev.seo_description.trim())||((ev.blurb||('Get your '+cname+' visa for '+ev.name+' with Visa Doo — apply online, upload documents and track every step.')).slice(0,160));
   var canonical=SITE+'/event/'+ev.slug;
   var ogImage=ev.social_image||ev.image_url||'';
-  var when=dateRange(ev.event_date, ev.end_date);
-  var lead=leadDays(ev, visas);
-  var heroImage=ev.image_url||(c&&c.image_url)||(c&&c.social_image)||'';
-  var about=ev.blurb||('Plan your trip to '+ev.name+' with the right '+cname+' visa, clear timelines and everything ready before you travel.');
-
-  var cards = (visas&&visas.length) ? visas.map(visaCard).join('') : '<div class="empty-state" style="grid-column:1/-1"><p>Visa options for '+esc(cname)+' are coming soon. <a href="/#contact" style="color:var(--blue-600);font-weight:700">Contact us</a> and we\'ll help.</p></div>';
+  var preload=scriptJson({event:ev,country:c||{name:cname},visas:visas||[]});
 
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'+
     '<title>'+esc(title)+'</title><meta name="description" content="'+esc(desc)+'">'+
@@ -52,47 +54,33 @@ function pageHtml(ev, c, visas, brandColor){
     (ogImage?'<meta property="og:image" content="'+esc(ogImage)+'">'+'<meta property="og:image:alt" content="'+esc(ev.image_alt||ev.name||'')+'">':'')+
     '<meta name="twitter:card" content="summary_large_image">'+
     iconTags()+
+    '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
     '<link rel="stylesheet" href="/styles.css?v=20260801-back-text">'+
+    '<link rel="stylesheet" href="/event-detail.css?v=20260801-event-nav-tight">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
-    '</head><body class="event-page">'+
-    '<header class="header"><div class="container nav">'+
-      '<a href="/" class="brand">'+brandMark()+'</a>'+navActions()+
+    '</head><body class="home-page events-page event-page event-detail-page" id="top">'+
+    '<header class="header discover-header"><div class="container nav">'+
+      '<div class="nav-brand-cluster"><a href="/" class="brand">'+brandMark()+'</a></div>'+
+      '<nav class="nav-links" id="navLinks"><a href="/#destinations">Explore</a><a href="/events" class="active" aria-current="page">Events</a><a href="/articles">Articles</a></nav>'+
+      '<div class="nav-actions"><a href="/app.html#track" class="nav-track">Track visa</a><a href="/app.html" class="nav-profile" aria-label="Sign in" title="Sign in"></a><button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button></div>'+
     '</div></header>'+
-    '<section class="event-detail-hero"><div class="container event-detail-grid">'+
-      '<div class="event-detail-copy">'+
-        '<a href="/events#events-list" class="event-back"><span aria-hidden="true">&#8592;</span> All events</a>'+
-        '<div class="event-detail-badges">'+
-          (c&&c.iso2?'<img src="'+flag(c.iso2)+'" alt="'+esc(cname)+' flag">':'')+
-          (ev.category?'<span class="event-category">'+esc(ev.category)+'</span>':'')+
-        '</div>'+
-        '<h1>'+esc(ev.name)+'</h1>'+
-        '<div class="event-meta-line">'+
-          (when?'<span><small>Date</small><b>'+esc(when)+'</b></span>':'')+
-          (ev.city?'<span><small>Location</small><b>'+esc(ev.city)+', '+esc(cname)+'</b></span>':'')+
-        '</div>'+
-        (lead?'<div class="event-lead"><span>⚡</span><div><small>Plan ahead</small><b>Apply at least '+lead+' day'+(lead===1?'':'s')+' before the event</b></div></div>':'')+
-        '<div class="event-actions"><a href="#visas" class="btn btn-primary btn-lg">Get your '+esc(cname)+' visa</a><a href="/country/'+encodeURIComponent(ev.country_slug)+'" class="btn btn-light btn-lg">View destination</a><a href="/#contact" class="btn btn-contact btn-lg">Contact us</a></div>'+
+    '<main id="eventPage" aria-live="polite"><section class="country-page-loading"><div class="country-loading-card"><span class="country-spinner" aria-hidden="true"></span><h1>Loading event&hellip;</h1><p>Fetching event information and available visas.</p></div></section></main>'+
+    '<footer class="footer home-footer"><div class="container">'+
+      '<div class="footer-route-line" aria-hidden="true"><span></span></div>'+
+      '<div class="footer-grid footer-grid--expanded">'+
+        '<div class="footer-intro"><a href="/" class="brand">'+brandMark()+'</a><p>Tourist &amp; business visas for destinations worldwide &mdash; applied for and tracked entirely online. We handle the paperwork so you can plan the trip.</p><div class="footer-assurances"><span>100% online</span><span>Secure &amp; tracked</span></div></div>'+
+        '<div><h5>Explore</h5><ul><li><a href="/#destinations">Destinations</a></li><li><a href="/events">Events</a></li><li><a href="/#how">How it works</a></li><li><a href="/articles">Articles</a></li><li><a href="/app.html#track">Track application</a></li></ul></div>'+
+        '<div><h5>Company</h5><ul><li><a href="/p/about">About Visa Doo</a></li><li><a href="/p/privacy-policy">Privacy Policy</a></li><li><a href="/p/terms">Terms &amp; Conditions</a></li><li><a href="/#contact">Contact us</a></li></ul></div>'+
+        '<div class="footer-contact"><h5>Contact</h5><ul><li><a id="footWa" href="https://wa.me/919895226697?text=Hi%20Visa%20Doo%2C%20I%20have%20a%20question%20about%20a%20visa." target="_blank" rel="noopener"><span>WhatsApp</span><small>Chat with our visa team</small></a></li><li><a id="footEmail" href="mailto:hello@visadoo.com"><span>hello@visadoo.com</span><small>Send us your questions</small></a></li></ul></div>'+
       '</div>'+
-      '<figure class="event-detail-visual">'+
-        (heroImage?'<img src="'+esc(heroImage)+'" alt="'+esc(ev.image_alt||ev.name)+'" fetchpriority="high">':'<div class="event-detail-placeholder">✦</div>')+
-        '<figcaption><small>Mark your calendar</small><strong>'+esc(when||ev.name)+'</strong><span>'+esc(ev.city||cname)+'</span></figcaption>'+
-      '</figure>'+
-    '</div></section>'+
-    '<section class="section event-about"><div class="container event-about-grid">'+
-      '<div><span class="eyebrow">About the event</span><h2>'+esc(ev.name)+'</h2><p>'+esc(about)+'</p></div>'+
-      '<div class="event-plan-card">'+
-        '<span class="event-plan-number">01</span><div><b>Choose the right visa</b><small>Compare the available '+esc(cname)+' visa options for your trip.</small></div>'+
-        '<span class="event-plan-number">02</span><div><b>Prepare ahead</b><small>'+(lead?'Start at least '+lead+' day'+(lead===1?'':'s')+' early to stay comfortable.':'Apply early to leave time for processing.')+'</small></div>'+
-        '<span class="event-plan-number">03</span><div><b>Travel with confidence</b><small>Upload securely and track every step online.</small></div>'+
-      '</div>'+
-    '</div></section>'+
-    '<section class="section sky country-options" id="visas"><div class="container">'+
-      '<div class="center"><span class="eyebrow">Travel ready</span><h2>'+esc(cname)+' visas for '+esc(ev.name)+'</h2><p class="lead">Choose a visa, apply online and track every step before your event.</p></div>'+
-      '<div class="cards">'+cards+'</div>'+
-    '</div></section>'+
-    '<footer class="footer"><div class="container footer-bottom">© '+new Date().getFullYear()+' Visa Doo. All rights reserved. · <a href="/">Home</a> · <a href="/events">Events</a> · <a href="/articles">Articles</a></div></footer>'+
+      '<div class="footer-bottom"><span>&copy; <span id="year"></span> Visa Doo. All rights reserved.</span><span>Plan simply. Travel confidently.</span><div id="socialLinks" hidden></div></div>'+
+    '</div></footer>'+
+    '<script src="/config.js"></scr'+'ipt><script src="/destination-images.js"></scr'+'ipt>'+
+    '<script>window.__VISADOO_EVENT_DATA__='+preload+';</scr'+'ipt>'+
+    '<script src="/event-page.js?v=20260801-netlify-new-event"></scr'+'ipt>'+
+    '<script>(function(){var button=document.getElementById("menuBtn"),links=document.getElementById("navLinks");if(!button||!links)return;button.addEventListener("click",function(){var open=links.classList.toggle("open");button.setAttribute("aria-expanded",String(open));});links.querySelectorAll("a").forEach(function(link){link.addEventListener("click",function(){links.classList.remove("open");button.setAttribute("aria-expanded","false");});});})();</scr'+'ipt>'+
     '</body></html>';
 }
 

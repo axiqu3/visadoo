@@ -5627,3 +5627,308 @@ p{margin:0}
   .visa-timeline-step{grid-template-columns:21px minmax(0,1fr)}
   .visa-requirement-chips span{width:100%}
 }
+
+/* Visa finder rollback: styles below are intentionally disabled.
+.country-section-heading>p{
+  max-width:650px;
+  margin-top:10px;
+  color:#687b8d;
+  font-size:14px;
+  line-height:1.65;
+}
+.country-options-layout{
+  display:grid;
+  grid-template-columns:244px minmax(0,1fr);
+  gap:26px;
+  align-items:start;
+  margin-top:30px;
+}
+.country-visa-sidebar{
+  position:sticky;
+  top:92px;
+  padding:20px;
+  border:1px solid #dce5eb;
+  border-radius:17px;
+  background:#fff;
+  box-shadow:0 9px 28px rgba(20,47,72,.055);
+}
+.country-filter-heading{
+  display:flex;
+  gap:11px;
+  align-items:center;
+  padding-bottom:17px;
+  border-bottom:1px solid #e9eef2;
+}
+.country-filter-heading>svg{
+  width:36px;
+  height:36px;
+  padding:8px;
+  border-radius:10px;
+  background:#fff4d9;
+  color:#e39400;
+}
+.country-filter-heading span,
+.country-filter-heading small{display:block}
+.country-filter-heading span{color:#0c2234;font-size:14px;font-weight:800}
+.country-filter-heading small{margin-top:2px;color:#81909d;font-size:10px}
+.country-filter-field{margin-top:17px}
+.country-filter-field>label{
+  display:block;
+  margin-bottom:7px;
+  color:#52687b;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.075em;
+  text-transform:uppercase;
+}
+.country-filter-field select{
+  width:100%;
+  min-height:43px;
+  padding:0 35px 0 12px;
+  border:1px solid #d8e1e8;
+  border-radius:10px;
+  background:#fbfcfd;
+  color:#183147;
+  font:650 12px/1 Inter,sans-serif;
+  cursor:pointer;
+}
+.country-filter-field select:focus{
+  border-color:#3d9fcf;
+  outline:3px solid rgba(61,159,207,.12);
+}
+.country-stepper{
+  min-height:43px;
+  display:grid;
+  grid-template-columns:22px 34px 1fr 34px;
+  gap:4px;
+  align-items:center;
+  padding:4px 5px 4px 10px;
+  border:1px solid #d8e1e8;
+  border-radius:10px;
+  background:#fbfcfd;
+}
+.country-stepper>svg{width:17px;height:17px;color:#668095}
+.country-stepper button{
+  width:31px;
+  height:31px;
+  display:grid;
+  place-items:center;
+  border:1px solid #d5e0e7;
+  border-radius:8px;
+  background:#fff;
+  color:#17334a;
+  font-size:18px;
+  line-height:1;
+  cursor:pointer;
+}
+.country-stepper button:hover:not(:disabled){border-color:#2b91c7;color:#1477ae}
+.country-stepper button:disabled{opacity:.38;cursor:not-allowed}
+.country-stepper output{text-align:center;color:#0d2538;font-size:13px;font-weight:800}
+.country-filter-reset{
+  width:100%;
+  margin-top:15px;
+  padding:8px;
+  border:0;
+  background:transparent;
+  color:#2b7da9;
+  font:750 11px/1 Inter,sans-serif;
+  cursor:pointer;
+}
+.country-filter-help{
+  display:flex;
+  gap:9px;
+  margin:13px -5px -5px;
+  padding:13px;
+  border-radius:12px;
+  background:#eef8f4;
+  color:#267257;
+}
+.country-filter-help>svg{width:18px;height:18px;flex:none}
+.country-filter-help p,.country-filter-help b,.country-filter-help span{display:block;margin:0}
+.country-filter-help b{font-size:10.5px}
+.country-filter-help span{margin-top:3px;color:#638075;font-size:9.5px;line-height:1.45}
+.country-options-results{min-width:0}
+.country-results-bar{
+  min-height:25px;
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:center;
+  margin-bottom:11px;
+  color:#82909d;
+  font-size:10.5px;
+  font-weight:650;
+}
+.country-results-bar span:first-child{color:#435c70;font-weight:800}
+.country-options-results .cards{margin-top:0}
+.country-options-results .vcard{min-width:0;display:flex;flex-direction:column}
+.country-options-results .country-visa-facts{margin-top:auto}
+.country-card-total{
+  min-height:15px;
+  margin-top:2px;
+  color:#257454;
+  font-size:10px;
+  font-weight:750;
+}
+.country-no-match{
+  grid-column:1/-1;
+  min-height:280px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:36px;
+  border:1px dashed #cbd8e1;
+  border-radius:16px;
+  background:#fff;
+  text-align:center;
+}
+.country-no-match>span{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#edf6fb;color:#2b91c7}
+.country-no-match svg{width:21px;height:21px}
+.country-no-match h3{margin-top:13px;color:#173047;font-size:18px}
+.country-no-match p{margin-top:6px;color:#748494;font-size:12px}
+.country-no-match button{margin-top:15px;border:0;background:transparent;color:#1677ad;font:750 12px/1 Inter,sans-serif;cursor:pointer}
+
+body.visa-modal-open{overflow:hidden}
+.visa-choice-modal[hidden]{display:none}
+.visa-choice-modal{
+  position:fixed;
+  z-index:1000;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:24px;
+  opacity:0;
+  transition:opacity .18s ease;
+}
+.visa-choice-modal.open{opacity:1}
+.visa-choice-backdrop{position:absolute;inset:0;background:rgba(4,20,33,.66);backdrop-filter:blur(4px)}
+.visa-choice-dialog{
+  position:relative;
+  width:min(860px,100%);
+  max-height:min(690px,calc(100vh - 48px));
+  display:grid;
+  grid-template-columns:minmax(0,1.04fr) minmax(330px,.96fr);
+  overflow:auto;
+  border:1px solid rgba(255,255,255,.45);
+  border-radius:22px;
+  background:#fff;
+  box-shadow:0 32px 90px rgba(0,18,32,.32);
+  transform:translateY(14px) scale(.985);
+  transition:transform .2s ease;
+}
+.visa-choice-modal.open .visa-choice-dialog{transform:translateY(0) scale(1)}
+.visa-choice-close{
+  position:absolute;
+  z-index:2;
+  top:15px;
+  right:15px;
+  width:34px;
+  height:34px;
+  border:1px solid #dce4ea;
+  border-radius:50%;
+  background:#fff;
+  color:#43576a;
+  font-size:22px;
+  line-height:1;
+  cursor:pointer;
+}
+.visa-choice-about{padding:38px;background:#f3f8fb}
+.visa-choice-kicker{
+  display:block;
+  color:#d98d00;
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+}
+.visa-choice-about h2{max-width:320px;margin-top:10px;color:#0a2235;font-size:30px;line-height:1.14}
+.visa-choice-about>p{margin-top:7px;color:#668094;font-size:13px}
+.visa-choice-facts{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  margin-top:27px;
+  border:1px solid #d8e5ec;
+  border-radius:13px;
+  background:#fff;
+}
+.visa-choice-facts span{min-width:0;padding:13px;border-left:1px solid #e4ebef}
+.visa-choice-facts span:first-child{border-left:0}
+.visa-choice-facts small,.visa-choice-facts b{display:block}
+.visa-choice-facts small{color:#8997a3;font-size:8px;font-weight:800;text-transform:uppercase}
+.visa-choice-facts b{margin-top:4px;overflow-wrap:anywhere;color:#173149;font-size:10.5px}
+.visa-choice-includes{display:flex;flex-direction:column;gap:10px;margin-top:28px}
+.visa-choice-includes>b{margin-bottom:2px;color:#1c364c;font-size:12px}
+.visa-choice-includes>span{display:flex;gap:8px;align-items:center;color:#587184;font-size:11.5px}
+.visa-choice-includes svg{width:15px;height:15px;color:#279060;flex:none}
+.visa-choice-assurance{display:flex;gap:10px;align-items:center;margin-top:29px;padding-top:18px;border-top:1px solid #dce7ed;color:#2a8961}
+.visa-choice-assurance>svg{width:24px;height:24px;flex:none}
+.visa-choice-assurance span,.visa-choice-assurance b,.visa-choice-assurance small{display:block}
+.visa-choice-assurance b{font-size:11px}
+.visa-choice-assurance small{margin-top:2px;color:#718696;font-size:9.5px}
+.visa-choice-summary{padding:38px;background:#fff}
+.visa-choice-summary h3{margin-top:10px;color:#102a3e;font-size:24px}
+.visa-choice-summary>p{margin-top:7px;color:#718292;font-size:12px;line-height:1.55}
+.visa-modal-travellers{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:center;
+  margin-top:25px;
+  padding:13px;
+  border:1px solid #dce4ea;
+  border-radius:12px;
+}
+.visa-modal-travellers>span{display:flex;gap:8px;align-items:center;color:#273f52;font-size:12px}
+.visa-modal-travellers>span svg{width:18px;height:18px;color:#658096}
+.visa-modal-travellers .country-stepper{min-height:35px;grid-template-columns:31px 35px 31px;padding:1px;border:0;background:#fff}
+.visa-modal-travellers .country-stepper button{width:29px;height:29px}
+.visa-price-lines{margin-top:23px;padding-top:5px;border-top:1px solid #edf0f3}
+.visa-price-lines>div{display:flex;justify-content:space-between;gap:20px;padding:10px 0;color:#728292;font-size:11.5px}
+.visa-price-lines b{color:#334c60;font-size:11.5px}
+.visa-price-lines .visa-price-total{align-items:baseline;margin-top:4px;padding-top:17px;border-top:1px solid #dfe6eb;color:#20384b;font-size:13px;font-weight:800}
+.visa-price-total strong{color:#09243a;font-size:27px;letter-spacing:-.03em}
+.visa-choice-summary .visa-price-note{margin-top:7px;padding:10px;border-radius:9px;background:#fff8e8;color:#866b38;font-size:9.5px}
+.visa-modal-continue{min-height:48px;margin-top:17px;border-radius:11px}
+.visa-modal-back{width:100%;margin-top:10px;padding:8px;border:0;background:transparent;color:#5d7386;font:750 11px/1 Inter,sans-serif;cursor:pointer}
+
+@media (max-width:1080px){
+  .country-options-layout{grid-template-columns:220px minmax(0,1fr)}
+  .country-options-results .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:760px){
+  .country-options-layout{grid-template-columns:1fr;gap:18px;margin-top:22px}
+  .country-visa-sidebar{position:static;padding:16px}
+  .country-filter-heading{padding-bottom:13px}
+  .country-visa-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .country-filter-heading,.country-filter-help{grid-column:1/-1}
+  .country-filter-field{margin-top:0}
+  .country-filter-reset{align-self:end;margin:0;min-height:43px;border:1px solid #d8e1e8;border-radius:10px;background:#fff}
+  .country-filter-help{margin:0;padding:11px}
+  .country-results-bar{margin-top:4px}
+  .visa-choice-dialog{grid-template-columns:1fr;max-width:520px}
+  .visa-choice-about,.visa-choice-summary{padding:30px}
+  .visa-choice-about{padding-bottom:25px}
+  .visa-choice-assurance{display:none}
+}
+
+@media (max-width:540px){
+  .country-section-heading>p{font-size:12px}
+  .country-visa-sidebar{grid-template-columns:1fr}
+  .country-filter-heading,.country-filter-help{grid-column:auto}
+  .country-options-results .cards{grid-template-columns:1fr}
+  .country-results-bar span:last-child{display:none}
+  .country-options-results .vcard{padding:18px}
+  .country-options-results .vcard h3{font-size:17px}
+  .country-options-results .vcard .price{font-size:25px}
+  .visa-choice-modal{align-items:end;padding:0}
+  .visa-choice-dialog{width:100%;max-height:92vh;border-radius:21px 21px 0 0}
+  .visa-choice-about,.visa-choice-summary{padding:24px 20px}
+  .visa-choice-about h2{font-size:25px}
+  .visa-choice-facts{margin-top:19px}
+  .visa-choice-includes{margin-top:21px}
+  .visa-choice-summary h3{font-size:21px}
+  .visa-choice-close{position:fixed;top:auto;right:14px;margin-top:-10px}
+}
+*/

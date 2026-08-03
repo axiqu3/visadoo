@@ -94,11 +94,11 @@
       '<div class="price">'+esc(money(priceNumber(visa)))+' <small>/ visa</small></div>'+
       (visa.blurb?'<p class="blurb">'+esc(visa.blurb)+'</p>':'')+
       '<ul>'+features.map(function(feature){return '<li>'+CHECK+esc(feature)+'</li>';}).join('')+'</ul>'+
-      '<a href="app.html?visa='+encodeURIComponent(visa.slug)+'" class="btn btn-primary btn-block">Apply now</a>'+
+      '<a href="/app.html?visa='+encodeURIComponent(visa.slug)+'" class="btn btn-primary btn-block">Apply now</a>'+
     '</article>';
   }
   function renderError(title,message){
-    root.innerHTML='<section class="country-page-error"><div><div class="country-error-icon">!</div><h1>'+esc(title)+'</h1><p>'+esc(message)+'</p><a href="events.html" class="btn btn-primary btn-lg">Browse events</a></div></section>';
+    root.innerHTML='<section class="country-page-error"><div><div class="country-error-icon">!</div><h1>'+esc(title)+'</h1><p>'+esc(message)+'</p><a href="/events.html" class="btn btn-primary btn-lg">Browse events</a></div></section>';
   }
   function render(event,country,visas){
     var countryName=country.name||'this destination';
@@ -108,7 +108,7 @@
     var lead=leadDays(event,visas);
     var about=event.blurb||('Plan your trip to '+event.name+' with the right '+countryName+' visa, clear timelines and everything ready before you travel.');
     var cards=visas.length?visas.map(visaCard).join(''):
-      '<div class="country-empty"><h3>Visa options are coming soon</h3><p>Contact us and we will help you plan for this event.</p><a href="index.html#contact" class="btn btn-primary">Contact us</a></div>';
+      '<div class="country-empty"><h3>Visa options are coming soon</h3><p>Contact us and we will help you plan for this event.</p><a href="/#contact" class="btn btn-primary">Contact us</a></div>';
     var prices=visas.map(priceNumber).filter(function(value){return value!=null;});
     var fromPrice=prices.length?Math.min.apply(null,prices):null;
     var processing=visas.map(function(visa){
@@ -131,7 +131,7 @@
         '<div class="event-hero-wordmark" aria-hidden="true">EVENTS</div>'+
         '<div class="container event-detail-grid">'+
           '<div class="event-detail-copy">'+
-            '<a href="events.html#events-list" class="event-back"><span aria-hidden="true">&#8592;</span> All events</a>'+
+            '<a href="/events.html#events-list" class="event-back"><span aria-hidden="true">&#8592;</span> All events</a>'+
             '<div class="event-detail-badges">'+
               (country.iso2?'<img src="'+flag(country.iso2)+'" alt="'+esc(countryName)+' flag">':'')+
               '<span class="event-category">Visa guide</span>'+
@@ -178,6 +178,11 @@
   }
 
   var eventSlug=slug();
+  var preloaded=window.__VISADOO_EVENT_DATA__;
+  if(preloaded&&preloaded.event){
+    render(preloaded.event,preloaded.country||{name:preloaded.event.country_slug},preloaded.visas||[]);
+    return;
+  }
   if(!eventSlug){ renderError('Event not selected','Choose an event from the events page to see its details.'); return; }
   if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY){ renderError('Connection unavailable','The event service is not configured yet.'); return; }
 

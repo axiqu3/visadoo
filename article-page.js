@@ -63,14 +63,14 @@
       if(node.tagName==='A'){
         node.setAttribute('rel','noopener');
         if(node.getAttribute('href')&&node.getAttribute('href').indexOf('/')===0){
-          node.setAttribute('href',node.getAttribute('href').replace(/^\/articles$/,'articles.html'));
+          node.setAttribute('href',node.getAttribute('href').replace(/^\/articles$/,'/articles.html'));
         }
       }
     });
     return template.innerHTML;
   }
   function renderError(title,message){
-    root.innerHTML='<section class="country-page-error"><div><div class="country-error-icon">!</div><h1>'+esc(title)+'</h1><p>'+esc(message)+'</p><a href="articles.html" class="btn btn-primary btn-lg">See all articles</a></div></section>';
+    root.innerHTML='<section class="country-page-error"><div><div class="country-error-icon">!</div><h1>'+esc(title)+'</h1><p>'+esc(message)+'</p><a href="/articles.html" class="btn btn-primary btn-lg">See all articles</a></div></section>';
   }
   function enhanceArticle(){
     var body=document.querySelector('.article-body');
@@ -137,7 +137,7 @@
         '<header class="article-hero'+(cover?'':' article-hero--plain')+'">'+
           '<div class="article-hero-orbit article-hero-orbit--one" aria-hidden="true"></div><div class="article-hero-orbit article-hero-orbit--two" aria-hidden="true"></div>'+
           '<div class="container article-hero-copy">'+
-            '<a href="articles.html" class="article-back"><span>←</span> Back to the journal</a>'+
+            '<a href="/articles.html" class="article-back"><span>←</span> Back to the journal</a>'+
             '<span class="article-kicker"><i></i> Visa Doo Journal</span>'+
             '<h1 class="article-title">'+esc(article.title)+'</h1>'+
             (article.excerpt?'<p class="article-intro">'+esc(article.excerpt)+'</p>':'')+
@@ -153,12 +153,12 @@
         '<section class="article-content-section"><div class="container article-layout">'+
           '<aside class="article-aside">'+
             '<div class="article-toc-card"><span class="article-side-label">In this guide</span><nav id="articleToc" aria-label="Article contents"></nav></div>'+
-            '<div class="article-help-card"><span class="article-help-icon">✓</span><div><b>Expert-checked guidance</b><p>Need help with your route? Our visa team is one message away.</p></div><a href="index.html#contact">Talk to our team →</a></div>'+
+            '<div class="article-help-card"><span class="article-help-icon">✓</span><div><b>Expert-checked guidance</b><p>Need help with your route? Our visa team is one message away.</p></div><a href="/#contact">Talk to our team →</a></div>'+
             '<button class="article-copy-link" id="copyArticleLink" type="button"><span>↗</span> Copy article link</button>'+
           '</aside>'+
           '<div class="article-prose-card">'+
             '<div class="article-body">'+safeContent(article.content||'')+'</div>'+
-            '<div class="article-cta"><div><span>YOUR NEXT TRIP STARTS HERE</span><h3>Ready to make the visa part simple?</h3><p>Compare destinations, see the requirements clearly and apply online with live tracking.</p></div><a href="index.html#destinations" class="btn btn-white btn-lg">Explore destinations <b>→</b></a></div>'+
+            '<div class="article-cta"><div><span>YOUR NEXT TRIP STARTS HERE</span><h3>Ready to make the visa part simple?</h3><p>Compare destinations, see the requirements clearly and apply online with live tracking.</p></div><a href="/#destinations" class="btn btn-white btn-lg">Explore destinations <b>→</b></a></div>'+
           '</div>'+
         '</div></section>'+
       '</article>';
@@ -175,7 +175,8 @@
     if(rows.length){ render(rows[0]); return; }
     return fetchJson('/rest/v1/articles?status=eq.published&past_slugs=cs.%7B'+encodeURIComponent(articleSlug)+'%7D&select=slug&limit=1').then(function(moved){
       if(moved.length){
-        window.location.replace('article.html?slug='+encodeURIComponent(moved[0].slug));
+        var local=window.location.protocol==='file:'||window.location.hostname==='127.0.0.1'||window.location.hostname==='localhost';
+        window.location.replace(local?('/article.html?slug='+encodeURIComponent(moved[0].slug)):('/article/'+encodeURIComponent(moved[0].slug)));
         return;
       }
       renderError('Article not found','This article does not exist or is no longer published.');

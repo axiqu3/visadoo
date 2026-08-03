@@ -21,6 +21,43 @@
 <link rel="preload" as="image" href="assets/hero-coastal-town-original.jpg" type="image/jpeg" fetchpriority="high">
 <link rel="stylesheet" href="styles.css?v=20260801-home-mobile-compact">
 <script>
+  // Supabase can fall back to the Site URL when /app.html is not allowlisted.
+  // Forward OAuth callbacks to the application so the marketing homepage never
+  // replaces the sign-in flow or appears inside the Google popup.
+  (function () {
+    var query = new URLSearchParams(location.search);
+    var hash = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    var isGooglePopup = window.name === 'visadoo-google-signin' && !!window.opener;
+    var hasAuthHash = hash.has('access_token') || hash.has('refresh_token') ||
+      hash.has('error') || hash.has('error_description');
+    var isAuthCallback = query.has('code') || query.has('error') || query.has('error_code') ||
+      query.has('error_description') || hasAuthHash;
+    var pending = null;
+    try {
+      pending = JSON.parse(localStorage.getItem('visadoo-oauth-pending') || 'null');
+      if (!pending || !pending.createdAt || Date.now() - Number(pending.createdAt) > 15 * 60 * 1000) {
+        localStorage.removeItem('visadoo-oauth-pending');
+        pending = null;
+      }
+    } catch (_pendingError) {
+      pending = null;
+    }
+    if (!isGooglePopup && !isAuthCallback && !pending) return;
+
+    var target = new URL('/app.html', location.origin);
+    try {
+      if (pending && pending.returnTo && pending.returnTo.indexOf('/app.html') === 0) {
+        target = new URL(pending.returnTo, location.origin);
+      }
+      var saved = sessionStorage.getItem('visadoo-oauth-return');
+      if (!pending && saved && saved.indexOf('/app.html') === 0) target = new URL(saved, location.origin);
+    } catch (_storageError) {}
+    query.forEach(function (value, key) { target.searchParams.set(key, value); });
+    target.hash = hasAuthHash ? location.hash : '';
+    location.replace(target.pathname + target.search + target.hash);
+  })();
+</script>
+<script>
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   if (!location.hash || location.hash === '#top') scrollTo(0, 0);
 </script>

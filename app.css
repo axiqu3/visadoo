@@ -55,7 +55,18 @@
 .signin-step-back{flex:none;padding:0;border:0;background:none;color:var(--signin-coral);font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .signin-step-back:hover{color:var(--signin-coral-dark)}
 .signin-forgot{display:block;margin:8px 0 0 auto;padding:0;font-size:12px}
-.signin-link-option{width:fit-content;min-width:208px;margin:0 auto;border-radius:999px;padding:8px 16px;font-size:14px}
+.signin-link-option{
+  width:100%;
+  max-width:300px;
+  min-height:48px;
+  margin:0 auto;
+  padding:12px 24px;
+  border-radius:999px;
+  font-size:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 #accountStep .or-divider{margin:16px 0 13px;font-size:11px}
 #googleGroup{text-align:center}
 #googleGroup .or-divider{margin:21px 0 15px}

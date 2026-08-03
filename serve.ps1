@@ -24,6 +24,10 @@ while ($listener.IsListening) {
   try {
     $path = [System.Uri]::UnescapeDataString($req.Url.AbsolutePath)
     if ($path -eq '/' -or $path -eq '') { $path = '/index.html' }
+    if ($path -eq '/events' -or $path -eq '/events/') { $path = '/events.html' }
+    if ($path -eq '/articles' -or $path -eq '/articles/') { $path = '/articles.html' }
+    if ($path -match '^/event/[^/]+/?$') { $path = '/event.html' }
+    if ($path -match '^/article/[^/]+/?$') { $path = '/article.html' }
     $file = Join-Path $root ($path.TrimStart('/').Replace('/', '\'))
     if ((Test-Path $file) -and -not (Get-Item $file).PSIsContainer) {
       $ext = [System.IO.Path]::GetExtension($file).ToLower()

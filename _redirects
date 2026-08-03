@@ -1,0 +1,5 @@
+# Static-upload fallbacks when Netlify Edge Functions are not bundled.
+/events     /events.html    200
+/articles   /articles.html  200
+/event/*    /event.html     200
+/article/*  /article.html   200
