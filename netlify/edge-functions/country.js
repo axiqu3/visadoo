@@ -116,18 +116,16 @@ function uaeDocuments(){
   }
   return '<div class="container uae-documents-simple">'+
     '<div class="uae-documents-overview">'+
-      '<div class="uae-documents-heading"><span class="eyebrow">Documents</span><h2>Simple documents to get started</h2><p>Prepare clear copies of the basics. If your selected visa needs anything else, VisaDoo will tell you.</p></div>'+
+      '<div class="uae-documents-heading"><span class="eyebrow">Documents</span><h2>Only two documents needed</h2><p>Keep a clear passport bio page and a recent personal photo ready.</p></div>'+
       '<div class="uae-documents-quick" aria-label="Document preparation summary">'+
-        '<div><strong>3</strong><span>essential items</span></div>'+
-        '<div><strong>~5 min</strong><span>to prepare</span></div>'+
+        '<div><strong>2</strong><span>essential items</span></div>'+
+        '<div><strong>~3 min</strong><span>to prepare</span></div>'+
         '<div><strong>Phone</strong><span>uploads accepted</span></div>'+
       '</div>'+
     '</div>'+
     '<div class="uae-document-grid">'+
       card('Required','Passport bio page','A clear copy of the page with your photo and details.','/assets/uae-documents/passport-bio-page.png')+
       card('Required','Recent photo','A clear, front-facing photo on a plain background.','/assets/uae-documents/recent-photo.png')+
-      card('Trip details','Travel information','Your intended travel dates and accommodation details.','/assets/uae-documents/travel-information.png')+
-      card('If requested','Supporting document','We will tell you if your selected visa needs this.','/assets/uae-documents/supporting-document.png')+
     '</div>'+
     '<div class="uae-documents-footer">'+
       '<div><span aria-hidden="true">&#8593;</span><p><b>Upload from any device</b><small>Clear phone photos or scans are accepted.</small></p></div>'+
@@ -209,10 +207,10 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     '<meta name="twitter:card" content="summary_large_image">'+
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
-    '<link rel="stylesheet" href="/styles.css?v=20260803-footer-top-line">'+
+    '<link rel="stylesheet" href="/styles.css?v=20260804-uae-app-visible-sections">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
-    '</head><body class="country-page">'+
+    '</head><body class="country-page'+(isUae?' uae-country-page':'')+'">'+
     '<header class="header discover-header"><div class="container nav">'+
       '<div class="nav-brand-cluster">'+
         '<a href="/#top" class="brand">'+brandMark()+'</a>'+
@@ -224,7 +222,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
       '</nav>'+
       '<div class="nav-actions">'+
         '<a href="/app.html#track" class="nav-track">Track visa</a>'+
-        '<a href="/app.html" class="nav-profile" aria-label="Sign in" title="Sign in"></a>'+
+        '<a href="/app.html#profile" class="nav-profile" aria-label="Profile" title="Profile"></a>'+
         '<button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">'+
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>'+
         '</button>'+
@@ -290,6 +288,9 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
       '</div>'+
     '</div></footer>'+
     '<script src="/destination-images.js"></scr'+'ipt>'+
+    '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></scr'+'ipt>'+
+    '<script src="/config.js"></scr'+'ipt>'+
+    '<script src="/country-history.js?v=20260804-uae-app-visible-sections"></scr'+'ipt>'+
     '<script>(function(){var b=document.getElementById("menuBtn"),n=document.getElementById("navLinks");if(!b||!n)return;b.addEventListener("click",function(){var o=n.classList.toggle("open");b.setAttribute("aria-expanded",String(o))});n.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){n.classList.remove("open");b.setAttribute("aria-expanded","false")})})})();</scr'+'ipt>'+
     '<script>(function(){var w=document.querySelector("[data-uae-visa-selector]"),c=w&&w.querySelectorAll("[data-uae-choice]");if(!w||!c.length)return;function u(o){if(!o)return;["name","category","stay","entry","processing","price"].forEach(function(k){w.querySelectorAll("[data-uae-"+k+"]").forEach(function(n){n.textContent=o.getAttribute("data-"+k)||""})});c.forEach(function(i){var l=i.closest(".uae-visa-option");if(l)l.classList.toggle("selected",i===o)})}c.forEach(function(i){i.addEventListener("change",function(){if(i.checked)u(i)})});u(w.querySelector("[data-uae-choice]:checked"))})();</scr'+'ipt>'+
     '</body></html>';

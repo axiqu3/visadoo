@@ -2305,10 +2305,10 @@ p{margin:0}
 .wa-float.has-label .wa-label{color:#fff;font-weight:700;font-size:15px;white-space:nowrap;line-height:1}
 
 /* ===== Announcement bar ===== */
-.ann-bar{background:linear-gradient(135deg,var(--blue-600),var(--blue-500));color:#fff;font-weight:600;font-size:14.5px}
+.ann-bar{background:#f7c934;color:#25333a;font-weight:700;font-size:14.5px;box-shadow:0 1px 0 rgba(88,65,0,.12)}
 .ann-inner{max-width:var(--maxw);margin:0 auto;padding:10px 44px 10px 22px;text-align:center;position:relative}
-.ann-inner a{color:#fff;text-decoration:underline}
-.ann-x{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:22px;line-height:1;cursor:pointer;opacity:.85;padding:0}
+.ann-inner a{color:#25333a;text-decoration:underline;text-underline-offset:2px}
+.ann-x{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#25333a;font-size:22px;line-height:1;cursor:pointer;opacity:.72;padding:0}
 .ann-x:hover{opacity:1}
 
 /* ===== Cookie banner ===== */
@@ -6820,6 +6820,53 @@ body.visa-modal-open{overflow:hidden}
   align-items:center;
   padding:14px;
 }
+
+/* Signed-in customer history shown on the UAE destination page. */
+.uae-history{margin-top:54px;padding-top:39px;border-top:1px solid #e3e9eb}
+.uae-history-heading{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:21px;text-align:left}
+.uae-history-heading>div>span{display:block;color:#d9584b;font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+.uae-history-heading h2{margin-top:7px;color:#132a38;font-size:30px;font-weight:800;letter-spacing:-.035em}
+.uae-history-heading p{margin-top:7px;color:#687b85;font-size:12px}
+.uae-history-heading>a{flex:none;display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border:1px solid #dce4e7;border-radius:999px;background:#fff;color:#253f4a;font-size:11px;font-weight:750;transition:.18s ease}
+.uae-history-heading>a:hover{border-color:#ef6f61;background:#fff9f8;color:#c94f43;transform:translateY(-2px)}
+.uae-history-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.uae-history-card{min-width:0;overflow:hidden;border:1px solid #dfe6e8;border-radius:21px;background:#fff;box-shadow:0 14px 34px rgba(24,49,60,.07)}
+.uae-history-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:19px;border-bottom:1px solid #e8edef;text-align:left}
+.uae-history-card>header>div{min-width:0}
+.uae-history-card>header>div>span{display:block;color:#d9584b;font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.uae-history-card h3{margin-top:5px;color:#193641;font-size:16px;line-height:1.25}
+.uae-history-card header p{margin-top:5px;color:#7a8991;font-size:9.5px}
+.uae-history-status{flex:none;padding:5px 8px;border:1px solid #f3cbc6;border-radius:999px;background:#fff2f0;color:#bf4e43;font-size:8px;white-space:nowrap}
+.uae-history-status.issued{border-color:#bfe2ce;background:#eff9f3;color:#187047}
+.uae-history-status.action{border-color:#efd397;background:#fff9ec;color:#9a6200}
+.uae-history-documents{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:12px}
+.uae-history-document{min-width:0;overflow:hidden;padding:0;border:1px solid #e0e7e9;border-radius:13px;background:#fff;color:#193640;font-family:inherit;text-align:left;cursor:pointer;transition:.18s ease}
+.uae-history-document:hover{border-color:#ef6f61;transform:translateY(-2px);box-shadow:0 9px 20px rgba(29,51,61,.08)}
+.uae-history-media{height:104px;display:grid;place-items:center;overflow:hidden;border-bottom:1px solid #e7ecee;background:#f5f7f7;color:#87959b;font-size:8.5px;text-align:center}
+.uae-history-media img{width:100%;height:100%;object-fit:contain;background:#f5f7f7}
+.uae-history-spinner{width:22px;height:22px;border:3px solid #f4cbc6;border-top-color:#ef6f61;border-radius:50%;animation:uaeHistorySpin .75s linear infinite}
+@keyframes uaeHistorySpin{to{transform:rotate(360deg)}}
+.uae-history-document>div:last-child{padding:10px}
+.uae-history-document b,.uae-history-document small{display:block}
+.uae-history-document b{font-size:10.5px}
+.uae-history-document small{margin-top:4px;color:#d0584c;font-size:8.5px;font-weight:700}
+.uae-history-document.missing{cursor:default;box-shadow:none}
+.uae-history-document.missing:hover{border-color:#e0e7e9;transform:none}
+.uae-history-document.missing small{color:#89969c}
+
+@media (max-width:900px){
+  .uae-history-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:620px){
+  .uae-history{margin-top:36px;padding-top:29px}
+  .uae-history-heading{align-items:flex-start;flex-direction:column;gap:14px;margin-bottom:17px}
+  .uae-history-heading h2{font-size:25px}
+  .uae-history-heading p{font-size:10.5px;line-height:1.5}
+  .uae-history-list{grid-template-columns:1fr;gap:12px}
+  .uae-history-card>header{padding:16px}
+  .uae-history-media{height:126px}
+}
 .uae-document-card-simple .uae-document-photo{
   width:118px;
   height:86px;
@@ -6976,4 +7023,358 @@ body.visa-modal-open{overflow:hidden}
   .uae-process-step>div>span{font-size:20px}
   .uae-process-step h3{font-size:15px}
   .uae-process-step p{max-width:none;margin-top:4px;font-size:10.5px}
+}
+
+/* Returning UAE customer — application-first destination page */
+.uae-account-page{background:#f4f6f5}
+.uae-account-page #countryPage,.uae-account-page main{background:#f4f6f5}
+.uae-account-hero{
+  position:relative;
+  isolation:isolate;
+  min-height:560px;
+  overflow:hidden;
+  background:#0a242b;
+  color:#fff;
+}
+.uae-account-hero::before{
+  content:"";
+  position:absolute;
+  z-index:-2;
+  inset:0;
+  background-image:url("https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1800&q=86");
+  background-position:center;
+  background-size:cover;
+  filter:saturate(.72);
+  transform:scale(1.015);
+}
+.uae-account-hero::after{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0;
+  background:linear-gradient(90deg,rgba(5,28,34,.96) 0%,rgba(5,28,34,.88) 44%,rgba(5,28,34,.58) 100%),linear-gradient(0deg,rgba(3,23,28,.75),transparent 55%);
+}
+.uae-account-hero>.container{padding-top:47px;padding-bottom:58px}
+.uae-account-back{display:inline-flex;align-items:center;gap:7px;color:rgba(255,255,255,.76);font-size:11px;font-weight:750}
+.uae-account-back:hover{color:#fff}
+.uae-account-hero-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(330px,.82fr);gap:74px;align-items:center;margin-top:48px}
+.uae-account-hero-copy{max-width:690px}
+.uae-account-flag{display:flex;gap:10px;align-items:center;margin-bottom:21px}
+.uae-account-flag img{width:35px;height:24px;border:1px solid rgba(255,255,255,.7);border-radius:6px;object-fit:cover}
+.uae-account-flag span{font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase}
+.uae-account-hero-copy>p{color:#bcd0d5;font-size:13px;font-weight:720}
+.uae-account-hero-copy h1{max-width:670px;margin-top:9px;color:#fff;font-size:clamp(40px,5.3vw,68px);font-weight:800;letter-spacing:-.055em;line-height:1.02;text-wrap:balance}
+.uae-account-hero-lead{display:block;max-width:590px;margin-top:18px;color:#c4d4d8;font-size:15px;line-height:1.65}
+.uae-account-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px}
+.uae-account-actions>a{min-height:50px;display:inline-flex;align-items:center;justify-content:center;gap:11px;padding:13px 21px;border-radius:999px;font-size:12px;font-weight:800;transition:.18s ease}
+.uae-account-primary{background:#fff;color:#102d35;box-shadow:0 12px 28px rgba(0,0,0,.16)}
+.uae-account-primary:hover{background:#edf5f3;transform:translateY(-2px)}
+.uae-account-secondary{border:1px solid rgba(255,255,255,.48);background:rgba(255,255,255,.08);color:#fff;backdrop-filter:blur(10px)}
+.uae-account-secondary:hover{background:rgba(255,255,255,.16);transform:translateY(-2px)}
+.uae-account-secondary span{font-size:18px;line-height:1}
+.uae-account-hero-summary{padding:29px;border:1px solid rgba(255,255,255,.24);border-radius:24px;background:rgba(8,31,38,.62);box-shadow:0 24px 58px rgba(0,0,0,.23);backdrop-filter:blur(18px)}
+.uae-account-hero-summary>span{color:#9fc3bd;font-size:9px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}
+.uae-account-hero-summary h2{margin-top:7px;color:#fff;font-size:25px;line-height:1.25}
+.uae-account-hero-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-top:23px;border-top:1px solid rgba(255,255,255,.18)}
+.uae-account-hero-meta>div{padding:16px 13px 14px 0;border-bottom:1px solid rgba(255,255,255,.18)}
+.uae-account-hero-meta>div:nth-child(even){padding-left:17px;border-left:1px solid rgba(255,255,255,.18)}
+.uae-account-hero-meta small,.uae-account-hero-meta b{display:block}
+.uae-account-hero-meta small{color:#91a9af;font-size:8px;font-weight:750;text-transform:uppercase;letter-spacing:.05em}
+.uae-account-hero-meta b{margin-top:5px;overflow-wrap:anywhere;color:#fff;font-size:12px}
+.uae-account-content{padding:68px 0 84px}
+.uae-account-grid{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(300px,.78fr);gap:64px;align-items:start}
+.uae-account-main,.uae-account-side{min-width:0}
+.uae-account-section-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;padding-bottom:24px;border-bottom:1px solid #d8e1df}
+.uae-account-section-head>div>span,.uae-account-documents>header span,.uae-account-side section>span,.uae-account-other header span{display:block;color:#24756d;font-size:9px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}
+.uae-account-section-head h2,.uae-account-documents h2,.uae-account-side h2{margin-top:6px;color:#16323a;font-size:25px;letter-spacing:-.03em}
+.uae-account-section-head p,.uae-account-documents header p{margin-top:5px;color:#78898d;font-size:10px}
+.uae-account-progress{padding:29px 0 33px;border-bottom:1px solid #d8e1df}
+.uae-account-progress-head{display:flex;justify-content:space-between;gap:18px;align-items:end}
+.uae-account-progress-head span,.uae-account-progress-head b{display:block}
+.uae-account-progress-head span{color:#7a8c90;font-size:9px;font-weight:760;letter-spacing:.06em;text-transform:uppercase}
+.uae-account-progress-head b{margin-top:5px;color:#1a3a42;font-size:13px}
+.uae-account-progress-head>strong{color:#1f766d;font-size:22px}
+.uae-account-progress-line{height:5px;margin-top:15px;overflow:hidden;border-radius:999px;background:#dce6e4}
+.uae-account-progress-line i{width:var(--uae-progress);height:100%;display:block;border-radius:inherit;background:linear-gradient(90deg,#1f766d,#53aaa0)}
+.uae-account-progress ol{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:20px 0 0;padding:0;list-style:none}
+.uae-account-progress li{display:flex;gap:8px;align-items:center;color:#829095;font-size:9px;font-weight:720}
+.uae-account-progress li>i{width:22px;height:22px;flex:none;display:grid;place-items:center;border:1px solid #cad7d5;border-radius:50%;background:#fff;color:#74888b;font-size:8px;font-style:normal;font-weight:850}
+.uae-account-progress li.done,.uae-account-progress li.current{color:#225f59}
+.uae-account-progress li.done>i{border-color:#1f766d;background:#1f766d;color:#fff}
+.uae-account-progress li.current>i{border-color:#1f766d;color:#1f766d;box-shadow:0 0 0 4px rgba(31,118,109,.1)}
+.uae-account-documents{padding-top:32px}
+.uae-account-documents>header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.uae-account-documents>header>b{padding:6px 9px;border:1px solid #c6e1d8;border-radius:999px;background:#ecf7f3;color:#246d59;font-size:8px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.uae-account-documents .uae-history-documents{gap:13px;padding:20px 0 0}
+.uae-account-documents .uae-history-document{border-color:#d8e1df;border-radius:18px;box-shadow:none}
+.uae-account-documents .uae-history-document:hover{border-color:#6e9c96;box-shadow:0 12px 28px rgba(15,49,55,.08)}
+.uae-account-documents .uae-history-media{height:190px;background:#eef2f1}
+.uae-account-documents .uae-history-document>div:last-child{padding:13px 14px}
+.uae-account-documents .uae-history-document b{font-size:12px}
+.uae-account-documents .uae-history-document small{color:#24756d;font-size:9px}
+.uae-account-side{display:grid;gap:25px}
+.uae-account-side>section{padding:28px;border-radius:22px;background:#fff}
+.uae-account-side>section:first-child{background:linear-gradient(145deg,#0b3038,#174e4b);color:#fff;box-shadow:0 18px 42px rgba(13,54,58,.16)}
+.uae-account-side>section:first-child>span{color:#8fc9bf}
+.uae-account-side>section:first-child h2{color:#fff}
+.uae-account-side>section:first-child p{margin-top:10px;color:#b6cfcc;font-size:12px;line-height:1.6}
+.uae-account-side>section:first-child>a{width:100%;min-height:47px;display:flex;justify-content:space-between;align-items:center;margin-top:22px;padding:12px 15px;border-radius:12px;background:#fff;color:#12343a;font-size:11px;font-weight:800}
+.uae-account-other{border:1px solid #dce4e2}
+.uae-account-other>p{margin-top:9px;color:#73858a;font-size:11px;line-height:1.55}
+.uae-account-application-row{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:12px;align-items:center;padding:16px 0;border-top:1px solid #e4eae9}
+.uae-account-application-row:first-child{margin-top:17px}
+.uae-account-application-row span{color:#24756d;font-size:8px;font-weight:820;text-transform:uppercase;letter-spacing:.06em}
+.uae-account-application-row h3{margin-top:4px;color:#203d44;font-size:13px}
+.uae-account-application-row p{margin-top:4px;color:#7c8d91;font-size:9px}
+.uae-account-application-row>a{width:34px;height:34px;display:grid;place-items:center;border:1px solid #d5e0de;border-radius:50%;color:#1f766d;font-weight:800}
+.uae-account-add{width:100%;min-height:45px;display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:11px 14px;border:1px solid #cbd8d6;border-radius:12px;color:#1b4b4c;font-size:11px;font-weight:800}
+.uae-account-add:hover{border-color:#1f766d;background:#eef7f5}
+.uae-account-add span{font-size:17px}
+.uae-account-application-card{border-top:1px solid #e4eae9}
+.uae-account-application-card:first-child{margin-top:17px}
+.uae-account-application-card>summary{display:grid;grid-template-columns:minmax(0,1fr) 32px;gap:12px;align-items:center;padding:15px 0;cursor:pointer;list-style:none}
+.uae-account-application-card>summary::-webkit-details-marker{display:none}
+.uae-account-application-card>summary span{color:#24756d;font-size:8px;font-weight:820;letter-spacing:.06em;text-transform:uppercase}
+.uae-account-application-card>summary h3{margin-top:4px;color:#203d44;font-size:13px}
+.uae-account-application-card>summary p{margin-top:4px;color:#7c8d91;font-size:9px}
+.uae-account-application-card>summary>i{width:30px;height:30px;display:grid;place-items:center;border:1px solid #d5e0de;border-radius:50%;color:#1f766d;font-size:14px;font-style:normal;transition:transform .18s ease}
+.uae-account-application-card[open]>summary>i{transform:rotate(45deg)}
+.uae-account-application-detail{padding:0 0 17px}
+.uae-account-application-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:11px 0;border-top:1px solid #eef1f1}
+.uae-account-application-detail dl>div:nth-child(even){padding-left:13px;border-left:1px solid #eef1f1}
+.uae-account-application-detail dt{color:#849397;font-size:7px;font-weight:760;text-transform:uppercase;letter-spacing:.05em}
+.uae-account-application-detail dd{margin-top:3px;overflow-wrap:anywhere;color:#334e55;font-size:9px;font-weight:720}
+.uae-account-application-detail .uae-history-documents{gap:7px;padding:9px 0}
+.uae-account-application-detail .uae-history-document{border-radius:10px}
+.uae-account-application-detail .uae-history-media{height:76px}
+.uae-account-application-detail .uae-history-document>div:last-child{padding:8px}
+.uae-account-application-detail .uae-history-document b{font-size:8.5px}
+.uae-account-application-detail .uae-history-document small{font-size:7px}
+.uae-account-application-detail>a{display:inline-flex;align-items:center;gap:7px;margin-top:6px;color:#1f6e68;font-size:9px;font-weight:800}
+
+@media (max-width:900px){
+  .uae-account-hero-grid{grid-template-columns:1fr;gap:34px;margin-top:38px}
+  .uae-account-hero-summary{max-width:600px}
+  .uae-account-grid{grid-template-columns:1fr;gap:42px}
+  .uae-account-side{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:620px){
+  .uae-account-hero>.container{padding-top:28px;padding-bottom:38px}
+  .uae-account-hero-grid{margin-top:31px}
+  .uae-account-hero-copy h1{font-size:39px}
+  .uae-account-hero-lead{font-size:13px}
+  .uae-account-actions{align-items:stretch;flex-direction:column}
+  .uae-account-actions>a{width:100%}
+  .uae-account-hero-summary{padding:22px;border-radius:19px}
+  .uae-account-hero-summary h2{font-size:21px}
+  .uae-account-content{padding:43px 0 60px}
+  .uae-account-grid{gap:32px}
+  .uae-account-section-head,.uae-account-documents>header{align-items:flex-start;flex-direction:column}
+  .uae-account-progress ol{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .uae-account-documents .uae-history-documents{grid-template-columns:1fr}
+  .uae-account-documents .uae-history-media{height:205px}
+  .uae-account-side{grid-template-columns:1fr}
+  .uae-account-side>section{padding:22px;border-radius:18px}
+}
+
+/* Returning UAE page v2 — pure white travel and application hub */
+.uae-account-page,.uae-account-page #countryPage,.uae-account-page main{background:#fff}
+.uae-account-page .header{border-bottom:1px solid #edf0f1;background:#fff}
+.uae-account-hero{min-height:560px;border-bottom:1px solid #e3e8e9;background:#0a242b;color:#fff}
+.uae-account-hero::before,.uae-account-hero::after{display:block}
+.uae-account-hero>.container{padding-top:42px;padding-bottom:54px}
+.uae-account-back{color:rgba(255,255,255,.76)}
+.uae-account-back:hover{color:#fff}
+.uae-account-hero-grid{gap:66px;margin-top:43px}
+.uae-account-flag span{color:#fff}
+.uae-account-hero-copy>p{color:#bfd0d4}
+.uae-account-hero-copy h1{color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.2)}
+.uae-account-hero-lead{color:#cad8db}
+.uae-account-primary{background:#fff;color:#112f38;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.uae-account-primary:hover{background:#eef4f3;color:#112f38}
+.uae-account-secondary{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.08);color:#fff;backdrop-filter:blur(10px)}
+.uae-account-secondary:hover{border-color:#fff;background:rgba(255,255,255,.15)}
+.uae-account-contact{min-height:50px!important;padding-right:9px!important;padding-left:9px!important;border:0!important;border-radius:0!important;background:transparent!important;color:#fff!important;text-decoration:underline;text-underline-offset:4px}
+.uae-account-contact:hover{color:#dcecea!important;transform:none!important}
+.uae-account-hero-summary{border-color:rgba(255,255,255,.28);background:rgba(7,31,38,.64);box-shadow:0 22px 50px rgba(0,0,0,.22);backdrop-filter:blur(18px)}
+.uae-account-hero-summary>span{color:#9ccbc3}
+.uae-account-hero-summary h2{color:#fff}
+.uae-account-hero-meta{border-top-color:rgba(255,255,255,.2)}
+.uae-account-hero-meta>div{border-bottom-color:rgba(255,255,255,.2)}
+.uae-account-hero-meta>div:nth-child(even){border-left-color:rgba(255,255,255,.2)}
+.uae-account-hero-meta small{color:#9eb1b6}
+.uae-account-hero-meta b{color:#fff}
+.uae-account-content{background:#fff}
+.uae-account-side>section{border:1px solid #dce4e2;background:#fff}
+.uae-account-side>section:first-child{border:1px solid #dce4e2;background:#fff;color:#17313d;box-shadow:none}
+.uae-account-side>section:first-child>span{color:#24756d}
+.uae-account-side>section:first-child h2{color:#17313d}
+.uae-account-side>section:first-child p{color:#71848a}
+.uae-account-side>section:first-child>a{border:1px solid #cad7d5;background:#fff;color:#17313d}
+.uae-account-side>section:first-child>a:hover{border-color:#236f69;background:#f4f9f7}
+.uae-public-guide-section{padding:76px 0 82px;border-top:1px solid #e0e6e6;background:#fff}
+.uae-public-travel-guide{margin-top:0;padding-top:0;border-top:0}
+.uae-public-travel-guide .uae-attractions{margin-top:0;padding-top:0;border-top:0}
+#uae-attractions,#uae-faq{scroll-margin-top:82px}
+.uae-country-page .country-info-nav .container{overflow-x:auto;scrollbar-width:none}
+.uae-country-page .country-info-nav .container::-webkit-scrollbar{display:none}
+.uae-country-page .country-info-nav a{flex:none;white-space:nowrap}
+.uae-account-information{margin-top:76px;padding-top:64px;border-top:1px solid #dbe3e2}
+.uae-account-information>header{max-width:760px}
+.uae-account-information>header>span,.uae-attractions>header span,.uae-account-faq>header span,.uae-contact-panel>div>span{display:block;color:#24756d;font-size:9px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}
+.uae-account-information>header h2,.uae-attractions>header h2,.uae-account-faq>header h2,.uae-contact-panel h2{margin-top:7px;color:#142f39;font-size:clamp(27px,3.6vw,40px);letter-spacing:-.04em}
+.uae-account-information>header p{max-width:720px;margin-top:11px;color:#6c7f86;font-size:12px;line-height:1.65}
+.uae-information-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:44px;margin-top:38px}
+.uae-info-disclosure{border-top:1px solid #dbe3e2;border-bottom:1px solid #dbe3e2;background:#fff}
+.uae-info-disclosure summary{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:20px 0;cursor:pointer;list-style:none}
+.uae-info-disclosure summary::-webkit-details-marker{display:none}
+.uae-info-disclosure summary span{display:block;color:#24756d;font-size:8px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+.uae-info-disclosure summary h3{margin-top:5px;color:#18343e;font-size:19px}
+.uae-info-disclosure summary>i{flex:none;color:#60777d;font-size:9px;font-style:normal;font-weight:720}
+.uae-info-disclosure summary>i b,.uae-info-disclosure summary>i em{font-style:normal}
+.uae-info-disclosure summary>i em{display:none}
+.uae-info-disclosure:not([open]) summary>i b{display:none}
+.uae-info-disclosure:not([open]) summary>i em{display:block}
+.uae-info-disclosure ul{display:grid;gap:0;margin:0;padding:0 0 20px;list-style:none}
+.uae-info-disclosure li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:11px 0;border-top:1px solid #eef1f1}
+.uae-info-disclosure li>span{width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:#edf7f4;color:#24756d;font-size:8px;font-weight:900}
+.uae-info-disclosure li p{color:#526970;font-size:11px;line-height:1.55}
+.uae-attractions{margin-top:70px;padding-top:56px;border-top:1px solid #dbe3e2}
+.uae-attractions>header{max-width:620px}
+.uae-attractions ol{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:48px;margin:28px 0 0;padding:0;list-style:none}
+.uae-attractions li{display:grid;grid-template-columns:38px minmax(0,1fr);gap:12px;align-items:center;padding:17px 0;border-top:1px solid #e4e9e9}
+.uae-attractions li b{color:#24756d;font-size:10px;letter-spacing:.06em}
+.uae-attractions li span{color:#203b45;font-size:13px;font-weight:730}
+.uae-account-faq{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(0,1.3fr);gap:70px;margin-top:70px;padding-top:56px;border-top:1px solid #dbe3e2}
+.uae-account-faq>div{border-top:1px solid #dbe3e2}
+.uae-account-faq details{border-bottom:1px solid #dbe3e2}
+.uae-account-faq summary{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:19px 0;color:#1d3942;font-size:12px;font-weight:760;cursor:pointer;list-style:none}
+.uae-account-faq summary::-webkit-details-marker{display:none}
+.uae-account-faq summary>span{width:24px;height:24px;flex:none;display:grid;place-items:center;border:1px solid #d0dbd9;border-radius:50%;color:#24756d;font-size:14px;transition:transform .18s ease}
+.uae-account-faq details[open] summary>span{transform:rotate(45deg)}
+.uae-account-faq details>p{max-width:720px;padding:0 34px 19px 0;color:#687c82;font-size:11px;line-height:1.65}
+.uae-contact-panel{display:flex;justify-content:space-between;gap:30px;align-items:center;margin-top:72px;padding:31px 0;border-top:1px solid #dbe3e2;border-bottom:1px solid #dbe3e2}
+.uae-contact-panel h2{font-size:27px}
+.uae-contact-panel p{margin-top:7px;color:#6e8187;font-size:11px}
+.uae-contact-panel>a{min-height:48px;display:inline-flex;align-items:center;gap:12px;padding:12px 19px;border-radius:999px;background:#0b1114;color:#fff;font-size:11px;font-weight:800}
+.uae-contact-panel>a:hover{background:#263035;transform:translateY(-1px)}
+
+@media (max-width:760px){
+  .uae-information-grid{grid-template-columns:1fr;gap:25px}
+  .uae-account-faq{grid-template-columns:1fr;gap:27px}
+}
+
+@media (max-width:620px){
+  .uae-account-hero>.container{padding-top:27px;padding-bottom:38px}
+  .uae-account-information{margin-top:52px;padding-top:43px}
+  .uae-information-grid{margin-top:29px}
+  .uae-attractions,.uae-account-faq{margin-top:49px;padding-top:41px}
+  .uae-attractions ol{grid-template-columns:1fr;margin-top:23px}
+  .uae-contact-panel{align-items:flex-start;flex-direction:column;margin-top:52px}
+  .uae-contact-panel>a{width:100%;justify-content:center}
+}
+
+/* Public UAE guide — compact sections after Visa Process */
+.uae-public-guide-section{padding:68px 0 76px;border-top:0;background:#fff}
+.uae-public-travel-guide{margin:0;padding:0;border:0}
+.uae-public-travel-guide .uae-attractions{margin:0;padding:0;border:0}
+.uae-public-travel-guide .uae-attractions>header{max-width:680px}
+.uae-public-travel-guide .uae-attractions>header>span,.uae-public-travel-guide .uae-account-faq>header>span{display:inline-flex;align-items:center;width:max-content;padding:8px 14px;border-radius:999px;background:#fdf0ee;color:#ef6f61;font-size:10px;font-weight:850;line-height:1;letter-spacing:.1em;text-transform:uppercase}
+.uae-public-travel-guide .uae-attractions>header h2,.uae-public-travel-guide .uae-account-faq>header h2{margin-top:12px}
+.uae-public-travel-guide .uae-attractions ol{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:27px}
+.uae-public-travel-guide .uae-attractions li{display:block;min-height:0;overflow:hidden;padding:0;border:1px solid #e1e8e7;border-radius:15px;background:#fff}
+.uae-public-travel-guide .uae-attraction-photo{height:148px;overflow:hidden;background:#eef2f1}
+.uae-public-travel-guide .uae-attraction-photo img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.uae-public-travel-guide .uae-attractions li:hover .uae-attraction-photo img{transform:scale(1.035)}
+.uae-public-travel-guide .uae-attraction-copy{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start;padding:14px 15px 15px}
+.uae-public-travel-guide .uae-attraction-copy b{color:#24756d;font-size:9px}
+.uae-public-travel-guide .uae-attraction-copy span{color:#203b45;font-size:12px;font-weight:730;line-height:1.4}
+.uae-public-travel-guide .uae-account-faq{grid-template-columns:minmax(210px,.62fr) minmax(0,1.38fr);gap:54px;margin-top:64px;padding-top:0;border-top:0}
+.uae-public-travel-guide .uae-account-faq>div{display:grid;gap:9px;border-top:0}
+.uae-public-travel-guide .uae-account-faq details{overflow:hidden;border:1px solid #e1e8e7;border-radius:13px;background:#fff}
+.uae-public-travel-guide .uae-account-faq summary{padding:15px 16px}
+.uae-public-travel-guide .uae-account-faq details>p{padding:0 48px 16px 16px}
+
+@media (max-width:900px){
+  .uae-public-travel-guide .uae-attractions ol{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:700px){
+  .uae-public-guide-section{padding:50px 0 58px}
+  .uae-public-travel-guide .uae-account-faq{grid-template-columns:1fr;gap:24px;margin-top:48px}
+}
+
+@media (max-width:480px){
+  .uae-public-travel-guide .uae-attractions ol{grid-template-columns:1fr}
+  .uae-public-travel-guide .uae-attractions li{min-height:0}
+  .uae-public-travel-guide .uae-attraction-photo{height:190px}
+}
+
+/* Returning UAE page — summary-first application, visa and contact sections */
+.uae-account-current{overflow:hidden;border:1px solid #d9e3e1;border-radius:22px;background:#fff}
+.uae-account-current>summary,.uae-account-current>header{display:flex;justify-content:space-between;gap:24px;align-items:center;padding:25px 27px;list-style:none}
+.uae-account-current>summary{cursor:pointer}
+.uae-account-current>summary::-webkit-details-marker,.uae-account-disclosure>summary::-webkit-details-marker{display:none}
+.uae-account-current>summary>div:first-child>span,.uae-account-current>header>div:first-child>span{display:block;color:#24756d;font-size:9px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}
+.uae-account-current>summary h2,.uae-account-current>header h2{margin-top:6px;color:#16323a;font-size:25px;letter-spacing:-.03em}
+.uae-account-current>summary p,.uae-account-current>header p{margin-top:5px;color:#78898d;font-size:10px}
+.uae-account-current>summary>div:last-child{display:flex;gap:13px;align-items:center}
+.uae-account-current>summary i,.uae-account-disclosure>summary>i{width:34px;height:34px;flex:none;display:grid;place-items:center;border:1px solid #cddbd8;border-radius:50%;color:#1f766d;font-size:16px;font-style:normal;transition:transform .2s ease,background .2s ease}
+.uae-account-current[open]>summary i,.uae-account-disclosure[open]>summary>i{transform:rotate(45deg);background:#eef7f5}
+.uae-account-current-detail{padding:0 27px 27px;border-top:1px solid #e8eeee}
+.uae-account-current-detail .uae-account-progress{padding-top:27px}
+.uae-account-current-detail .uae-account-documents{padding-bottom:0}
+.uae-account-application-card:not([open]) .uae-account-application-detail{display:none}
+
+.uae-account-extras{display:grid;gap:16px;margin-top:52px}
+.uae-account-disclosure{scroll-margin-top:88px;overflow:hidden;border:1px solid #d9e3e1;border-radius:20px;background:#fff}
+.uae-account-disclosure>summary,.uae-account-disclosure>header{display:flex;justify-content:space-between;gap:24px;align-items:center;padding:24px 27px;list-style:none}
+.uae-account-disclosure>summary{cursor:pointer}
+.uae-account-disclosure>summary span,.uae-account-disclosure>header span{display:block;color:#24756d;font-size:9px;font-weight:850;letter-spacing:.11em;text-transform:uppercase}
+.uae-account-disclosure>summary h2,.uae-account-disclosure>header h2{margin-top:6px;color:#16323a;font-size:23px;letter-spacing:-.03em}
+.uae-account-disclosure>summary p,.uae-account-disclosure>header p{margin-top:5px;color:#75878c;font-size:11px}
+.uae-account-disclosure-body{padding:26px 27px 28px;border-top:1px solid #e8eeee}
+.uae-account-empty-copy{color:#667b80;font-size:12px;line-height:1.6}
+.uae-account-inline-link{display:inline-flex;align-items:center;gap:9px;margin-top:16px;color:#176c64;font-size:11px;font-weight:820}
+
+.uae-account-visa-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.uae-account-visa-option{padding:20px;border:1px solid #d9e3e1;border-radius:16px;background:#fff}
+.uae-account-visa-option>header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.uae-account-visa-option>header span{color:#76898e;font-size:8px;font-weight:780;text-transform:uppercase;letter-spacing:.06em}
+.uae-account-visa-option h3{margin-top:5px;color:#16323a;font-size:18px}
+.uae-account-visa-option>header strong{color:#16323a;font-size:20px;text-align:right;white-space:nowrap}
+.uae-account-visa-option>header strong small{display:block;margin-top:2px;color:#7b8d91;font-size:7px;font-weight:650}
+.uae-account-visa-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:18px}
+.uae-account-visa-facts>div{padding:11px;border-radius:10px;background:#f2f6f7}
+.uae-account-visa-facts small,.uae-account-visa-facts b{display:block}
+.uae-account-visa-facts small{color:#7c9095;font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.uae-account-visa-facts b{margin-top:5px;color:#224049;font-size:10px;line-height:1.35}
+.uae-account-visa-option>a{display:flex;justify-content:space-between;align-items:center;margin-top:15px;padding-top:14px;border-top:1px solid #e6eceb;color:#1f6f68;font-size:10px;font-weight:820}
+
+.uae-account-contact-body{display:grid;grid-template-columns:minmax(220px,.65fr) minmax(0,1.35fr);gap:38px;align-items:start}
+.uae-account-contact-intro h3{color:#16323a;font-size:24px;letter-spacing:-.03em}
+.uae-account-contact-intro p{margin-top:8px;color:#72858a;font-size:11px;line-height:1.65}
+.uae-account-contact-options{display:grid;gap:9px}
+.uae-account-contact-options>a{display:grid;grid-template-columns:40px minmax(0,1fr) 22px;gap:12px;align-items:center;padding:12px 14px;border:1px solid #dce5e4;border-radius:13px;color:#18343e;background:#fff;transition:border-color .18s ease,background .18s ease}
+.uae-account-contact-options>a:hover{border-color:#6d9e98;background:#f7faf9}
+.uae-account-contact-options i{width:40px;height:40px;display:grid;place-items:center;border-radius:11px;background:#eef7f5;color:#1b746b;font-size:9px;font-style:normal;font-weight:900}
+.uae-account-contact-options small,.uae-account-contact-options b{display:block}
+.uae-account-contact-options small{color:#7c8d91;font-size:9px}
+.uae-account-contact-options b{margin-top:3px;overflow-wrap:anywhere;font-size:11px}
+.uae-account-contact-options em{color:#26776f;font-size:15px;font-style:normal}
+
+@media (max-width:760px){
+  .uae-account-visa-list{grid-template-columns:1fr}
+  .uae-account-contact-body{grid-template-columns:1fr;gap:22px}
+}
+
+@media (max-width:520px){
+  .uae-account-current>summary,.uae-account-current>header,.uae-account-disclosure>summary,.uae-account-disclosure>header{padding:20px}
+  .uae-account-current-detail,.uae-account-disclosure-body{padding-right:20px;padding-left:20px}
+  .uae-account-current>summary>div:last-child{align-items:flex-end;flex-direction:column-reverse}
+  .uae-account-disclosure>summary p{max-width:250px}
+  .uae-account-visa-option>header{flex-direction:column}
+  .uae-account-visa-option>header strong{text-align:left}
+  .uae-account-visa-facts{grid-template-columns:1fr}
 }

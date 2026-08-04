@@ -173,7 +173,11 @@
     });
   }
   function renderHeader(){
+    var header=document.querySelector('.header');
+    var navLinks=document.getElementById('appNavLinks');
     if(!state.user){
+      if(header){ header.classList.remove('app-customer-header'); header.classList.remove('discover-header'); }
+      if(navLinks){ navLinks.hidden=true; navLinks.classList.remove('open'); }
       headerActions.innerHTML='<a class="signin-home-link" href="index.html">Back to home <span aria-hidden="true">&rarr;</span></a>';
       return;
     }
@@ -182,21 +186,26 @@
     var initial = (name[0]||'U').toUpperCase();
     var av = meta.avatar_url ? '<img src="'+esc(meta.avatar_url)+'" alt="">' : esc(initial);
     var roleLabels = { admin:'Admin', agent:'Agent', content:'Content', viewer:'Viewer', finance:'Finance', sales:'Sales' };
-    var links = '';
-    if(isStaff()){
-      links = '<button class="link-btn" data-go="setpw">Set / change password</button>';
-    } else {
-      links = '<button class="link-btn" data-go="setpw">Set / change password</button>' +
-              '<button class="link-btn" data-go="apply">New application</button>' +
-              '<button class="link-btn" data-go="track">My applications</button>';
-    }
     var roleBadge = isStaff() ? '<span class="role-badge">'+esc(roleLabels[state.role]||state.role)+'</span>' : '';
-    headerActions.innerHTML =
-      links +
-      '<span class="user-chip"><span class="avatar">'+av+'</span><span class="uname">'+esc(name.split(' ')[0])+'</span>'+roleBadge+'</span>' +
-      '<button class="link-btn" id="signOutBtn" type="button">Sign out</button>';
+    if(!isStaff()){
+      if(header){ header.classList.add('app-customer-header'); header.classList.add('discover-header'); }
+      if(navLinks){ navLinks.hidden=false; navLinks.classList.remove('open'); }
+      headerActions.innerHTML =
+        '<button class="nav-track app-header-track '+(state.view==='track'?'active':'')+'" data-go="track" type="button">Track visa</button>'+
+        '<button class="nav-profile app-header-profile '+(state.view==='profile'?'active':'')+'" data-go="profile" type="button" aria-label="Profile" title="Profile"></button>'+
+        '<button class="menu-btn" id="appMenuBtn" type="button" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>';
+      var menuBtn=document.getElementById('appMenuBtn');
+      if(menuBtn&&navLinks) menuBtn.onclick=function(){ navLinks.classList.toggle('open'); };
+    } else {
+      if(header){ header.classList.remove('app-customer-header'); header.classList.remove('discover-header'); }
+      if(navLinks){ navLinks.hidden=true; navLinks.classList.remove('open'); }
+      headerActions.innerHTML =
+        '<button class="user-chip profile-trigger" data-go="profile" type="button" aria-label="Open profile"><span class="avatar">'+av+'</span><span class="uname">Profile</span>'+roleBadge+'</button>'+
+        '<button class="link-btn app-signout" id="signOutBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Sign out</span></button>';
+    }
     headerActions.querySelectorAll('[data-go]').forEach(function(b){ b.onclick=function(){ go(b.getAttribute('data-go')); }; });
-    document.getElementById('signOutBtn').onclick=function(){ signOutCurrentUser(this); };
+    var signOutBtn=document.getElementById('signOutBtn');
+    if(signOutBtn) signOutBtn.onclick=function(){ signOutCurrentUser(this); };
   }
 
   function go(view){ state.view=view; location.hash=view; renderHeader(); render(); }
@@ -531,22 +540,72 @@
   }
 
   // ============================================================
+  //  PROFILE
+  // ============================================================
+  function renderProfile(){
+    if(!state.user){ renderSignIn(); return; }
+    renderHeader();
+    var meta=state.user.user_metadata||{};
+    var name=meta.full_name||meta.name||(state.user.email||'').split('@')[0]||'Your account';
+    var initial=(name[0]||'U').toUpperCase();
+    var avatar=meta.avatar_url?'<img src="'+esc(meta.avatar_url)+'" alt="">':esc(initial);
+    var customerActions=isStaff() ?
+      '<button class="profile-action" type="button" data-profile-go="'+esc(defaultStaffView())+'"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round"/></svg></span><span><b>Back to dashboard</b><small>Return to the staff workspace</small></span><i aria-hidden="true">&rarr;</i></button>' :
+      '<button class="profile-action" type="button" data-profile-go="apply"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></span><span><b>New application</b><small>Start another visa application</small></span><i aria-hidden="true">&rarr;</i></button>'+
+      '<button class="profile-action" type="button" data-profile-go="track"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5M10 13h5m-5 4h5" stroke-linecap="round"/></svg></span><span><b>My applications</b><small>Track your visa status</small></span><i aria-hidden="true">&rarr;</i></button>';
+    root.innerHTML='<main class="app-main profile-main profile-dashboard">'+
+      '<aside class="profile-sidebar">'+
+        '<div class="profile-identity"><div class="profile-avatar">'+avatar+'</div><div><h1>'+esc(name)+'</h1><p>'+esc(state.user.email||'')+'</p></div></div>'+
+        '<div class="profile-stats"><div><strong id="profileCompletedCount">0</strong><span>Completed</span></div><div><strong id="profileOngoingCount">0</strong><span>Ongoing</span></div></div>'+
+        '<div class="profile-sidebar-label">Account</div><div class="profile-actions">'+customerActions+
+          '<button class="profile-action" type="button" data-profile-go="setpw"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" stroke-linecap="round"/></svg></span><span><b>Change password</b><small>Update your account password</small></span><i aria-hidden="true">&rarr;</i></button>'+
+          '<button class="profile-action profile-action-signout" type="button" data-profile-signout><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Sign out</b><small>Sign out of your VisaDoo account</small></span><i aria-hidden="true">&rarr;</i></button>'+
+        '</div>'+
+      '</aside>'+
+      '<section class="profile-workspace"><div class="profile-documents-wrap" id="profileDocuments"><div class="customer-documents-loading"><span class="spin"></span><span>Loading your applications&hellip;</span></div></div></section>'+
+    '</main>';
+    root.querySelectorAll('[data-profile-go]').forEach(function(button){ button.onclick=function(){ go(button.getAttribute('data-profile-go')); }; });
+    var profileSignout=root.querySelector('[data-profile-signout]');
+    if(profileSignout) profileSignout.onclick=function(){ signOutCurrentUser(profileSignout); };
+    sb.from('applications').select('id,reference_code,visa_type,status,created_at,documents(*)').order('created_at',{ascending:false}).then(function(result){
+      var box=document.getElementById('profileDocuments');
+      if(!box) return;
+      if(result.error){ box.innerHTML='<div class="customer-documents-empty">Could not load your applications.</div>'; return; }
+      var apps=result.data||[];
+      var completed=apps.filter(function(a){ return a.status==='Visa Issued'; });
+      var ongoing=apps.filter(function(a){ return a.status!=='Visa Issued'; });
+      var completedCount=document.getElementById('profileCompletedCount'), ongoingCount=document.getElementById('profileOngoingCount');
+      if(completedCount) completedCount.textContent=completed.length;
+      if(ongoingCount) ongoingCount.textContent=ongoing.length;
+      function paintProfileApplications(tab){
+        box.innerHTML=profileApplicationsHtml(apps,tab);
+        wireCustomerThumbnails(box);
+        box.querySelectorAll('[data-profile-tab]').forEach(function(button){ button.onclick=function(){ paintProfileApplications(button.getAttribute('data-profile-tab')); }; });
+        box.querySelectorAll('[data-profile-track]').forEach(function(button){ button.onclick=function(){ go('track'); }; });
+      }
+      paintProfileApplications(ongoing.length?'ongoing':'completed');
+    });
+  }
+
+  // ============================================================
   //  SET / CHANGE PASSWORD (staff self-service + reset-link recovery)
   // ============================================================
   function renderSetPassword(){
     if(!state.user){ renderSignIn(); return; }
     renderHeader();
     var recovery = !!state._recovery;
-    root.innerHTML='<div class="signin-wrap"><div class="signin-card">'+
-      '<div class="logo-lg">'+planeLogo()+'</div>'+
-      '<h2>'+(recovery?'Set a new password':'Set your password')+'</h2>'+
-      '<p class="muted">For <b>'+esc(state.user.email||'')+'</b>. After this you can sign in instantly with your email and password — no waiting for the email link.</p>'+
+    root.innerHTML='<main class="app-main password-main">'+
+      (recovery?'':'<button class="password-back" id="spCancel" type="button"><span aria-hidden="true">&larr;</span> Back to profile</button>')+
+      '<section class="password-card">'+
+      '<div class="password-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" stroke-linecap="round"/></svg></div>'+
+      '<span class="password-kicker">Account security</span>'+
+      '<h1>'+(recovery?'Set a new password':'Change password')+'</h1>'+
+      '<p class="password-lead">Create a password with at least 8 characters for <b>'+esc(state.user.email||'')+'</b>.</p>'+
       '<div class="signin-msg" id="spMsg"></div>'+
-      '<div class="field"><label for="spPass">New password</label><input id="spPass" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>'+
-      '<div class="field"><label for="spPass2">Confirm password</label><input id="spPass2" type="password" placeholder="Re-enter password" autocomplete="new-password"></div>'+
-      '<button class="btn btn-primary btn-block" id="spSave">Save password</button>'+
-      (recovery?'':'<button class="link-btn" id="spCancel" style="margin-top:10px">← Back</button>')+
-    '</div></div>';
+      '<div class="password-fields"><div class="field"><label for="spPass">New password</label><input id="spPass" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>'+
+      '<div class="field"><label for="spPass2">Confirm password</label><input id="spPass2" type="password" placeholder="Re-enter password" autocomplete="new-password"></div></div>'+
+      '<button class="btn password-save" id="spSave">Save password <span aria-hidden="true">&rarr;</span></button>'+
+    '</section></main>';
     var m=document.getElementById('spMsg');
     document.getElementById('spSave').onclick=function(){
       var p=document.getElementById('spPass').value, p2=document.getElementById('spPass2').value;
@@ -557,10 +616,10 @@
         btn.disabled=false; btn.innerHTML='Save password';
         if(r.error){ m.className='signin-msg err'; m.textContent=esc(r.error.message||'Could not set password.'); return; }
         state._recovery=false; toast('Password saved — you can now sign in with your email and password.');
-        state.view = isStaff()?defaultStaffView():'apply'; go(state.view);
+        go('profile');
       });
     };
-    if(document.getElementById('spCancel')) document.getElementById('spCancel').onclick=function(){ go(isStaff()?defaultStaffView():'apply'); };
+    if(document.getElementById('spCancel')) document.getElementById('spCancel').onclick=function(){ go('profile'); };
   }
 
   // ============================================================
@@ -585,56 +644,39 @@
     var defaultName = meta.full_name || meta.name || '';
     clearDocumentPreviewUrls();
     picked={};
-    passportOcrState={ busy:false, complete:false, extracted:null };
+    passportOcrState={ busy:false, complete:false, extracted:null, frontVerified:false };
     applyWizardStep=1;
     var html =
       '<div class="app-main apply-wizard-main">' +
         '<div class="apply-focus-top">'+
           '<button type="button" class="apply-exit" id="applyExit"><span aria-hidden="true">←</span> Back</button>'+
-          '<div class="apply-progress-minimal" aria-label="Application progress"><small id="applyProgressLabel">0% completed</small><span><i id="applyProgressBar"></i></span></div>'+
-          '<span class="apply-focus-top-spacer" aria-hidden="true"></span>'+
         '</div>'+
         '<div class="apply-selected-line"><span>United Arab Emirates</span><b>'+esc(chosen.name)+'</b></div>'+
         '<form id="applyForm">' +
         '<section class="panel apply-step active" id="applyStep1" data-apply-step="1">'+
-          '<div class="traveller-start-shell">'+
-            '<aside class="traveller-start-visual">'+
-              '<span class="traveller-journey-kicker">VisaDoo application</span>'+
-              '<h2>Your UAE visa journey</h2>'+
-              '<p>Four clear steps, with your details checked before submission.</p>'+
-              '<ol class="traveller-route" aria-label="Application steps">'+
-                '<li class="active"><i>1</i><span><b>Traveller</b><small>Name as on passport</small></span></li>'+
-                '<li><i>2</i><span><b>Photo</b><small>Recent personal photo</small></span></li>'+
-                '<li><i>3</i><span><b>Passport</b><small>Secure browser reading</small></span></li>'+
-                '<li><i>4</i><span><b>Review</b><small>Check and submit</small></span></li>'+
-              '</ol>'+
-              '<div class="traveller-visa-chip"><small>Selected visa</small><b>'+esc(chosen.name)+'</b></div>'+
-            '</aside>'+
-            '<div class="traveller-start-form">'+
-              '<span class="step-badge">Traveller details · 1 of 4</span>'+
-              '<h2 data-step-heading>Who’s travelling to the UAE?</h2>'+
-              '<p class="apply-step-intro">Start with the traveller’s full name exactly as it appears in the passport.</p>'+
-              '<div class="traveller-name-card"><span class="traveller-field-number">01</span><div class="apply-name-field">'+field('full_name','Full name as on passport','text',defaultName,true)+'</div><small>You can review and correct every detail before submitting.</small></div>'+
-              '<button type="button" class="btn btn-primary btn-lg apply-next" id="nameNext">Save &amp; continue to photo <span aria-hidden="true">→</span></button>'+
-            '</div>'+
+          '<div class="traveller-simple-form">'+
+            '<span class="step-badge">Step 1 of 4</span>'+
+            '<h2 data-step-heading>Enter your name</h2>'+
+            '<p class="apply-step-intro">Use the full name shown on your passport.</p>'+
+            '<div class="apply-name-field">'+field('full_name','Full name','text',defaultName,true)+'</div>'+
+            '<button type="button" class="btn btn-primary btn-lg apply-next" id="nameNext">Continue to photo <span aria-hidden="true">→</span></button>'+
           '</div>'+
         '</section>'+
 
         '<section class="panel apply-step" id="applyStep2" data-apply-step="2" hidden>'+
-          '<span class="step-badge">Step 2 of 4</span><h2>Add your personal photo</h2><p class="apply-step-intro">Upload a recent front-facing photo on a plain background.</p>'+
-          '<div class="upload-row apply-document-upload apply-single-upload">' +
-            dropZone('photo','Your photo','Recent front-facing photo on a plain background') +
+          '<h2>Upload your photo</h2>'+
+          '<div class="upload-row apply-document-upload apply-single-upload apply-photo-upload">' +
+            dropZone('photo','','JPG, PNG or WEBP · max 10 MB') +
           '</div>'+
+          '<div class="photo-check-status" id="photoCheckStatus" aria-live="polite" hidden><span class="photo-check-icon" aria-hidden="true"></span><div><b id="photoCheckTitle"></b><small id="photoCheckText"></small></div></div>'+
           '<div class="apply-step-actions"><button type="button" class="btn btn-primary btn-lg" id="photoNext" disabled>Continue to passport <span aria-hidden="true">→</span></button></div>'+
         '</section>'+
 
         '<section class="panel apply-step" id="applyStep3" data-apply-step="3" hidden>'+
-          '<span class="step-badge">Step 3 of 4</span><h2>Add your passport</h2><p class="apply-step-intro">Upload the passport bio page with every detail clearly visible. It will be read securely in this browser.</p>'+
-          '<div class="upload-row apply-document-upload apply-single-upload">' +
-            dropZone('passport','Passport photo','Open passport bio page with all details visible') +
-          '</div>'+
-          '<div class="passport-ocr-status" id="passportOcrStatus" aria-live="polite">'+
-            '<span class="passport-ocr-mark">OCR</span><div><b id="passportOcrTitle">Ready to read your passport</b><small id="passportOcrText">Select a passport photo to start.</small><div class="passport-ocr-progress" id="passportOcrProgress" hidden><span id="passportOcrBar"></span></div></div>'+
+          '<h2>Upload your passport</h2><p class="apply-step-intro">Add the front/photo page first, then the back page.</p>'+
+          '<div class="passport-page-list">'+
+            '<section class="passport-page-card" id="passportFrontCard"><header><i>1</i><div><b>Front / photo page</b><small>Page with your photo and passport details</small></div></header>'+dropZone('passport','','JPG, PNG or WEBP · max 10 MB')+'<div class="passport-page-status" id="passportStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div></section>'+
+            '<section class="passport-page-card locked" id="passportBackCard"><header><i>2</i><div><b>Back page</b><small>Normal image upload — no OCR</small></div></header>'+dropZone('passport_back','','JPG, PNG or WEBP · max 10 MB')+'<div class="passport-page-status" id="passport_backStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div></section>'+
           '</div>'+
           '<div class="apply-step-actions"><button type="button" class="btn btn-primary btn-lg" id="passportNext" disabled>Continue to review <span aria-hidden="true">→</span></button></div>'+
         '</section>'+
@@ -702,7 +744,7 @@
     }
     refreshSummary();
     loadApplyQuestions(selected);
-    wireDrop('passport'); wireDrop('photo');
+    wirePassportPages(); wireDrop('photo');
 
     // Passport Issuing Country (India default + pinned) + conditional India State dropdown
     var countryCombo, stateCombo;
@@ -872,7 +914,8 @@
       '<input id="'+id+'" name="'+id+'" type="'+type+'" value="'+esc(val)+'"'+(req?' required':'')+'></div>';
   }
   function dropZone(key,title,sub){
-    return '<div><span class="ulabel">'+esc(title)+' <span class="req-star">*</span></span>' +
+    var label=title?'<span class="ulabel">'+esc(title)+' <span class="req-star">*</span></span>':'';
+    return '<div>'+label+
       '<div class="drop" id="drop_'+key+'">' +
         '<div class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/></svg></div>' +
         '<b>Tap to upload</b><small>'+esc(sub)+'</small>' +
@@ -956,9 +999,12 @@
   }
 
   var picked={};
-  var passportOcrState={ busy:false, complete:false, extracted:null };
+  var passportOcrState={ busy:false, complete:false, extracted:null, frontVerified:false };
   var applyCountryCombo=null;
   var applyWizardStep=1;
+  var photoValidationRun=0;
+  var photoFaceDetectorPromise=null;
+  var passportValidationRun={passport:0};
   var documentPreviewUrls={passport:'',photo:''};
 
   function clearDocumentPreviewUrls(){
@@ -985,10 +1031,6 @@
       var reviewName=document.getElementById('reviewTravellerName'), fullName=document.getElementById('full_name');
       if(reviewName&&fullName) reviewName.textContent=fullName.value.trim();
     }
-    var percent=Math.round(((step-1)/4)*100);
-    var progressLabel=document.getElementById('applyProgressLabel'), progressBar=document.getElementById('applyProgressBar');
-    if(progressLabel) progressLabel.textContent=percent+'% completed';
-    if(progressBar) progressBar.style.width=percent+'%';
     var active=step===1?one:(step===2?two:(step===3?three:four));
     var heading=active.querySelector('[data-step-heading]')||active.querySelector('h2');
     if(heading){ heading.setAttribute('tabindex','-1'); heading.focus({preventScroll:true}); }
@@ -1021,22 +1063,16 @@
     var photoButton=document.getElementById('photoNext');
     var passportButton=document.getElementById('passportNext');
     if(photoButton) photoButton.disabled=!picked.photo;
-    if(passportButton) passportButton.disabled=!picked.passport||passportOcrState.busy;
+    if(passportButton) passportButton.disabled=!picked.passport||!picked.passport_back||passportOcrState.busy||!passportOcrState.frontVerified;
   }
 
-  function setPassportOcrUi(tone,title,message,progress){
-    var box=document.getElementById('passportOcrStatus');
-    var titleEl=document.getElementById('passportOcrTitle');
-    var textEl=document.getElementById('passportOcrText');
-    var progressEl=document.getElementById('passportOcrProgress');
-    var bar=document.getElementById('passportOcrBar');
-    if(!box||!titleEl||!textEl||!progressEl||!bar) return;
-    box.className='passport-ocr-status '+(tone||'');
-    titleEl.textContent=title;
-    textEl.textContent=message;
-    var show=typeof progress==='number';
-    progressEl.hidden=!show;
-    if(show) bar.style.width=Math.max(3,Math.min(100,Math.round(progress*100)))+'%';
+  function setPassportPageUi(key,tone,title,message){
+    var box=document.getElementById(key+'Status');
+    if(!box) return;
+    var titleEl=box.querySelector('b'), textEl=box.querySelector('small');
+    box.hidden=false; box.className='passport-page-status '+tone;
+    if(titleEl) titleEl.textContent=title;
+    if(textEl) textEl.textContent=message;
   }
 
   function mrzCountryName(code){
@@ -1136,53 +1172,308 @@
     return count;
   }
 
-  async function runPassportOcr(file){
-    passportOcrState={busy:true,complete:false,extracted:null};
-    updateDocumentsNext();
-    setPassportOcrUi('reading','Reading passport…','This can take a few seconds on the first scan.',0.03);
+  function rotatePassportImage(file,degrees){
+    if(!degrees) return Promise.resolve(file);
+    return loadPhotoImage(file).then(function(image){
+      return new Promise(function(resolve){
+        var sourceWidth=image.naturalWidth||image.width, sourceHeight=image.naturalHeight||image.height;
+        var swap=degrees===90||degrees===270;
+        var canvas=document.createElement('canvas');
+        canvas.width=swap?sourceHeight:sourceWidth; canvas.height=swap?sourceWidth:sourceHeight;
+        var context=canvas.getContext('2d');
+        context.translate(canvas.width/2,canvas.height/2);
+        context.rotate(degrees*Math.PI/180);
+        context.drawImage(image,-sourceWidth/2,-sourceHeight/2,sourceWidth,sourceHeight);
+        canvas.toBlob(function(blob){resolve(blob||file);},'image/jpeg',.94);
+      });
+    });
+  }
+
+  async function validatePassportImage(key,file){
+    var image=await loadPhotoImage(file);
+    var clarity=inspectPhotoClarity(image,true);
+    if(!clarity.ok) return clarity;
+    if(!window.Tesseract||!window.Tesseract.createWorker) throw new Error('OCR library unavailable');
     var worker=null;
     try{
-      if(!window.Tesseract||!window.Tesseract.createWorker) throw new Error('OCR library unavailable');
       worker=await window.Tesseract.createWorker('eng',1,{logger:function(message){
-        if(message&&typeof message.progress==='number') setPassportOcrUi('reading','Reading passport…',String(message.status||'Recognising text').replace(/_/g,' '),message.progress);
+        if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Checking passport…',String(message.status||'Reading image').replace(/_/g,' '));
       }});
       if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'});
-      var ocrImage=await preparePassportForOcr(file);
-      var result=await worker.recognize(ocrImage);
-      var extracted=parsePassportMrz(result&&result.data&&result.data.text);
-      passportOcrState.extracted=extracted;
-      var filled=fillPassportFields(extracted);
-      var note=document.getElementById('ocrReviewNote');
-      if(extracted&&filled){
-        setPassportOcrUi('success','Passport details found',filled+' field'+(filled===1?'':'s')+' filled automatically. Continue and check them.');
-        if(note) note.textContent='Passport details were filled automatically. Please confirm they match your passport.';
-      }else{
-        setPassportOcrUi('warning','Please enter details manually','We could not clearly read the passport. You can still continue and type the fields.');
-        if(note) note.textContent='The passport scan was unclear. Please enter and check the details manually.';
+      var rotations=[0,90,270,180];
+      for(var rotationIndex=0;rotationIndex<rotations.length;rotationIndex++){
+        var rotated=await rotatePassportImage(file,rotations[rotationIndex]);
+        var ocrImage=await preparePassportForOcr(rotated);
+        var result=await worker.recognize(ocrImage);
+        var text=result&&result.data&&result.data.text||'';
+        var extracted=parsePassportMrz(text);
+        if(extracted&&extracted.passportNumber&&extracted.passportNumber.length>=7&&extracted.nationality&&(extracted.dateOfBirth||extracted.passportExpiry)) return {ok:true,extracted:extracted};
       }
-    }catch(error){
-      setPassportOcrUi('warning','Please enter details manually','Automatic reading was unavailable. Your selected passport photo is still ready to upload.');
-      var noteFallback=document.getElementById('ocrReviewNote'); if(noteFallback) noteFallback.textContent='Automatic reading was unavailable. Please enter the passport details manually.';
-      console.warn('Passport OCR failed',error);
+      return {ok:false,message:'This does not look like a passport front/photo page. Upload the clear page with your photo and MRZ lines.'};
     }finally{
       if(worker){ try{ await worker.terminate(); }catch(_terminateError){} }
-      passportOcrState.busy=false; passportOcrState.complete=true; updateDocumentsNext();
+    }
+  }
+
+  function setPhotoCheckUi(tone,title,message){
+    var box=document.getElementById('photoCheckStatus');
+    var titleEl=document.getElementById('photoCheckTitle');
+    var textEl=document.getElementById('photoCheckText');
+    if(!box||!titleEl||!textEl) return;
+    box.hidden=false;
+    box.className='photo-check-status '+tone;
+    titleEl.textContent=title;
+    textEl.textContent=message;
+  }
+
+  function loadPhotoImage(file){
+    return new Promise(function(resolve,reject){
+      var url=URL.createObjectURL(file), image=new Image();
+      image.onload=function(){ URL.revokeObjectURL(url); resolve(image); };
+      image.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('decode')); };
+      image.src=url;
+    });
+  }
+
+  function inspectPhotoClarity(image,relaxed){
+    var sourceWidth=image.naturalWidth||image.width, sourceHeight=image.naturalHeight||image.height;
+    var minimumSize=relaxed?160:96;
+    if(sourceWidth<minimumSize||sourceHeight<minimumSize) return {ok:false,message:relaxed?'This passport image is too small or unclear to read. Please upload a clearer image.':'This image is too small to check clearly. Please upload a clearer image.'};
+    var maxSide=360, scale=Math.min(1,maxSide/Math.max(sourceWidth,sourceHeight));
+    var width=Math.max(3,Math.round(sourceWidth*scale)), height=Math.max(3,Math.round(sourceHeight*scale));
+    var canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+    var context=canvas.getContext('2d',{willReadFrequently:true});
+    context.drawImage(image,0,0,width,height);
+    var pixels=context.getImageData(0,0,width,height).data;
+    var gray=new Float32Array(width*height), brightnessSum=0, brightnessSq=0;
+    for(var i=0,p=0;i<pixels.length;i+=4,p++){
+      var value=.299*pixels[i]+.587*pixels[i+1]+.114*pixels[i+2];
+      gray[p]=value; brightnessSum+=value; brightnessSq+=value*value;
+    }
+    var count=gray.length, brightness=brightnessSum/count;
+    var contrast=Math.sqrt(Math.max(0,brightnessSq/count-brightness*brightness));
+    if(brightness<(relaxed?20:28)||brightness>(relaxed?250:245)||contrast<(relaxed?8:12)) return {ok:false,message:'The photo is too dark, too bright, or unclear. Please use a clear, well-lit photo.'};
+    var lapSum=0, lapSq=0, lapCount=0;
+    for(var y=1;y<height-1;y++){
+      for(var x=1;x<width-1;x++){
+        var at=y*width+x;
+        var lap=gray[at-width]+gray[at-1]+gray[at+1]+gray[at+width]-4*gray[at];
+        lapSum+=lap; lapSq+=lap*lap; lapCount++;
+      }
+    }
+    var lapMean=lapSum/lapCount, sharpness=lapSq/lapCount-lapMean*lapMean;
+    if(sharpness<(relaxed?12:35)) return {ok:false,message:'This photo looks blurry. Please upload a clearer photo.'};
+    return {ok:true};
+  }
+
+  function ensurePhotoFaceDetector(){
+    if(photoFaceDetectorPromise) return photoFaceDetectorPromise;
+    if('FaceDetector' in window){
+      photoFaceDetectorPromise=Promise.resolve({detect:function(image){ return new window.FaceDetector({fastMode:true,maxDetectedFaces:3}).detect(image); }});
+      return photoFaceDetectorPromise;
+    }
+    photoFaceDetectorPromise=new Promise(function(resolve,reject){
+      function createDetector(){
+        try{
+          var base='https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/';
+          var detector=new window.FaceDetection({locateFile:function(file){return base+file;}});
+          var pending=null;
+          detector.setOptions({model:'short',minDetectionConfidence:.55});
+          detector.onResults(function(results){ if(pending){ var done=pending; pending=null; done.resolve((results&&results.detections)||[]); } });
+          resolve({detect:function(image){
+            return new Promise(function(resolveDetection,rejectDetection){
+              if(pending){ rejectDetection(new Error('busy')); return; }
+              pending={resolve:resolveDetection,reject:rejectDetection};
+              detector.send({image:image}).catch(function(error){ var failed=pending; pending=null; if(failed) failed.reject(error); });
+            });
+          }});
+        }catch(error){ reject(error); }
+      }
+      if(window.FaceDetection){ createDetector(); return; }
+      var script=document.createElement('script');
+      script.src='https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/face_detection.js';
+      script.async=true; script.crossOrigin='anonymous';
+      script.onload=createDetector;
+      script.onerror=function(){reject(new Error('face model load failed'));};
+      document.head.appendChild(script);
+    });
+    return photoFaceDetectorPromise;
+  }
+
+  async function validatePersonalPhoto(file){
+    var image=await loadPhotoImage(file);
+    var clarity=inspectPhotoClarity(image);
+    if(!clarity.ok) return clarity;
+    var detector=await ensurePhotoFaceDetector();
+    var faces=await Promise.race([
+      detector.detect(image),
+      new Promise(function(_resolve,reject){setTimeout(function(){reject(new Error('face check timeout'));},15000);})
+    ]);
+    if(!faces||!faces.length) return {ok:false,message:'We could not find a person in this image. Please upload a clear photo of the traveller.'};
+    return {ok:true};
+  }
+
+  function resetPassportBackUpload(){
+    delete picked.passport_back;
+    var card=document.getElementById('passportBackCard');
+    var input=document.getElementById('file_passport_back');
+    var zone=document.getElementById('drop_passport_back');
+    var fileName=document.getElementById('fname_passport_back');
+    var status=document.getElementById('passport_backStatus');
+    if(card) card.classList.add('locked');
+    if(input) input.value='';
+    if(zone) zone.classList.remove('has','invalid','checking');
+    if(fileName) fileName.textContent='';
+    if(status) status.hidden=true;
+  }
+
+  function wirePassportPages(){
+    ['passport'].forEach(function(key){
+      var zone=document.getElementById('drop_'+key), input=document.getElementById('file_'+key);
+      var card=document.getElementById('passportFrontCard');
+      if(!zone||!input||!card) return;
+      zone.onclick=function(){ if(!card.classList.contains('locked')&&!zone.classList.contains('checking')) input.click(); };
+      input.onchange=async function(){
+        var file=input.files[0]; if(!file) return;
+        passportValidationRun[key]++;
+        var validationId=passportValidationRun[key];
+        delete picked[key];
+        zone.classList.remove('has','invalid');
+        document.getElementById('fname_'+key).textContent='';
+        passportOcrState.frontVerified=false;
+        passportOcrState.extracted=null;
+        resetPassportBackUpload();
+        updateDocumentsNext();
+        if(file.size>10485760){
+          input.value=''; zone.classList.add('invalid');
+          setPassportPageUi(key,'error','Upload another image','The image is over 10 MB. Choose a smaller JPG, PNG or WEBP image.');
+          return;
+        }
+        if(!/^image\/(jpeg|png|webp)$/i.test(file.type||'')){
+          input.value=''; zone.classList.add('invalid');
+          setPassportPageUi(key,'error','Upload another image','Choose a JPG, PNG or WEBP passport image.');
+          return;
+        }
+        passportOcrState.busy=true; zone.classList.add('checking');
+        setPassportPageUi(key,'checking','Checking passport…','Verifying the front/photo page.');
+        updateDocumentsNext();
+        try{
+          var result=await validatePassportImage(key,file);
+          if(validationId!==passportValidationRun[key]) return;
+          if(!result.ok){
+            input.value=''; zone.classList.add('invalid');
+            setPassportPageUi(key,'error','Upload another image',result.message);
+            return;
+          }
+          picked[key]=file;
+          setDocumentPreview(key,file);
+          document.getElementById('fname_'+key).textContent='✓ '+file.name;
+          zone.classList.add('has');
+          passportOcrState.frontVerified=true;
+          passportOcrState.extracted=result.extracted;
+          var filled=fillPassportFields(result.extracted);
+          var note=document.getElementById('ocrReviewNote');
+          if(note) note.textContent='Passport details were filled automatically. Please confirm they match your passport.';
+          setPassportPageUi(key,'success','Front page verified',(filled?filled+' passport detail'+(filled===1?'':'s')+' read. ':'')+'Now upload the back page.');
+          var backCard=document.getElementById('passportBackCard'); if(backCard) backCard.classList.remove('locked');
+        }catch(error){
+          if(validationId!==passportValidationRun[key]) return;
+          input.value=''; zone.classList.add('invalid');
+          setPassportPageUi(key,'error','Passport check could not finish','Please check your connection and upload the passport image again.');
+          console.warn('Passport validation failed',error);
+        }finally{
+          if(validationId===passportValidationRun[key]) zone.classList.remove('checking');
+          passportOcrState.busy=false; passportOcrState.complete=true; updateDocumentsNext();
+        }
+      };
+    });
+    var backZone=document.getElementById('drop_passport_back');
+    var backInput=document.getElementById('file_passport_back');
+    var backCard=document.getElementById('passportBackCard');
+    if(backZone&&backInput&&backCard){
+      backZone.onclick=function(){ if(!backCard.classList.contains('locked')) backInput.click(); };
+      backInput.onchange=function(){
+        var file=backInput.files[0]; if(!file) return;
+        delete picked.passport_back;
+        backZone.classList.remove('has','invalid');
+        document.getElementById('fname_passport_back').textContent='';
+        updateDocumentsNext();
+        if(file.size>10485760){
+          backInput.value=''; backZone.classList.add('invalid');
+          setPassportPageUi('passport_back','error','Upload another image','The image is over 10 MB. Choose a smaller JPG, PNG or WEBP image.');
+          return;
+        }
+        if(!/^image\/(jpeg|png|webp)$/i.test(file.type||'')){
+          backInput.value=''; backZone.classList.add('invalid');
+          setPassportPageUi('passport_back','error','Upload another image','Choose a JPG, PNG or WEBP passport image.');
+          return;
+        }
+        picked.passport_back=file;
+        document.getElementById('fname_passport_back').textContent='✓ '+file.name;
+        backZone.classList.add('has');
+        setPassportPageUi('passport_back','success','Back page added','No OCR was run on this image. You can continue to review.');
+        updateDocumentsNext();
+      };
     }
   }
 
   function wireDrop(key){
     var zone=document.getElementById('drop_'+key);
     var input=document.getElementById('file_'+key);
-    zone.onclick=function(){ input.click(); };
-    input.onchange=function(){
+    zone.onclick=function(){ if(!zone.classList.contains('checking')) input.click(); };
+    input.onchange=async function(){
       var f=input.files[0]; if(!f) return;
-      if(f.size>10485760){ toast('That file is over 10 MB. Please choose a smaller one.'); input.value=''; return; }
-      if(!/^image\/(jpeg|png|webp)$/i.test(f.type||'')){ toast('Please choose a JPG, PNG or WEBP photo.'); input.value=''; return; }
+      if(key==='photo'){
+        photoValidationRun++;
+        delete picked.photo;
+        zone.classList.remove('has','invalid');
+        document.getElementById('fname_photo').textContent='';
+        updateDocumentsNext();
+      }
+      if(f.size>10485760){
+        toast('That file is over 10 MB. Please choose a smaller one.'); input.value='';
+        if(key==='photo'){ zone.classList.add('invalid'); setPhotoCheckUi('error','Please upload another photo','The photo is over 10 MB. Choose a smaller JPG, PNG or WEBP image.'); }
+        return;
+      }
+      if(!/^image\/(jpeg|png|webp)$/i.test(f.type||'')){
+        toast('Please choose a JPG, PNG or WEBP photo.'); input.value='';
+        if(key==='photo'){ zone.classList.add('invalid'); setPhotoCheckUi('error','Please upload another photo','Choose a JPG, PNG or WEBP image.'); }
+        return;
+      }
+      if(key==='photo'){
+        var validationId=photoValidationRun;
+        zone.classList.add('checking');
+        setPhotoCheckUi('checking','Checking your photo…','Checking clarity and confirming that a person is visible.');
+        try{
+          var result=await validatePersonalPhoto(f);
+          if(validationId!==photoValidationRun) return;
+          if(!result.ok){
+            zone.classList.add('invalid'); input.value='';
+            setPhotoCheckUi('error','Please upload another photo',result.message);
+            return;
+          }
+          picked.photo=f;
+          setDocumentPreview('photo',f);
+          document.getElementById('fname_photo').textContent='✓ '+f.name;
+          zone.classList.add('has');
+          setPhotoCheckUi('success','Photo looks good','Clear photo and person detected. You can continue.');
+          updateDocumentsNext();
+        }catch(error){
+          if(validationId!==photoValidationRun) return;
+          input.value=''; zone.classList.add('invalid');
+          if(error&&error.message==='decode') setPhotoCheckUi('error','Please upload another photo','This image could not be read. Choose a valid JPG, PNG or WEBP photo.');
+          else setPhotoCheckUi('error','Photo check could not finish','Please check your connection and upload the photo again.');
+          console.warn('Photo validation failed',error);
+        }finally{
+          if(validationId===photoValidationRun) zone.classList.remove('checking');
+        }
+        return;
+      }
       picked[key]=f;
       setDocumentPreview(key,f);
       document.getElementById('fname_'+key).textContent='✓ '+f.name;
       zone.classList.add('has');
-      if(key==='passport') runPassportOcr(f); else updateDocumentsNext();
+      updateDocumentsNext();
     };
   }
 
@@ -1191,7 +1482,7 @@
     if(!f.checkValidity()){ f.reportValidity(); return; }
     if(!mobileIsValid()){ toast('Please enter a valid mobile number.'); return; }
     if(mobileOtpRequired && (!mobileVerified || currentMobileE164()!==verifiedNumber)){ toast('Please verify your mobile number to continue.'); return; }
-    if(!picked.passport || !picked.photo){ toast('Please upload both your passport copy and photo.'); return; }
+    if(!picked.passport || !picked.passport_back || !picked.photo){ toast('Please upload your passport front page, back page and personal photo.'); return; }
     var pCountry=(document.getElementById('passport_issuing_country').value||'').trim();
     if(!pCountry){ toast('Please select your passport issuing country.'); return; }
     var pState=((document.getElementById('state')||{}).value||'').trim();
@@ -1254,7 +1545,7 @@
   // Patches qa.answers file values with their stored paths.
   function uploadAllFiles(appId, uid, qa){
     var docRows=[], jobs=[];
-    ['passport','photo'].forEach(function(key){
+    ['passport','passport_back','photo'].forEach(function(key){
       var file=picked[key]; if(!file) return;
       var ext=(file.name.split('.').pop()||'dat').toLowerCase();
       var path=uid+'/'+appId+'/'+key+'_'+Date.now()+'.'+ext;
@@ -1280,43 +1571,77 @@
     clearDocumentPreviewUrls();
     document.body.classList.remove('apply-focus','apply-reviewing');
     renderHeader();
+    var visa=visaById(app.visa_type);
+    var visaName=visa&&visa.name?visa.name:(app.visa_type||'UAE visa');
+    var submitted=app.created_at?new Date(app.created_at):new Date();
+    var submittedText=submitted.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+    var status=app.status||'Submitted';
     root.innerHTML=
-      '<div class="app-main"><div class="panel success">' +
-        '<div class="big-tick">'+CHECK+'</div>' +
-        '<h2>Application submitted!</h2>' +
-        '<p>Thank you, '+esc((app.full_name||'').split(' ')[0])+'. We\'ve received your '+esc(visaById(app.visa_type).name)+' application.</p>' +
-        '<div class="ref-box">Ref: '+esc(app.reference_code)+'</div>' +
-        '<p>'+(partial?'Your application is saved. If a document didn\'t upload, you can mention it to us on WhatsApp.':'Our team will review your documents and update your status at each step.')+'</p>' +
-        '<div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">' +
-          '<button class="btn btn-primary btn-lg" data-go="track">Track my application</button>' +
-          '<a class="btn btn-ghost btn-lg" href="https://wa.me/'+cfg.WHATSAPP+'" target="_blank" rel="noopener">Message us on WhatsApp</a>' +
-        '</div>' +
-      '</div></div>';
+      '<main class="app-main success-main success-dashboard">'+
+        '<section class="success-hero">'+
+          '<div class="success-hero-copy"><div class="success-mark" aria-hidden="true">'+CHECK+'</div><div><span class="success-kicker">Application submitted</span><h1>Your UAE visa is on its way.</h1><p class="success-lead">Thank you, '+esc((app.full_name||'').split(' ')[0]||'traveller')+'. We received your application and documents securely.</p></div></div>'+
+          '<div class="success-actions"><button class="btn success-track" data-go="track">Track your visa <span aria-hidden="true">&rarr;</span></button><a class="btn success-add" href="country.html?slug=united-arab-emirates#visa-info">Add another visa <span aria-hidden="true">+</span></a></div>'+
+        '</section>'+
+        '<div class="success-layout">'+
+          '<section class="success-application" aria-labelledby="successVisaTitle">'+
+            '<header><div><span>United Arab Emirates</span><h2 id="successVisaTitle">'+esc(visaName)+'</h2></div><strong>'+esc(status)+'</strong></header>'+
+            '<dl class="success-details"><div><dt>Reference</dt><dd>'+esc(app.reference_code||'-')+'</dd></div><div><dt>Traveller</dt><dd>'+esc(app.full_name||'-')+'</dd></div><div><dt>Submitted</dt><dd>'+esc(submittedText)+'</dd></div><div><dt>Application type</dt><dd>Online UAE visa</dd></div></dl>'+
+            '<div class="success-next"><span>What happens next</span><ol><li class="done"><i>'+CHECK+'</i><div><b>Application received</b><small>Your details and files are saved.</small></div></li><li><i>2</i><div><b>Document review</b><small>'+(partial?'We will help if a file needs to be uploaded again.':'Our team checks the passport and personal photo.')+'</small></div></li><li><i>3</i><div><b>Status updates</b><small>Open Track visa to follow every update.</small></div></li></ol></div>'+
+          '</section>'+
+          '<aside class="success-documents-panel"><header><div><span>Attached documents</span><h2>Passport &amp; photo</h2></div><b>Secure</b></header><p>These are the files attached to this application.</p><div id="successDocuments"><div class="success-documents-loading"><span class="spin"></span><span>Loading your files&hellip;</span></div></div></aside>'+
+        '</div>'+
+        '<section class="success-help-strip"><div><b>Need help with this application?</b><p>Message our visa team and include reference '+esc(app.reference_code||'')+'.</p></div><a href="https://wa.me/'+cfg.WHATSAPP+'" target="_blank" rel="noopener">Message us on WhatsApp <span aria-hidden="true">&rarr;</span></a></section>'+
+      '</main>';
     root.querySelector('[data-go="track"]').onclick=function(){ go('track'); };
+    sb.from('documents').select('*').eq('application_id',app.id).then(function(result){
+      var box=document.getElementById('successDocuments');
+      if(!box) return;
+      if(result.error){ box.innerHTML='<div class="success-documents-error">Your application is saved, but the previews could not be loaded.</div>'; return; }
+      var completeApp=Object.assign({},app,{documents:result.data||[]});
+      box.innerHTML=customerDocumentsHtml(completeApp,false,true);
+      wireCustomerDocumentPreviews(box);
+    }).catch(function(){
+      var box=document.getElementById('successDocuments');
+      if(box) box.innerHTML='<div class="success-documents-error">Your application is saved, but the previews could not be loaded.</div>';
+    });
   }
 
   // ============================================================
   //  TRACK (customer dashboard)
   // ============================================================
   function renderTrack(){
-    root.innerHTML='<div class="app-main"><div class="app-head"><h1>My applications</h1>'+
-      '<p>Track each application through to your visa being issued.</p></div>'+
-      '<div id="trackList"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div></div>';
+    document.body.classList.remove('track-detail-open');
+    root.innerHTML='<main class="app-main track-main track-dashboard">'+
+      '<section class="track-workspace"><header class="track-workspace-head"><div><span>Your applications</span><h2>Track your visa status.</h2><p>Select an application to view its timeline, documents and latest updates.</p></div><div class="track-live"><i aria-hidden="true"></i><span>Live updates</span></div></header><div id="trackList"><div class="track-loading"><span class="spin"></span><p>Loading your applications&hellip;</p></div></div></section>'+
+    '</main>';
 
     sb.from('applications').select('*, documents(*), app_messages(*)').order('created_at',{ascending:false}).then(function(r){
       var box=document.getElementById('trackList');
       if(r.error){ box.innerHTML='<div class="empty-state"><p>Could not load your applications. Please refresh.</p></div>'; console.error(r.error); return; }
       if(!r.data.length){
-        box.innerHTML='<div class="panel empty-state">'+
+        box.innerHTML='<div class="track-empty">'+
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 12h6m-6 4h6m2 4H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7l5 5v9a2 2 0 0 1-2 2z"/></svg>'+
-          '<h3 style="color:var(--ink);margin-bottom:6px">No applications yet</h3>'+
-          '<p>Start your first UAE tourist visa application now.</p>'+
-          '<button class="btn btn-primary" style="margin-top:16px" id="startFirst">Start an application</button>'+
+          '<h3>No applications to track yet</h3>'+
+          '<p>Applications linked to this account will appear here with their latest status.</p>'+
           '</div>';
-        document.getElementById('startFirst').onclick=function(){ go('apply'); };
         return;
       }
-      box.innerHTML='<div class="app-list">'+r.data.map(appCard).join('')+'</div>';
+      box.innerHTML='<section class="track-applications-panel" id="trackApplicationsPanel"><header class="track-applications-head"><div><span>Visa overview</span><h3>Your applications</h3></div><b>'+r.data.length+' '+(r.data.length===1?'application':'applications')+'</b></header><div class="app-list">'+r.data.map(function(a){ return appCard(a); }).join('')+'</div></section>';
+      var list=box.querySelector('.app-list'), collection=document.getElementById('trackApplicationsPanel');
+      box.querySelectorAll('.track-compact-item').forEach(function(item){
+        var back=item.querySelector('[data-track-back]');
+        item.addEventListener('toggle',function(){
+          if(item.open){
+            [].slice.call(list.querySelectorAll('.track-compact-item')).forEach(function(other){ if(other!==item) other.open=false; });
+            item.classList.add('track-focused'); list.classList.add('track-detail-mode'); collection.classList.add('track-detail-mode');
+            collection.setAttribute('data-restore-y',String(window.scrollY||0)); document.body.classList.add('track-detail-open'); window.scrollTo(0,0);
+          } else if(item.classList.contains('track-focused')){
+            item.classList.remove('track-focused'); list.classList.remove('track-detail-mode'); collection.classList.remove('track-detail-mode'); document.body.classList.remove('track-detail-open');
+          }
+        });
+        if(back) back.onclick=function(){ var restore=Number(collection.getAttribute('data-restore-y')||0); item.open=false; setTimeout(function(){ window.scrollTo(0,restore); },0); };
+      });
+      wireCustomerDocumentPreviews(box);
       wireThreadFiles(box);
       box.querySelectorAll('.reply-panel[data-app]').forEach(function(panel){ var b=panel.querySelector('[data-reply-send]'); if(b) b.onclick=function(){ submitReply(panel); }; });
       // wire "download your visa" buttons
@@ -1328,7 +1653,7 @@
         btn.onclick=function(){
           btn.innerHTML='<span class="spin"></span> Preparing…';
           sb.storage.from('visa-documents').createSignedUrl(vd.file_path,3600,{ download: vd.file_name||'visa.pdf' }).then(function(s){
-            btn.innerHTML='&#11015; Download your visa';
+            btn.innerHTML='Download your visa <span aria-hidden="true">&darr;</span>';
             if(s.error||!s.data){ toast('Could not open your visa. Please try again.'); return; }
             window.open(s.data.signedUrl,'_blank','noopener');
           });
@@ -1378,10 +1703,82 @@
         sb.storage.from('visa-documents').createSignedUrl(p,3600).then(function(s){ link.textContent=orig; if(s.error||!s.data){ toast('Could not open that file.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); };
     });
   }
+
+  function profileVisaCountry(a){
+    var v=visaById(a.visa_type), slug=v&&v.country_slug;
+    if(slug==='uae'||slug==='united-arab-emirates') return 'United Arab Emirates';
+    var known=slug?countryName(slug):'';
+    if(known&&known!==slug) return known;
+    if(slug) return slug.split('-').map(function(word){ return word.charAt(0).toUpperCase()+word.slice(1); }).join(' ');
+    return 'United Arab Emirates';
+  }
+
+  function profileApplicationsHtml(apps,activeTab){
+    var completed=apps.filter(function(a){ return a.status==='Visa Issued'; });
+    var ongoing=apps.filter(function(a){ return a.status!=='Visa Issued'; });
+    var shown=activeTab==='completed'?completed:ongoing;
+    var emptyText=activeTab==='completed'?'No completed applications yet.':'No ongoing applications.';
+    var cards=shown.map(function(a){
+      var v=visaById(a.visa_type);
+      var created=a.created_at?new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
+      var docs=a.documents||[], passport=docs.filter(function(d){return d.doc_type==='passport';})[0], photo=docs.filter(function(d){return d.doc_type==='photo';})[0];
+      return '<article class="profile-compact-visa"><div class="compact-visa-visual">'+(passport?'<span class="compact-visa-thumb primary" data-customer-thumb="'+esc(passport.file_path)+'"></span>':'<span class="compact-visa-thumb primary placeholder">P</span>')+(photo?'<span class="compact-visa-thumb secondary" data-customer-thumb="'+esc(photo.file_path)+'"></span>':'')+'</div><div class="compact-visa-copy"><span>'+esc(a.status==='Visa Issued'?'Completed':'Continue')+'</span><h3>'+esc(v?v.name:(a.visa_type||'Visa application'))+'</h3><small>'+esc(profileVisaCountry(a))+' &middot; '+esc(a.reference_code||'-')+(created?' &middot; '+esc(created):'')+'</small></div>'+statusPill(a.status||'Submitted')+'<button class="compact-visa-arrow" type="button" data-profile-track aria-label="View '+esc(v?v.name:'application')+'">&rarr;</button></article>';
+    }).join('');
+    return '<section class="profile-visas"><div class="profile-application-tabs" role="tablist" aria-label="Applications"><button type="button" role="tab" aria-selected="'+(activeTab==='completed')+'" class="'+(activeTab==='completed'?'active':'')+'" data-profile-tab="completed">Completed applications <span>'+completed.length+'</span></button><button type="button" role="tab" aria-selected="'+(activeTab==='ongoing')+'" class="'+(activeTab==='ongoing'?'active':'')+'" data-profile-tab="ongoing">Ongoing applications <span>'+ongoing.length+'</span></button></div>'+(cards?'<div class="profile-visa-list">'+cards+'</div>':'<div class="customer-documents-empty">'+emptyText+'</div>')+'</section>';
+  }
+
+  function customerDocumentsHtml(a, profileMode, embedded){
+    var docs=a.documents||[];
+    function find(type){ for(var i=0;i<docs.length;i++){ if(docs[i].doc_type===type) return docs[i]; } return null; }
+    function tile(type,label,description){
+      var doc=find(type);
+      if(!doc) return '<div class="customer-document missing"><div class="customer-document-media"><span>Not available</span></div><div class="customer-document-copy"><b>'+esc(label)+'</b><small>'+esc(description)+'</small></div></div>';
+      return '<button class="customer-document" type="button" data-customer-doc="'+esc(doc.file_path)+'" data-customer-label="'+esc(label)+'"><div class="customer-document-media"><span class="customer-document-spinner"></span></div><div class="customer-document-copy"><b>'+esc(label)+'</b><small>'+esc(description)+'</small><i>View image <span aria-hidden="true">&rarr;</span></i></div></button>';
+    }
+    var heading=embedded?'':'<div class="customer-documents-head"><div><strong>Passport &amp; photo</strong><p>Your uploaded documents'+(profileMode&&a.reference_code?' for '+esc(a.reference_code):'')+'.</p></div><span>Secure</span></div>';
+    return '<section class="customer-documents '+(profileMode?'profile-document-section ':'')+(embedded?'embedded':'')+'">'+heading+'<div class="customer-documents-grid">'+
+      tile('passport','Passport front','Verified passport page')+tile('photo','Personal photo','Photo used for this application')+
+    '</div></section>';
+  }
+
+  function wireCustomerDocumentPreviews(scope){
+    (scope||document).querySelectorAll('[data-customer-doc]').forEach(function(card){
+      var path=card.getAttribute('data-customer-doc');
+      var media=card.querySelector('.customer-document-media');
+      sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(result){
+        if(!card.isConnected) return;
+        if(result.error||!result.data||!result.data.signedUrl){
+          card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>'; return;
+        }
+        var url=result.data.signedUrl;
+        var label=card.getAttribute('data-customer-label')||'Uploaded document';
+        media.innerHTML='<img src="'+esc(url)+'" alt="'+esc(label)+' preview">';
+        card.onclick=function(){ window.open(url,'_blank','noopener'); };
+      }).catch(function(){
+        if(!card.isConnected) return;
+        card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>';
+      });
+    });
+  }
+
+  function wireCustomerThumbnails(scope){
+    (scope||document).querySelectorAll('[data-customer-thumb]').forEach(function(media){
+      var path=media.getAttribute('data-customer-thumb');
+      sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(result){
+        if(!media.isConnected) return;
+        if(result.error||!result.data||!result.data.signedUrl){ media.classList.add('placeholder'); media.textContent=''; return; }
+        media.innerHTML='<img src="'+esc(result.data.signedUrl)+'" alt="">';
+      }).catch(function(){ if(media.isConnected) media.classList.add('placeholder'); });
+    });
+  }
+
   function appCard(a){
     var stages=cfg.STAGES;
     var idx=stages.indexOf(a.status);
     var action = a.status==='Action Needed';
+    var visa=visaById(a.visa_type);
+    var destination=profileVisaCountry(a);
+    var destinationCode=destination==='United Arab Emirates'?'DXB':destination.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase();
     var steps=stages.map(function(label,i){
       var cls = action ? (i===0?'current':'upcoming') :
                 (i<idx?'done':(i===idx?'current':'upcoming'));
@@ -1389,12 +1786,22 @@
       return '<div class="tstep '+cls+'"><div class="dot">'+inner+'</div><div class="tlabel">'+esc(label)+'</div></div>';
     }).join('');
     var created=new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+    var statusDescriptions={
+      'Submitted':'Your application has been received and is waiting for document checks.',
+      'Documents Verified':'Your uploaded documents have been checked successfully.',
+      'Under Review':'Our visa team is reviewing your application.',
+      'Payment Confirmed':'Your payment has been confirmed.',
+      'Approved':'Your application is approved and the visa is being prepared.',
+      'Visa Issued':'Your visa is ready to download.',
+      'Action Needed':'We need some information from you before we can continue.'
+    };
+    var currentDescription=statusDescriptions[a.status]||'We will notify you when your application status changes.';
     var hasVisa=(a.documents||[]).some(function(d){ return d.doc_type==='visa'; });
     var visaBanner = hasVisa ?
-      '<div style="margin-top:18px;background:#f1faf4;border:1px solid #b6e6c9;border-radius:14px;padding:18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">'+
-        '<div><b style="color:#137a3a;font-size:15px">🎉 Your visa is ready!</b>'+
-        '<div style="color:var(--muted);font-size:13.5px;margin-top:2px">Your UAE tourist visa has been issued. Download and keep a copy for your travel.</div></div>'+
-        '<button class="btn btn-primary dl-visa" data-app="'+esc(a.id)+'">&#11015; Download your visa</button>'+
+      '<div class="visa-ready-banner">'+
+        '<div class="visa-ready-mark">'+CHECK+'</div><div class="visa-ready-copy"><b>Your visa is ready</b>'+
+        '<p>Your UAE tourist visa has been issued. Download and keep a copy for your travel.</p></div>'+
+        '<button class="btn track-primary dl-visa" data-app="'+esc(a.id)+'">Download your visa <span aria-hidden="true">&darr;</span></button>'+
       '</div>' : '';
     var msgs=threadMsgsOf(a);
     var threadBlock = msgs.length ? ('<div class="thread-wrap"><div class="thread-title">Messages with our team</div>'+threadHtml(a)+'</div>') : '';
@@ -1413,17 +1820,23 @@
         '<button class="btn btn-primary" data-reply-send>Send to our team</button>'+
       '</div>';
     }
-    return '<div class="app-card">'+
-      '<div class="app-card-top"><div>'+
-        '<h3>'+esc(visaById(a.visa_type)?visaById(a.visa_type).name:a.visa_type)+'</h3>'+
-        '<div class="sub">Ref '+esc(a.reference_code)+' · applied '+created+' · '+appPriceText(a)+'</div>'+
+    var progressLabel=(action||idx<0)?'Update required':Math.round(((idx+1)/stages.length)*100)+'% complete';
+    var progressPercent=(action||idx<0)?0:Math.round(((idx+1)/stages.length)*100);
+    return '<details class="track-compact-item"><summary class="track-compact-summary"><span class="track-route-badge" aria-hidden="true"><b>'+esc(destinationCode||'VISA')+'</b><small>eVISA</small></span><span class="track-compact-copy"><small>'+esc(action?'Waiting for you':(a.status==='Visa Issued'?'Ready to travel':'Journey in motion'))+'</small><strong>'+esc(visa?visa.name:a.visa_type)+'</strong><i>'+esc(a.reference_code)+' &middot; '+esc(destination)+'</i></span><span class="track-summary-progress" aria-label="'+esc(progressLabel)+'"><i style="--track-progress:'+progressPercent+'%"><b></b></i><em>'+esc(progressLabel)+'</em></span>'+statusPill(a.status)+'<span class="track-compact-arrow" aria-hidden="true">+</span></summary><div class="track-expanded"><button class="track-back-list" type="button" data-track-back><span aria-hidden="true">&larr;</span> All applications</button><article class="app-card track-card">'+
+      '<div class="app-card-top track-card-head"><div class="track-card-title">'+
+        '<span class="track-destination">Visadoo journey &middot; '+esc(a.reference_code)+'</span>'+
+        '<h2>'+esc(visa?visa.name:a.visa_type)+'</h2>'+
+        '<div class="track-meta"><span><small>Reference</small><b>'+esc(a.reference_code)+'</b></span><span><small>Applied on</small><b>'+created+'</b></span><span><small>Journey value</small><b>'+appPriceText(a)+'</b></span></div>'+
       '</div>'+statusPill(a.status)+'</div>'+
       (action && a.notes && !msgs.length ? '<div class="signin-msg err" style="display:block;margin-bottom:18px">'+esc(a.notes)+'</div>' : '')+
+      '<div class="track-current '+(action?'needs-action':'')+'"><div class="track-current-mark">'+(action?'!':CHECK)+'</div><div><small>Current status</small><strong>'+esc(a.status)+'</strong><p>'+esc(currentDescription)+'</p></div></div>'+
+      '<div class="track-progress-head"><strong>Your visa milestones</strong><span>'+((action||idx<0)?'Update required':Math.round(((idx+1)/stages.length)*100)+'% complete')+'</span></div>'+
       '<div class="tracker">'+steps+'</div>'+
+      customerDocumentsHtml(a,false)+
       visaBanner+
       threadBlock+
       replyPanel+
-      '</div>';
+      '</article></div></details>';
   }
 
   function submitReply(panel){
@@ -1746,7 +2159,7 @@
     '</div>';
   }
 
-  function docLabel(t){ return t==='visa'?'visa':(t==='photo'?'photo':'passport'); }
+  function docLabel(t){ return t==='visa'?'visa':(t==='photo'?'photo':(t==='passport_back'?'passport back':'passport front')); }
 
   function adminCard(a){
     var created=new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
@@ -5852,6 +6265,9 @@
     if(v==='supview' && !supViewId) v='suppliers';
     state.view=v;
     document.body.classList.toggle('apply-focus',v==='apply');
+    document.body.classList.toggle('profile-view',v==='profile');
+    document.body.classList.toggle('track-view',v==='track');
+    if(v!=='track') document.body.classList.remove('track-detail-open');
     if(v!=='apply') document.body.classList.remove('apply-reviewing');
 
     // Backend sidebar layout: shift content right only on staff console screens.
@@ -5887,6 +6303,7 @@
     else if(v==='reports') renderFinReports();
     else if(v==='team') renderTeam();
     else if(v==='audit') renderAudit();
+    else if(v==='profile') renderProfile();
     else if(v==='setpw') renderSetPassword();
     else renderApply();
   }
@@ -5897,7 +6314,7 @@
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
     if(h.indexOf('leadview/')===0){ leadViewId=decodeURIComponent(h.slice(9))||null; return leadViewId?'leadview':'leads'; }
-    if(['track','apply','dashboard','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','leads','followups','customers','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
+    if(['track','apply','profile','dashboard','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','leads','followups','customers','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
 

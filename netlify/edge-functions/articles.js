@@ -31,7 +31,7 @@ function head(title, desc, canonical, ogImage, jsonld, ogAlt, pageClass){
     '<header class="header discover-header"><div class="container nav">'+
       '<div class="nav-brand-cluster"><a href="/#top" class="brand">'+brandMark()+'</a></div>'+
       '<nav class="nav-links" id="navLinks"><a href="/#destinations">Explore</a><a href="/events">Events</a><a href="/articles" class="active" aria-current="page">Articles</a></nav>'+
-      '<div class="nav-actions"><a href="/app.html#track" class="nav-track">Track visa</a><a href="/app.html" class="nav-profile" aria-label="Sign in" title="Sign in"></a><button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button></div>'+
+      '<div class="nav-actions"><a href="/app.html#track" class="nav-track">Track visa</a><a href="/app.html#profile" class="nav-profile" aria-label="Profile" title="Profile"></a><button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button></div>'+
     '</div></header>';
 }
 

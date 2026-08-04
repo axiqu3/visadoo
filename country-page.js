@@ -199,18 +199,16 @@
     }
     return '<div class="container uae-documents-simple">'+
       '<div class="uae-documents-overview">'+
-        '<div class="uae-documents-heading"><span class="eyebrow">Documents</span><h2>Simple documents to get started</h2><p>Prepare clear copies of the basics. If your selected visa needs anything else, VisaDoo will tell you.</p></div>'+
+        '<div class="uae-documents-heading"><span class="eyebrow">Documents</span><h2>Only two documents needed</h2><p>Keep a clear passport bio page and a recent personal photo ready.</p></div>'+
         '<div class="uae-documents-quick" aria-label="Document preparation summary">'+
-          '<div><strong>3</strong><span>essential items</span></div>'+
-          '<div><strong>~5 min</strong><span>to prepare</span></div>'+
+          '<div><strong>2</strong><span>essential items</span></div>'+
+          '<div><strong>~3 min</strong><span>to prepare</span></div>'+
           '<div><strong>Phone</strong><span>uploads accepted</span></div>'+
         '</div>'+
       '</div>'+
       '<div class="uae-document-grid">'+
         card('Required','Passport bio page','A clear copy of the page with your photo and details.','/assets/uae-documents/passport-bio-page.png')+
         card('Required','Recent photo','A clear, front-facing photo on a plain background.','/assets/uae-documents/recent-photo.png')+
-        card('Trip details','Travel information','Your intended travel dates and accommodation details.','/assets/uae-documents/travel-information.png')+
-        card('If requested','Supporting document','We will tell you if your selected visa needs this.','/assets/uae-documents/supporting-document.png')+
       '</div>'+
       '<div class="uae-documents-footer">'+
         '<div><span aria-hidden="true">&#8593;</span><p><b>Upload from any device</b><small>Clear phone photos or scans are accepted.</small></p></div>'+
@@ -303,6 +301,7 @@
       '</section>';
     if(isUae) wireUaeVisaSelector();
     wireCountryInfoNav();
+    document.dispatchEvent(new Event('visadoo:country-rendered'));
   }
 
   function renderError(title,message){
