@@ -113,6 +113,8 @@
   }
 
   function render(countries, groups){
+    var INITIAL_COUNTRY_LIMIT=25;
+    var showAllCountries=false;
     var featured = countries.filter(function(c){return c.featured;});
     var chips = (featured.length?featured:countries).slice(0,6).map(function(c){
       return '<a href="'+countryHref(c.slug)+'" class="destination-chip"><img src="'+flag(c.iso2)+'" alt="">'+ (c.name||'') +'</a>';
@@ -168,6 +170,8 @@
     var deliveryFilter=document.getElementById('deliveryFilter');
     var budgetFilter=document.getElementById('budgetFilter');
     var empty=document.getElementById('destinationEmpty');
+    var moreWrap=document.getElementById('destinationMoreWrap');
+    var moreButton=document.getElementById('destinationMore');
     var activeGroup='all';
 
     function applyDestinationFilters(){
@@ -186,10 +190,29 @@
         var price=Number(card.getAttribute('data-price'));
         var budgetOk=budget==='all'||(price>0&&price<=Number(budget));
         var isMatch=groupOk&&typeOk&&etaOk&&budgetOk;
-        card.hidden=!isMatch;
-        if(isMatch) matched++;
+        if(isMatch){
+          card.hidden=!showAllCountries&&matched>=INITIAL_COUNTRY_LIMIT;
+          matched++;
+        }else{
+          card.hidden=true;
+        }
       });
       if(empty) empty.hidden=matched!==0;
+      if(moreWrap) moreWrap.hidden=matched<=INITIAL_COUNTRY_LIMIT;
+      if(moreButton){
+        moreButton.setAttribute('aria-expanded',showAllCountries?'true':'false');
+        moreButton.querySelector('span').textContent=showAllCountries?'Show fewer countries':'Show more countries';
+      }
+    }
+
+    if(moreButton){
+      moreButton.addEventListener('click',function(){
+        showAllCountries=!showAllCountries;
+        applyDestinationFilters();
+        if(!showAllCountries){
+          grid.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+      });
     }
 
     if(regionBox){

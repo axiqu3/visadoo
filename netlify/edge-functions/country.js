@@ -207,7 +207,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     '<meta name="twitter:card" content="summary_large_image">'+
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
-    '<link rel="stylesheet" href="/styles.css?v=20260804-uae-app-visible-sections">'+
+    '<link rel="stylesheet" href="/styles.css?v=20260804-natural-uae-hero">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
     '</head><body class="country-page'+(isUae?' uae-country-page':'')+'">'+
@@ -290,7 +290,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     '<script src="/destination-images.js"></scr'+'ipt>'+
     '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></scr'+'ipt>'+
     '<script src="/config.js"></scr'+'ipt>'+
-    '<script src="/country-history.js?v=20260804-uae-app-visible-sections"></scr'+'ipt>'+
+    '<script src="/country-history.js?v=20260804-natural-uae-hero"></scr'+'ipt>'+
     '<script>(function(){var b=document.getElementById("menuBtn"),n=document.getElementById("navLinks");if(!b||!n)return;b.addEventListener("click",function(){var o=n.classList.toggle("open");b.setAttribute("aria-expanded",String(o))});n.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){n.classList.remove("open");b.setAttribute("aria-expanded","false")})})})();</scr'+'ipt>'+
     '<script>(function(){var w=document.querySelector("[data-uae-visa-selector]"),c=w&&w.querySelectorAll("[data-uae-choice]");if(!w||!c.length)return;function u(o){if(!o)return;["name","category","stay","entry","processing","price"].forEach(function(k){w.querySelectorAll("[data-uae-"+k+"]").forEach(function(n){n.textContent=o.getAttribute("data-"+k)||""})});c.forEach(function(i){var l=i.closest(".uae-visa-option");if(l)l.classList.toggle("selected",i===o)})}c.forEach(function(i){i.addEventListener("change",function(){if(i.checked)u(i)})});u(w.querySelector("[data-uae-choice]:checked"))})();</scr'+'ipt>'+
     '</body></html>';

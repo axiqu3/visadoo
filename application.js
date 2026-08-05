@@ -551,7 +551,7 @@
     var avatar=meta.avatar_url?'<img src="'+esc(meta.avatar_url)+'" alt="">':esc(initial);
     var customerActions=isStaff() ?
       '<button class="profile-action" type="button" data-profile-go="'+esc(defaultStaffView())+'"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round"/></svg></span><span><b>Back to dashboard</b><small>Return to the staff workspace</small></span><i aria-hidden="true">&rarr;</i></button>' :
-      '<button class="profile-action" type="button" data-profile-go="apply"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></span><span><b>New application</b><small>Start another visa application</small></span><i aria-hidden="true">&rarr;</i></button>'+
+      '<button class="profile-action" type="button" data-profile-explore><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></span><span><b>New application</b><small>Explore visas and destinations</small></span><i aria-hidden="true">&rarr;</i></button>'+
       '<button class="profile-action" type="button" data-profile-go="track"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5M10 13h5m-5 4h5" stroke-linecap="round"/></svg></span><span><b>My applications</b><small>Track your visa status</small></span><i aria-hidden="true">&rarr;</i></button>';
     root.innerHTML='<main class="app-main profile-main profile-dashboard">'+
       '<aside class="profile-sidebar">'+
@@ -565,6 +565,8 @@
       '<section class="profile-workspace"><div class="profile-documents-wrap" id="profileDocuments"><div class="customer-documents-loading"><span class="spin"></span><span>Loading your applications&hellip;</span></div></div></section>'+
     '</main>';
     root.querySelectorAll('[data-profile-go]').forEach(function(button){ button.onclick=function(){ go(button.getAttribute('data-profile-go')); }; });
+    var profileExplore=root.querySelector('[data-profile-explore]');
+    if(profileExplore) profileExplore.onclick=function(){ window.location.href='index.html#destinations'; };
     var profileSignout=root.querySelector('[data-profile-signout]');
     if(profileSignout) profileSignout.onclick=function(){ signOutCurrentUser(profileSignout); };
     sb.from('applications').select('id,reference_code,visa_type,status,created_at,documents(*)').order('created_at',{ascending:false}).then(function(result){
@@ -579,7 +581,6 @@
       if(ongoingCount) ongoingCount.textContent=ongoing.length;
       function paintProfileApplications(tab){
         box.innerHTML=profileApplicationsHtml(apps,tab);
-        wireCustomerThumbnails(box);
         box.querySelectorAll('[data-profile-tab]').forEach(function(button){ button.onclick=function(){ paintProfileApplications(button.getAttribute('data-profile-tab')); }; });
         box.querySelectorAll('[data-profile-track]').forEach(function(button){ button.onclick=function(){ go('track'); }; });
       }
@@ -632,12 +633,7 @@
     var pre = qParam('visa');
     var chosen = pre ? visaById(pre) : null;
     if(!chosen){
-      root.innerHTML='<div class="app-main"><div class="panel empty-state" style="padding:50px 24px">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" stroke-linecap="round"/></svg>'+
-        '<h2 style="color:var(--ink);font-size:24px;font-weight:800;margin-bottom:8px">Choose your visa first</h2>'+
-        '<p>Pick your destination and the visa you need, then you can apply here.</p>'+
-        '<a class="btn btn-primary btn-lg" href="index.html#destinations" style="margin-top:18px">Browse destinations</a>'+
-      '</div></div>';
+      window.location.replace('index.html#destinations');
       return;
     }
     var meta = state.user.user_metadata || {};
@@ -665,6 +661,7 @@
 
         '<section class="panel apply-step" id="applyStep2" data-apply-step="2" hidden>'+
           '<h2>Upload your photo</h2>'+
+          '<p class="apply-step-intro">Upload one clear, front-facing personal portrait. ID cards, documents and group photos are not accepted.</p>'+
           '<div class="upload-row apply-document-upload apply-single-upload apply-photo-upload">' +
             dropZone('photo','','JPG, PNG or WEBP · max 10 MB') +
           '</div>'+
@@ -676,7 +673,7 @@
           '<h2>Upload your passport</h2><p class="apply-step-intro">Add the front/photo page first, then the back page.</p>'+
           '<div class="passport-page-list">'+
             '<section class="passport-page-card" id="passportFrontCard"><header><i>1</i><div><b>Front / photo page</b><small>Page with your photo and passport details</small></div></header>'+dropZone('passport','','JPG, PNG or WEBP · max 10 MB')+'<div class="passport-page-status" id="passportStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div></section>'+
-            '<section class="passport-page-card locked" id="passportBackCard"><header><i>2</i><div><b>Back page</b><small>Normal image upload — no OCR</small></div></header>'+dropZone('passport_back','','JPG, PNG or WEBP · max 10 MB')+'<div class="passport-page-status" id="passport_backStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div></section>'+
+            '<section class="passport-page-card locked" id="passportBackCard"><header><i>2</i><div><b>Back page</b><small>Father’s and mother’s names are read automatically</small></div></header>'+dropZone('passport_back','','JPG, PNG or WEBP · max 10 MB')+'<div class="passport-page-status" id="passport_backStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div></section>'+
           '</div>'+
           '<div class="apply-step-actions"><button type="button" class="btn btn-primary btn-lg" id="passportNext" disabled>Continue to review <span aria-hidden="true">→</span></button></div>'+
         '</section>'+
@@ -684,31 +681,44 @@
         '<div id="applyStep4" data-apply-step="4" hidden>'+
         '<div class="passport-review-layout">'+
           '<aside class="passport-review-previews" aria-label="Uploaded document previews">'+
-            '<div class="review-preview-card review-passport-card"><div class="review-preview-media"><img id="passportReviewPreview" alt="Uploaded passport preview"></div><div><b>Passport bio page</b><small>Uploaded document</small></div></div>'+
-            '<div class="review-preview-card review-photo-card"><div class="review-preview-media"><img id="photoReviewPreview" alt="Uploaded personal photo"></div><div><b>Personal photo</b><small>Uploaded document</small></div></div>'+
-            '<p>Use <b>Back</b> to replace either image.</p>'+
+            '<div class="review-passport-gallery">'+
+              '<button class="review-preview-card review-passport-card" type="button" data-passport-preview="passport" aria-label="View passport bio page">'+
+                '<span class="review-preview-media"><img id="passportReviewPreview" alt="Uploaded passport bio page"></span><span><b>Passport bio page</b><small>Tap to view</small></span>'+
+              '</button>'+
+              '<button class="review-preview-card review-passport-card" type="button" data-passport-preview="passport_back" aria-label="View passport back page">'+
+                '<span class="review-preview-media"><img id="passportBackReviewPreview" alt="Uploaded passport back page"></span><span><b>Passport back page</b><small>Tap to view</small></span>'+
+              '</button>'+
+            '</div>'+
+            '<p>Tap either passport page to view it full size.</p>'+
           '</aside>'+
           '<div class="passport-review-content">'+
         '<section class="passport-review-form apply-step active">' +
-          '<span class="step-badge">Step 4 of 4</span><h2>Check your passport details</h2><p class="apply-step-intro">We filled what we could read. Please check every field before submitting.</p>'+
-          '<div class="review-traveller-name">Traveller <b id="reviewTravellerName"></b></div>'+
-          '<div class="ocr-review-note" id="ocrReviewNote">You can edit any field if the passport scan was unclear.</div>'+
+          '<span class="step-badge">Step 4 of 4</span><h2>Check your passport details</h2>'+
           '<div class="grid2">' +
+            field('first_name','First name','text','',true) +
+            field('last_name','Last name','text','',false) +
+            field('father_name','Father\'s name','text','',false) +
+            field('mother_name','Mother\'s name','text','',false) +
+            '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Unspecified">Unspecified</option></select></div>'+
             field('passport_number','Passport number','text','',true) +
-            field('nationality','Nationality','text','',false) +
-            comboHtml('passport_issuing_country','Passport Issuing Country','Search country…',true) +
-            '<div id="stateWrap" style="display:none">'+comboHtml('state','State','Search state…',true)+'</div>' +
-            '<div class="review-passport-dates">'+
-              field('passport_issue_date','Passport issue date','date','',false) +
-              field('passport_expiry','Passport expiry date','date','',false) +
+            '<input id="passport_issuing_country" type="hidden" value="India">' +
+            '<div class="review-passport-details-grid">'+
+              field('nationality','Nationality','text','',false) +
+              field('date_of_birth','Date of birth','date','',true) +
+              field('passport_issue_date','Passport issued on','date','',true) +
+              field('passport_expiry','Passport valid till','date','',true) +
             '</div>' +
-            '<div class="field review-phone-field" id="mobileField">'+
-              '<label for="phone">Mobile number <span class="req-star">*</span></label>'+
-              '<input id="phone" name="phone" type="tel" autocomplete="tel" required>'+
-              '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+            '<div class="review-contact-details">'+
+              '<h3>Contact Details</h3><p>Required for sharing essential visa updates. In real time.</p>'+
+              '<div class="review-contact-fields">'+
+                '<div class="field review-email-field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                '<div class="field review-phone-field" id="mobileField">'+
+                  '<label for="phone">Phone number <span class="req-star">*</span></label>'+
+                  '<input id="phone" name="phone" type="tel" autocomplete="tel" required>'+
+                '</div>'+
+                '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+              '</div>'+
             '</div>' +
-            '<div class="review-dob-field">'+field('date_of_birth','Date of birth','date','',false)+'</div>' +
-            '<div class="field review-email-field"><label for="contact_email">Email address</label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
           '</div>' +
         '</section>' +
 
@@ -730,6 +740,12 @@
           '<div class="apply-submit-actions"><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div>' +
         '</div>' +
         '</div></div></div>'+
+        '<div class="review-image-modal" id="passportPreviewModal" role="dialog" aria-modal="true" aria-labelledby="passportPreviewTitle" hidden>'+
+          '<div class="review-image-dialog">'+
+            '<div class="review-image-head"><b id="passportPreviewTitle">Passport page</b><button type="button" id="passportPreviewClose" aria-label="Close passport preview">×</button></div>'+
+            '<div class="review-image-stage"><img id="passportPreviewLarge" alt="Passport page full-size preview"></div>'+
+          '</div>'+
+        '</div>'+
         '</form>' +
       '</div>';
     root.innerHTML=html;
@@ -744,19 +760,7 @@
     }
     refreshSummary();
     loadApplyQuestions(selected);
-    wirePassportPages(); wireDrop('photo');
-
-    // Passport Issuing Country (India default + pinned) + conditional India State dropdown
-    var countryCombo, stateCombo;
-    function toggleState(country){
-      var w=document.getElementById('stateWrap'); if(!w) return;
-      if(country==='India'){ w.style.display=''; loadIndiaStates().then(function(){ if(stateCombo) stateCombo.refresh(); }); }
-      else { w.style.display='none'; var h=document.getElementById('state'), ss=document.getElementById('state_s'); if(h) h.value=''; if(ss) ss.value=''; }
-    }
-    loadCountries().then(function(){ if(countryCombo) countryCombo.refresh(); });
-    stateCombo=comboInit('state', function(){ return geoIndiaStates||[]; }, { placeholder:'Search state…' });
-    countryCombo=comboInit('passport_issuing_country', function(){ return geoCountries||['India']; }, { selected:'India', onSelect:toggleState });
-    applyCountryCombo=countryCombo;
+    wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
 
     initMobileField();
     wireApplyWizard();
@@ -1000,15 +1004,14 @@
 
   var picked={};
   var passportOcrState={ busy:false, complete:false, extracted:null, frontVerified:false };
-  var applyCountryCombo=null;
   var applyWizardStep=1;
   var photoValidationRun=0;
   var photoFaceDetectorPromise=null;
-  var passportValidationRun={passport:0};
-  var documentPreviewUrls={passport:'',photo:''};
+  var passportValidationRun={passport:0,passport_back:0};
+  var documentPreviewUrls={passport:'',passport_back:'',photo:''};
 
   function clearDocumentPreviewUrls(){
-    ['passport','photo'].forEach(function(key){
+    ['passport','passport_back','photo'].forEach(function(key){
       if(documentPreviewUrls[key]){ try{ URL.revokeObjectURL(documentPreviewUrls[key]); }catch(_revokeError){} }
       documentPreviewUrls[key]='';
     });
@@ -1017,8 +1020,40 @@
   function setDocumentPreview(key,file){
     if(documentPreviewUrls[key]){ try{ URL.revokeObjectURL(documentPreviewUrls[key]); }catch(_revokeError){} }
     var url=URL.createObjectURL(file); documentPreviewUrls[key]=url;
-    var image=document.getElementById(key==='passport'?'passportReviewPreview':'photoReviewPreview');
+    var previewIds={passport:'passportReviewPreview',passport_back:'passportBackReviewPreview',photo:'photoReviewPreview'};
+    var image=document.getElementById(previewIds[key]);
     if(image) image.src=url;
+  }
+
+  function wirePassportReviewPreviews(){
+    var modal=document.getElementById('passportPreviewModal');
+    var large=document.getElementById('passportPreviewLarge');
+    var title=document.getElementById('passportPreviewTitle');
+    var closeButton=document.getElementById('passportPreviewClose');
+    if(!modal||!large||!title||!closeButton) return;
+    var opener=null;
+    function closePreview(){
+      modal.hidden=true;
+      document.body.classList.remove('passport-preview-open');
+      large.removeAttribute('src');
+      if(opener) opener.focus({preventScroll:true});
+    }
+    document.querySelectorAll('[data-passport-preview]').forEach(function(button){
+      button.onclick=function(){
+        var key=button.getAttribute('data-passport-preview');
+        var url=documentPreviewUrls[key];
+        if(!url) return;
+        opener=button;
+        large.src=url;
+        title.textContent=key==='passport_back'?'Passport back page':'Passport bio page';
+        modal.hidden=false;
+        document.body.classList.add('passport-preview-open');
+        closeButton.focus({preventScroll:true});
+      };
+    });
+    closeButton.onclick=closePreview;
+    modal.onclick=function(event){ if(event.target===modal) closePreview(); };
+    modal.onkeydown=function(event){ if(event.key==='Escape'){ event.preventDefault(); closePreview(); } };
   }
 
   function setApplyStep(step){
@@ -1028,8 +1063,7 @@
     applyWizardStep=step;
     document.body.classList.toggle('apply-reviewing',step===4);
     if(step===4){
-      var reviewName=document.getElementById('reviewTravellerName'), fullName=document.getElementById('full_name');
-      if(reviewName&&fullName) reviewName.textContent=fullName.value.trim();
+      seedPassportNameFields();
     }
     var active=step===1?one:(step===2?two:(step===3?three:four));
     var heading=active.querySelector('[data-step-heading]')||active.querySelector('h2');
@@ -1052,6 +1086,10 @@
     name.addEventListener('keydown',function(event){ if(event.key==='Enter'){ event.preventDefault(); nameNext.click(); } });
     photoNext.onclick=function(){ if(!photoNext.disabled) setApplyStep(3); };
     passportNext.onclick=function(){ if(!passportNext.disabled) setApplyStep(4); };
+    ['first_name','last_name'].forEach(function(id){
+      var input=document.getElementById(id);
+      if(input) input.addEventListener('input',syncPassportFullName);
+    });
     var exit=document.getElementById('applyExit');
     if(exit) exit.onclick=function(){
       if(applyWizardStep>1){ setApplyStep(applyWizardStep-1); return; }
@@ -1101,6 +1139,32 @@
     return (given+' '+surname).trim().toLowerCase().replace(/\b[a-z]/g,function(c){return c.toUpperCase();});
   }
 
+  function titleCaseOcrName(value){
+    return String(value||'').toLowerCase().replace(/\b[a-z]/g,function(c){return c.toUpperCase();});
+  }
+
+  function splitPassportName(value){
+    var clean=String(value||'').replace(/\s+/g,' ').trim();
+    if(!clean) return {firstName:'',lastName:''};
+    var parts=clean.split(' ');
+    if(parts.length===1) return {firstName:clean,lastName:''};
+    return {firstName:parts.slice(0,-1).join(' '),lastName:parts[parts.length-1]};
+  }
+
+  function seedPassportNameFields(){
+    var first=document.getElementById('first_name'), last=document.getElementById('last_name'), full=document.getElementById('full_name');
+    if(!first||!last||!full||first.value.trim()||last.value.trim()) return;
+    var split=splitPassportName(full.value);
+    first.value=split.firstName; last.value=split.lastName;
+  }
+
+  function syncPassportFullName(){
+    var first=document.getElementById('first_name'), last=document.getElementById('last_name'), full=document.getElementById('full_name');
+    if(!first||!last||!full) return;
+    var combined=(first.value.trim()+' '+last.value.trim()).trim();
+    if(combined) full.value=combined;
+  }
+
   function parsePassportMrz(text){
     var lines=String(text||'').toUpperCase().replace(/[«‹]/g,'<<').split(/\r?\n/).map(function(line){
       line=line.replace(/[^A-Z0-9<]/g,'');
@@ -1116,15 +1180,62 @@
     for(var j=firstIndex+1;j<lines.length;j++){ if(lines[j].length>=36){ second=(lines[j]+'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<').slice(0,44); break; } }
     if(!second) return null;
     var passportNumber=second.slice(0,9).replace(/</g,'').trim();
+    var surname=first.slice(5).split('<<')[0].replace(/<+/g,' ').trim();
+    var givenNames=first.slice(5).split('<<').slice(1).join(' ').replace(/<+/g,' ').trim();
+    var genderCode=second.charAt(20);
     var result={
+      firstName:titleCaseOcrName(givenNames),
+      lastName:titleCaseOcrName(surname),
       fullName:mrzPersonName(first.slice(5)),
       issuingCountry:mrzCountryName(first.slice(2,5).replace(/</g,'')),
       passportNumber:passportNumber,
       nationality:mrzCountryName(second.slice(10,13).replace(/</g,'')),
       dateOfBirth:mrzDate(second.slice(13,19),'birth'),
+      gender:genderCode==='M'?'Male':(genderCode==='F'?'Female':(genderCode==='X'?'Unspecified':'')),
       passportExpiry:mrzDate(second.slice(21,27),'expiry')
     };
     return result.passportNumber||result.dateOfBirth||result.passportExpiry?result:null;
+  }
+
+  function ocrDate(value){
+    var match=String(value||'').match(/\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{4})\b/);
+    if(!match) return '';
+    var day=Number(match[1]),month=Number(match[2]),year=Number(match[3]);
+    if(day<1||day>31||month<1||month>12||year<1900||year>2200) return '';
+    return String(year)+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+  }
+
+  function ocrDates(value){
+    var dates=[],pattern=/\b(\d{1,2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{4})\b/g,match;
+    while((match=pattern.exec(String(value||'')))!==null){
+      var parsed=ocrDate(match[0]);
+      if(parsed&&dates.indexOf(parsed)===-1) dates.push(parsed);
+    }
+    return dates;
+  }
+
+  function parsePassportVisualDetails(text,known){
+    known=known||{};
+    var lines=String(text||'').toUpperCase().split(/\r?\n/).map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
+    var candidates=[];
+    lines.forEach(function(line,index){
+      ocrDates(line).forEach(function(date){
+        if(date===known.dateOfBirth||date===known.passportExpiry) return;
+        if(known.passportExpiry&&date>=known.passportExpiry) return;
+        if(known.dateOfBirth&&date<=known.dateOfBirth) return;
+        if(!candidates.some(function(candidate){return candidate.date===date;})) candidates.push({date:date,line:index});
+      });
+    });
+    if(!candidates.length) return {};
+    var issueLines=[];
+    for(var i=0;i<lines.length;i++){
+      if(/(DATE\s+(OF\s+)?ISSUE|ISSUE\s+DATE)/.test(lines[i])) issueLines.push(i);
+    }
+    candidates.forEach(function(candidate){
+      candidate.distance=issueLines.length?Math.min.apply(null,issueLines.map(function(line){return Math.abs(line-candidate.line);})) : 99;
+    });
+    candidates.sort(function(a,b){ return a.distance-b.distance||b.date.localeCompare(a.date); });
+    return {passportIssueDate:candidates[0].date};
   }
 
   function preparePassportForOcr(file){
@@ -1164,11 +1275,30 @@
       input.value=value; count++;
     }
     set('full_name',data.fullName,true);
+    set('first_name',data.firstName,false);
+    set('last_name',data.lastName,false);
     set('passport_number',data.passportNumber,false);
     set('nationality',data.nationality,false);
     set('date_of_birth',data.dateOfBirth,false);
+    set('gender',data.gender,false);
+    if(data.passportIssueDate&&data.passportIssueDate!==data.passportExpiry) set('passport_issue_date',data.passportIssueDate,false);
     set('passport_expiry',data.passportExpiry,false);
-    if(data.issuingCountry&&applyCountryCombo){ applyCountryCombo.setValue(data.issuingCountry); count++; }
+    if(data.issuingCountry){
+      var countryInput=document.getElementById('passport_issuing_country');
+      if(countryInput) countryInput.value=data.issuingCountry;
+      count++;
+    }
+    syncPassportFullName();
+    return count;
+  }
+
+  function fillPassportBackFields(data){
+    if(!data) return 0;
+    var count=0;
+    [['father_name',data.fatherName],['mother_name',data.motherName]].forEach(function(pair){
+      var input=document.getElementById(pair[0]);
+      if(input&&pair[1]){ input.value=pair[1]; count++; }
+    });
     return count;
   }
 
@@ -1207,9 +1337,172 @@
         var result=await worker.recognize(ocrImage);
         var text=result&&result.data&&result.data.text||'';
         var extracted=parsePassportMrz(text);
-        if(extracted&&extracted.passportNumber&&extracted.passportNumber.length>=7&&extracted.nationality&&(extracted.dateOfBirth||extracted.passportExpiry)) return {ok:true,extracted:extracted};
+        if(extracted&&extracted.passportNumber&&extracted.passportNumber.length>=7&&extracted.nationality&&(extracted.dateOfBirth||extracted.passportExpiry)){
+          try{
+            if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:'',preserve_interword_spaces:'1'});
+            var fullPage=await preparePassportFullPageForOcr(rotated);
+            var visualResult=await worker.recognize(fullPage);
+            var visual=parsePassportVisualDetails(visualResult&&visualResult.data&&visualResult.data.text||'',extracted);
+            if(visual.passportIssueDate&&visual.passportIssueDate!==extracted.passportExpiry) extracted.passportIssueDate=visual.passportIssueDate;
+          }catch(_visualOcrError){ /* MRZ data is still valid when the visual pass is unclear. */ }
+          return {ok:true,extracted:extracted};
+        }
       }
       return {ok:false,message:'This does not look like a passport front/photo page. Upload the clear page with your photo and MRZ lines.'};
+    }finally{
+      if(worker){ try{ await worker.terminate(); }catch(_terminateError){} }
+    }
+  }
+
+  function preparePassportFullPageForOcr(file){
+    return new Promise(function(resolve){
+      var url=URL.createObjectURL(file), image=new Image();
+      image.onload=function(){
+        try{
+          var sourceWidth=image.naturalWidth||image.width, sourceHeight=image.naturalHeight||image.height;
+          var cropX=0,cropY=0,cropWidth=sourceWidth,cropHeight=sourceHeight;
+          var scale=Math.min(2.5,1900/Math.max(cropWidth,cropHeight));
+          if(Math.min(cropWidth,cropHeight)*scale<1050) scale=Math.min(2.5,1050/Math.min(cropWidth,cropHeight));
+          var canvas=document.createElement('canvas');
+          canvas.width=Math.max(1,Math.round(cropWidth*scale)); canvas.height=Math.max(1,Math.round(cropHeight*scale));
+          var context=canvas.getContext('2d',{willReadFrequently:true});
+          context.drawImage(image,cropX,cropY,cropWidth,cropHeight,0,0,canvas.width,canvas.height);
+          var pixels=context.getImageData(0,0,canvas.width,canvas.height), data=pixels.data;
+          for(var i=0;i<data.length;i+=4){
+            var gray=Math.round(data[i]*.299+data[i+1]*.587+data[i+2]*.114);
+            var contrast=Math.max(0,Math.min(255,(gray-128)*1.5+128));
+            data[i]=data[i+1]=data[i+2]=contrast;
+          }
+          context.putImageData(pixels,0,0);
+          canvas.toBlob(function(blob){ URL.revokeObjectURL(url); resolve(blob||file); },'image/jpeg',.95);
+        }catch(_prepareError){ URL.revokeObjectURL(url); resolve(file); }
+      };
+      image.onerror=function(){ URL.revokeObjectURL(url); resolve(file); };
+      image.src=url;
+    });
+  }
+
+  function preparePassportBackNamesForOcr(file,fullPage){
+    return new Promise(function(resolve){
+      var url=URL.createObjectURL(file), image=new Image();
+      image.onload=function(){
+        try{
+          var sourceWidth=image.naturalWidth||image.width, sourceHeight=image.naturalHeight||image.height;
+          var cropY=fullPage?0:Math.round(sourceHeight*.40);
+          var cropHeight=sourceHeight-cropY;
+          var scale=Math.min(2.7,2200/Math.max(sourceWidth,cropHeight));
+          if(Math.min(sourceWidth,cropHeight)*scale<1150) scale=Math.min(2.7,1150/Math.min(sourceWidth,cropHeight));
+          var canvas=document.createElement('canvas');
+          canvas.width=Math.max(1,Math.round(sourceWidth*scale));
+          canvas.height=Math.max(1,Math.round(cropHeight*scale));
+          var context=canvas.getContext('2d',{willReadFrequently:true});
+          context.drawImage(image,0,cropY,sourceWidth,cropHeight,0,0,canvas.width,canvas.height);
+          var pixels=context.getImageData(0,0,canvas.width,canvas.height), data=pixels.data;
+          for(var i=0;i<data.length;i+=4){
+            var gray=Math.round(data[i]*.299+data[i+1]*.587+data[i+2]*.114);
+            var contrast=Math.max(0,Math.min(255,(gray-128)*1.7+128));
+            data[i]=data[i+1]=data[i+2]=contrast;
+          }
+          context.putImageData(pixels,0,0);
+          canvas.toBlob(function(blob){ URL.revokeObjectURL(url); resolve(blob||file); },'image/jpeg',.96);
+        }catch(_prepareError){ URL.revokeObjectURL(url); resolve(file); }
+      };
+      image.onerror=function(){ URL.revokeObjectURL(url); resolve(file); };
+      image.src=url;
+    });
+  }
+
+  function passportBackLabelType(value){
+    var line=String(value||'').toUpperCase().replace(/[^A-Z ]/g,' ').replace(/\s+/g,' ').trim();
+    if(/\bFATH[EA]R\b|\bVATER\b|\bFATER\b|\bNAME (?:OF|I) (?:ATER|SER)\b|LEGAL GUARD/.test(line)) return 'father';
+    if(/\bMOTH[EA]R\b|\bMETER\b|\bMEHER\b|\bMETHER\b|\bNAME OF M[EO][A-Z]{2,5}R\b/.test(line)) return 'mother';
+    if(/\bSPOU[S5]E\b|\bADDRE[S5]{2}\b|\bFILE (?:NO|NUMBER)\b|\bHOUSE\b|\bPOST\b|\bPIN\b/.test(line)) return 'stop';
+    return '';
+  }
+
+  function passportBackNameCandidate(value){
+    var original=String(value||'').trim();
+    var clean=original.toUpperCase().replace(/[^A-Z.'\- ]/g,' ').replace(/\s+/g,' ').trim();
+    if(clean.length<3||clean.length>70) return null;
+    if(/\b(NAME|FATHER|MOTHER|LEGAL|GUARDIAN|SPOUSE|ADDRESS|PASSPORT|FILE|PIN|INDIA|KERALA|HOUSE|POST|SIGNATURE)\b/.test(clean)) return null;
+    var words=clean.split(' ').filter(function(word){return word.replace(/[^A-Z]/g,'').length>=2;});
+    if(!words.length) return null;
+    var letters=(original.match(/[A-Za-z]/g)||[]).length;
+    var uppercase=(original.match(/[A-Z]/g)||[]).length;
+    var uppercaseRatio=letters?uppercase/letters:0;
+    var score=words.length*12+Math.min(30,letters)+uppercaseRatio*20;
+    if(words.length===1) score-=24;
+    return {value:titleCaseOcrName(clean),score:score,wordCount:words.length,uppercaseRatio:uppercaseRatio};
+  }
+
+  function parsePassportBackNames(text){
+    var lines=String(text||'').split(/\r?\n/).map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
+    function bestAfter(type){
+      var best=null;
+      for(var i=0;i<lines.length;i++){
+        if(passportBackLabelType(lines[i])!==type) continue;
+        for(var j=i+1;j<Math.min(lines.length,i+9);j++){
+          var nextType=passportBackLabelType(lines[j]);
+          if(nextType&&nextType!==type) break;
+          var candidate=passportBackNameCandidate(lines[j]);
+          if(candidate&&(!best||candidate.score>best.score)) best=candidate;
+        }
+        if(best) return best.value;
+      }
+      return '';
+    }
+    var fatherName=bestAfter('father'),motherName=bestAfter('mother');
+    if(!fatherName||!motherName){
+      var stopIndex=lines.length;
+      for(var i=0;i<lines.length;i++){
+        if(passportBackLabelType(lines[i])==='stop'){ stopIndex=i; break; }
+      }
+      var fallback=[];
+      for(var j=0;j<stopIndex;j++){
+        if(passportBackLabelType(lines[j])) continue;
+        var candidate=passportBackNameCandidate(lines[j]);
+        if(!candidate||candidate.score<45||candidate.wordCount<2||candidate.uppercaseRatio<.72) continue;
+        if(!fallback.some(function(item){return item.value===candidate.value;})) fallback.push({value:candidate.value,line:j,score:candidate.score});
+      }
+      if(!fatherName&&fallback.length) fatherName=fallback[0].value;
+      if(!motherName){
+        for(var k=0;k<fallback.length;k++){
+          if(fallback[k].value!==fatherName){ motherName=fallback[k].value; break; }
+        }
+      }
+    }
+    return {fatherName:fatherName,motherName:motherName};
+  }
+
+  function mergePassportBackNames(target,source){
+    if(!target.fatherName&&source&&source.fatherName) target.fatherName=source.fatherName;
+    if(!target.motherName&&source&&source.motherName) target.motherName=source.motherName;
+  }
+
+  async function readPassportBackNames(key,file){
+    var image=await loadPhotoImage(file);
+    var width=image.naturalWidth||image.width, height=image.naturalHeight||image.height;
+    if(Math.min(width,height)<320||Math.max(width,height)<600) return {ok:false,message:'This passport back image is too small. Upload a clearer image showing both parent names.'};
+    var clarity=inspectPhotoClarity(image,true);
+    if(!clarity.ok) return clarity;
+    if(!window.Tesseract||!window.Tesseract.createWorker) throw new Error('OCR library unavailable');
+    var worker=null,extracted={fatherName:'',motherName:''};
+    try{
+      worker=await window.Tesseract.createWorker('eng',1,{logger:function(message){
+        if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Reading parent names…',String(message.status||'Reading image').replace(/_/g,' '));
+      }});
+      if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'});
+      var rotations=[0,90,270,180];
+      for(var rotationIndex=0;rotationIndex<rotations.length;rotationIndex++){
+        var rotated=await rotatePassportImage(file,rotations[rotationIndex]);
+        for(var pass=0;pass<2;pass++){
+          var prepared=await preparePassportBackNamesForOcr(rotated,pass===0);
+          var result=await worker.recognize(prepared);
+          mergePassportBackNames(extracted,parsePassportBackNames(result&&result.data&&result.data.text||''));
+          if(extracted.fatherName&&extracted.motherName) return {ok:true,extracted:extracted};
+        }
+      }
+      return {ok:false,message:"We could not read both the father's and mother's names. Upload a clearer passport back image."};
     }finally{
       if(worker){ try{ await worker.terminate(); }catch(_terminateError){} }
     }
@@ -1278,7 +1571,7 @@
           var base='https://cdn.jsdelivr.net/npm/@mediapipe/face_detection@0.4.1646425229/';
           var detector=new window.FaceDetection({locateFile:function(file){return base+file;}});
           var pending=null;
-          detector.setOptions({model:'short',minDetectionConfidence:.55});
+          detector.setOptions({model:'short',minDetectionConfidence:.65});
           detector.onResults(function(results){ if(pending){ var done=pending; pending=null; done.resolve((results&&results.detections)||[]); } });
           resolve({detect:function(image){
             return new Promise(function(resolveDetection,rejectDetection){
@@ -1300,8 +1593,49 @@
     return photoFaceDetectorPromise;
   }
 
+  function normaliseDetectedFace(face,image){
+    if(!face||!image) return null;
+    var box=face.boundingBox||(face.locationData&&face.locationData.relativeBoundingBox);
+    if(!box) return null;
+    var imageWidth=image.naturalWidth||image.width, imageHeight=image.naturalHeight||image.height;
+    var width=Number(box.width), height=Number(box.height);
+    var left=Number(box.x!==undefined?box.x:box.xMin);
+    var top=Number(box.y!==undefined?box.y:box.yMin);
+    var centerX=Number(box.xCenter), centerY=Number(box.yCenter);
+    var normalized=width<=1.5&&height<=1.5;
+    if(!normalized){
+      width=width/imageWidth; height=height/imageHeight;
+      if(Number.isFinite(left)) left=left/imageWidth;
+      if(Number.isFinite(top)) top=top/imageHeight;
+      if(Number.isFinite(centerX)) centerX=centerX/imageWidth;
+      if(Number.isFinite(centerY)) centerY=centerY/imageHeight;
+    }
+    if(!Number.isFinite(centerX)&&Number.isFinite(left)) centerX=left+width/2;
+    if(!Number.isFinite(centerY)&&Number.isFinite(top)) centerY=top+height/2;
+    if(!Number.isFinite(width)||!Number.isFinite(height)||!Number.isFinite(centerX)||!Number.isFinite(centerY)) return null;
+    return {width:width,height:height,centerX:centerX,centerY:centerY};
+  }
+
+  function validatePersonalPhotoFraming(image,faces){
+    var width=image.naturalWidth||image.width, height=image.naturalHeight||image.height;
+    if(width<320||height<320) return {ok:false,message:'This image is too small to verify as a personal photo. Upload a clearer portrait at least 320 × 320 pixels.'};
+    var ratio=width/height;
+    if(ratio<.5||ratio>1.1) return {ok:false,message:'Upload a portrait photo of the traveller, not an ID card, document or wide image.'};
+    if(!faces||!faces.length) return {ok:false,message:'We could not find a person in this image. Please upload a clear, front-facing photo of the traveller.'};
+    if(faces.length!==1) return {ok:false,message:'The photo must show exactly one person. Please upload a single-person portrait.'};
+    var face=normaliseDetectedFace(faces[0],image);
+    if(!face) return {ok:false,message:'We could not verify the face framing. Please upload a different, clear personal portrait.'};
+    var faceArea=face.width*face.height;
+    if(face.width<.18||face.height<.22||faceArea<.055) return {ok:false,message:'The face is too small in this image. Upload a close, passport-style personal portrait—not a photo of an ID card.'};
+    if(face.width>.78||face.height>.82) return {ok:false,message:'The face is cropped too closely. Upload a clear portrait showing the full head and shoulders.'};
+    if(face.centerX<.30||face.centerX>.70||face.centerY<.24||face.centerY>.62) return {ok:false,message:'Please centre the traveller’s face in a proper personal portrait. ID-card and document photos are not accepted.'};
+    return {ok:true};
+  }
+
   async function validatePersonalPhoto(file){
     var image=await loadPhotoImage(file);
+    var width=image.naturalWidth||image.width, height=image.naturalHeight||image.height;
+    if(width<320||height<320||width/height<.5||width/height>1.1) return validatePersonalPhotoFraming(image,[]);
     var clarity=inspectPhotoClarity(image);
     if(!clarity.ok) return clarity;
     var detector=await ensurePhotoFaceDetector();
@@ -1309,11 +1643,11 @@
       detector.detect(image),
       new Promise(function(_resolve,reject){setTimeout(function(){reject(new Error('face check timeout'));},15000);})
     ]);
-    if(!faces||!faces.length) return {ok:false,message:'We could not find a person in this image. Please upload a clear photo of the traveller.'};
-    return {ok:true};
+    return validatePersonalPhotoFraming(image,faces);
   }
 
   function resetPassportBackUpload(){
+    passportValidationRun.passport_back++;
     delete picked.passport_back;
     var card=document.getElementById('passportBackCard');
     var input=document.getElementById('file_passport_back');
@@ -1325,6 +1659,10 @@
     if(zone) zone.classList.remove('has','invalid','checking');
     if(fileName) fileName.textContent='';
     if(status) status.hidden=true;
+    if(documentPreviewUrls.passport_back){ try{ URL.revokeObjectURL(documentPreviewUrls.passport_back); }catch(_revokeError){} }
+    documentPreviewUrls.passport_back='';
+    var preview=document.getElementById('passportBackReviewPreview');
+    if(preview) preview.removeAttribute('src');
   }
 
   function wirePassportPages(){
@@ -1332,7 +1670,7 @@
       var zone=document.getElementById('drop_'+key), input=document.getElementById('file_'+key);
       var card=document.getElementById('passportFrontCard');
       if(!zone||!input||!card) return;
-      zone.onclick=function(){ if(!card.classList.contains('locked')&&!zone.classList.contains('checking')) input.click(); };
+      zone.onclick=function(){ if(!card.classList.contains('locked')&&!zone.classList.contains('checking')&&!passportOcrState.busy) input.click(); };
       input.onchange=async function(){
         var file=input.files[0]; if(!file) return;
         passportValidationRun[key]++;
@@ -1372,8 +1710,6 @@
           passportOcrState.frontVerified=true;
           passportOcrState.extracted=result.extracted;
           var filled=fillPassportFields(result.extracted);
-          var note=document.getElementById('ocrReviewNote');
-          if(note) note.textContent='Passport details were filled automatically. Please confirm they match your passport.';
           setPassportPageUi(key,'success','Front page verified',(filled?filled+' passport detail'+(filled===1?'':'s')+' read. ':'')+'Now upload the back page.');
           var backCard=document.getElementById('passportBackCard'); if(backCard) backCard.classList.remove('locked');
         }catch(error){
@@ -1391,12 +1727,18 @@
     var backInput=document.getElementById('file_passport_back');
     var backCard=document.getElementById('passportBackCard');
     if(backZone&&backInput&&backCard){
-      backZone.onclick=function(){ if(!backCard.classList.contains('locked')) backInput.click(); };
-      backInput.onchange=function(){
+      backZone.onclick=function(){ if(!backCard.classList.contains('locked')&&!backZone.classList.contains('checking')&&!passportOcrState.busy) backInput.click(); };
+      backInput.onchange=async function(){
         var file=backInput.files[0]; if(!file) return;
+        passportValidationRun.passport_back++;
+        var validationId=passportValidationRun.passport_back;
         delete picked.passport_back;
-        backZone.classList.remove('has','invalid');
+        backZone.classList.remove('has','invalid','checking');
         document.getElementById('fname_passport_back').textContent='';
+        ['father_name','mother_name'].forEach(function(id){ var input=document.getElementById(id); if(input) input.value=''; });
+        if(documentPreviewUrls.passport_back){ try{ URL.revokeObjectURL(documentPreviewUrls.passport_back); }catch(_revokeError){} }
+        documentPreviewUrls.passport_back='';
+        var oldBackPreview=document.getElementById('passportBackReviewPreview'); if(oldBackPreview) oldBackPreview.removeAttribute('src');
         updateDocumentsNext();
         if(file.size>10485760){
           backInput.value=''; backZone.classList.add('invalid');
@@ -1408,11 +1750,36 @@
           setPassportPageUi('passport_back','error','Upload another image','Choose a JPG, PNG or WEBP passport image.');
           return;
         }
-        picked.passport_back=file;
-        document.getElementById('fname_passport_back').textContent='✓ '+file.name;
-        backZone.classList.add('has');
-        setPassportPageUi('passport_back','success','Back page added','No OCR was run on this image. You can continue to review.');
+        passportOcrState.busy=true; backZone.classList.add('checking');
+        setPassportPageUi('passport_back','checking','Reading parent names…',"Reading only the father's and mother's names.");
         updateDocumentsNext();
+        try{
+          var result=await readPassportBackNames('passport_back',file);
+          if(validationId!==passportValidationRun.passport_back) return;
+          if(!result.ok){
+            backInput.value=''; backZone.classList.add('invalid');
+            setPassportPageUi('passport_back','error','Upload a clearer back page',result.message);
+            return;
+          }
+          picked.passport_back=file;
+          setDocumentPreview('passport_back',file);
+          document.getElementById('fname_passport_back').textContent='✓ '+file.name;
+          backZone.classList.add('has');
+          fillPassportBackFields(result.extracted);
+          setPassportPageUi('passport_back','success','Parent names read','Father’s and mother’s names will be filled on the review page.');
+        }catch(error){
+          if(validationId!==passportValidationRun.passport_back) return;
+          backInput.value=''; backZone.classList.add('invalid');
+          if(error&&error.message==='decode') setPassportPageUi('passport_back','error','Upload another image','This image could not be read. Choose a valid JPG, PNG or WEBP image.');
+          else setPassportPageUi('passport_back','error','Parent-name OCR could not finish','Please check your connection and upload the passport back image again.');
+          console.warn('Passport back parent-name OCR failed',error);
+        }finally{
+          if(validationId===passportValidationRun.passport_back){
+            backZone.classList.remove('checking');
+            passportOcrState.busy=false;
+            updateDocumentsNext();
+          }
+        }
       };
     }
   }
@@ -1443,7 +1810,7 @@
       if(key==='photo'){
         var validationId=photoValidationRun;
         zone.classList.add('checking');
-        setPhotoCheckUi('checking','Checking your photo…','Checking clarity and confirming that a person is visible.');
+        setPhotoCheckUi('checking','Checking your photo…','Checking clarity, portrait framing and that exactly one person is visible.');
         try{
           var result=await validatePersonalPhoto(f);
           if(validationId!==photoValidationRun) return;
@@ -1456,7 +1823,7 @@
           setDocumentPreview('photo',f);
           document.getElementById('fname_photo').textContent='✓ '+f.name;
           zone.classList.add('has');
-          setPhotoCheckUi('success','Photo looks good','Clear photo and person detected. You can continue.');
+          setPhotoCheckUi('success','Photo looks good','A clear, single-person portrait was verified. You can continue.');
           updateDocumentsNext();
         }catch(error){
           if(validationId!==photoValidationRun) return;
@@ -1478,21 +1845,24 @@
   }
 
   function submitApplication(visaId){
+    syncPassportFullName();
     var f=document.getElementById('applyForm');
     if(!f.checkValidity()){ f.reportValidity(); return; }
     if(!mobileIsValid()){ toast('Please enter a valid mobile number.'); return; }
     if(mobileOtpRequired && (!mobileVerified || currentMobileE164()!==verifiedNumber)){ toast('Please verify your mobile number to continue.'); return; }
     if(!picked.passport || !picked.passport_back || !picked.photo){ toast('Please upload your passport front page, back page and personal photo.'); return; }
-    var pCountry=(document.getElementById('passport_issuing_country').value||'').trim();
-    if(!pCountry){ toast('Please select your passport issuing country.'); return; }
-    var pState=((document.getElementById('state')||{}).value||'').trim();
-    if(pCountry==='India' && !pState){ toast('Please select your state.'); return; }
+    var pCountry=((document.getElementById('passport_issuing_country')||{}).value||'').trim()||null;
     var qa = collectApplyAnswers();
     if(!qa.ok){ toast('Please answer the required question: “'+qa.missing+'”.'); return; }
     var passportIssueDate=(document.getElementById('passport_issue_date').value||'').trim();
     var passportExpiryDate=(document.getElementById('passport_expiry').value||'').trim();
-    if(passportIssueDate && passportExpiryDate && passportIssueDate>passportExpiryDate){ toast('Passport issue date must be before the expiry date.'); return; }
+    if(passportIssueDate && passportExpiryDate && passportIssueDate>=passportExpiryDate){ toast('Passport issue date must be before the expiry date.'); return; }
     qa.answers.push({ q:'passport_issue_date', label:'Passport issue date', type:'date', value:passportIssueDate });
+    qa.answers.push({ q:'passport_first_name', label:'Passport first name', type:'text', value:(document.getElementById('first_name').value||'').trim() });
+    qa.answers.push({ q:'passport_last_name', label:'Passport last name', type:'text', value:(document.getElementById('last_name').value||'').trim() });
+    qa.answers.push({ q:'father_name', label:"Father's name", type:'text', value:(document.getElementById('father_name').value||'').trim() });
+    qa.answers.push({ q:'mother_name', label:"Mother's name", type:'text', value:(document.getElementById('mother_name').value||'').trim() });
+    qa.answers.push({ q:'gender', label:'Gender', type:'text', value:(document.getElementById('gender').value||'').trim() });
     var v=visaById(visaId);
     var btn=document.getElementById('submitBtn');
     btn.disabled=true; btn.innerHTML='<span class="spin"></span> Submitting…';
@@ -1513,7 +1883,7 @@
         email: state.user.email || document.getElementById('full_name').value,
         phone: currentMobileE164() || document.getElementById('phone').value.trim(),
         passport_issuing_country: pCountry,
-        state: pCountry==='India' ? pState : null,
+        state: null,
         passport_number: document.getElementById('passport_number').value.trim(),
         nationality: (document.getElementById('nationality').value||'').trim() || null,
         date_of_birth: document.getElementById('date_of_birth').value || null,
@@ -1713,6 +2083,14 @@
     return 'United Arab Emirates';
   }
 
+  function profileVisaPlaceImage(a){
+    var v=visaById(a.visa_type), slug=v&&v.country_slug;
+    for(var i=0;i<countryList.length;i++){
+      if(countryList[i].slug===slug && countryList[i].image_url) return countryList[i].image_url;
+    }
+    return '/assets/dubai-attractions/burj-khalifa.jpg';
+  }
+
   function profileApplicationsHtml(apps,activeTab){
     var completed=apps.filter(function(a){ return a.status==='Visa Issued'; });
     var ongoing=apps.filter(function(a){ return a.status!=='Visa Issued'; });
@@ -1721,8 +2099,8 @@
     var cards=shown.map(function(a){
       var v=visaById(a.visa_type);
       var created=a.created_at?new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
-      var docs=a.documents||[], passport=docs.filter(function(d){return d.doc_type==='passport';})[0], photo=docs.filter(function(d){return d.doc_type==='photo';})[0];
-      return '<article class="profile-compact-visa"><div class="compact-visa-visual">'+(passport?'<span class="compact-visa-thumb primary" data-customer-thumb="'+esc(passport.file_path)+'"></span>':'<span class="compact-visa-thumb primary placeholder">P</span>')+(photo?'<span class="compact-visa-thumb secondary" data-customer-thumb="'+esc(photo.file_path)+'"></span>':'')+'</div><div class="compact-visa-copy"><span>'+esc(a.status==='Visa Issued'?'Completed':'Continue')+'</span><h3>'+esc(v?v.name:(a.visa_type||'Visa application'))+'</h3><small>'+esc(profileVisaCountry(a))+' &middot; '+esc(a.reference_code||'-')+(created?' &middot; '+esc(created):'')+'</small></div>'+statusPill(a.status||'Submitted')+'<button class="compact-visa-arrow" type="button" data-profile-track aria-label="View '+esc(v?v.name:'application')+'">&rarr;</button></article>';
+      var destination=profileVisaCountry(a), placeImage=profileVisaPlaceImage(a);
+      return '<article class="profile-compact-visa"><div class="compact-visa-visual"><span class="compact-visa-place-photo"><img src="'+esc(placeImage)+'" alt="'+esc(destination)+' destination" loading="lazy" decoding="async"></span></div><div class="compact-visa-copy"><span>'+esc(a.status==='Visa Issued'?'Completed':'Continue')+'</span><h3>'+esc(v?v.name:(a.visa_type||'Visa application'))+'</h3><small>'+esc(destination)+' &middot; '+esc(a.reference_code||'-')+(created?' &middot; '+esc(created):'')+'</small></div>'+statusPill(a.status||'Submitted')+'<button class="compact-visa-arrow" type="button" data-profile-track aria-label="View '+esc(v?v.name:'application')+'">&rarr;</button></article>';
     }).join('');
     return '<section class="profile-visas"><div class="profile-application-tabs" role="tablist" aria-label="Applications"><button type="button" role="tab" aria-selected="'+(activeTab==='completed')+'" class="'+(activeTab==='completed'?'active':'')+'" data-profile-tab="completed">Completed applications <span>'+completed.length+'</span></button><button type="button" role="tab" aria-selected="'+(activeTab==='ongoing')+'" class="'+(activeTab==='ongoing'?'active':'')+'" data-profile-tab="ongoing">Ongoing applications <span>'+ongoing.length+'</span></button></div>'+(cards?'<div class="profile-visa-list">'+cards+'</div>':'<div class="customer-documents-empty">'+emptyText+'</div>')+'</section>';
   }
@@ -1735,14 +2113,16 @@
       if(!doc) return '<div class="customer-document missing"><div class="customer-document-media"><span>Not available</span></div><div class="customer-document-copy"><b>'+esc(label)+'</b><small>'+esc(description)+'</small></div></div>';
       return '<button class="customer-document" type="button" data-customer-doc="'+esc(doc.file_path)+'" data-customer-label="'+esc(label)+'"><div class="customer-document-media"><span class="customer-document-spinner"></span></div><div class="customer-document-copy"><b>'+esc(label)+'</b><small>'+esc(description)+'</small><i>View image <span aria-hidden="true">&rarr;</span></i></div></button>';
     }
-    var heading=embedded?'':'<div class="customer-documents-head"><div><strong>Passport &amp; photo</strong><p>Your uploaded documents'+(profileMode&&a.reference_code?' for '+esc(a.reference_code):'')+'.</p></div><span>Secure</span></div>';
-    return '<section class="customer-documents '+(profileMode?'profile-document-section ':'')+(embedded?'embedded':'')+'">'+heading+'<div class="customer-documents-grid">'+
-      tile('passport','Passport front','Verified passport page')+tile('photo','Personal photo','Photo used for this application')+
-    '</div></section>';
+    var tiles='<div class="customer-documents-grid">'+tile('passport','Passport front','Verified passport page')+tile('photo','Personal photo','Photo used for this application')+'</div>';
+    if(embedded) return '<section class="customer-documents embedded">'+tiles+'</section>';
+    return '<details class="customer-documents customer-document-disclosure '+(profileMode?'profile-document-section':'')+'" data-customer-documents-disclosure><summary class="customer-documents-toggle"><div class="customer-documents-head"><div><strong>Passport &amp; photo</strong><p>Your uploaded documents'+(profileMode&&a.reference_code?' for '+esc(a.reference_code):'')+'.</p></div><span>Secure</span></div><div class="customer-documents-toggle-row"><b>View attached files</b><span aria-hidden="true">+</span></div></summary><div class="customer-documents-reveal">'+tiles+'</div></details>';
   }
 
   function wireCustomerDocumentPreviews(scope){
-    (scope||document).querySelectorAll('[data-customer-doc]').forEach(function(card){
+    scope=scope||document;
+    function loadPreview(card){
+      if(card.getAttribute('data-preview-loading')==='true') return;
+      card.setAttribute('data-preview-loading','true');
       var path=card.getAttribute('data-customer-doc');
       var media=card.querySelector('.customer-document-media');
       sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(result){
@@ -1758,6 +2138,15 @@
         if(!card.isConnected) return;
         card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>';
       });
+    }
+    scope.querySelectorAll('[data-customer-documents-disclosure]').forEach(function(disclosure){
+      disclosure.addEventListener('toggle',function(){
+        if(disclosure.open) disclosure.querySelectorAll('[data-customer-doc]').forEach(loadPreview);
+      });
+      if(disclosure.open) disclosure.querySelectorAll('[data-customer-doc]').forEach(loadPreview);
+    });
+    scope.querySelectorAll('[data-customer-doc]').forEach(function(card){
+      if(!card.closest('[data-customer-documents-disclosure]')) loadPreview(card);
     });
   }
 
@@ -6378,4 +6767,9 @@
     var h=resolveStartView();
     if(h!==state.view && state.user){ state.view=h; renderHeader(); render(); }
   });
+
+  if(qParam('ocr-test')==='1'){
+    window.__parsePassportMrzForTest=parsePassportMrz;
+    window.__parsePassportVisualDetailsForTest=parsePassportVisualDetails;
+  }
 })();

@@ -2881,6 +2881,48 @@ p{margin:0}
   color:#718091;
   text-align:center;
 }
+.destination-more-wrap{
+  margin-top:30px;
+  text-align:center;
+}
+.destination-more-wrap[hidden]{display:none}
+.destination-more{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:11px;
+  min-height:50px;
+  padding:13px 22px;
+  border:1px solid #d5e0e7;
+  border-radius:999px;
+  background:#fff;
+  color:#102f4b;
+  font:800 13px/1 Inter,sans-serif;
+  cursor:pointer;
+  box-shadow:0 8px 22px rgba(16,47,75,.08);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.destination-more:hover{
+  border-color:#2b91c7;
+  box-shadow:0 12px 28px rgba(16,47,75,.13);
+  transform:translateY(-2px);
+}
+.destination-more:focus-visible{
+  outline:3px solid rgba(43,145,199,.24);
+  outline-offset:3px;
+}
+.destination-more-icon{
+  width:25px;
+  height:25px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#ef6f61;
+  color:#fff;
+  font-size:15px;
+  transition:transform .2s ease;
+}
+.destination-more[aria-expanded="true"] .destination-more-icon{transform:rotate(180deg)}
 @media (max-width:1100px){
   .discover-header .nav-links a{padding:10px}
   .home-hero-layout{gap:44px}
@@ -3081,8 +3123,9 @@ p{margin:0}
   order:3;
   margin-top:24px;
 }
-.home-page .destination-empty{order:4}
-.home-page #groupsArea{order:5}
+.home-page .destination-more-wrap{order:4}
+.home-page .destination-empty{order:5}
+.home-page #groupsArea{order:6}
 .home-page .destination-board .destination-tile{
   min-height:340px;
   border-radius:20px;
@@ -3556,6 +3599,40 @@ p{margin:0}
   color:#345775;
   font-size:11px;
   font-weight:700;
+}
+.footer-social-links{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:20px;
+}
+.home-footer .footer-social-links .social-ico{
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border:1px solid #dce5ec;
+  border-radius:50%;
+  background:#f7f9fb;
+  color:#263f55;
+  transition:transform .18s ease,border-color .18s ease,color .18s ease,background .18s ease;
+}
+.home-footer .footer-social-links a.social-ico:hover{
+  border-color:#1873c9;
+  background:#1873c9;
+  color:#fff;
+  transform:translateY(-2px);
+}
+.home-footer .footer-social-links .social-whatsapp:hover{
+  border-color:#25d366;
+  background:#25d366;
+}
+.home-footer .footer-social-links .social-ico svg{
+  width:18px;
+  height:18px;
+}
+.home-footer .footer-social-links .social-ico.is-disabled{
+  opacity:.45;
 }
 :is(.home-page,.country-page) .footer-contact a{
   display:flex;
@@ -4315,15 +4392,15 @@ p{margin:0}
   transform:scaleX(0);
   transition:transform .18s ease;
 }
-.country-info-nav a:hover{
-  color:#071d2d;
-}
-.country-info-nav a:hover::after,
 .country-info-nav a:focus-visible::after,
 .country-info-nav a.active::after{
   transform:scaleX(1);
 }
 .country-info-nav a.active{color:#071d2d}
+@media (hover:hover) and (pointer:fine){
+  .country-info-nav a:hover{color:#071d2d}
+  .country-info-nav a:hover::after{transform:scaleX(1)}
+}
 .country-options,
 .country-documents,
 .country-process{
@@ -7057,6 +7134,7 @@ body.visa-modal-open{overflow:hidden}
 .uae-account-hero>.container{padding-top:47px;padding-bottom:58px}
 .uae-account-back{display:inline-flex;align-items:center;gap:7px;color:rgba(255,255,255,.76);font-size:11px;font-weight:750}
 .uae-account-back:hover{color:#fff}
+.uae-account-page .uae-account-back{width:max-content;display:flex;margin-right:auto;margin-left:auto}
 .uae-account-hero-grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(330px,.82fr);gap:74px;align-items:center;margin-top:48px}
 .uae-account-hero-copy{max-width:690px}
 .uae-account-flag{display:flex;gap:10px;align-items:center;margin-bottom:21px}
@@ -7105,7 +7183,15 @@ body.visa-modal-open{overflow:hidden}
 .uae-account-documents{padding-top:32px}
 .uae-account-documents>header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
 .uae-account-documents>header>b{padding:6px 9px;border:1px solid #c6e1d8;border-radius:999px;background:#ecf7f3;color:#246d59;font-size:8px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}
+.uae-account-document-disclosure{margin-top:19px;border-top:1px solid #d8e1df;border-bottom:1px solid #d8e1df}
+.uae-account-document-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 1px;color:#000;cursor:pointer;list-style:none}
+.uae-account-document-disclosure>summary::-webkit-details-marker{display:none}
+.uae-account-document-disclosure>summary>span{color:#000;font-size:11px;font-weight:820}
+.uae-account-document-disclosure>summary>i{width:26px;height:26px;display:grid;place-items:center;border:1px solid #cdd9d7;border-radius:50%;color:#000;font-size:15px;font-style:normal;transition:transform .18s ease}
+.uae-account-document-disclosure[open]>summary>i{transform:rotate(45deg)}
+.uae-account-document-disclosure[open]>summary{border-bottom:1px solid #e6ebea}
 .uae-account-documents .uae-history-documents{gap:13px;padding:20px 0 0}
+.uae-account-document-disclosure .uae-history-documents{padding-bottom:20px}
 .uae-account-documents .uae-history-document{border-color:#d8e1df;border-radius:18px;box-shadow:none}
 .uae-account-documents .uae-history-document:hover{border-color:#6e9c96;box-shadow:0 12px 28px rgba(15,49,55,.08)}
 .uae-account-documents .uae-history-media{height:190px;background:#eef2f1}
@@ -7181,16 +7267,25 @@ body.visa-modal-open{overflow:hidden}
 /* Returning UAE page v2 — pure white travel and application hub */
 .uae-account-page,.uae-account-page #countryPage,.uae-account-page main{background:#fff}
 .uae-account-page .header{border-bottom:1px solid #edf0f1;background:#fff}
-.uae-account-hero{min-height:560px;border-bottom:1px solid #e3e8e9;background:#0a242b;color:#fff}
-.uae-account-hero::before,.uae-account-hero::after{display:block}
+.uae-account-hero{min-height:560px;border-bottom:1px solid #e3e8e9;background:#dbe3e6;color:#fff}
+.uae-account-hero::before{display:block;filter:none}
+.uae-account-hero::after{
+  display:block;
+  background:
+    linear-gradient(90deg,rgba(3,18,24,.78) 0%,rgba(3,18,24,.62) 52%,rgba(3,18,24,.42) 100%),
+    linear-gradient(0deg,rgba(3,18,24,.48),rgba(3,18,24,.12) 62%);
+}
 .uae-account-hero>.container{padding-top:42px;padding-bottom:54px}
-.uae-account-back{color:rgba(255,255,255,.76)}
+.uae-account-back{color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.72)}
 .uae-account-back:hover{color:#fff}
-.uae-account-hero-grid{gap:66px;margin-top:43px}
-.uae-account-flag span{color:#fff}
-.uae-account-hero-copy>p{color:#bfd0d4}
-.uae-account-hero-copy h1{color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.2)}
-.uae-account-hero-lead{color:#cad8db}
+.uae-account-hero-grid{grid-template-columns:minmax(0,1fr);gap:0;margin-top:43px}
+.uae-account-hero-copy{max-width:760px;margin-right:auto;margin-left:auto;text-align:center}
+.uae-account-flag,.uae-account-actions{justify-content:center}
+.uae-account-hero-copy h1,.uae-account-hero-lead{margin-right:auto;margin-left:auto}
+.uae-account-flag span{color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.78)}
+.uae-account-hero-copy>p{color:#fff;text-shadow:0 2px 9px rgba(0,0,0,.82)}
+.uae-account-hero-copy h1{color:#fff;text-shadow:0 3px 18px rgba(0,0,0,.72)}
+.uae-account-hero-lead{color:#fff;text-shadow:0 2px 9px rgba(0,0,0,.82)}
 .uae-account-primary{background:#fff;color:#112f38;box-shadow:0 10px 24px rgba(0,0,0,.18)}
 .uae-account-primary:hover{background:#eef4f3;color:#112f38}
 .uae-account-secondary{border-color:rgba(255,255,255,.55);background:rgba(255,255,255,.08);color:#fff;backdrop-filter:blur(10px)}
@@ -7216,7 +7311,26 @@ body.visa-modal-open{overflow:hidden}
 .uae-public-guide-section{padding:76px 0 82px;border-top:1px solid #e0e6e6;background:#fff}
 .uae-public-travel-guide{margin-top:0;padding-top:0;border-top:0}
 .uae-public-travel-guide .uae-attractions{margin-top:0;padding-top:0;border-top:0}
-#uae-attractions,#uae-faq{scroll-margin-top:82px}
+#uae-attractions,#uae-faq,#country-attractions,#country-faq{scroll-margin-top:82px}
+.uae-account-info-nav .container{overflow-x:auto;scrollbar-width:none}
+.uae-account-info-nav .container::-webkit-scrollbar{display:none}
+.uae-account-info-nav a{flex:none;white-space:nowrap}
+#uae-current-visa,#uae-account-documents,#uae-visa-process{scroll-margin-top:82px}
+#uae-current-visa>header>div:first-child>span{
+  display:inline-flex;
+  align-items:center;
+  min-height:32px;
+  padding:7px 15px;
+  border-radius:999px;
+  background:#fdf0ee;
+  color:#ef6f61;
+  font-size:10px;
+  line-height:1;
+  letter-spacing:.09em;
+}
+#uae-current-visa{overflow:visible;border:0;border-radius:0;background:transparent}
+#uae-current-visa>header{padding-right:0;padding-left:0}
+#uae-current-visa>.uae-account-current-detail{padding-right:0;padding-left:0;border-top:0}
 .uae-country-page .country-info-nav .container{overflow-x:auto;scrollbar-width:none}
 .uae-country-page .country-info-nav .container::-webkit-scrollbar{display:none}
 .uae-country-page .country-info-nav a{flex:none;white-space:nowrap}
@@ -7286,11 +7400,13 @@ body.visa-modal-open{overflow:hidden}
 .uae-public-travel-guide .uae-attractions li{display:block;min-height:0;overflow:hidden;padding:0;border:1px solid #e1e8e7;border-radius:15px;background:#fff}
 .uae-public-travel-guide .uae-attraction-photo{height:148px;overflow:hidden;background:#eef2f1}
 .uae-public-travel-guide .uae-attraction-photo img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.uae-public-travel-guide .uae-attraction-photo.image-unavailable{background:linear-gradient(135deg,#eef2f1,#e3ecea)}
 .uae-public-travel-guide .uae-attractions li:hover .uae-attraction-photo img{transform:scale(1.035)}
 .uae-public-travel-guide .uae-attraction-copy{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start;padding:14px 15px 15px}
 .uae-public-travel-guide .uae-attraction-copy b{color:#24756d;font-size:9px}
 .uae-public-travel-guide .uae-attraction-copy span{color:#203b45;font-size:12px;font-weight:730;line-height:1.4}
 .uae-public-travel-guide .uae-account-faq{grid-template-columns:minmax(210px,.62fr) minmax(0,1.38fr);gap:54px;margin-top:64px;padding-top:0;border-top:0}
+.uae-public-travel-guide.uae-information-faq-only .uae-account-faq{margin-top:0}
 .uae-public-travel-guide .uae-account-faq>div{display:grid;gap:9px;border-top:0}
 .uae-public-travel-guide .uae-account-faq details{overflow:hidden;border:1px solid #e1e8e7;border-radius:13px;background:#fff}
 .uae-public-travel-guide .uae-account-faq summary{padding:15px 16px}
@@ -7364,6 +7480,47 @@ body.visa-modal-open{overflow:hidden}
 .uae-account-contact-options b{margin-top:3px;overflow-wrap:anywhere;font-size:11px}
 .uae-account-contact-options em{color:#26776f;font-size:15px;font-style:normal}
 
+/* Light colour accents for the visa and contact panels */
+#uae-other-visa-types{overflow:visible;border:0;border-radius:0;background:transparent}
+#uae-other-visa-types>header{padding-right:0;padding-left:0;background:transparent}
+#uae-other-visa-types>header span,
+#uae-contact-help>header span{
+  display:inline-flex;
+  align-items:center;
+  min-height:32px;
+  padding:7px 15px;
+  border-radius:999px;
+  background:#fdf0ee;
+  color:#ef6f61;
+  font-size:11px;
+  letter-spacing:.08em;
+}
+#uae-other-visa-types>.uae-account-disclosure-body{padding-right:0;padding-left:0;border-top:0}
+#uae-contact-help{overflow:visible;border:0;border-radius:0;background:transparent}
+#uae-contact-help>header{padding-right:0;padding-left:0;background:transparent}
+#uae-contact-help>.uae-account-disclosure-body{padding-right:0;padding-left:0;border-top:0}
+.uae-account-visa-option{
+  position:relative;
+  overflow:hidden;
+  border-color:#d9e3e1;
+  background:#fff;
+  box-shadow:0 7px 18px rgba(23,69,64,.04);
+}
+.uae-account-visa-option::before{display:none}
+.uae-account-visa-option>header strong{color:#176e67}
+.uae-account-visa-facts>div:nth-child(1),
+.uae-account-visa-facts>div:nth-child(2),
+.uae-account-visa-facts>div:nth-child(3){background:#f1f6f5}
+.uae-account-contact-options>a:nth-child(1){border-color:#cfe7dc;background:#fbfffd}
+.uae-account-contact-options>a:nth-child(1) i{background:#e6f7ef;color:#14845d}
+.uae-account-contact-options>a:nth-child(2){border-color:#d5e4ee;background:#fcfeff}
+.uae-account-contact-options>a:nth-child(2) i{background:#e9f3fa;color:#287ba4}
+.uae-account-contact-options>a:nth-child(3){border-color:#efdcd7;background:#fffdfc}
+.uae-account-contact-options>a:nth-child(3) i{background:#fff0ec;color:#c85c4e}
+.uae-account-contact-options>a:nth-child(1):hover{border-color:#52a783;background:#f3fbf7}
+.uae-account-contact-options>a:nth-child(2):hover{border-color:#68a4c4;background:#f5fafe}
+.uae-account-contact-options>a:nth-child(3):hover{border-color:#d98b7f;background:#fff7f5}
+
 @media (max-width:760px){
   .uae-account-visa-list{grid-template-columns:1fr}
   .uae-account-contact-body{grid-template-columns:1fr;gap:22px}
@@ -7377,4 +7534,148 @@ body.visa-modal-open{overflow:hidden}
   .uae-account-visa-option>header{flex-direction:column}
   .uae-account-visa-option>header strong{text-align:left}
   .uae-account-visa-facts{grid-template-columns:1fr}
+}
+
+/* Returning UAE dashboard — visual polish only; behaviour remains unchanged. */
+.uae-account-page .uae-account-content{
+  position:relative;
+  background:
+    radial-gradient(circle at 8% 2%,rgba(239,111,97,.08),transparent 25%),
+    radial-gradient(circle at 92% 8%,rgba(31,118,109,.09),transparent 28%),
+    linear-gradient(180deg,#f8fbfa 0,#fff 620px);
+}
+.uae-account-page .uae-account-grid{gap:36px}
+.uae-account-page #uae-current-visa{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border:1px solid #d9e5e2;
+  border-radius:26px;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 22px 60px rgba(21,60,63,.1);
+}
+.uae-account-page #uae-current-visa>header{
+  padding:31px 31px 25px;
+  border-bottom:1px solid #e5ecea;
+  background:linear-gradient(135deg,rgba(255,247,245,.92),rgba(244,250,248,.94));
+}
+.uae-account-page #uae-current-visa>header h2{font-size:28px}
+.uae-account-page #uae-current-visa>.uae-account-current-detail{padding:0 31px 31px}
+.uae-account-page .uae-account-progress{padding:29px 0 31px}
+.uae-account-page .uae-account-progress-head>strong{
+  padding:7px 11px;
+  border-radius:12px;
+  background:#eaf6f3;
+  color:#156e65;
+  font-size:22px;
+  line-height:1;
+}
+.uae-account-page .uae-account-progress-line{height:7px;background:#e2ece9}
+.uae-account-page .uae-account-progress-line i{background:linear-gradient(90deg,#167269,#5eb9ad);box-shadow:0 0 16px rgba(31,118,109,.28)}
+.uae-account-page .uae-account-progress li{gap:9px;color:#72868b}
+.uae-account-page .uae-account-progress li>i{width:26px;height:26px;box-shadow:0 3px 9px rgba(24,65,68,.06)}
+.uae-account-page .uae-account-documents{padding-top:27px}
+.uae-account-page .uae-account-documents>header>b{padding:7px 10px;background:#e9f7f2;box-shadow:inset 0 0 0 1px rgba(36,117,109,.05)}
+.uae-account-page .uae-account-document-disclosure{
+  margin-top:20px;
+  overflow:hidden;
+  border:1px solid #d8e5e2;
+  border-radius:16px;
+  background:linear-gradient(135deg,#fbfdfc,#f3f8f7);
+  box-shadow:0 8px 22px rgba(20,61,63,.05);
+  transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+.uae-account-page .uae-account-document-disclosure:hover{border-color:#93bbb5;box-shadow:0 12px 28px rgba(20,61,63,.08);transform:translateY(-1px)}
+.uae-account-page .uae-account-document-disclosure>summary{padding:16px 17px}
+.uae-account-page .uae-account-document-disclosure>summary>span{font-size:12px}
+.uae-account-page .uae-account-document-disclosure>summary>i{border-color:#b9d2ce;background:#fff;color:#176e67;box-shadow:0 4px 12px rgba(31,118,109,.08)}
+.uae-account-page .uae-account-document-disclosure[open]{background:#fff}
+.uae-account-page .uae-account-document-disclosure .uae-history-documents{padding-right:16px;padding-bottom:17px;padding-left:16px}
+
+.uae-account-page .uae-account-side{position:sticky;top:92px;gap:20px}
+.uae-account-page .uae-account-side>section{padding:28px;border-radius:24px;box-shadow:0 16px 40px rgba(19,57,60,.07)}
+.uae-account-page .uae-account-side>section:first-child{
+  position:relative;
+  overflow:hidden;
+  border-color:#123f42;
+  background:
+    radial-gradient(circle at 100% 0,rgba(239,111,97,.34),transparent 40%),
+    linear-gradient(145deg,#0d3339,#175b56);
+  color:#fff;
+  box-shadow:0 22px 50px rgba(13,55,58,.2);
+}
+.uae-account-page .uae-account-side>section:first-child::after{
+  content:"";
+  position:absolute;
+  right:-35px;
+  bottom:-65px;
+  width:150px;
+  height:150px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:50%;
+}
+.uae-account-page .uae-account-side>section:first-child>span{color:#91d2c8}
+.uae-account-page .uae-account-side>section:first-child h2{color:#fff;font-size:27px}
+.uae-account-page .uae-account-side>section:first-child p{color:#c4dbd8}
+.uae-account-page .uae-account-side>section:first-child>a{
+  position:relative;
+  z-index:1;
+  border:0;
+  background:#fff;
+  color:#10383d;
+  box-shadow:0 9px 22px rgba(0,0,0,.15);
+  transition:transform .18s ease,box-shadow .18s ease,background .18s ease;
+}
+.uae-account-page .uae-account-side>section:first-child>a:hover{border:0;background:#f2f8f6;transform:translateY(-2px);box-shadow:0 13px 28px rgba(0,0,0,.2)}
+.uae-account-page .uae-account-other{
+  border-color:#dbe5e3;
+  background:linear-gradient(145deg,#fff,#f9fbfa);
+}
+.uae-account-page .uae-account-other header{padding-bottom:19px;border-bottom:1px solid #e4ebe9}
+.uae-account-page .uae-account-application-row{margin-top:10px;padding:15px 13px;border:0;border-radius:14px;background:#f1f7f5;transition:background .18s ease,transform .18s ease}
+.uae-account-page .uae-account-application-row:hover{background:#e9f3f0;transform:translateX(2px)}
+.uae-account-page .uae-account-add{
+  border-color:#113f43;
+  background:#113f43;
+  color:#fff;
+  box-shadow:0 9px 20px rgba(17,63,67,.13);
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.uae-account-page .uae-account-add:hover{border-color:#1b5a5b;background:#1b5a5b;color:#fff;transform:translateY(-2px);box-shadow:0 13px 26px rgba(17,63,67,.18)}
+
+.uae-account-page .uae-account-extras{margin-top:64px}
+.uae-account-page .uae-account-visa-option{
+  border-color:#dce6e4;
+  border-radius:20px;
+  background:linear-gradient(145deg,#fff,#fbfdfc);
+  box-shadow:0 14px 34px rgba(18,62,64,.07);
+  transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease;
+}
+.uae-account-page .uae-account-visa-option:hover{border-color:#98bbb6;transform:translateY(-4px);box-shadow:0 21px 44px rgba(18,62,64,.12)}
+.uae-account-page .uae-account-visa-facts>div{border:1px solid #e4ecea;background:#f3f8f6}
+.uae-account-page .uae-account-visa-option>a{
+  margin-top:17px;
+  padding:13px 14px;
+  border:0;
+  border-radius:11px;
+  background:#eef7f4;
+  color:#176e67;
+  transition:background .18s ease,color .18s ease;
+}
+.uae-account-page .uae-account-visa-option>a:hover{background:#176e67;color:#fff}
+
+@media (max-width:900px){
+  .uae-account-page .uae-account-grid{gap:30px}
+  .uae-account-page .uae-account-side{position:static}
+}
+
+@media (max-width:620px){
+  .uae-account-page #uae-current-visa{border-radius:21px}
+  .uae-account-page #uae-current-visa>header{padding:25px 22px 21px}
+  .uae-account-page #uae-current-visa>.uae-account-current-detail{padding:0 22px 24px}
+  .uae-account-page #uae-current-visa>header h2{font-size:24px}
+  .uae-account-page .uae-account-progress-head{align-items:flex-start}
+  .uae-account-page .uae-account-progress-head>strong{font-size:19px}
+  .uae-account-page .uae-account-side>section{padding:23px;border-radius:20px}
+  .uae-account-page .uae-account-extras{margin-top:52px}
 }

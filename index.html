@@ -168,21 +168,13 @@
 
     <div class="dest-grid dest-grid--simple" id="destGrid"><!-- filled by home.js --></div>
     <div class="destination-empty" id="destinationEmpty" hidden>No destinations found.</div>
-    <div class="visa-groups-area" id="groupsArea"></div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section class="section sky section-compact" id="how">
-  <div class="container center">
-    <h2>How it works</h2>
-    <p class="lead">Four simple steps — most people finish in under 10 minutes.</p>
-    <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Choose destination</h3><p>Pick your country and the visa that fits your trip.</p></div>
-      <div class="step"><div class="num">2</div><h3>Sign in &amp; apply</h3><p>Sign in with a link and fill in your details and any questions.</p></div>
-      <div class="step"><div class="num">3</div><h3>Upload documents</h3><p>Securely upload your passport, photo and anything else required.</p></div>
-      <div class="step"><div class="num">4</div><h3>Track your status</h3><p>Watch it move from submitted to issued, then download your visa.</p></div>
+    <div class="destination-more-wrap" id="destinationMoreWrap" hidden>
+      <button type="button" class="destination-more" id="destinationMore" aria-expanded="false" aria-controls="destGrid">
+        <span>Show more countries</span>
+        <span class="destination-more-icon" aria-hidden="true">&#8595;</span>
+      </button>
     </div>
+    <div class="visa-groups-area" id="groupsArea"></div>
   </div>
 </section>
 
@@ -261,11 +253,11 @@
 <!-- FOOTER -->
 <footer class="footer home-footer">
   <div class="container">
-    <div class="footer-route-line" aria-hidden="true"><span></span></div>
     <div class="footer-grid footer-grid--expanded">
       <div class="footer-intro">
       <a href="#top" class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg></span>Visa<b>Doo</b></a>
       <p>Tourist &amp; business visas for destinations worldwide — applied for and tracked entirely online. We handle the paperwork so you can plan the trip.</p>
+        <div class="footer-social-links" id="socialLinks" aria-label="Social media links"></div>
         <div class="footer-assurances">
           <span>100% online</span>
           <span>Secure &amp; tracked</span>
@@ -276,7 +268,6 @@
         <ul>
           <li><a href="#destinations">Destinations</a></li>
           <li><a href="events.html">Events</a></li>
-          <li><a href="#how">How it works</a></li>
           <li><a href="articles.html">Articles</a></li>
           <li><a href="app.html#track">Track application</a></li>
         </ul>
@@ -311,7 +302,6 @@
     <div class="footer-bottom">
       <span>© <span id="year"></span> Visa Doo. All rights reserved.</span>
       <span>Plan simply. Travel confidently.</span>
-      <div id="socialLinks" hidden></div>
     </div>
   </div>
 </footer>

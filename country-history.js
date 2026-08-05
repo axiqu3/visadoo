@@ -4,7 +4,7 @@
 
   var started=false;
   function startWhenReady(){
-    if(started||!document.body.classList.contains('uae-country-page')) return;
+    if(started||!document.body.classList.contains('uae-country-page')||document.body.getAttribute('data-country-code')!=='AE') return;
     started=true;
     boot();
   }
@@ -105,7 +105,7 @@
     var progress=progressData(app.status);
     var labels=['Submitted','Documents checked','Under review','Visa issued'];
     var active=app.status==='Visa Issued'?3:(app.status==='Approved'||app.status==='Payment Confirmed'?2:(app.status==='Documents Verified'||app.status==='Under Review'?1:0));
-    return '<div class="uae-account-progress"><div class="uae-account-progress-head"><div><span>Application progress</span><b>'+esc(progress.label)+'</b></div><strong>'+progress.value+'%</strong></div><div class="uae-account-progress-line" style="--uae-progress:'+progress.value+'%"><i></i></div><ol>'+labels.map(function(label,index){return '<li class="'+(index<active?'done':(index===active?'current':''))+'"><i>'+(index<active?'&#10003;':index+1)+'</i><span>'+label+'</span></li>';}).join('')+'</ol></div>';
+    return '<div class="uae-account-progress" id="uae-visa-process"><div class="uae-account-progress-head"><div><span>Application progress</span><b>'+esc(progress.label)+'</b></div><strong>'+progress.value+'%</strong></div><div class="uae-account-progress-line" style="--uae-progress:'+progress.value+'%"><i></i></div><ol>'+labels.map(function(label,index){return '<li class="'+(index<active?'done':(index===active?'current':''))+'"><i>'+(index<active?'&#10003;':index+1)+'</i><span>'+label+'</span></li>';}).join('')+'</ol></div>';
   }
 
   function compactApplication(app,names){
@@ -132,27 +132,28 @@
     return '<div class="uae-account-contact-intro"><h3>Talk to a real person</h3><p>Ask about your application, documents or another UAE visa. Our team will help you directly.</p></div><div class="uae-account-contact-options"><a href="https://wa.me/'+esc(waNumber)+'?text='+message+'" target="_blank" rel="noopener"><i aria-hidden="true">WA</i><span><small>WhatsApp</small><b>'+esc(display)+'</b></span><em aria-hidden="true">&#8594;</em></a><a href="tel:'+esc(phone)+'"><i aria-hidden="true">CALL</i><span><small>Call us</small><b>'+esc(display)+'</b></span><em aria-hidden="true">&#8594;</em></a><a href="mailto:'+esc(email)+'?subject='+encodeURIComponent('Help with UAE visa '+(reference||''))+'"><i aria-hidden="true">@</i><span><small>Email</small><b>'+esc(email)+'</b></span><em aria-hidden="true">&#8594;</em></a></div>';
   }
 
-  function uaeTravelInformation(){
+  function uaeTravelInformation(showAttractions){
     var attractions=[
-      {name:'Burj Khalifa',image:'https://images.unsplash.com/photo-1556011882-b21d3312ea8d?auto=format&fit=crop&q=86&w=1200'},
-      {name:'The Dubai Mall',image:'https://images.unsplash.com/photo-1748373448914-1d7f882700e2?auto=format&fit=crop&q=86&w=1200'},
-      {name:'The Dubai Fountain',image:'https://images.unsplash.com/photo-1550686164-6f282d49c63c?auto=format&fit=crop&q=86&w=1200'},
-      {name:'Palm Jumeirah',image:'https://images.unsplash.com/photo-1682410601904-24ec1d9858e6?auto=format&fit=crop&q=86&w=1200'},
-      {name:'Dubai Marina',image:'https://images.unsplash.com/photo-1679682598283-a1b88b136ed8?auto=format&fit=crop&q=86&w=1200'},
-      {name:'Museum of the Future',image:'https://images.unsplash.com/photo-1569669568747-df222c4e8d4c?auto=format&fit=crop&q=86&w=1200'},
-      {name:'Al Fahidi Historical Neighbourhood',image:'https://images.unsplash.com/photo-1465414829459-d228b58caf6e?auto=format&fit=crop&q=86&w=1200'},
-      {name:'Dubai Frame',image:'https://images.unsplash.com/photo-1718564257683-1e4caf9b049a?auto=format&fit=crop&q=86&w=1200'}
+      {name:'Burj Khalifa',image:'/assets/dubai-attractions/burj-khalifa.jpg'},
+      {name:'The Dubai Mall',image:'/assets/dubai-attractions/dubai-mall.jpg'},
+      {name:'The Dubai Fountain',image:'/assets/dubai-attractions/dubai-fountain.jpg'},
+      {name:'Palm Jumeirah',image:'/assets/dubai-attractions/palm-jumeirah.jpg'},
+      {name:'Dubai Marina',image:'/assets/dubai-attractions/dubai-marina.jpg'},
+      {name:'Museum of the Future',image:'/assets/dubai-attractions/museum-of-the-future.jpg'},
+      {name:'Al Fahidi Historical Neighbourhood',image:'/assets/dubai-attractions/al-fahidi.jpg'},
+      {name:'Dubai Frame',image:'/assets/dubai-attractions/dubai-frame.jpg'}
     ];
     var faqs=[
       ['How can I track my UAE visa?','Select Track your visa on this page to see your current status, timeline and any action requested by our team.'],
-      ['Which documents are attached to my application?','This page shows your passport front and personal photo. Your passport back page remains securely stored with the application.'],
-      ['Do my uploaded photos need to be high resolution?','No. The personal photo must show one person clearly, and the passport image must be clear enough for the text to be read.'],
-      ['How long does a UAE visa take?','Processing time depends on the visa type and the authorities. Check the estimate shown for your selected visa and follow live updates in Track visa.'],
-      ['Can I apply for another UAE visa?','Yes. Select Add another visa to return to the UAE visa options without changing your current application.'],
-      ['What passport validity is normally expected?','Travellers are commonly asked for at least 6 months of passport validity. Requirements can change, so confirm the latest rule before travel.']
+      ['What happens after I submit my application?','Our team checks your application and documents first. The status will then move through document verification, review, approval and visa issuance.'],
+      ['What should I do if a document needs to be replaced?','Open Track your visa and follow the action shown there. Upload the requested replacement clearly so our team can continue processing your application.'],
+      ['Can I correct my details after submission?','Contact our visa team as soon as possible. Some details can be corrected before processing advances, while authority-submitted details may require a new application.'],
+      ['How will I receive my approved visa?','When the visa is issued, we will update your application and send the available visa document through your registered contact details.'],
+      ['When should I contact the visa team?','Contact us if your status requests action, your travel date is approaching, or you need to correct important information in the submitted application.']
     ];
-    return '<section class="uae-account-information">'+
-      '<section class="uae-attractions" id="uae-attractions"><header><span>Explore Dubai</span><h2>Dubai Tourist Attractions</h2></header><ol>'+attractions.map(function(place,index){return '<li><div class="uae-attraction-photo"><img src="'+place.image+'" alt="'+place.name+' in Dubai" loading="lazy" decoding="async"></div><div class="uae-attraction-copy"><b>'+String(index+1).padStart(2,'0')+'</b><span>'+place.name+'</span></div></li>';}).join('')+'</ol></section>'+
+    var attractionsSection='<section class="uae-attractions" id="uae-attractions"><header><span>Explore Dubai</span><h2>Dubai Tourist Attractions</h2></header><ol>'+attractions.map(function(place,index){return '<li><div class="uae-attraction-photo"><img src="'+place.image+'" alt="'+place.name+' in Dubai" loading="lazy" decoding="async"></div><div class="uae-attraction-copy"><b>'+String(index+1).padStart(2,'0')+'</b><span>'+place.name+'</span></div></li>';}).join('')+'</ol></section>';
+    return '<section class="uae-account-information'+(showAttractions===false?' uae-information-faq-only':'')+'">'+
+      (showAttractions===false?'':attractionsSection)+
       '<section class="uae-account-faq" id="uae-faq"><header><span>FAQ</span><h2>Frequently asked questions</h2></header><div>'+faqs.map(function(item,index){return '<details'+(index===0?' open':'')+'><summary>'+item[0]+'<span aria-hidden="true">+</span></summary><p>'+item[1]+'</p></details>';}).join('')+'</div></section>'+
     '</section>';
   }
@@ -167,7 +168,9 @@
   }
 
   function wirePreviews(scope){
-    scope.querySelectorAll('[data-uae-history-path]').forEach(function(card){
+    function loadPreview(card){
+      if(card.getAttribute('data-uae-preview-loading')==='1') return;
+      card.setAttribute('data-uae-preview-loading','1');
       var path=card.getAttribute('data-uae-history-path');
       var media=card.querySelector('.uae-history-media');
       sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(result){
@@ -183,6 +186,16 @@
         if(!card.isConnected) return;
         card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>';
       });
+    }
+    scope.querySelectorAll('[data-uae-history-path]').forEach(function(card){
+      var disclosure=card.closest('details');
+      if(!disclosure||disclosure.open){ loadPreview(card); return; }
+      function loadWhenOpened(){
+        if(!disclosure.open) return;
+        disclosure.removeEventListener('toggle',loadWhenOpened);
+        loadPreview(card);
+      }
+      disclosure.addEventListener('toggle',loadWhenOpened);
     });
   }
 
@@ -199,13 +212,41 @@
     });
   }
 
+  function wireAccountInfoNav(scope){
+    var nav=scope.querySelector('.uae-account-info-nav');
+    if(!nav) return;
+    var items=Array.prototype.map.call(nav.querySelectorAll('a[href^="#"]'),function(link){
+      return {link:link,section:scope.querySelector(link.getAttribute('href'))};
+    }).filter(function(item){return !!item.section;});
+    function setActive(active){
+      items.forEach(function(item){
+        var selected=item===active;
+        item.link.classList.toggle('active',selected);
+        if(selected) item.link.setAttribute('aria-current','page'); else item.link.removeAttribute('aria-current');
+      });
+    }
+    items.forEach(function(item){item.link.addEventListener('click',function(){setActive(item);});});
+    var scheduled=false;
+    function update(){
+      scheduled=false;
+      var active=items[0], threshold=nav.offsetHeight+28, closestTop=-Infinity;
+      items.forEach(function(item){
+        var top=item.section.getBoundingClientRect().top;
+        if(top<=threshold&&top>closestTop){ closestTop=top; active=item; }
+      });
+      if(active) setActive(active);
+    }
+    window.addEventListener('scroll',function(){
+      if(scheduled) return;
+      scheduled=true; window.requestAnimationFrame(update);
+    },{passive:true});
+    update();
+  }
+
   function showApplications(apps,names,customerName,choices){
     var page=document.getElementById('countryPage')||document.querySelector('main');
     if(!page||!apps.length) return;
     var latest=apps[0];
-    var date=new Date(latest.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
-    var passport=documentOf(latest,'passport'), photo=documentOf(latest,'photo');
-    var attached=(passport?1:0)+(photo?1:0);
     var firstName=String(customerName||'').trim().split(/\s+/)[0];
     var greeting=firstName?'Welcome back, '+esc(firstName)+'.':'Welcome back.';
     var otherApps=apps.slice(1);
@@ -213,22 +254,29 @@
     page.innerHTML=
       '<section class="uae-account-hero"><div class="container">'+
         '<a class="uae-account-back" href="/#destinations"><span aria-hidden="true">&#8592;</span> All destinations</a>'+
-        '<div class="uae-account-hero-grid"><div class="uae-account-hero-copy"><div class="uae-account-flag"><img src="https://flagcdn.com/w80/ae.png" alt="United Arab Emirates flag"><span>Your UAE visa</span></div><p>'+greeting+'</p><h1>Everything about your application, in one place.</h1><span class="uae-account-hero-lead">Track the latest status, check the files you attached or start another UAE visa.</span><div class="uae-account-actions"><a class="uae-account-primary" href="/app.html#track">Track your visa <span aria-hidden="true">&#8594;</span></a><a class="uae-account-secondary" href="#uae-other-visa-types" data-uae-open-section>Add another visa <span aria-hidden="true">+</span></a></div></div>'+
-        '<aside class="uae-account-hero-summary"><span>Latest application</span><h2>'+esc(names[latest.visa_type]||latest.visa_type||'UAE visa')+'</h2><div class="uae-account-hero-meta"><div><small>Status</small><b>'+esc(latest.status||'Submitted')+'</b></div><div><small>Reference</small><b>'+esc(latest.reference_code||'—')+'</b></div><div><small>Submitted</small><b>'+esc(date)+'</b></div><div><small>Attached</small><b>'+attached+' of 2 files</b></div></div></aside></div>'+
+        '<div class="uae-account-hero-grid"><div class="uae-account-hero-copy"><div class="uae-account-flag"><img src="https://flagcdn.com/w80/ae.png" alt="United Arab Emirates flag"><span>Your UAE visa</span></div><p>'+greeting+'</p><h1>Everything about your application, in one place.</h1><span class="uae-account-hero-lead">Track the latest status and check the files attached to your application.</span><div class="uae-account-actions"><a class="uae-account-primary" href="/app.html#track">Track your visa <span aria-hidden="true">&#8594;</span></a></div></div></div>'+
       '</div></section>'+
+      '<nav class="country-info-nav uae-account-info-nav" aria-label="UAE application information"><div class="container">'+
+        '<a class="active" href="#uae-current-visa">Visa Info</a>'+
+        '<a href="#uae-other-visa-types">Choose a visa</a>'+
+        '<a href="#uae-contact-help">Contact us</a>'+
+        '<a href="#uae-faq">FAQs</a>'+
+      '</div></nav>'+
       '<section class="uae-account-content"><div class="container"><div class="uae-account-grid">'+
-        '<div class="uae-account-main"><section class="uae-account-current" id="uae-current-visa"><header><div><span>Current visa</span><h2>'+esc(names[latest.visa_type]||latest.visa_type||'UAE visa')+'</h2><p>Reference '+esc(latest.reference_code||'—')+'</p></div><b class="uae-history-status '+statusClass(latest.status)+'">'+esc(latest.status||'Submitted')+'</b></header><div class="uae-account-current-detail">'+
+        '<div class="uae-account-main"><section class="uae-account-current" id="uae-current-visa"><header><div><span>Visa information</span><h2>'+esc(names[latest.visa_type]||latest.visa_type||'UAE visa')+'</h2><p>Reference '+esc(latest.reference_code||'—')+'</p></div><b class="uae-history-status '+statusClass(latest.status)+'">'+esc(latest.status||'Submitted')+'</b></header><div class="uae-account-current-detail">'+
           progressSteps(latest)+
-          '<section class="uae-account-documents"><header><div><span>Attached documents</span><h2>Passport &amp; personal photo</h2><p>Only the passport front and personal photo are shown here.</p></div><b>Secure</b></header><div class="uae-history-documents">'+documentTile(latest,'passport','Passport front')+documentTile(latest,'photo','Personal photo')+'</div></section>'+
+          '<section class="uae-account-documents" id="uae-account-documents"><header><div><span>Attached documents</span><h2>Passport &amp; personal photo</h2><p>Your files stay hidden until you choose to view them.</p></div><b>Secure</b></header><details class="uae-account-document-disclosure"><summary><span>View attached files</span><i aria-hidden="true">+</i></summary><div class="uae-history-documents">'+documentTile(latest,'passport','Passport front')+documentTile(latest,'photo','Personal photo')+'</div></details></section>'+
         '</div></section></div>'+
         '<aside class="uae-account-side"><section><span>Next step</span><h2>Follow every update</h2><p>Open Track visa to view the full timeline and respond if our team needs anything.</p><a href="/app.html#track">Open visa tracking <span aria-hidden="true">&#8594;</span></a></section>'+
           '<section class="uae-account-other"><header><div><span>Your UAE visas</span><h2>'+(otherApps.length?'Other applications':'Start another visa')+'</h2></div></header>'+(otherApps.length?'<div>'+otherApps.map(function(app){return compactApplication(app,names);}).join('')+'</div>':'<p>You can start another UAE visa without changing this application.</p>')+'<a class="uae-account-add" href="#uae-other-visa-types" data-uae-open-section>Add another visa <span aria-hidden="true">+</span></a></section>'+
         '</aside></div><section class="uae-account-extras" aria-label="More UAE visa help">'+
-          '<section class="uae-account-disclosure uae-account-static" id="uae-other-visa-types"><header><div><span>Plan another trip</span><h2>Other UAE visa types</h2><p>Compare the available options before starting another application.</p></div></header><div class="uae-account-disclosure-body">'+otherVisaTypes(latest.visa_type,choices||[])+'</div></section>'+
-          '<section class="uae-account-disclosure uae-account-static" id="uae-contact-help"><header><div><span>We are here to help</span><h2>Contact our visa team</h2><p>WhatsApp, call or email — choose what works for you.</p></div></header><div class="uae-account-disclosure-body uae-account-contact-body">'+contactHelp(latest.reference_code)+'</div></section>'+
-        '</section></div></section>';
+          '<section class="uae-account-disclosure uae-account-static" id="uae-other-visa-types"><header><div><span>Choose a visa</span><h2>Other UAE visa types</h2><p>Compare the available options before starting another application.</p></div></header><div class="uae-account-disclosure-body">'+otherVisaTypes(latest.visa_type,choices||[])+'</div></section>'+
+          '<section class="uae-account-disclosure uae-account-static" id="uae-contact-help"><header><div><span>Contact us</span><h2>Contact our visa team</h2><p>WhatsApp, call or email — choose what works for you.</p></div></header><div class="uae-account-disclosure-body uae-account-contact-body">'+contactHelp(latest.reference_code)+'</div></section>'+
+        '</section></div></section>'+
+      '<section class="uae-public-guide-section"><div class="container">'+uaeTravelInformation(false).replace('uae-account-information','uae-account-information uae-public-travel-guide')+'</div></section>';
     wirePreviews(page);
     wireAccountSections(page);
+    wireAccountInfoNav(page);
   }
 
   var names=visaNames();
