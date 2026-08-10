@@ -4,9 +4,7 @@
 
   var started=false;
   function startWhenReady(){
-    if(started||!document.body.classList.contains('uae-country-page')||document.body.getAttribute('data-country-code')!=='AE') return;
-    started=true;
-    boot();
+    return; // Disabled customer history view on the destination page
   }
   document.addEventListener('visadoo:country-rendered',startWhenReady);
   startWhenReady();
@@ -81,7 +79,9 @@
   function ensureGuideNav(){
     var nav=document.querySelector('.country-info-nav .container');
     if(!nav||nav.querySelector('[data-uae-guide-nav]')) return;
-    [['Explore Dubai','#uae-attractions'],['FAQs','#uae-faq']].forEach(function(item){
+    var items=[];
+    if(!document.getElementById('country-faq')) items.push(['FAQs','#uae-faq']);
+    items.forEach(function(item){
       var link=document.createElement('a');
       link.setAttribute('data-uae-guide-nav','');
       link.href=item[1];
@@ -119,7 +119,7 @@
       return '<p class="uae-account-empty-copy">View the latest UAE visa options and choose the one that fits your next trip.</p><a class="uae-account-inline-link" href="'+esc(newVisaUrl())+'">View UAE visa options <span aria-hidden="true">&#8594;</span></a>';
     }
     return '<div class="uae-account-visa-list">'+available.map(function(visa){
-      return '<article class="uae-account-visa-option"><header><div><span>'+esc(visa.category)+'</span><h3>'+esc(visa.name)+'</h3></div><strong>'+esc(visa.price)+'<small>per applicant</small></strong></header><div class="uae-account-visa-facts"><div><small>Stay</small><b>'+esc(visa.stay)+'</b></div><div><small>Entry</small><b>'+esc(visa.entry)+'</b></div><div><small>Processing</small><b>'+esc(visa.processing)+'</b></div></div><a href="/app.html?visa='+encodeURIComponent(visa.slug)+'">Choose this visa <span aria-hidden="true">&#8594;</span></a></article>';
+      return '<article class="uae-account-visa-option"><header><div><span>'+esc(visa.category)+'</span><h3>'+esc(visa.name)+'</h3></div><strong>'+esc(visa.price)+'<small>per applicant</small></strong></header><div class="uae-account-visa-facts"><div><small>Stay</small><b>'+esc(visa.stay)+'</b></div><div><small>Entry</small><b>'+esc(visa.entry)+'</b></div><div><small>Processing Time</small><b>'+esc(visa.processing)+'</b></div></div><a href="/app.html?visa='+encodeURIComponent(visa.slug)+'">Choose this visa <span aria-hidden="true">&#8594;</span></a></article>';
     }).join('')+'</div>';
   }
 
@@ -132,7 +132,7 @@
     return '<div class="uae-account-contact-intro"><h3>Talk to a real person</h3><p>Ask about your application, documents or another UAE visa. Our team will help you directly.</p></div><div class="uae-account-contact-options"><a href="https://wa.me/'+esc(waNumber)+'?text='+message+'" target="_blank" rel="noopener"><i aria-hidden="true">WA</i><span><small>WhatsApp</small><b>'+esc(display)+'</b></span><em aria-hidden="true">&#8594;</em></a><a href="tel:'+esc(phone)+'"><i aria-hidden="true">CALL</i><span><small>Call us</small><b>'+esc(display)+'</b></span><em aria-hidden="true">&#8594;</em></a><a href="mailto:'+esc(email)+'?subject='+encodeURIComponent('Help with UAE visa '+(reference||''))+'"><i aria-hidden="true">@</i><span><small>Email</small><b>'+esc(email)+'</b></span><em aria-hidden="true">&#8594;</em></a></div>';
   }
 
-  function uaeTravelInformation(showAttractions){
+  function uaeTravelInformation(showAttractions,showFaq){
     var attractions=[
       {name:'Burj Khalifa',image:'/assets/dubai-attractions/burj-khalifa.jpg'},
       {name:'The Dubai Mall',image:'/assets/dubai-attractions/dubai-mall.jpg'},
@@ -151,20 +151,36 @@
       ['How will I receive my approved visa?','When the visa is issued, we will update your application and send the available visa document through your registered contact details.'],
       ['When should I contact the visa team?','Contact us if your status requests action, your travel date is approaching, or you need to correct important information in the submitted application.']
     ];
+    var reviewsSection = '';
+    var reviews = window.UAE_REVIEWS || [];
+    if(reviews.length){
+      var tickerList = [].concat(reviews);
+      while(tickerList.length > 0 && tickerList.length < 5){
+        tickerList = tickerList.concat(reviews);
+      }
+      var cardsHtml = tickerList.map(function(r){
+        var stars = '';
+        for(var i=1; i<=5; i++){
+          stars += '<span style="color:' + (i <= r.rating ? '#f5a623' : '#d0dbd9') + '">★</span>';
+        }
+        return '<div class="uae-review-item-card">' +
+          '<div class="uae-review-item-stars">' + stars + '</div>' +
+          '<p class="uae-review-item-body">"' + esc(r.body) + '"</p>' +
+          '<div class="uae-review-item-author"><b>' + esc(r.name) + '</b>' + (r.location ? '<span> · ' + esc(r.location) + '</span>' : '') + '</div>' +
+        '</div>';
+      }).join('');
+      reviewsSection = '<section class="uae-account-faq uae-reviews-layout-section" id="reviews-section"><header><span>Reviews</span><h2>What our travellers say</h2></header><div class="uae-reviews-list-container">' + cardsHtml + '</div></section>';
+    }
     var attractionsSection='<section class="uae-attractions" id="uae-attractions"><header><span>Explore Dubai</span><h2>Dubai Tourist Attractions</h2></header><ol>'+attractions.map(function(place,index){return '<li><div class="uae-attraction-photo"><img src="'+place.image+'" alt="'+place.name+' in Dubai" loading="lazy" decoding="async"></div><div class="uae-attraction-copy"><b>'+String(index+1).padStart(2,'0')+'</b><span>'+place.name+'</span></div></li>';}).join('')+'</ol></section>';
     return '<section class="uae-account-information'+(showAttractions===false?' uae-information-faq-only':'')+'">'+
       (showAttractions===false?'':attractionsSection)+
-      '<section class="uae-account-faq" id="uae-faq"><header><span>FAQ</span><h2>Frequently asked questions</h2></header><div>'+faqs.map(function(item,index){return '<details'+(index===0?' open':'')+'><summary>'+item[0]+'<span aria-hidden="true">+</span></summary><p>'+item[1]+'</p></details>';}).join('')+'</div></section>'+
+      reviewsSection+
+      (showFaq===false?'':'<section class="uae-account-faq" id="uae-faq"><header><span>FAQ</span><h2>Frequently asked questions</h2></header><div>'+faqs.map(function(item,index){return '<details><summary>'+item[0]+'<span aria-hidden="true">+</span></summary><p>'+item[1]+'</p></details>';}).join('')+'</div></section>')+
     '</section>';
   }
 
   function showPublicTravelGuide(){
-    var page=document.getElementById('countryPage')||document.querySelector('main');
-    if(!page||page.querySelector('.uae-public-travel-guide')) return;
-    var section=document.createElement('section');
-    section.className='uae-public-guide-section';
-    section.innerHTML='<div class="container">'+uaeTravelInformation().replace('uae-account-information','uae-account-information uae-public-travel-guide')+'</div>';
-    page.appendChild(section);
+    return;
   }
 
   function wirePreviews(scope){
@@ -258,9 +274,7 @@
       '</div></section>'+
       '<nav class="country-info-nav uae-account-info-nav" aria-label="UAE application information"><div class="container">'+
         '<a class="active" href="#uae-current-visa">Visa Info</a>'+
-        '<a href="#uae-other-visa-types">Choose a visa</a>'+
-        '<a href="#uae-contact-help">Contact us</a>'+
-        '<a href="#uae-faq">FAQs</a>'+
+        '<a href="requirements.html?slug=united-arab-emirates">Visa Requirements</a>'+
       '</div></nav>'+
       '<section class="uae-account-content"><div class="container"><div class="uae-account-grid">'+
         '<div class="uae-account-main"><section class="uae-account-current" id="uae-current-visa"><header><div><span>Visa information</span><h2>'+esc(names[latest.visa_type]||latest.visa_type||'UAE visa')+'</h2><p>Reference '+esc(latest.reference_code||'—')+'</p></div><b class="uae-history-status '+statusClass(latest.status)+'">'+esc(latest.status||'Submitted')+'</b></header><div class="uae-account-current-detail">'+
@@ -277,6 +291,8 @@
     wirePreviews(page);
     wireAccountSections(page);
     wireAccountInfoNav(page);
+    if(window.initReviewsTicker) window.initReviewsTicker();
+    if(window.wireUaeFaqAccordion) window.wireUaeFaqAccordion();
   }
 
   var names=visaNames();

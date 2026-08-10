@@ -59,13 +59,14 @@
     if (ph) { cfg.PHONE_TEL = ph.replace(/[^0-9+]/g, ""); cfg.PHONE_DISPLAY = ph; }
     if (em) cfg.EMAIL = em;
     function setHref(id, href) { var e = document.getElementById(id); if (e && href) e.setAttribute("href", href); }
-    function setText(id, t) { var e = document.getElementById(id); if (e && t) e.textContent = t; }
-    if (wa) { var w = waLink(wa); setHref("waFloat", w); setHref("cmWhatsapp", w); setHref("footWa", w); setText("waText", ph || wa); }
+    function setText(id, t) { var e = document.getElementById(id); if (e && t) { var sp = e.querySelector("span") || e; sp.textContent = t; } }
+    if (wa) { var w = waLink(wa); setHref("waFloat", w); setHref("cmWhatsapp", w); setHref("footWa", w); }
     if (ph) { setHref("cmPhone", "tel:" + ph.replace(/[^0-9+]/g, "")); setText("phoneText", ph); }
-    if (em) { setHref("cmEmail", "mailto:" + em); setText("emailText", em); setHref("footEmail", "mailto:" + em); setText("footEmail", em); }
+    if (em) { setHref("cmEmail", "mailto:" + em); setText("emailText", em); setHref("footEmail", "mailto:" + em); var fe = document.getElementById("footEmail"); if (fe) { var sp = fe.querySelector("span"); if (sp) sp.textContent = em; } }
   }
 
   var SOCIAL_ICONS = {
+    email: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/></svg>',
     instagram: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.2c3.2 0 3.6 0 4.9.07 3.3.15 4.8 1.7 5 5 .06 1.3.07 1.6.07 4.7s0 3.5-.07 4.7c-.15 3.3-1.7 4.8-5 5-1.3.06-1.6.07-4.9.07s-3.6 0-4.9-.07c-3.3-.15-4.8-1.7-5-5C2.2 15.6 2.2 15.3 2.2 12s0-3.5.07-4.7c.15-3.3 1.7-4.8 5-5C8.4 2.2 8.8 2.2 12 2.2zm0 3.2A6.6 6.6 0 1 0 12 18.6 6.6 6.6 0 0 0 12 5.4zm0 10.9A4.3 4.3 0 1 1 12 7.7a4.3 4.3 0 0 1 0 8.6zm6.8-11.2a1.54 1.54 0 1 1-3.08 0 1.54 1.54 0 0 1 3.08 0z"/></svg>',
     facebook: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>',
     whatsapp: '<svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg>',
@@ -79,11 +80,12 @@
     if (!box) return;
     var cfg = window.VISADOO_CONFIG || {};
     var whatsappNumber = String(s.contact_whatsapp || cfg.WHATSAPP || WA_FALLBACK || "").replace(/[^0-9]/g, "");
-    var order = ["instagram", "facebook", "whatsapp"];
-    var labels = { instagram: "Instagram", facebook: "Facebook", whatsapp: "WhatsApp" };
+    var emailAddr = String(s.contact_email || cfg.EMAIL || "hello@visadoo.com").trim();
+    var order = ["instagram", "email", "whatsapp"];
+    var labels = { instagram: "Instagram", email: "Email", whatsapp: "WhatsApp" };
     var keys = {
       instagram: s.social_instagram,
-      facebook: s.social_facebook,
+      email: emailAddr ? "mailto:" + emailAddr : "",
       whatsapp: whatsappNumber ? "https://wa.me/" + whatsappNumber : ""
     };
     var html = order.map(function (k) {

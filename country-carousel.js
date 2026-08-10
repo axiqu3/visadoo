@@ -27,7 +27,7 @@
     var photoMap=window.VISADOO_DESTINATION_PHOTOS||{};
     var places=placeMap[slug]||[];
     var existing=box.querySelector('img');
-    var initialSrc=photoMap[slug]||box.getAttribute('data-initial-image')||(existing&&existing.getAttribute('src'))||'';
+    var initialSrc=photoMap[slug+'-banner']||photoMap[slug]||box.getAttribute('data-initial-image')||(existing&&existing.getAttribute('src'))||'';
     if(/flagcdn\.com|flagsapi\.com|\/flags?\//i.test(initialSrc)) initialSrc='';
     var hero=box.closest?box.closest('.country-detail-hero'):null;
     if(hero&&initialSrc){

@@ -102,7 +102,7 @@
   }
   function render(event,country,visas){
     var countryName=country.name||'this destination';
-    var image=event.image_url||photos[event.country_slug]||country.image_url||'';
+    var image=event.image_url||photos[event.country_slug+'-banner']||photos[event.country_slug]||country.image_url||'';
     var when=dateRange(event.event_date,event.end_date);
     var heroDateStats=dateStats(event.event_date,event.end_date);
     var lead=leadDays(event,visas);
@@ -146,14 +146,14 @@
       '<nav class="event-info-nav" aria-label="Event visa information"><div class="container">'+
         '<a href="#visa-info">Visa Info</a>'+
         '<a href="#documents">Documents</a>'+
-        '<a href="#visa-process">Visa Process</a>'+
+        '<a href="#visa-process">What happens after you apply</a>'+
       '</div></nav>'+
       '<section class="event-simple-section event-visa-info" id="visa-info"><div class="container">'+
         '<div class="event-section-heading"><span>Visa Info</span><h2>Plan your '+esc(countryName)+' visa</h2><p>'+esc(about)+'</p></div>'+
         '<div class="event-visa-facts">'+
           '<div><small>Visa options</small><strong>'+visas.length+'</strong></div>'+
           '<div><small>Starts from</small><strong>'+esc(fromPrice==null?'Ask us':money(fromPrice))+'</strong></div>'+
-          '<div><small>Processing</small><strong>'+esc(fastest)+'</strong></div>'+
+          '<div><small>Processing Time</small><strong>'+esc(fastest)+'</strong></div>'+
           '<div><small>Apply before</small><strong>'+esc(lead?lead+' day'+(lead===1?'':'s'):'Apply early')+'</strong></div>'+
         '</div>'+
         '<div class="cards event-visa-cards" id="event-visas">'+cards+'</div>'+

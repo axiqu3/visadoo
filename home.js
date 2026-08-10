@@ -90,7 +90,7 @@
     var photos=window.VISADOO_DESTINATION_PHOTOS||{};
     // Prefer the curated destination scene. Some older country records use a
     // flag image as image_url, which should never become the card background.
-    var src=photos[c.slug]||c.hero_image_url||c.image_url||'';
+    var src=photos[c.slug+'-card']||photos[c.slug]||c.hero_image_url||c.image_url||'';
     return /^https?:\/\//i.test(src) ? src : '';
   }
 
@@ -449,4 +449,111 @@
       }
     }
   }
+
+  function isUaePage(){
+    var path=(window.location.pathname||'').toLowerCase();
+    var search=(window.location.search||'').toLowerCase();
+    var code=(document.body.getAttribute('data-country-code')||'').toLowerCase();
+    return document.body.classList.contains('uae-country-page')||
+           code==='ae'||
+           path.indexOf('/country/uae')!==-1||
+           path.indexOf('/country/united-arab-emirates')!==-1||
+           search.indexOf('country=uae')!==-1||
+           search.indexOf('country=united-arab-emirates')!==-1||
+           search.indexOf('country=ae')!==-1;
+  }
+
+  function initGlobalAiAssistant(){
+    if(!isUaePage()){
+      var existing=document.querySelector('.ai-assistant');
+      if(existing) existing.remove();
+      return;
+    }
+    if(document.querySelector('.ai-assistant')) return;
+    var wrapper=document.createElement('div');
+    wrapper.className='ai-assistant';
+    wrapper.innerHTML='<button class="ai-assistant-trigger" type="button" aria-label="Open AI travel assistant" aria-expanded="false">'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'+
+      '<span>Ask AI</span></button>'+
+      '<section class="ai-assistant-panel" aria-label="AI travel assistant" aria-hidden="true">'+
+        '<header><span class="ai-bot-mark" aria-hidden="true">V</span><div><b>VisaDoo AI Assistant</b><small><i></i><span>Online now</span></small></div>'+
+        '<button type="button" data-ai-close aria-label="Close assistant">&#215;</button></header>'+
+        '<div class="ai-conversation" data-ai-conversation>'+
+          '<div class="ai-message ai-message-bot">Hi! I am VisaDoo AI. How can I help with your visa options, documents, processing times, or application tracking today?</div>'+
+          '<div class="ai-suggestions">'+
+            '<button type="button" data-ai-question="Which visa should I choose?">Choose a visa</button>'+
+            '<button type="button" data-ai-question="Which documents do I need?">Required documents</button>'+
+            '<button type="button" data-ai-question="How long does processing take?">Processing times</button>'+
+            '<button type="button" data-ai-question="How can I track my visa?">Track application</button>'+
+          '</div>'+
+        '</div>'+
+        '<form class="ai-input-row">'+
+          '<input data-ai-input type="text" autocomplete="off" placeholder="Ask about your visa…" aria-label="Message">'+
+          '<button data-ai-send type="submit">Send</button>'+
+        '</form>'+
+        '<footer>Instant answers · Human support available on WhatsApp</footer>'+
+      '</section>';
+    document.body.appendChild(wrapper);
+
+    var trigger=wrapper.querySelector('.ai-assistant-trigger');
+    var panel=wrapper.querySelector('.ai-assistant-panel');
+    var close=wrapper.querySelector('[data-ai-close]');
+    var conversation=wrapper.querySelector('[data-ai-conversation]');
+    var form=wrapper.querySelector('form');
+    var input=wrapper.querySelector('[data-ai-input]');
+
+    function toggle(force){
+      var open=typeof force==='boolean'?force:!wrapper.classList.contains('open');
+      wrapper.classList.toggle('open',open);
+      panel.setAttribute('aria-hidden',String(!open));
+      trigger.setAttribute('aria-expanded',String(open));
+      if(open) window.setTimeout(function(){input.focus();},100);
+    }
+
+    function answer(question){
+      var q=String(question||'').toLowerCase();
+      if(/document|passport|photo|രേഖ|ദസ്താവേജ്/.test(q)) return 'For most tourist visas (like UAE/Dubai, Singapore, Thailand, Schengen), you need a clear color scan of your passport bio page and a recent passport-size photo. Extra travel/accommodation details may be required for some nationalities.';
+      if(/track|status|ട്രാക്ക്|സ്ഥിതി/.test(q)) return 'Click "Track visa" in the top navigation header or menu to check your latest application status in real-time!';
+      if(/price|fee|cost|ഫീസ്|രൂപ/.test(q)) return 'Visa fees vary by destination and stay duration. You can search your country on the homepage to compare all starting prices!';
+      if(/which|choose|type|visa|വിസ/.test(q)) return 'Choose based on your stay length (14 days, 30 days, 60 days) and whether you need single or multiple entries. Search your destination above to view all options.';
+      if(/time|days|hours|സമയം|സെക്കൻഡ്/.test(q)) return 'Most e-Visas are processed within 24 to 72 hours once complete documents are submitted!';
+      return 'I can assist you with global visa requirements, fees, processing times and tracking. You can also click "Chat on WhatsApp" at the bottom right to talk to our human visa specialists directly!';
+    }
+
+    function submitQuestion(question){
+      var value=String(question||'').trim();
+      if(!value) return;
+      var user=document.createElement('div');
+      user.className='ai-message ai-message-user';
+      user.textContent=value;
+      conversation.appendChild(user);
+      var bot=document.createElement('div');
+      bot.className='ai-message ai-message-bot';
+      bot.textContent='…';
+      conversation.appendChild(bot);
+      conversation.scrollTop=conversation.scrollHeight;
+      window.setTimeout(function(){
+        bot.textContent=answer(value);
+        conversation.scrollTop=conversation.scrollHeight;
+      }, 350);
+    }
+
+    trigger.addEventListener('click',function(){toggle();});
+    close.addEventListener('click',function(){toggle(false);});
+    wrapper.querySelectorAll('[data-ai-question]').forEach(function(button){
+      button.addEventListener('click',function(){
+        submitQuestion(button.getAttribute('data-ai-question'));
+      });
+    });
+    form.addEventListener('submit',function(event){
+      event.preventDefault();
+      submitQuestion(input.value);
+      input.value='';
+    });
+    document.addEventListener('keydown',function(event){if(event.key==='Escape') toggle(false);});
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initGlobalAiAssistant);
+  else initGlobalAiAssistant();
+  document.addEventListener('visadoo:country-rendered', initGlobalAiAssistant);
 })();

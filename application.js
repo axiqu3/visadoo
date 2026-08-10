@@ -189,13 +189,10 @@
     var roleBadge = isStaff() ? '<span class="role-badge">'+esc(roleLabels[state.role]||state.role)+'</span>' : '';
     if(!isStaff()){
       if(header){ header.classList.add('app-customer-header'); header.classList.add('discover-header'); }
-      if(navLinks){ navLinks.hidden=false; navLinks.classList.remove('open'); }
+      if(navLinks){ navLinks.hidden=true; navLinks.classList.remove('open'); }
       headerActions.innerHTML =
         '<button class="nav-track app-header-track '+(state.view==='track'?'active':'')+'" data-go="track" type="button">Track visa</button>'+
-        '<button class="nav-profile app-header-profile '+(state.view==='profile'?'active':'')+'" data-go="profile" type="button" aria-label="Profile" title="Profile"></button>'+
-        '<button class="menu-btn" id="appMenuBtn" type="button" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>';
-      var menuBtn=document.getElementById('appMenuBtn');
-      if(menuBtn&&navLinks) menuBtn.onclick=function(){ navLinks.classList.toggle('open'); };
+        '<button class="nav-profile app-header-profile '+(state.view==='profile'?'active':'')+'" data-go="profile" type="button" aria-label="Profile" title="Profile"></button>';
     } else {
       if(header){ header.classList.remove('app-customer-header'); header.classList.remove('discover-header'); }
       if(navLinks){ navLinks.hidden=true; navLinks.classList.remove('open'); }
@@ -6660,7 +6657,9 @@
     if(v!=='apply') document.body.classList.remove('apply-reviewing');
 
     // Backend sidebar layout: shift content right only on staff console screens.
-    var showSide = isStaff() && ADMIN_VIEWS.indexOf(v)>-1 && adminNavCount()>=2;
+    var isStaffView = isStaff() && ADMIN_VIEWS.indexOf(v)>-1;
+    var showSide = isStaffView && adminNavCount()>=2;
+    document.body.classList.toggle('is-staff-view', isStaffView);
     document.body.classList.toggle('has-admin-side', showSide);
     if(!showSide) document.body.classList.remove('side-open');
 

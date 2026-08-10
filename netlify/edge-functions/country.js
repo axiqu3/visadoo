@@ -49,6 +49,7 @@ function etaBadge(v){
 
 function visaCard(v, active){
   var cat = v.category ? '<div class="vsub">'+esc(v.category)+'</div>' : '';
+  var cleanName = (v.name || '').replace(/\bUAE\b/g, '').replace(/\s+/g, ' ').trim();
   var facts=[
     stayText(v)?'<span><small>Stay</small><b>'+esc(stayText(v))+'</b></span>':'',
     v.sub?'<span><small>Entry</small><b>'+esc(v.sub)+'</b></span>':'',
@@ -56,7 +57,7 @@ function visaCard(v, active){
   ].filter(Boolean).join('');
   return '<div class="vcard">'+
     etaBadge(v)+
-    '<h3>'+esc(v.name)+'</h3>'+cat+
+    '<h3>'+esc(cleanName)+'</h3>'+cat+
     '<div class="price">'+esc(priceText(v, active))+' <small>/ visa</small></div>'+
     (facts?'<div class="country-visa-facts">'+facts+'</div>':'')+
     '<a href="/app.html?visa='+encodeURIComponent(v.slug)+'" class="btn btn-primary btn-block">Apply now</a>'+
@@ -67,16 +68,18 @@ function visaCard(v, active){
 function uaeVisaSelector(visas, active){
   if(!visas.length) return '';
   var first=visas[0];
+  var firstCleanName = (first.name || '').replace(/\bUAE\b/g, '').replace(/\s+/g, ' ').trim();
   var choices=visas.map(function(v,index){
+    var cleanName = (v.name || '').replace(/\bUAE\b/g, '').replace(/\s+/g, ' ').trim();
     return '<label class="uae-visa-option'+(index===0?' selected':'')+'">'+
       '<input class="uae-visa-option-input" type="radio" name="visa" value="'+esc(v.slug)+'"'+(index===0?' checked':'')+' required'+
-      ' data-name="'+esc(v.name||'UAE visa')+'"'+
+      ' data-name="'+esc(cleanName||'UAE visa')+'"'+
       ' data-category="'+esc(v.category||'UAE visa')+'"'+
       ' data-stay="'+esc(stayText(v)||'See visa details')+'"'+
       ' data-entry="'+esc(v.sub||v.category||'See visa details')+'"'+
       ' data-processing="'+esc(processingText(v)||'To be confirmed')+'"'+
       ' data-price="'+esc(priceText(v, active))+'" data-uae-choice>'+
-      '<span class="uae-option-top"><span><b>'+esc(v.name||'UAE visa')+'</b><small>'+esc(v.category||'UAE visa')+'</small></span><strong>'+esc(priceText(v, active))+'<small>per applicant</small></strong></span>'+
+      '<span class="uae-option-top"><span><b>'+esc(cleanName||'UAE visa')+'</b><small>'+esc(v.category||'UAE visa')+'</small></span><strong>'+esc(priceText(v, active))+'<small>per applicant</small></strong></span>'+
       '<span class="uae-option-facts">'+
         '<span><small>Stay</small><b>'+esc(stayText(v)||'See details')+'</b></span>'+
         '<span><small>Entry</small><b>'+esc(v.sub||v.category||'See details')+'</b></span>'+
@@ -93,7 +96,7 @@ function uaeVisaSelector(visas, active){
     '</fieldset>'+
     '<aside class="uae-picker-summary" aria-live="polite" aria-atomic="true">'+
       '<span class="uae-picker-kicker">Your selection</span>'+
-      '<h3 data-uae-name>'+esc(first.name||'UAE visa')+'</h3>'+
+      '<h3 data-uae-name>'+esc(firstCleanName||'UAE visa')+'</h3>'+
       '<p data-uae-category>'+esc(first.category||'UAE visa')+'</p>'+
       '<div class="uae-picker-price"><span>Visa fee</span><strong data-uae-price>'+esc(priceText(first, active))+'</strong><small>per applicant</small></div>'+
       '<div class="uae-picker-facts">'+
@@ -137,7 +140,7 @@ function uaeDocuments(){
 function uaeProcess(){
   return '<div class="container uae-process-simple">'+
     '<div class="uae-process-heading">'+
-      '<span class="eyebrow">Visa Process</span>'+
+      '<span class="eyebrow">What happens after you apply</span>'+
       '<h2>Your UAE visa in 3 simple steps</h2>'+
       '<p>Choose, upload and track. VisaDoo guides you through the rest.</p>'+
     '</div>'+
@@ -149,6 +152,111 @@ function uaeProcess(){
   '</div>';
 }
 
+var DUBAI_ATTRACTIONS = [
+  {
+    name: "Burj Khalifa",
+    desc: "The tallest building in the world, the Burj Khalifa of Dubai is truly a global iconic landmark. Out of the 160 floors of the building, take a lift to one of the many observation decks on the 125th floor or 148th floor for a spectacular bird's eye view of Dubai. Purchase your tickets online beforehand to avoid long queues to visit the world's best engineering and architectural marvels.",
+    price: "₹ 4063/-",
+    image: "/assets/attraction-burj-khalifa.jpg"
+  },
+  {
+    name: "Dubai Miracle Garden",
+    desc: "A blooming refreshment in the 'desert city', Dubai's Miracle Garden spans across 72,000 sq. mts. and features over 250 million plants and flowers. It has special attractions like the Emirates A380, Sunflower Field, Heart Tunnel, Floating Lady, Teddy Bear and Flower Parade. To explore the world's largest natural flower garden, plan a trip to Dubai between October and April.",
+    price: "₹ 13005/-",
+    image: "/assets/attraction-miracle-garden.jpg"
+  },
+  {
+    name: "Dubai Mall",
+    desc: "A perfect option to entertain the entire family under one roof is one of the world's largest shopping malls - the Dubai Mall. Shop from local or international luxury brands or simply entertain yourself at the mall's 200+ restaurants, 20+ cine screens, an ice-skating rink, a game zone, indoor skiing, a VR Park, the Dubai Aquarium and much more.",
+    price: "₹ 999/-",
+    image: "/assets/attraction-dubai-mall.jpg"
+  },
+  {
+    name: "Jumeirah Beach",
+    desc: "Long stretches of sandy beaches where you can lounge and enjoy the view. Visitors can splash or sail in the warm waters as the Jumeirah beach is free, however, the park has entry fees. Several luxury hotels and skyscrapers form the beach's backdrop making it an Instagram-worthy location in Dubai.",
+    price: "₹ 1330/-",
+    image: "/assets/attraction-jumeirah-beach.jpg"
+  },
+  {
+    name: "Burj Al Arab",
+    desc: "Made on an artificial island, Dubai's finest architectural marvel and an award-winning luxury hotel is the Burj Al Arab. The hotel's exterior looks like a dhow's sail with amenities like a fleet of luxury cars, a private helipad, a private beach and a range of fine dining options. You can either stay here overnight or opt for a 90-minute guided tour of the Burj Al Arab.",
+    price: "₹ 12970/-",
+    image: "/assets/attraction-burj-al-arab.jpg"
+  },
+  {
+    name: "Museum of the Future",
+    desc: "Unlike ordinary museums, the architecturally beautiful Dubai Museum of Future offers a glimpse into the future. Gear up for an interesting experience filled with cutting-edge innovations, high-tech sciences and some cool immersive experiences. Grab your tickets to the Museum of the Future in advance to learn about Dubai's display of the best in technology and the future.",
+    price: "₹ 3473/-",
+    image: "/assets/attraction-museum-of-future.jpg"
+  },
+  {
+    name: "Dubai Aquarium and Underwater Zoo",
+    desc: "Home to more than 33000 aquatic animals, the Dubai Aquarium and Underwater Zoo is a complete family experience. Spend about 2 to 3 hours here, exploring the wonders of the sea.",
+    price: "₹ 2703/-",
+    image: "/assets/attraction-dubai-aquarium.jpg"
+  },
+  {
+    name: "Dubai Marina",
+    desc: "A posh manmade canal city, also known as 'New Dubai', visitors are in for a treat with an exquisite waterfront, high-end shopping options, upscale dining options and overall a great place for spending time outdoors.",
+    price: "₹ 999/-",
+    image: "/assets/attraction-dubai-marina.jpg"
+  },
+  {
+    name: "Dubai Frame",
+    desc: "Adorning Dubai's iconic skyline, the Dubai Frame offers breathtaking panoramic views of Dubai from its SkyBridge on the 48th floor. Enjoy the views from the Dubai Frame from 9am to 9pm every day.",
+    price: "₹ 1976/-",
+    image: "/assets/attraction-dubai-frame.jpg"
+  },
+  {
+    name: "Deira Souks",
+    desc: "Nestled between the Dubai-Sharjah Border and Dubai Creek, Deira houses the Deira Souk or Dubai Gold Souk. Treat yourself to a day full of shopping for gold, platinum, diamonds and emeralds at this traditional market.",
+    price: "₹ 999/-",
+    image: "/assets/attraction-deira-souks.jpg"
+  },
+  {
+    name: "Ferrari World",
+    desc: "One of its kind Ferrari 'themed' Park offering adrenaline-pumping and state-of-the-art rides, simulators, live performances, electric go-karts and everything Ferrari. Book your day out at Ferrari World to not miss out on specials like Flying Aces, the world's highest ride and Formula Rossa, the world's fastest roller coaster.",
+    price: "₹ 7382/-",
+    image: "/assets/attraction-ferrari-world.jpg"
+  },
+  {
+    name: "Dubai Desert Safari",
+    desc: "A Dubai Tour is incomplete without a sandy adventure with adventurous activities like dune buggies, quad biking, camel riding, sandboarding, etc. Continue your desert adventures with desert camping, a scrumptious dinner, belly dancing performances and much more.",
+    price: "₹ 2000/-",
+    image: "/assets/attraction-desert-safari.jpg"
+  },
+  {
+    name: "Global Village",
+    desc: "Be ready to explore a unique open-air theme Park filled with cultural extravaganza. Made of more than 27 pavilions and up to 175 attractions, make the most of your family's day out at Global Village which only opens up between October and April.",
+    price: "₹ 999/-",
+    image: "/assets/attraction-global-village.jpg"
+  }
+];
+
+
+
+function uaeAttractionsDropdownHtml(whatsappNumber) {
+  var cardsHtml = DUBAI_ATTRACTIONS.map(function(item, index) {
+    return '<article class="uae-horizontal-card">' +
+      '<img src="' + esc(item.image) + '" alt="' + esc(item.name) + '" class="uae-horizontal-card-img" loading="lazy">' +
+      '<div class="uae-horizontal-card-info">' +
+        '<h3 class="uae-horizontal-card-title">' + (index + 1) + '. ' + esc(item.name) + '</h3>' +
+        '<p class="uae-horizontal-card-desc">' + esc(item.desc) + '</p>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+
+  return '<div class="uae-attractions-dropdown" style="display: none;">' +
+    '<div class="uae-attractions-wrapper">' +
+      '<button class="uae-carousel-arrow uae-carousel-arrow-left" type="button" aria-label="Scroll left">&#8249;</button>' +
+      '<div class="uae-horizontal-scroll-container">' +
+        cardsHtml +
+      '</div>' +
+      '<button class="uae-carousel-arrow uae-carousel-arrow-right" type="button" aria-label="Scroll right">&#8250;</button>' +
+    '</div>' +
+  '</div>';
+}
+
 // Brand colour palette — must match branding.js applyColor() so first paint is the saved colour (no flash).
 function shade(hex,p){ hex=(hex||"").replace("#",""); if(hex.length===3) hex=hex.split("").map(function(c){return c+c;}).join(""); if(hex.length!==6) return "#"+hex; var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16); var t=p<0?0:255,a=Math.abs(p)/100; r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b); return "#"+[r,g,b].map(function(v){return ("0"+v.toString(16)).slice(-2);}).join(""); }
 function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--blue-600:'+p+';--blue-700:'+shade(p,-14)+';--blue-900:'+shade(p,-34)+';--blue-500:'+shade(p,8)+';--blue-400:'+shade(p,24)+';--blue-100:'+shade(p,82)+';--sky-50:'+shade(p,93)+';}</style>'; }
@@ -157,7 +265,7 @@ var LOGO="", FAVICON="", APPICON="", BNAME="Visa Doo";
 function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME||"logo")+'" style="height:34px;width:auto;max-width:180px;display:block">') : ('<span class="logo">'+PLANE+'</span>Visa<b>Doo</b>'); }
 function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
 
-function pageHtml(c, visas, defaultImg, active, brandColor){
+function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
   var isUae=String(c.iso2||'').toUpperCase()==='AE'||c.slug==='uae'||c.slug==='united-arab-emirates';
   var visaSectionTitle=isUae?'Visa types':'Visa options';
   var title=(c.seo_title&&c.seo_title.trim())||(c.name+' Visas — Apply Online | Visa Doo');
@@ -176,7 +284,13 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
         '<div>'+CHECK+'<span><b>Extra documents, if needed</b></span></div>'+
       '</div>'+
     '</div>';
-  var heroImage=c.image_url||c.social_image||defaultImg||'';
+  var bannerOverrides={
+    'united-arab-emirates-banner':'/assets/uae-burj-khalifa-hero.jpg',
+    'uae-banner':'/assets/uae-burj-khalifa-hero.jpg',
+    'united-arab-emirates':'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95',
+    'uae':'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95'
+  };
+  var heroImage=bannerOverrides[c.slug+'-banner']||bannerOverrides[c.slug]||c.image_url||c.social_image||defaultImg||'';
   var priced=visas.map(function(v){
     var p=(v.prices&&v.prices.INR!=null&&v.prices.INR!=='')?v.prices.INR:v.price_aed;
     return (p==null||p===''||isNaN(Number(p))||Number(p)<=0)?null:Number(p);
@@ -190,6 +304,11 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     };
   }).filter(Boolean).sort(function(a,b){return a.hours-b.hours;});
   var fastest=processing.length?processing[0].text:'';
+  var currencyStr=visas.some(function(v){return v.prices&&v.prices.INR!=null;})?'INR':'AED';
+  var priceTextStr=fromPrice?(currencyStr+' '+fromPrice):'AED 350';
+  var approvedText=fastest
+    ? (fastest.toLowerCase().indexOf('day') > -1 || fastest.toLowerCase().indexOf('hour') > -1 ? 'Approved in ' + fastest : 'Approved in ' + fastest + ' business days')
+    : 'Approved in 2 business days';
   var facts=[
     '<div><strong>'+visas.length+'</strong><span>Options</span></div>',
     fromPrice!=null?'<div><strong>'+esc(fmtMoney(fromPrice))+'</strong><span>From</span></div>':'',
@@ -208,6 +327,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     iconTags()+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
     '<link rel="stylesheet" href="/styles.css?v=20260804-natural-uae-hero">'+
+    '<link rel="stylesheet" href="/country.css">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
     '</head><body class="country-page'+(isUae?' uae-country-page':'')+'">'+
@@ -221,7 +341,24 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
         '<a href="/articles">Articles</a>'+
       '</nav>'+
       '<div class="nav-actions">'+
-        '<a href="/app.html#track" class="nav-track">Track visa</a>'+
+        '<div class="site-language-header-selector">' +
+          '<button class="site-language-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" class="globe-icon" style="margin-right: 4px; display: inline-block; vertical-align: middle;">' +
+              '<circle cx="12" cy="12" r="10"/>' +
+              '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' +
+              '<path d="M2 12h20"/>' +
+            '</svg>' +
+            '<b data-language-header-name>EN</b>' +
+          '</button>' +
+          '<div class="site-language-menu header-menu" role="listbox" aria-label="Languages" style="display: none;">' +
+            '<button type="button" role="option" data-language-option="en"><img src="https://flagcdn.com/w40/gb.png" alt="UK flag" class="flag-icon"><span>English</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>' +
+            '<button type="button" role="option" data-language-option="ml"><img src="https://flagcdn.com/w40/in.png" alt="Indian flag" class="flag-icon"><span>Malayalam</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>' +
+            '<button type="button" role="option" data-language-option="hi"><img src="https://flagcdn.com/w40/in.png" alt="Indian flag" class="flag-icon"><span>Hindi</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>' +
+            '<button type="button" role="option" data-language-option="ar"><img src="https://flagcdn.com/w40/sa.png" alt="Arabic flag" class="flag-icon"><span>Arabic</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>' +
+            '<button type="button" role="option" data-language-option="fr"><img src="https://flagcdn.com/w40/fr.png" alt="French flag" class="flag-icon"><span>French</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>' +
+            '<button type="button" role="option" data-language-option="es"><img src="https://flagcdn.com/w40/es.png" alt="Spanish flag" class="flag-icon"><span>Spanish</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>' +
+          '</div>' +
+        '</div>' +
         '<a href="/app.html#profile" class="nav-profile" aria-label="Profile" title="Profile"></a>'+
         '<button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">'+
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>'+
@@ -229,32 +366,52 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
       '</div>'+
     '</div></header>'+
     '<main>'+
-    '<section class="country-detail-hero"'+heroStyle+'><div class="container country-detail-grid">'+
-      '<div class="country-detail-copy">'+
-        '<a href="/#destinations" class="country-back"><span aria-hidden="true">&#8592;</span> All destinations</a>'+
-        '<div class="country-guide-row">'+
-          (c.iso2?'<img src="https://flagcdn.com/w80/'+esc(c.iso2.toLowerCase())+'.png" alt="'+esc(c.name)+' flag">':'')+
-          '<span class="eyebrow">Visa guide</span>'+
+    (isUae?
+      '<section class="uae-travel-banner" style="background-image: url(&quot;' + esc(heroImage) + '&quot;);">' +
+        '<div class="container uae-travel-container">' +
+          '<div class="uae-travel-banner-content">' +
+            '<a href="/#destinations" class="uae-travel-back"><span aria-hidden="true">&#8592;</span> All destinations</a>' +
+          '</div>' +
+        '</div>' +
+        '<div class="uae-banner-bottom-bar">' +
+          '<div class="uae-banner-bottom-bg"></div>' +
+          '<div class="container uae-banner-bottom-content">' +
+            '<h1>Apply UAE eVisa</h1>' +
+            '<p>' + esc(approvedText) + '. From ' + esc(priceTextStr) + ' all-inclusive. No embassy visit, no paperwork.</p>' +
+            '<button class="uae-attractions-toggle" aria-expanded="false" type="button">' +
+              '<span>Dubai Tourist Attractions</span>' +
+              '<svg class="uae-toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M6 9l6 6 6-6"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+      '</section>':
+      '<section class="country-detail-hero"'+heroStyle+'><div class="container country-detail-grid">'+
+        '<div class="country-detail-copy">'+
+          '<a href="/#destinations" class="country-back"><span aria-hidden="true">&#8592;</span> All destinations</a>'+
+          '<div class="country-guide-row">'+
+            (c.iso2?'<img src="https://flagcdn.com/w80/'+esc(c.iso2.toLowerCase())+'.png" alt="'+esc(c.name)+' flag">':'')+
+            '<span class="eyebrow">Visa guide</span>'+
+          '</div>'+
+          '<h1>'+esc(c.name)+' Visas</h1>'+
+          '<p>'+esc(summary)+'</p>'+
+          '<div class="country-facts">'+facts+'</div>'+
+          '<a href="#visa-info" class="btn btn-primary btn-lg">Choose a visa <span aria-hidden="true">→</span></a>'+
         '</div>'+
-        '<h1>'+esc(c.name)+' Visas</h1>'+
-        '<p>'+esc(summary)+'</p>'+
-        '<div class="country-facts">'+facts+'</div>'+
-        '<a href="#visa-info" class="btn btn-primary btn-lg">Choose a visa <span aria-hidden="true">→</span></a>'+
-      '</div>'+
-    '</div></section>'+
+      '</div></section>')+
+    (isUae ? '' :
     '<nav class="country-info-nav" aria-label="Country visa information"><div class="container">'+
       '<a href="#visa-info">Visa Info</a>'+
-      '<a href="#documents">Documents</a>'+
-      '<a href="#visa-process">Visa Process</a>'+
-    '</div></nav>'+
+      '<a href="/requirements.html?slug='+encodeURIComponent(c.slug||'')+'">Visa Requirements</a>'+
+    '</div></nav>')+
     '<section class="section sky country-options'+(isUae?' uae-country-options':'')+'" id="visa-info"><div class="container">'+
       '<div class="country-section-heading"><span class="eyebrow">Choose a visa</span><h2>'+visaSectionTitle+'</h2>'+(isUae?'<p>Compare UAE visa types, check the key details and continue with the option that fits your trip.</p>':'')+'</div>'+
+      (isUae ? uaeAttractionsDropdownHtml(whatsappNumber) : '') +
       visaContent+
     '</div></section>'+
-    '<section class="section country-documents'+(isUae?' uae-documents':'')+'" id="documents">'+documentsContent+'</section>'+
-    '<section class="section country-process'+(isUae?' uae-country-process':'')+'" id="visa-process">'+
+    (isUae?'':'<section class="section country-documents'+(isUae?' uae-documents':'')+'" id="documents">'+documentsContent+'</section>')+
+    (isUae?'':'<section class="section country-process'+(isUae?' uae-country-process':'')+'" id="visa-process">'+
       (isUae?uaeProcess():'<div class="container"><div class="country-process-heading"><span class="eyebrow">Visa Process</span><h2>What to do next</h2><p>Choose your visa, upload the documents and track every update online.</p></div><div class="country-process-flow" role="list" aria-label="Visa application steps"><div class="country-process-step" role="listitem"><i aria-hidden="true">&#10003;</i><b>Choose visa</b><small>Pick the right option</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#8593;</i><b>Upload files</b><small>Add passport and photo</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#9678;</i><b>Track status</b><small>See updates online</small></div></div></div>')+
-    '</section>'+
+    '</section>')+
     '</main>'+
     '<footer class="footer home-footer"><div class="container">'+
       '<div class="footer-grid footer-grid--expanded">'+
@@ -293,6 +450,41 @@ function pageHtml(c, visas, defaultImg, active, brandColor){
     '<script src="/country-history.js?v=20260804-natural-uae-hero"></scr'+'ipt>'+
     '<script>(function(){var b=document.getElementById("menuBtn"),n=document.getElementById("navLinks");if(!b||!n)return;b.addEventListener("click",function(){var o=n.classList.toggle("open");b.setAttribute("aria-expanded",String(o))});n.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){n.classList.remove("open");b.setAttribute("aria-expanded","false")})})})();</scr'+'ipt>'+
     '<script>(function(){var w=document.querySelector("[data-uae-visa-selector]"),c=w&&w.querySelectorAll("[data-uae-choice]");if(!w||!c.length)return;function u(o){if(!o)return;["name","category","stay","entry","processing","price"].forEach(function(k){w.querySelectorAll("[data-uae-"+k+"]").forEach(function(n){n.textContent=o.getAttribute("data-"+k)||""})});c.forEach(function(i){var l=i.closest(".uae-visa-option");if(l)l.classList.toggle("selected",i===o)})}c.forEach(function(i){i.addEventListener("change",function(){if(i.checked)u(i)})});u(w.querySelector("[data-uae-choice]:checked"))})();</scr'+'ipt>'+
+    '<script>(function(){' +
+      'var b=document.querySelector(".uae-attractions-toggle"),p=document.querySelector(".uae-attractions-dropdown");' +
+      'if(!b||!p)return;' +
+      'b.addEventListener("click",function(){' +
+        'var a=b.classList.toggle("active");' +
+        'b.setAttribute("aria-expanded",String(a));' +
+        'p.style.display=a?"block":"none";' +
+        'if(a){' +
+          'setTimeout(function(){p.scrollIntoView({behavior:"smooth",block:"nearest"});toggleArrows();},100);' +
+        '}' +
+      '});' +
+      'document.querySelectorAll(\'a[href="#attractions"]\').forEach(function(l){' +
+        'l.addEventListener("click",function(e){' +
+          'e.preventDefault();' +
+          'if(!b.classList.contains("active")){b.click()}else{p.scrollIntoView({behavior:"smooth",block:"nearest"})}' +
+        '});' +
+      '});' +
+      'var container=p.querySelector(".uae-horizontal-scroll-container"),' +
+          'leftArrow=p.querySelector(".uae-carousel-arrow-left"),' +
+          'rightArrow=p.querySelector(".uae-carousel-arrow-right");' +
+      'if(container&&leftArrow&&rightArrow){' +
+        'leftArrow.addEventListener("click",function(){container.scrollBy({left:-310,behavior:"smooth"})});' +
+        'rightArrow.addEventListener("click",function(){container.scrollBy({left:310,behavior:"smooth"})});' +
+        'function toggleArrows(){' +
+          'var sl=container.scrollLeft,max=container.scrollWidth-container.clientWidth;' +
+          'leftArrow.style.opacity=sl<=5?"0":"1";' +
+          'leftArrow.style.pointerEvents=sl<=5?"none":"auto";' +
+          'rightArrow.style.opacity=sl>=max-5?"0":"1";' +
+          'rightArrow.style.pointerEvents=sl>=max-5?"none":"auto";' +
+        '}' +
+        'container.addEventListener("scroll",toggleArrows);' +
+        'window.addEventListener("resize",toggleArrows);' +
+        'setTimeout(toggleArrows,200);' +
+      '}' +
+    '})();</scr'+'ipt>'+
     '</body></html>';
 }
 
@@ -323,7 +515,7 @@ export default async (request) => {
     const c=countries[0];
     const data=await Promise.all([
       fetchJson(SUPABASE_URL+"/rest/v1/visa_types?country_slug=eq."+encodeURIComponent(slug)+"&active=eq.true&order=sort_order&select=*"),
-      fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name")
+      fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name,contact_whatsapp")
     ]);
     const visas=data[0]||[];
     const settings=data[1]||[];
@@ -332,8 +524,9 @@ export default async (request) => {
     const brandColor=(settings[0]&&settings[0].brand_color)||"";
     const ss0=settings[0]||{};
     LOGO=ss0.logo_url||""; FAVICON=ss0.favicon_url||""; APPICON=ss0.app_icon_url||""; BNAME=ss0.brand_name||"Visa Doo";
+    const waNumber=ss0.contact_whatsapp||"";
 
-    return new Response(pageHtml(c, visas, defaultImg, active, brandColor), {
+    return new Response(pageHtml(c, visas, defaultImg, active, brandColor, waNumber), {
       headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
     });
   }catch(e){

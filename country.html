@@ -20,6 +20,7 @@
   >
 
   <link rel="stylesheet" href="/styles.css?v=20260805-single-active-nav-line">
+  <link rel="stylesheet" href="/country.css">
 
   <script src="/branding.js"></script>
 </head>
@@ -60,9 +61,24 @@
 
       <div class="nav-actions">
 
-        <a href="/app.html#track" class="nav-track">
-          Track visa
-        </a>
+        <div class="site-language-header-selector">
+          <button class="site-language-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" class="globe-icon" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              <path d="M2 12h20"/>
+            </svg>
+            <b data-language-header-name>EN</b>
+          </button>
+          <div class="site-language-menu header-menu" role="listbox" aria-label="Languages" style="display: none;">
+            <button type="button" role="option" data-language-option="en"><img src="https://flagcdn.com/w40/gb.png" alt="UK flag" class="flag-icon"><span>English</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+            <button type="button" role="option" data-language-option="ml"><img src="https://flagcdn.com/w40/in.png" alt="Indian flag" class="flag-icon"><span>Malayalam</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+            <button type="button" role="option" data-language-option="hi"><img src="https://flagcdn.com/w40/in.png" alt="Indian flag" class="flag-icon"><span>Hindi</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+            <button type="button" role="option" data-language-option="ar"><img src="https://flagcdn.com/w40/sa.png" alt="Arabic flag" class="flag-icon"><span>Arabic</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+            <button type="button" role="option" data-language-option="fr"><img src="https://flagcdn.com/w40/fr.png" alt="French flag" class="flag-icon"><span>French</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+            <button type="button" role="option" data-language-option="es"><img src="https://flagcdn.com/w40/es.png" alt="Spanish flag" class="flag-icon"><span>Spanish</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          </div>
+        </div>
 
         <a
           href="/app.html#profile"
@@ -208,8 +224,11 @@
                 target="_blank"
                 rel="noopener"
               >
-                <span>WhatsApp</span>
-                <small>Chat with our visa team</small>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#25d366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-ico ico-wa"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2z"/><path d="M15.5 14.2c-.3-.15-1.7-.85-2-.95-.3-.1-.5-.15-.7.15-.2.3-.75 1-.9 1.15-.15.15-.3.2-.6.1-.3-.15-1.25-.45-2.4-1.5-.9-.8-1.5-1.75-1.7-2.05-.15-.3 0-.45.15-.6.15-.15.3-.35.45-.5.15-.15.2-.3.3-.5.1-.2.05-.35 0-.5-.05-.15-.7-1.65-.95-2.2-.25-.6-.5-.5-.7-.5h-.6c-.2 0-.55.05-.85.35s-1.1 1.05-1.1 2.55 1.1 2.95 1.25 3.15c.15.2 2.1 3.25 5.1 4.55.7.3 1.25.5 1.7.65.7.25 1.4.2 1.9.1.6-.1 1.8-.75 2-1.45.25-.7.25-1.3.15-1.45-.1-.15-.3-.2-.6-.35z" fill="#25d366" stroke="none"/></svg>
+                <div class="contact-text-block">
+                  <span>WhatsApp</span>
+                  <small>Chat with our visa team</small>
+                </div>
               </a>
             </li>
 
@@ -218,8 +237,11 @@
                 id="footEmail"
                 href="mailto:hello@visadoo.com"
               >
-                <span>hello@visadoo.com</span>
-                <small>Send us your questions</small>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" class="contact-ico ico-email"><rect x="2.5" y="4.5" width="19" height="15" rx="3.5" fill="#eff6ff" stroke="#2563eb" stroke-width="1.8"/><path d="M3 7l9 6 9-6" stroke="#ea4335" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="contact-text-block">
+                  <span>hello@visadoo.com</span>
+                  <small>Send us your questions</small>
+                </div>
               </a>
             </li>
           </ul>
@@ -243,6 +265,7 @@
 
   <script src="/config.js"></script>
   <script src="/destination-images.js"></script>
+  <script src="/country-experience.js"></script>
   <script src="/country-page.js?v=20260805-dynamic-single-active-nav"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="/country-history.js?v=20260805-hidden-attached-files"></script>

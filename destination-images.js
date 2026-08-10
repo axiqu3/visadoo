@@ -1,6 +1,9 @@
 // Shared destination photography used by the homepage and local country pages.
 window.VISADOO_DESTINATION_PHOTOS = {
-  'united-arab-emirates':'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=84',
+  'united-arab-emirates-banner':'/assets/uae-burj-khalifa-hero.jpg',
+  'uae-banner':'/assets/uae-burj-khalifa-hero.jpg',
+  'united-arab-emirates':'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95',
+  'uae':'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95',
   'united-states':'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=1200&q=84',
   'united-kingdom':'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=84',
   'india':'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=1200&q=84',

@@ -191,7 +191,7 @@ function pageHtml(v, others, country, defaultImg, active, brandColor) {
               (v.sub ? '<div><span class="visa-fact-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3v18M19 3v18M5 7h14M5 17h14"/></svg></span><span><small>Entry type</small><b>' + esc(v.sub) + '</b></span></div>' : '') +
             '</div>' +
             (etaStr(v) ? '<p class="visa-estimate-note">Processing times are estimates and do not guarantee approval by a specific date.</p>' : '') +
-            '<a href="/app.html?visa=' + encodeURIComponent(v.slug) + '" class="btn btn-primary btn-block visa-apply-cta">Start application</a>' +
+            '<a href="/app.html?visa=' + encodeURIComponent(v.slug) + '" class="btn btn-primary btn-block visa-apply-cta">Apply now</a>' +
             '<a href="' + esc(wa) + '" target="_blank" rel="noopener" class="visa-help-link">Have a question? Chat with our team &rarr;</a>' +
             '<div class="visa-safe-note">' + CHECK + '<span><b>Secure application</b><small>Your details stay private and protected.</small></span></div>' +
           '</div>' +

@@ -1567,8 +1567,13 @@ body.apply-focus{
 .has-admin-side .header .nav-actions{
   position:absolute;left:50%;transform:translateX(-50%);
 }
-/* Keep the global "Chat with us" WhatsApp button off the staff console screens */
-.has-admin-side .wa-float{display:none !important}
+/* Keep the global floating WhatsApp and AI Ask buttons off the staff console screens */
+.has-admin-side .wa-float,
+.has-admin-side .ai-assistant,
+.is-staff-view .wa-float,
+.is-staff-view .ai-assistant {
+  display: none !important;
+}
 
 /* ===== Admin Dashboard ===== */
 .dash-filterbar{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px}
