@@ -1,0 +1,1 @@
+V6: Date of birth and Intended length of stay values moved upward and right to sit cleanly above their underline without overlapping labels/help text.

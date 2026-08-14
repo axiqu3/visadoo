@@ -1,0 +1,1 @@
+V7: Date of birth value moved slightly left (x 170 -> 155). No other Japan PDF field positions changed.

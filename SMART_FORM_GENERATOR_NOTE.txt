@@ -1,0 +1,9 @@
+Smart Visa Form Generator - 2026-08-12
+
+Generate PDF now uses the supplied 2-page Japan Visa Application Form as the visual template.
+Saved application data is stamped into matching fields. Missing values stay blank.
+The old VISA APPLICATION SUMMARY output is no longer used by the Generate PDF button.
+Template assets:
+- assets/form-templates/japan-visa-neat-blank.pdf
+- assets/form-templates/japan-rendered/page-1.jpg
+- assets/form-templates/japan-rendered/page-2.jpg

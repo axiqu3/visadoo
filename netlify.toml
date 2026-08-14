@@ -1,0 +1,72 @@
+[build]
+  publish = "."
+
+# Inject editable global SEO into the homepage
+[[edge_functions]]
+  path = "/"
+  function = "home"
+
+# Server-rendered country pages (list a country's visas)
+[[edge_functions]]
+  path = "/country/*"
+  function = "country"
+
+# Server-rendered, SEO-friendly pages for each visa type
+[[edge_functions]]
+  path = "/visa/*"
+  function = "visa"
+
+# Server-rendered Events page (browse international events by month/category)
+[[edge_functions]]
+  path = "/events"
+  function = "events"
+
+[[edge_functions]]
+  path = "/events.html"
+  function = "events"
+
+# Server-rendered individual event pages (event details + that country's visas)
+[[edge_functions]]
+  path = "/event/*"
+  function = "event"
+
+# Server-rendered articles list and individual article pages
+[[edge_functions]]
+  path = "/articles"
+  function = "articles"
+
+[[edge_functions]]
+  path = "/articles.html"
+  function = "articles"
+
+[[edge_functions]]
+  path = "/article/*"
+  function = "articles"
+
+# Custom pages (About, Terms, …)
+[[edge_functions]]
+  path = "/p/*"
+  function = "page"
+
+# Auto-generated sitemap
+[[edge_functions]]
+  path = "/sitemap.xml"
+  function = "sitemap"
+
+# Always serve the freshest code/markup so a stale cached file can never
+# make a form (or any feature) silently run an out-of-date version.
+# Browsers revalidate on each load and get a tiny "304 Not Modified" when unchanged.
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

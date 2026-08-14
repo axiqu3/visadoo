@@ -1,0 +1,7 @@
+Japan PDF alignment V4
+- Replaced rendered PDF background with the exact uploaded JAPAN APPLICATION FORM(4).pdf render.
+- Recalibrated page 1 text baselines to the actual underline positions.
+- Recalibrated gender, marital-status and passport-type check marks.
+- Corrected travel, hotel, contact and employment field positions.
+- Signature remains disabled and is not printed.
+- Personal photo remains disabled for the Japan form.

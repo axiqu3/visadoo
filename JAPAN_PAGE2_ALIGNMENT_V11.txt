@@ -1,0 +1,3 @@
+JAPAN PDF PAGE 2 ALIGNMENT V11
+Reduced unnecessary horizontal gaps on Guarantor / Reference in Japan and Inviter in Japan fields.
+Values now begin directly after Name, Tel., Address, Date of birth, Relationship, Profession, and Nationality labels without overlapping printed text.

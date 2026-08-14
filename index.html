@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visa Doo — Tourist &amp; Business Visas Worldwide, Applied Online</title>
+<meta name="description" content="Apply online for tourist and business visas to destinations worldwide — eVisas, Schengen, US, UK and more. Upload documents, pay, and track your application with Visa Doo.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="VisaDoo — Search. Select. Travel.">
+<meta property="og:description" content="Choose your destination and find the right visa in seconds.">
+<meta property="og:image" content="https://visadoo-uae.netlify.app/assets/og-visadoo-simple.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="VisaDoo — Search. Select. Travel.">
+<meta name="twitter:description" content="Choose your destination and find the right visa in seconds.">
+<meta name="twitter:image" content="https://visadoo-uae.netlify.app/assets/og-visadoo-simple.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232563eb'/><path d='M50 22l24 38H26z' fill='white' transform='rotate(45 50 50)'/></svg>">
+<link rel="preload" as="image" href="assets/hero-world-travel.png" type="image/png" fetchpriority="high">
+<link rel="stylesheet" href="styles.css?v=20260801-home-mobile-compact">
+<script>
+  // Supabase can fall back to the Site URL when /app.html is not allowlisted.
+  // Forward OAuth callbacks to the application so the marketing homepage never
+  // replaces the sign-in flow or appears inside the Google popup.
+  (function () {
+    var query = new URLSearchParams(location.search);
+    var hash = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    var isGooglePopup = window.name === 'visadoo-google-signin' && !!window.opener;
+    var hasAuthHash = hash.has('access_token') || hash.has('refresh_token') ||
+      hash.has('error') || hash.has('error_description');
+    var isAuthCallback = query.has('code') || query.has('error') || query.has('error_code') ||
+      query.has('error_description') || hasAuthHash;
+    var pending = null;
+    try {
+      pending = JSON.parse(localStorage.getItem('visadoo-oauth-pending') || 'null');
+      if (!pending || !pending.createdAt || Date.now() - Number(pending.createdAt) > 15 * 60 * 1000) {
+        localStorage.removeItem('visadoo-oauth-pending');
+        pending = null;
+      }
+    } catch (_pendingError) {
+      pending = null;
+    }
+    if (!isGooglePopup && !isAuthCallback && !pending) return;
+
+    var target = new URL('/app.html', location.origin);
+    try {
+      if (pending && pending.returnTo && pending.returnTo.indexOf('/app.html') === 0) {
+        target = new URL(pending.returnTo, location.origin);
+      }
+      var saved = sessionStorage.getItem('visadoo-oauth-return');
+      if (!pending && saved && saved.indexOf('/app.html') === 0) target = new URL(saved, location.origin);
+    } catch (_storageError) {}
+    query.forEach(function (value, key) { target.searchParams.set(key, value); });
+    target.hash = hasAuthHash ? location.hash : '';
+    location.replace(target.pathname + target.search + target.hash);
+  })();
+</script>
+<script>
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  if (!location.hash || location.hash === '#top') scrollTo(0, 0);
+</script>
+<script src="branding.js"></script>
+</head>
+<body class="home-page" id="top">
+
+<!-- HEADER -->
+<header class="header discover-header">
+  <div class="container nav">
+    <div class="nav-brand-cluster">
+      <a href="#top" class="brand">
+        <span class="logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>
+        </span>
+        Visa<b>Doo</b>
+      </a>
+    </div>
+    <nav class="nav-links" id="navLinks">
+      <a href="#destinations" class="active">Explore</a>
+      <a href="events.html">Events</a>
+      <a href="articles.html">Articles</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="app.html#track" class="nav-track">Track visa</a>
+      <a href="app.html#profile" class="nav-profile" aria-label="Profile" title="Profile"></a>
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero home-hero home-hero--simple">
+  <div class="hero-wordmark" aria-hidden="true">VISADOO</div>
+  <div class="home-hero-image" aria-hidden="true">
+    <div class="home-hero-image__wash"></div>
+  </div>
+  <div class="container home-hero-layout">
+    <div class="home-hero-copy-v2">
+      <span class="route-kicker"><span></span> Global visa discovery</span>
+      <h1>Search. Select.<br><span class="hl">Travel.</span></h1>
+      <p class="hero-sub">Choose your destination and find the right visa in seconds.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DESTINATIONS -->
+<section class="section section-compact destination-board" id="destinations">
+  <div class="container">
+    <div class="board-heading">
+      <div>
+        <span class="board-kicker">Popular destinations</span>
+        <h2>Choose your country</h2>
+      </div>
+      <p><b id="countryCount">190+</b> destinations available.</p>
+    </div>
+
+    <div class="visa-filter-dock visa-search-only" aria-label="Destination search">
+      <div class="dest-search hero-search hero-search--center">
+        <span class="search-icon" aria-hidden="true"></span>
+        <input id="destSearch" type="text" placeholder="Where do you want to go?" autocomplete="off" aria-label="Search for a destination">
+        <button type="button" class="search-action" id="destSearchButton" aria-label="Search countries" title="Search">
+          <span class="button-search-icon" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="map-toggle" id="mapToggle" aria-label="Choose country on map" title="Map" aria-expanded="false" aria-controls="countryMapPanel">
+          <span class="map-globe-icon" aria-hidden="true"></span>
+        </button>
+        <div class="dest-results" id="destResults"></div>
+      </div>
+      <div class="search-suggestions" id="popularChips" aria-label="Suggested destinations"></div>
+      <div class="country-map-panel" id="countryMapPanel" hidden>
+        <div class="country-map-heading">
+          <div>
+            <b>Select a country on the map</b>
+            <small>Tap a marker to view its visa options</small>
+          </div>
+          <button type="button" class="country-map-close" id="countryMapClose" aria-label="Close country map">×</button>
+        </div>
+        <div class="country-map-wrap">
+          <div class="country-map" id="countryMap" role="region" aria-label="Interactive country map"></div>
+          <div class="country-map-status" id="countryMapStatus">Loading destinations…</div>
+          <div class="map-country-fallback" id="mapCountryFallback" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-benefits" aria-label="VisaDoo benefits">
+      <div class="search-benefit-item">
+        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.3V6.7C4 5.76 4.76 5 5.7 5h5.6c.45 0 .88.18 1.2.5l6 6a1.7 1.7 0 0 1 0 2.4l-4.6 4.6a1.7 1.7 0 0 1-2.4 0l-6-6a1.7 1.7 0 0 1-.5-1.2Z"/><circle cx="8.1" cy="9.1" r="1.2"/><path d="m10.2 14.1 4-4m-3.5.4h.01m3 3.2h.01"/></svg></span>
+        <span><b>Clear pricing</b><small>See the full cost before you apply.</small></span>
+      </div>
+      <div class="search-benefit-item">
+        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 13v-2a7.5 7.5 0 0 1 15 0v2"/><path d="M4.5 12.5h2.2v5H5.9a2 2 0 0 1-2-2v-1.6a1.4 1.4 0 0 1 .6-1.4Zm15 0h-2.2v5h.8a2 2 0 0 0 2-2v-1.6a1.4 1.4 0 0 0-.6-1.4Z"/><path d="M17.3 17.5c-.7 1.4-2 2.1-3.8 2.1"/></svg></span>
+        <span><b>Real visa support</b><small>Helpful answers whenever you need them.</small></span>
+      </div>
+      <div class="search-benefit-item">
+        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 19 6v5.2c0 4.2-2.7 7.7-7 9.3-4.3-1.6-7-5.1-7-9.3V6l7-2.5Z"/><path d="m8.8 12 2 2 4.5-4.6"/></svg></span>
+        <span><b>Secure applications</b><small>Your details and documents stay protected.</small></span>
+      </div>
+      <div class="search-benefit-item">
+        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5.5"/><path d="m12 6.8 1 2 2.2.3-1.6 1.6.4 2.2-2-1-2 1 .4-2.2-1.6-1.6 2.2-.3 1-2Z"/><path d="m8.8 15-1 5 4.2-2 4.2 2-1-5"/></svg></span>
+        <span><b>Expert-checked guidance</b><small>Clear requirements for every trip.</small></span>
+      </div>
+    </div>
+
+    <div class="dest-grid dest-grid--simple" id="destGrid"><!-- filled by home.js --></div>
+    <div class="destination-empty" id="destinationEmpty" hidden>No destinations found.</div>
+    <div class="destination-more-wrap" id="destinationMoreWrap" hidden>
+      <button type="button" class="destination-more" id="destinationMore" aria-expanded="false" aria-controls="destGrid">
+        <span>Show more countries</span>
+        <span class="destination-more-icon" aria-hidden="true">&#8595;</span>
+      </button>
+    </div>
+    <div class="visa-groups-area" id="groupsArea"></div>
+  </div>
+</section>
+
+<!-- REVIEWS -->
+<section class="section" id="reviews" style="display:none">
+  <div class="container">
+    <div class="center">
+      <span class="eyebrow">Loved by travellers</span>
+      <h2>What our customers say</h2>
+    </div>
+    <div class="review-grid" id="reviewGrid"></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section sky" id="faq" style="display:none">
+  <div class="container" style="max-width:780px">
+    <div class="center">
+      <span class="eyebrow">Good to know</span>
+      <h2>Frequently asked questions</h2>
+    </div>
+    <div class="faq-list" id="faqList" style="margin-top:34px"></div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section contact-section contact-section--simple" id="contact">
+  <div class="container contact-shell contact-shell--simple">
+    <div class="contact-copy">
+      <h2>Need help?</h2>
+      <p>Not sure which visa you need? Talk to our team for clear, practical guidance.</p>
+      <div class="contact-methods">
+        <a class="cm" id="cmWhatsapp" target="_blank" rel="noopener">
+          <span class="ic wa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.7 4.8-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.8.7.7-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3A2.8 2.8 0 0 0 6 9.5c0 1.6 1.2 3.2 1.3 3.4.2.2 2.3 3.6 5.7 4.9 2.8 1.1 2.8.7 3.3.7.5 0 1.6-.6 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.5-.3z"/></svg></span>
+          <div><small>Quickest response</small><b id="waText">Chat on WhatsApp</b></div>
+          <span class="cm-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="cm" id="cmPhone">
+          <span class="ic ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></span>
+          <div><small>Speak to our team</small><b id="phoneText">Call us</b></div>
+          <span class="cm-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="cm" id="cmEmail">
+          <span class="ic em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 6l-10 7L2 6"/><rect x="2" y="6" width="20" height="13" rx="2"/></svg></span>
+          <div><small>Send your questions</small><b id="emailText">Email us</b></div>
+          <span class="cm-arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div class="contact-proof"><span>✓ Real people</span><span>✓ Clear answers</span><span>✓ Secure details</span></div>
+    </div>
+
+    <form class="form contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="contactForm">
+        <div class="contact-form-heading">
+          <span>Send an enquiry</span>
+          <h3>Tell us about your trip</h3>
+          <p>Share your destination or question and our team will guide the next step.</p>
+        </div>
+        <input type="hidden" name="form-name" value="contact">
+        <p class="hidden" style="display:none"><label>Don't fill this: <input name="bot-field"></label></p>
+        <div class="form-ok" id="formOk">✓ Thanks! Your message has been sent. We'll get back to you shortly.</div>
+        <div class="contact-field-row">
+          <div class="field"><label for="cName">Your name</label><input id="cName" name="name" type="text" placeholder="Full name" required></div>
+          <div class="field"><label for="cEmail">Email address</label><input id="cEmail" name="email" type="email" placeholder="you@email.com" required></div>
+        </div>
+        <div class="field"><label for="cMsg">How can we help?</label><textarea id="cMsg" name="message" placeholder="Tell us where you're going or ask a question…" required></textarea></div>
+        <label class="contact-consent">
+          <input id="cConsent" name="consent" type="checkbox" checked>
+          <span>Keep me updated with visa offers, tips and news by email and WhatsApp (optional — you can unsubscribe anytime).</span>
+        </label>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Send my enquiry <span aria-hidden="true">→</span></button>
+        <p class="contact-privacy">Your details are only used to answer your enquiry.</p>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer home-footer">
+  <div class="container">
+    <div class="footer-grid footer-grid--expanded">
+      <div class="footer-intro">
+      <a href="#top" class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg></span>Visa<b>Doo</b></a>
+      <p>Tourist &amp; business visas for destinations worldwide — applied for and tracked entirely online. We handle the paperwork so you can plan the trip.</p>
+        <div class="footer-social-links" id="socialLinks" aria-label="Social media links"></div>
+        <div class="footer-assurances">
+          <span>100% online</span>
+          <span>Secure &amp; tracked</span>
+        </div>
+      </div>
+      <div>
+        <h5>Explore</h5>
+        <ul>
+          <li><a href="#destinations">Destinations</a></li>
+          <li><a href="events.html">Events</a></li>
+          <li><a href="articles.html">Articles</a></li>
+          <li><a href="app.html#track">Track application</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <ul id="footerCompany">
+          <li><a href="p/about">About Visa Doo</a></li>
+          <li><a href="p/privacy-policy">Privacy Policy</a></li>
+          <li><a href="p/terms">Terms &amp; Conditions</a></li>
+          <li><a href="#contact">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="footer-contact">
+        <h5>Contact</h5>
+        <ul>
+          <li>
+            <a id="footWa" href="https://wa.me/919895226697?text=Hi%20Visa%20Doo%2C%20I%20have%20a%20question%20about%20a%20visa." target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#25d366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-ico ico-wa"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2z"/><path d="M15.5 14.2c-.3-.15-1.7-.85-2-.95-.3-.1-.5-.15-.7.15-.2.3-.75 1-.9 1.15-.15.15-.3.2-.6.1-.3-.15-1.25-.45-2.4-1.5-.9-.8-1.5-1.75-1.7-2.05-.15-.3 0-.45.15-.6.15-.15.3-.35.45-.5.15-.15.2-.3.3-.5.1-.2.05-.35 0-.5-.05-.15-.7-1.65-.95-2.2-.25-.6-.5-.5-.7-.5h-.6c-.2 0-.55.05-.85.35s-1.1 1.05-1.1 2.55 1.1 2.95 1.25 3.15c.15.2 2.1 3.25 5.1 4.55.7.3 1.25.5 1.7.65.7.25 1.4.2 1.9.1.6-.1 1.8-.75 2-1.45.25-.7.25-1.3.15-1.45-.1-.15-.3-.2-.6-.35z" fill="#25d366" stroke="none"/></svg>
+              <div class="contact-text-block">
+                <span>WhatsApp</span>
+                <small>Chat with our visa team</small>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a id="footEmail" href="mailto:hello@visadoo.com">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" class="contact-ico ico-email"><rect x="2.5" y="4.5" width="19" height="15" rx="3.5" fill="#eff6ff" stroke="#2563eb" stroke-width="1.8"/><path d="M3 7l9 6 9-6" stroke="#ea4335" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="contact-text-block">
+                <span>hello@visadoo.com</span>
+                <small>Send us your questions</small>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year"></span> Visa Doo. All rights reserved.</span>
+      <span>Plan simply. Travel confidently.</span>
+    </div>
+  </div>
+</footer>
+
+<a class="wa-float" id="waFloat" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+  <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg>
+</a>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="destination-images.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="home.js"></script>
+</body>
+</html>

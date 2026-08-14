@@ -1,0 +1,1 @@
+Japan PDF V8: All user-entered text values are converted to uppercase only when stamped onto the generated Japan PDF. Stored/admin values are unchanged. Dates, numbers and checkbox behavior remain unchanged.

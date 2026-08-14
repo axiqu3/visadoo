@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/event/:slug",
+      "destination": "/event.html"
+    },
+    {
+      "source": "/article/:slug",
+      "destination": "/article.html"
+    },
+    {
+      "source": "/country/:slug",
+      "destination": "/country.html"
+    }
+  ]
+}
