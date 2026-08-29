@@ -224,29 +224,34 @@ function notFound() {
 }
 
 export default async (request) => {
-  const url = new URL(request.url);
-  const parts = url.pathname.split("/").filter(Boolean); // ["visa", "<slug>"]
-  const slug = parts[1] ? decodeURIComponent(parts[1]) : "";
-  if (!slug) return notFound();
+  try {
+    const url = new URL(request.url);
+    const parts = url.pathname.split("/").filter(Boolean); // ["visa", "<slug>"]
+    const slug = parts[1] ? decodeURIComponent(parts[1]) : "";
+    if (!slug) return notFound();
 
-  const rows = await fetchJson(SUPABASE_URL + "/rest/v1/visa_types?active=eq.true&order=sort_order&select=*");
-  if (!rows) return notFound();
-  const v = rows.find(function (x) { return x.slug === slug; });
-  if (!v) return notFound();
-  const others = rows.filter(function (x) { return x.slug !== slug && x.country_slug === v.country_slug; });
-  const countries = await fetchJson(SUPABASE_URL + "/rest/v1/countries?slug=eq." + encodeURIComponent(v.country_slug) + "&active=eq.true&select=name,iso2,slug");
-  const country = (countries && countries[0]) || { name: v.country_slug, iso2: "", slug: v.country_slug };
+    const rows = await fetchJson(SUPABASE_URL + "/rest/v1/visa_types?active=eq.true&order=sort_order&select=*");
+    if (!rows) return notFound();
+    const v = rows.find(function (x) { return x.slug === slug; });
+    if (!v) return notFound();
+    const others = rows.filter(function (x) { return x.slug !== slug && x.country_slug === v.country_slug; });
+    const countries = await fetchJson(SUPABASE_URL + "/rest/v1/countries?slug=eq." + encodeURIComponent(v.country_slug) + "&active=eq.true&select=name,iso2,slug");
+    const country = (countries && countries[0]) || { name: v.country_slug, iso2: "", slug: v.country_slug };
 
-  const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name");
-  const defaultImg = (settings && settings[0] && settings[0].default_social_image) || "";
-  const active = resolveActive(settings);
-  const brandColor = (settings && settings[0] && settings[0].brand_color) || "";
-  const ss0 = (settings && settings[0]) || {};
-  LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
+    const settings = await fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name");
+    const defaultImg = (settings && settings[0] && settings[0].default_social_image) || "";
+    const active = resolveActive(settings);
+    const brandColor = (settings && settings[0] && settings[0].brand_color) || "";
+    const ss0 = (settings && settings[0]) || {};
+    LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
 
-  return new Response(pageHtml(v, others, country, defaultImg, active, brandColor), {
-    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" }
-  });
+    return new Response(pageHtml(v, others, country, defaultImg, active, brandColor), {
+      headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=0, must-revalidate" }
+    });
+  } catch (err) {
+    console.error("Visa Edge Function Error:", err);
+    return notFound();
+  }
 };
 
 export const config = { path: "/visa/:slug" };

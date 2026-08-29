@@ -53,7 +53,13 @@ window.VISADOO_DESTINATION_PHOTOS = {
   'qatar':'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=1200&q=84',
   'denmark':'https://images.unsplash.com/photo-1513622470522-26c3c8a854bc?auto=format&fit=crop&w=1200&q=84',
   'sri-lanka':'https://images.unsplash.com/photo-1612862862126-865765df2ded?auto=format&fit=crop&w=1200&q=84',
-  'philippines':'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=1200&q=84'
+  'philippines':'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=1200&q=84',
+  'ireland':'https://images.unsplash.com/photo-1507055298038-7e3f88856986?auto=format&fit=crop&w=1200&q=84',
+  'ireland-banner':'https://images.unsplash.com/photo-1590089415225-401ed6f9db8e?auto=format&fit=crop&w=2400&q=95',
+  'thailand':'https://images.unsplash.com/photo-1528181304800-2f19024b321d?auto=format&fit=crop&w=1200&q=84',
+  'indonesia':'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=84',
+  'russia':'https://images.unsplash.com/photo-1520106212299-d99c443e4568?auto=format&fit=crop&w=1200&q=84',
+  'kenya':'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=84'
 };
 
 // Wikipedia page titles for each country's rotating tourist-place gallery.
@@ -108,5 +114,10 @@ window.VISADOO_DESTINATION_SLIDES = {
   'qatar':['Doha','Museum of Islamic Art, Doha','The Pearl Island'],
   'denmark':['Copenhagen','Nyhavn','Kronborg'],
   'sri-lanka':['Sigiriya','Galle','Ella, Sri Lanka'],
-  'philippines':['Palawan','Boracay','Banaue Rice Terraces']
+  'philippines':['Palawan','Boracay','Banaue Rice Terraces'],
+  'ireland':['Cliffs of Moher','Dublin','Kylemore Abbey'],
+  'thailand':['Bangkok','Chiang Mai','Phuket'],
+  'indonesia':['Bali','Borobudur','Jakarta'],
+  'russia':['Red Square','Hermitage Museum','Lake Baikal'],
+  'kenya':['Maasai Mara National Reserve','Mount Kenya','Mombasa']
 };

@@ -374,6 +374,360 @@
     updateActiveLanguage(saved);
   };
 
+  var dropdownsInitialized = false;
+  var showAllInDropdown = false;
+  var dropdownSearchQuery = '';
+  var dbCountries = [];
+  var eligibleSlugs = ['spain', 'denmark', 'south-korea', 'germany', 'france', 'switzerland', 'ireland', 'japan'];
+  var natDropdown = null;
+  var destDropdown = null;
+
+  function flagImgUrl(iso2) {
+    return iso2 ? 'https://flagcdn.com/w80/' + iso2.toLowerCase() + '.png' : '';
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function getPageSlug() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.has('slug')) return params.get('slug');
+    var path = window.location.pathname;
+    if (path.indexOf('/country/') > -1) {
+      return path.split('/country/')[1].replace(/\/$/, '');
+    }
+    return '';
+  }
+
+  function dropdownCountryHref(slug) {
+    var localPreview = window.location.protocol === 'file:' ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '::1';
+    return localPreview ? 'country.html?slug=' + encodeURIComponent(slug) : '/country/' + encodeURIComponent(slug);
+  }
+
+  function fastestEta(visas){
+    if(!visas||!visas.length) return null;
+    var best=null, bestHrs=999999;
+    visas.forEach(function(v){
+      var val=parseInt(v.processing_time_value,10); if(isNaN(val)) return;
+      var unit=(v.processing_time_unit||'').toLowerCase();
+      var hrs=val;
+      if(unit.indexOf('day')>-1) hrs=val*24;
+      else if(unit.indexOf('week')>-1) hrs=val*24*7;
+      else if(unit.indexOf('month')>-1) hrs=val*24*30;
+      if(hrs<bestHrs){ bestHrs=hrs; best={value:val, unit:v.processing_time_unit, hours:hrs}; }
+    });
+    return best;
+  }
+  
+  function etaLabel(eta){
+    if(!eta) return '';
+    var unit=eta.unit.toLowerCase();
+    if(unit.indexOf('hour')>-1) return eta.value + (eta.value===1?' hr':' hrs');
+    if(unit.indexOf('day')>-1) return eta.value + (eta.value===1?' day':' days');
+    return eta.value + ' ' + eta.unit;
+  }
+
+  function loadDropdownDestinations() {
+    var url = SUPABASE_URL + "/rest/v1/countries?select=*&order=sort_order";
+    var visaUrl = SUPABASE_URL + "/rest/v1/visa_types?active=eq.true&select=slug,country_slug,processing_time_value,processing_time_unit";
+    
+    Promise.all([
+      fetch(url, { headers: { apikey: ANON, authorization: "Bearer " + ANON } }).then(function(r){return r.json();}),
+      fetch(visaUrl, { headers: { apikey: ANON, authorization: "Bearer " + ANON } }).then(function(r){return r.json();})
+    ]).then(function(res) {
+      var allowedSlugs = [
+        'japan', 'spain', 'denmark', 'france', 'germany', 'switzerland', 
+        'china', 'greece', 'azerbaijan', 'south-korea', 'ireland',
+        'thailand', 'turkey', 'indonesia', 'russia', 'vietnam', 'india', 
+        'sri-lanka', 'kenya', 'morocco'
+      ];
+      
+      var allDbCountries = res[0] || [];
+      var dbSlugs = allDbCountries.map(function(c) { return c.slug.toLowerCase(); });
+
+      var countries = allDbCountries.filter(function(c) {
+        return c.active;
+      });
+      
+      var missingSlugs = allowedSlugs.filter(function(slug) {
+        return dbSlugs.indexOf(slug) === -1;
+      });
+      
+      var countryMetadata = {
+        'japan': { name: 'Japan', iso2: 'JP' },
+        'spain': { name: 'Spain', iso2: 'ES' },
+        'denmark': { name: 'Denmark', iso2: 'DK' },
+        'france': { name: 'France', iso2: 'FR' },
+        'germany': { name: 'Germany', iso2: 'DE' },
+        'switzerland': { name: 'Switzerland', iso2: 'CH' },
+        'china': { name: 'China', iso2: 'CN' },
+        'greece': { name: 'Greece', iso2: 'GR' },
+        'azerbaijan': { name: 'Azerbaijan', iso2: 'AZ' },
+        'south-korea': { name: 'South Korea', iso2: 'KR' },
+        'ireland': { name: 'Ireland', iso2: 'IE' },
+        'thailand': { name: 'Thailand', iso2: 'TH' },
+        'turkey': { name: 'Türkiye', iso2: 'TR' },
+        'indonesia': { name: 'Indonesia', iso2: 'ID' },
+        'russia': { name: 'Russia', iso2: 'RU' },
+        'vietnam': { name: 'Vietnam', iso2: 'VN' },
+        'india': { name: 'India', iso2: 'IN' },
+        'sri-lanka': { name: 'Sri Lanka', iso2: 'LK' },
+        'kenya': { name: 'Kenya', iso2: 'KE' },
+        'morocco': { name: 'Morocco', iso2: 'MA' }
+      };
+
+      missingSlugs.forEach(function(slug) {
+        var meta = countryMetadata[slug];
+        if (meta) {
+          countries.push({
+            id: 'mock-' + slug,
+            name: meta.name,
+            slug: slug,
+            iso2: meta.iso2,
+            active: true,
+            eta: null
+          });
+        }
+      });
+      
+      var visas = res[1] || [];
+      
+      countries.forEach(function(c) {
+        var cv = visas.filter(function(v){ return v.country_slug === c.slug; });
+        c.eta = fastestEta(cv);
+      });
+      
+      dbCountries = countries;
+      renderDropdownGrid();
+    }).catch(function(err){ console.error(err); });
+  }
+
+  function renderDropdownGrid() {
+    var grid = document.getElementById('destDropdownGrid');
+    if (!grid) return;
+
+    var filtered = dbCountries;
+    if (!showAllInDropdown) {
+      filtered = dbCountries.filter(function(c) {
+        return eligibleSlugs.indexOf(c.slug) > -1;
+      });
+    }
+
+    if (dropdownSearchQuery) {
+      var q = dropdownSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(function(c) {
+        return (c.name || '').toLowerCase().indexOf(q) > -1;
+      });
+    }
+
+    var html = filtered.map(function(c) {
+      var etaVal = c.eta ? etaLabel(c.eta) : '';
+      if (etaVal.toLowerCase() === 'flexible') etaVal = '';
+      
+      var flagUrl = flagImgUrl(c.iso2);
+      var currentSlug = getPageSlug();
+      var activeClass = currentSlug === c.slug ? ' active' : '';
+
+      return '<a class="dest-dropdown-card' + activeClass + '" href="' + dropdownCountryHref(c.slug) + '" data-slug="' + c.slug + '" data-value="' + c.name + '">' +
+        '<div class="dest-dropdown-card-left">' +
+          '<img src="' + flagUrl + '" alt="">' +
+          '<span class="dest-card-name">' + escHtml(c.name) + '</span>' +
+        '</div>' +
+        '<div class="dest-dropdown-card-right">' +
+          (etaVal ? '<span class="dest-card-eta' + (etaVal.toLowerCase() === 'instant' ? ' instant' : '') + '">' + etaVal + '</span>' : '') +
+          '<span class="dest-card-arrow">&gt;</span>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+
+    grid.innerHTML = html || '<div style="padding: 20px; text-align: center; color: #64748b; font-size: 14px; grid-column: span 3;">No destinations found</div>';
+
+    var cards = grid.querySelectorAll('.dest-dropdown-card');
+    for (var i = 0; i < cards.length; i++) {
+      (function(card) {
+        card.onclick = function(e) {
+          e.preventDefault();
+          var val = card.getAttribute('data-value');
+          var slug = card.getAttribute('data-slug');
+          
+          var destMenu = document.querySelector('#destinationDropdown .header-dropdown-menu');
+          if (destMenu) {
+            destMenu.setAttribute('data-selected-slug', slug);
+            destMenu.setAttribute('data-selected-name', val);
+          }
+          var destText = document.getElementById('selectedDestinationText');
+          if (destText) destText.textContent = val;
+          
+          var activeCard = grid.querySelector('.dest-dropdown-card.active');
+          if (activeCard) activeCard.classList.remove('active');
+          card.classList.add('active');
+
+          closeAllDropdowns();
+          checkAndRedirect();
+        };
+      })(cards[i]);
+    }
+  }
+
+  function closeAllDropdowns() {
+    if (natDropdown && destDropdown) {
+      natDropdown.classList.remove('open');
+      destDropdown.classList.remove('open');
+    }
+  }
+
+  function checkAndRedirect() {
+    var selectedNat = localStorage.getItem('visadoo_nationality');
+    var destMenu = destDropdown ? destDropdown.querySelector('.header-dropdown-menu') : null;
+    var selectedDestSlug = destMenu ? destMenu.getAttribute('data-selected-slug') : null;
+    if (!selectedDestSlug) {
+      selectedDestSlug = getPageSlug();
+    }
+    if (selectedNat && selectedDestSlug) {
+      var encoded = encodeURIComponent(selectedDestSlug);
+      var localPreview = window.location.protocol === 'file:' ||
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname === '::1';
+      
+      var targetUrl = localPreview 
+        ? 'country.html?slug=' + encoded 
+        : '/country/' + encoded;
+      
+      window.location.href = targetUrl;
+    }
+  }
+
+  function initHeaderDropdowns() {
+    if (dropdownsInitialized) return;
+    natDropdown = document.getElementById('nationalityDropdown');
+    destDropdown = document.getElementById('destinationDropdown');
+    if (!natDropdown || !destDropdown) return;
+    dropdownsInitialized = true;
+
+    var natTrigger = natDropdown.querySelector('.header-dropdown-trigger');
+    var destTrigger = destDropdown.querySelector('.header-dropdown-trigger');
+
+    var natSearch = document.getElementById('nationalitySearchInput');
+    var destSearch = document.getElementById('destinationSearchInput');
+
+    // Click handler for Nationality trigger
+    if (natTrigger) {
+      natTrigger.onclick = function(e) {
+        e.stopPropagation();
+        var isOpen = natDropdown.classList.contains('open');
+        closeAllDropdowns();
+        if (!isOpen) {
+          natDropdown.classList.add('open');
+          if (natSearch) {
+            natSearch.value = '';
+            filterOptions(natDropdown, '');
+            setTimeout(function() { natSearch.focus(); }, 100);
+          }
+        }
+      };
+    }
+
+    // Click handler for Destination trigger
+    if (destTrigger) {
+      destTrigger.onclick = function(e) {
+        e.stopPropagation();
+        var isOpen = destDropdown.classList.contains('open');
+        closeAllDropdowns();
+        if (!isOpen) {
+          destDropdown.classList.add('open');
+          if (destSearch) {
+            destSearch.value = '';
+            dropdownSearchQuery = '';
+            renderDropdownGrid();
+            setTimeout(function() { destSearch.focus(); }, 100);
+          }
+        }
+      };
+    }
+
+    document.addEventListener('click', closeAllDropdowns);
+
+    // Search input handlers
+    if (natSearch) {
+      natSearch.onclick = function(e) { e.stopPropagation(); };
+      natSearch.oninput = function() {
+        filterOptions(natDropdown, natSearch.value);
+      };
+    }
+
+    if (destSearch) {
+      destSearch.onclick = function(e) { e.stopPropagation(); };
+      destSearch.oninput = function() {
+        dropdownSearchQuery = destSearch.value;
+        renderDropdownGrid();
+      };
+    }
+
+    var toggleAllBtn = document.getElementById('destToggleAllBtn');
+    if (toggleAllBtn) {
+      toggleAllBtn.onclick = function(e) {
+        e.stopPropagation();
+        showAllInDropdown = !showAllInDropdown;
+        toggleAllBtn.textContent = showAllInDropdown ? 'Featured' : 'All Countries';
+        toggleAllBtn.style.background = showAllInDropdown ? '#ef4444' : '#f1f5f9';
+        toggleAllBtn.style.color = showAllInDropdown ? '#ffffff' : '#1e293b';
+        renderDropdownGrid();
+      };
+    }
+
+    function filterOptions(dropdown, query) {
+      var q = query.toLowerCase().trim();
+      var options = dropdown.querySelectorAll('.dropdown-options-list button');
+      for (var i = 0; i < options.length; i++) {
+        var val = options[i].getAttribute('data-value').toLowerCase();
+        if (val.indexOf(q) > -1) {
+          options[i].style.display = 'flex';
+        } else {
+          options[i].style.display = 'none';
+        }
+      }
+    }
+
+    // Setup options clicks
+    var selectedNat = localStorage.getItem('visadoo_nationality');
+    if (!selectedNat) {
+      selectedNat = 'India';
+      localStorage.setItem('visadoo_nationality', 'India');
+    }
+    updateNationalityUI(selectedNat);
+
+    var natOptions = natDropdown.querySelectorAll('.dropdown-options-list button[data-value]');
+    for (var i = 0; i < natOptions.length; i++) {
+      (function(btn) {
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          var val = btn.getAttribute('data-value');
+          localStorage.setItem('visadoo_nationality', val);
+          updateNationalityUI(val);
+          closeAllDropdowns();
+          document.dispatchEvent(new CustomEvent('nationalitychanged', { detail: val }));
+          checkAndRedirect();
+        };
+      })(natOptions[i]);
+    }
+
+    function updateNationalityUI(val) {
+      var flagUrl = val === 'India' ? 'https://flagcdn.com/w40/in.png' : 'https://flagcdn.com/w40/qa.png';
+      var flagImg = document.getElementById('selectedNationalityFlag');
+      if (flagImg) flagImg.src = flagUrl;
+      var textSpan = document.getElementById('selectedNationalityText');
+      if (textSpan) textSpan.textContent = val;
+    }
+
+    loadDropdownDestinations();
+  }
+
   function apply(s) {
     applyColor(s.brand_color);
     setIcon("icon", s.favicon_url);
@@ -391,8 +745,16 @@
       window.initLanguageSelectorIn(actions);
     }
     
+    initHeaderDropdowns();
+    
     window.__brand = s;
     document.dispatchEvent(new Event("brandloaded"));
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { initHeaderDropdowns(); });
+  } else {
+    initHeaderDropdowns();
   }
 
   fetch(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=*", { headers: { apikey: ANON, authorization: "Bearer " + ANON } })

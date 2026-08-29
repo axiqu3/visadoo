@@ -129,21 +129,28 @@ function pageHtml(events, cats, brandColor){
 }
 
 export default async (request) => {
-  const eventsRes=await fetchJson(SUPABASE_URL+"/rest/v1/events?active=eq.true&order=event_date.asc&select=*");
-  const events=Array.isArray(eventsRes)?eventsRes:[];
-  const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=brand_color,logo_url,favicon_url,app_icon_url,brand_name");
-  const ss0=(Array.isArray(settings)&&settings[0])||{};
-  const brandColor=ss0.brand_color||"";
-  LOGO=ss0.logo_url||""; FAVICON=ss0.favicon_url||""; APPICON=ss0.app_icon_url||""; BNAME=ss0.brand_name||"Visa Doo";
+  try {
+    const eventsRes=await fetchJson(SUPABASE_URL+"/rest/v1/events?active=eq.true&order=event_date.asc&select=*");
+    const events=Array.isArray(eventsRes)?eventsRes:[];
+    const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=brand_color,logo_url,favicon_url,app_icon_url,brand_name");
+    const ss0=(Array.isArray(settings)&&settings[0])||{};
+    const brandColor=ss0.brand_color||"";
+    LOGO=ss0.logo_url||""; FAVICON=ss0.favicon_url||""; APPICON=ss0.app_icon_url||""; BNAME=ss0.brand_name||"Visa Doo";
 
-  // distinct categories in date order of appearance, with the standard ones first
-  const STD=["Music","Sports","Art & Culture","Business & Science"];
-  const present={}; events.forEach(function(e){ if(e.category) present[e.category]=true; });
-  const cats=STD.filter(function(c){return present[c];}).concat(Object.keys(present).filter(function(c){return STD.indexOf(c)===-1;}));
+    // distinct categories in date order of appearance, with the standard ones first
+    const STD=["Music","Sports","Art & Culture","Business & Science"];
+    const present={}; events.forEach(function(e){ if(e.category) present[e.category]=true; });
+    const cats=STD.filter(function(c){return present[c];}).concat(Object.keys(present).filter(function(c){return STD.indexOf(c)===-1;}));
 
-  return new Response(pageHtml(events, cats, brandColor), {
-    headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
-  });
+    return new Response(pageHtml(events, cats, brandColor), {
+      headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
+    });
+  } catch (err) {
+    console.error("Events Edge Function Error:", err);
+    return new Response(pageHtml([], [], ""), {
+      headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
+    });
+  }
 };
 
 export const config = { path: ["/events", "/events.html"] };

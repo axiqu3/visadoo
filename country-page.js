@@ -35,12 +35,24 @@
     return text.slice(0,cut>limit*.65?cut:limit).replace(/[.,;:\s]+$/,'')+'…';
   }
 
-  function getSlug(){
+  function resolveSlug(){
     var query=new URLSearchParams(window.location.search).get('slug');
-    if(query) return query;
+    if(query) return Promise.resolve(query);
     var parts=window.location.pathname.split('/').filter(Boolean);
     var countryIndex=parts.indexOf('country');
-    return countryIndex>-1&&parts[countryIndex+1]?decodeURIComponent(parts[countryIndex+1]):'';
+    if(countryIndex>-1&&parts[countryIndex+1]) return Promise.resolve(decodeURIComponent(parts[countryIndex+1]));
+    
+    var visaIndex=parts.indexOf('visa');
+    if(visaIndex>-1&&parts[visaIndex+1]){
+      var visaSlug=decodeURIComponent(parts[visaIndex+1]);
+      if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY){
+        return Promise.resolve('uae');
+      }
+      return fetchJson('/rest/v1/visa_types?slug=eq.'+encodeURIComponent(visaSlug)+'&select=country_slug').then(function(res){
+        return res&&res[0]&&res[0].country_slug || 'uae';
+      }).catch(function(){ return 'uae'; });
+    }
+    return Promise.resolve('uae');
   }
 
   function fetchJson(path){
@@ -285,7 +297,7 @@
         ' data-category="'+esc(visa.category||countryName+' visa')+'"'+
         ' data-stay="'+esc(stayText(visa)||'See visa details')+'"'+
         ' data-entry="'+esc((visa.sub === 'Single Entry' ? 'Single / Multiple' : visa.sub)||visa.category||'See visa details')+'"'+
-        ' data-processing="'+esc(processingText(visa)||'To be confirmed')+'"'+
+        ' data-processing="'+esc((countryName==='Denmark'||countryName==='Spain'||countryName==='South Korea'||countryName==='Switzerland')?'5-20 working days':(countryName==='Ireland'?'10-45 Days':(processingText(visa)||'To be confirmed')))+'"'+
         ' data-raw-price="'+(priceNumber(visa)||0)+'"'+
         ' data-price="'+esc(money(priceNumber(visa)))+'" data-uae-choice>'+
         '<div class="uae-travel-card-header">'+
@@ -309,7 +321,7 @@
           '</div>'+
           '<div class="uae-travel-spec-item">'+
             '<small>PROCESSING TIME</small>'+
-            '<b>'+esc(processingText(visa)||'1-2 days')+'</b>'+
+            '<b>'+esc((countryName==='Denmark'||countryName==='Spain'||countryName==='South Korea'||countryName==='Switzerland')?'5-20 working days':(countryName==='Ireland'?'10-45 Days':(processingText(visa)||'1-2 days')))+'</b>'+
           '</div>'+
         '</div>'+
         '<div class="uae-travel-card-details-expand">'+
@@ -340,7 +352,7 @@
           '</div>' +
           '<div class="uae-travel-options-list">'+choices+'</div>'+
         '</div>'+
-        uaeRequirementsSection()+
+        uaeRequirementsSection(countryName)+
         uaeProcessSection()+
       '</div>'+
       '<aside class="uae-picker-summary uae-travel-column-right" aria-live="polite" aria-atomic="true">'+
@@ -621,47 +633,193 @@
     '</div>';
   }
 
-  function uaeRequirementsSection(){
+  function uaeRequirementsSection(countryName){
+    if(countryName === 'Denmark' || countryName === 'Spain' || countryName === 'South Korea' || countryName === 'Switzerland' || countryName === 'Ireland' || countryName === 'France' || countryName === 'Germany' || countryName === 'Greece' || countryName === 'Azerbaijan'){
+      var reqs = [];
+      var details = [];
+      var detailsHeader = '';
+      if(countryName === 'South Korea') {
+        reqs = [
+          ['Passport','Passport valid.'],
+          ['Qatar ID','Qatar ID (valid more than 3 months from the entry date of Korea).'],
+          ['Passport size photo','Passport size photo (White background).'],
+          ['Employment letter','Recent employment letter from your employer.'],
+          ['Residency Permit Certificate','Certificate which is mentioned your Residency Permit details, including first entry (issuance date) and the expiry date; Apply for \'To Whom It May Concern\' certificate through online Metrash and print.'],
+          ['Company Establishment & CR Cards','Company’s establishment card (Front and back side printed in one page) and English commercial registration that valid more than 3 months from entry date of Korea.'],
+          ['3 Months Bank Statement','Original bank statement showing 3 months salaries.'],
+          ['Travel Record Copy','Copy of previous 5 years of travel record such as exit-entry stamp or visa page on the passport, if you have traveled and applicable. The last entry date to Qatar record must be included.']
+        ];
+        detailsHeader = 'Required details';
+        details = [
+          'Qatar residence Address',
+          'Phone number',
+          'Email address',
+          'Home country address',
+          'Highest education school name',
+          'School address',
+          'Employer name (Name of the company)',
+          'Company address',
+          'Company phone number',
+          'Date of arrival in Korea',
+          'Date of return',
+          'Your last 5 year travel history (purpose of travel, period of stay)',
+          'Number of children you have',
+          'Marital status (including Spouse name, DOB, nationality, contact number, and residence address if married)'
+        ];
+      } else if(countryName === 'Ireland') {
+        reqs = [
+          ['Passport','Passport (6 Months validity required).'],
+          ['Qatar ID','Qatar ID (3 months validity required from the date of return).'],
+          ['Passport size Photo','Recently taken passport-size photo with a white background.'],
+          ['Travel records photocopy','Photocopy of your bio page, all visa & immigration stamps for all travel.'],
+          ['Last 6 months bank statement','Original bank statement showing latest 6 months transaction history (Sealed and signed).'],
+          ['Employment letter & Salary certificate','Recent employment letter and salary certificate from your employer.'],
+          ['Application form','We will provide a dummy application form.'],
+          ['Hotel booking','Hotel booking will be provided by us.'],
+          ['Flight ticket','We will provide a dummy flight ticket.'],
+          ['Appointment','Visa appointment will be booked and provided by us.']
+        ];
+        detailsHeader = 'Required details';
+        details = [
+          'Mobile number',
+          'Email address',
+          'Arrival date and return date',
+          'Residence address in Qatar',
+          'Length of stay in Qatar',
+          'Employer name (company name)',
+          'Employment joined date',
+          'Position',
+          'Employer address (company address)',
+          'Employer phone number',
+          'Employer mail id',
+          'Wife’s surname',
+          'Wife’s Given name',
+          'Wife’s date of birth',
+          'Kid’s Surname',
+          'Kid’s Given name',
+          'Kid’s Gender'
+        ];
+      } else if(countryName === 'Azerbaijan') {
+        reqs = [
+          ['Passport','Passport valid for a minimum of 6 months.'],
+          ['Passport size photo','Recent passport-size photo with a white background.'],
+          ['Qatar ID','Clear copy of your valid Qatar ID.']
+        ];
+        detailsHeader = 'Required details for Azerbaijan';
+        details = [
+          'Travel Date',
+          'Return Date',
+          'Marital Status',
+          'Residence Address',
+          'Pincode',
+          'Phone Number',
+          'Mail ID',
+          'Current Occupation'
+        ];
+      } else if(countryName === 'France' || countryName === 'Germany' || countryName === 'Greece') {
+        reqs = [
+          ['Passport','Passport valid for a minimum of 6 months.'],
+          ['Passport size photo','Recent passport-size photo with a white background.'],
+          ['Last 6 months bank statement','Provide your latest 6 months bank statement.'],
+          ['Qatar ID','Clear copy of your valid Qatar ID.'],
+          ['Employment letter','Recent employment letter from your employer.'],
+          ['Previous Schengen visa copy','Upload a previous Schengen visa copy only if you have one.']
+        ];
+        detailsHeader = 'Required details for Schengen';
+        details = [
+          'Travel Date',
+          'Return Date',
+          'Arrival Airport',
+          'Departure Airport',
+          'Marital Status',
+          'Residence Address',
+          'Pincode',
+          'Phone Number',
+          'Mail ID',
+          'Employer / School Name',
+          'Employer / School Address',
+          'Job Position',
+          'Employer / School Number',
+          'Employer / School Mail ID'
+        ];
+      } else {
+        reqs = [
+          ['Passport','Passport valid for a minimum of 6 months.'],
+          ['Passport size photo','Recent passport-size photo with a white background.'],
+          ['Last 6 months bank statement','Provide your latest 6 months bank statement.'],
+          ['Qatar ID','Clear copy of your valid Qatar ID.'],
+          ['Employment letter','Recent employment letter from your employer.'],
+          ['Previous Schengen visa copy','Upload a previous Schengen visa copy only if you have one.']
+        ];
+        detailsHeader = 'Required details for Schengen';
+        details = [
+          'Residence address',
+          'Mobile number',
+          'Email address',
+          'Current Occupation',
+          'Employer name',
+          'Employer Address',
+          'Employer phone number',
+          'Date of arrival',
+          'Date of return'
+        ];
+      }
+      var processingTime = (countryName === 'Ireland') ? '10–45 Days' : '5–20 working days';
+      return '<div class="uae-travel-section" id="requirements">'+
+        '<div class="uae-travel-section-header"><h2>Tourist visa requirements</h2><p>Prepare these documents before starting your ' + esc(countryName) + ' visa application.</p></div>'+ 
+        '<div class="denmark-processing-note"><strong>Processing time</strong><span>' + esc(processingTime) + '</span></div>'+ 
+        '<div class="uae-travel-accordions-group">'+reqs.map(function(item,index){
+          return '<details class="uae-travel-accordion"'+(index===0?' open':'')+'>'+ 
+            '<summary class="uae-travel-accordion-summary"><span>'+esc(item[0])+'</span><i class="uae-accordion-icon" aria-hidden="true"></i></summary>'+ 
+            '<div class="uae-travel-accordion-body"><div class="uae-req-details-content"><div class="uae-req-details-text"><p>'+esc(item[1])+'</p></div></div></div>'+ 
+          '</details>';
+        }).join('')+'</div>'+ 
+        '<div class="schengen-details-note">'+
+          '<h3>'+esc(detailsHeader)+'</h3>'+
+          '<ul>'+details.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul>'+
+        '</div>'+
+      '</div>';
+    }
     return '<div class="uae-travel-section" id="requirements">'+
       '<div class="uae-travel-section-header">'+
-        '<h2>Visa requirements</h2>'+
+        '<h2>Visa requirements</h2>'+ 
       '</div>' +
       '<div class="uae-travel-accordions-group">'+
-        '<details class="uae-travel-accordion" open>'+
-          '<summary class="uae-travel-accordion-summary"><span>Passport photo</span><i class="uae-accordion-icon" aria-hidden="true"></i></summary>'+
+        '<details class="uae-travel-accordion" open>'+ 
+          '<summary class="uae-travel-accordion-summary"><span>Passport photo</span><i class="uae-accordion-icon" aria-hidden="true"></i></summary>'+ 
           '<div class="uae-travel-accordion-body">'+
             '<div class="uae-req-details-content">'+
               '<div class="uae-req-details-text">'+
-                '<p>A clear color copy of your passport\'s front and back pages. All four corners must be visible, and the text must be readable.</p>'+
+                '<p>A clear color copy of your passport\'s front and back pages. All four corners must be visible, and the text must be readable.</p>'+ 
                 '<div class="uae-req-box-stat">'+
-                  '<strong>07 MIN</strong>'+
-                  '<span data-translate-key="avgTime">AVG. TIME TAKEN TO APPLY</span>'+
-                '</div>'+
-              '</div>'+
+                  '<strong>07 MIN</strong>'+ 
+                  '<span data-translate-key="avgTime">AVG. TIME TAKEN TO APPLY</span>'+ 
+                '</div>'+ 
+              '</div>'+ 
               '<div class="uae-req-details-image">'+
                 '<img src="/assets/uae-documents/passport-front-back-bw.jpg" alt="Passport front and back example" loading="lazy">'+
-              '</div>'+
-            '</div>'+
-          '</div>'+
-        '</details>'+
+              '</div>'+ 
+            '</div>'+ 
+          '</div>'+ 
+        '</details>'+ 
         '<details class="uae-travel-accordion">'+
-          '<summary class="uae-travel-accordion-summary"><span>Personal photo</span><i class="uae-accordion-icon" aria-hidden="true"></i></summary>'+
+          '<summary class="uae-travel-accordion-summary"><span>Personal photo</span><i class="uae-accordion-icon" aria-hidden="true"></i></summary>'+ 
           '<div class="uae-travel-accordion-body">'+
             '<div class="uae-req-details-content">'+
               '<div class="uae-req-details-text">'+
-                '<p>A recent color photograph taken against a plain light/white background. The face must be clearly visible and front-facing.</p>'+
+                '<p>A recent color photograph taken against a plain light/white background. The face must be clearly visible and front-facing.</p>'+ 
                 '<div class="uae-req-box-stat">'+
-                  '<strong>03 MIN</strong>'+
-                  '<span data-translate-key="fastestTime">FASTEST TIME TAKEN TO APPLY</span>'+
-                '</div>'+
-              '</div>'+
+                  '<strong>03 MIN</strong>'+ 
+                  '<span data-translate-key="fastestTime">FASTEST TIME TAKEN TO APPLY</span>'+ 
+                '</div>'+ 
+              '</div>'+ 
               '<div class="uae-req-details-image">'+
                 '<img src="/assets/uae-documents/personal-photo-bw.jpg" alt="Personal photo example" loading="lazy">'+
-              '</div>'+
-            '</div>'+
-          '</div>'+
-        '</details>'+
-      '</div>'+
+              '</div>'+ 
+            '</div>'+ 
+          '</div>'+ 
+        '</details>'+ 
+      '</div>'+ 
     '</div>';
   }
 
@@ -714,7 +872,7 @@
     var priceTextStr = fromPrice ? (currency === 'INR' ? ('₹' + fromPrice.toLocaleString('en-IN')) : ('AED ' + fromPrice)) : '₹3,200';
     var daysTextStr = fastest ? (fastest + ' business days') : '5 business days';
 
-    var showAttractions = country.slug !== 'japan';
+    var showAttractions = country.slug !== 'japan' && country.slug !== 'denmark' && country.slug !== 'spain' && country.slug !== 'south-korea' && country.slug !== 'switzerland' && country.slug !== 'ireland' && country.slug !== 'france' && country.slug !== 'germany' && country.slug !== 'greece' && country.slug !== 'azerbaijan';
     var attractionsBtn = showAttractions ? 
       ('<button class="uae-attractions-toggle" aria-expanded="false" type="button">' +
         '<span>' + esc(country.name) + ' Tourist Attractions</span>' +
@@ -829,7 +987,7 @@
       { name: 'Egypt', slug: 'egypt', iso2: 'EG' }
     ];
 
-    var currentSlug = getSlug() || 'uae';
+    var currentSlug = slug || 'uae';
     list = list.filter(function(c){ return c.slug !== currentSlug; }).slice(0, 6);
 
     var tags = {
@@ -845,8 +1003,12 @@
       'egypt-2': '1-2 Days',
       'france': '10-15 Days',
       'germany': '10-15 Days',
+      'greece': '10-15 Days',
       'italy': '10-15 Days',
-      'spain': '10-15 Days'
+      'spain': '5-20 Days',
+      'south-korea': '5-20 Days',
+      'switzerland': '5-20 Days',
+      'ireland': '10-45 Days'
     };
 
     var itemsHtml = list.map(function(c){
@@ -1108,13 +1270,43 @@
   }
 
   function renderCountry(country,visas,reviews,otherCountries){
+    if(country.slug==='spain') country.name='Spain';
+    if(country.slug==='denmark') country.name='Denmark';
+    if(country.slug==='japan') country.name='Japan';
+    if(country.slug==='south-korea') country.name='South Korea';
+    if(country.slug==='switzerland') country.name='Switzerland';
+    if(country.slug==='ireland') country.name='Ireland';
+    if(country.slug==='france') country.name='France';
+    if(country.slug==='germany') country.name='Germany';
+    if(country.slug==='greece') country.name='Greece';
+    if(country.slug==='azerbaijan') country.name='Azerbaijan';
+    if(country.slug==='thailand') country.name='Thailand';
+    if(country.slug==='turkey') country.name='Türkiye';
+    if(country.slug==='indonesia') country.name='Indonesia';
+    if(country.slug==='russia') country.name='Russia';
+    if(country.slug==='vietnam') country.name='Vietnam';
+    if(country.slug==='india') country.name='India';
+    if(country.slug==='sri-lanka') country.name='Sri Lanka';
+    if(country.slug==='kenya') country.name='Kenya';
+    if(country.slug==='morocco') country.name='Morocco';
+    if(country.slug==='china') country.name='China';
     window.currentCountryName = country.name;
     window.currentCountrySlug = country.slug;
+    try { window.localStorage.setItem('visadoo-last-country', country.slug); } catch(e){}
     reviews = reviews || window.UAE_REVIEWS || FALLBACK_REVIEWS;
     var image=photos[country.slug+'-banner']||country.image_url||photos[country.slug]||country.social_image||'';
+    if (!image) {
+      var fallbacks = {
+        'thailand': 'https://images.unsplash.com/photo-1528181304800-2f19024b321d?auto=format&fit=crop&w=1200&q=84',
+        'indonesia': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=84',
+        'russia': 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?auto=format&fit=crop&w=1200&q=84',
+        'kenya': 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=84'
+      };
+      image = fallbacks[country.slug.toLowerCase()] || '';
+    }
     var iso=String(country.iso2||'').toUpperCase();
     var isUae=iso==='AE'||country.slug==='uae'||country.slug==='united-arab-emirates';
-    var isUaeStyle=isUae||country.slug==='japan';
+    var isUaeStyle=isUae||country.slug==='japan'||country.slug==='denmark'||country.slug==='spain'||country.slug==='south-korea'||country.slug==='switzerland'||country.slug==='ireland'||country.slug==='france'||country.slug==='germany'||country.slug==='greece'||country.slug==='azerbaijan';
     var isEnhanced=isUaeStyle||iso==='US'||iso==='GB'||iso==='UK'||country.slug==='united-states'||country.slug==='united-kingdom';
     var guideCode=iso==='UK'?'GB':iso;
     if(country.slug==='united-states') guideCode='US';
@@ -1137,14 +1329,14 @@
     var meta=document.querySelector('meta[name="description"]');
     if(meta) meta.content=country.seo_description||summary;
 
-    // Apply uae-country-page class when viewing UAE or Japan style pages
+    // Apply premium country-page class when viewing UAE, Japan or Denmark style pages
     document.body.classList.toggle('uae-country-page',isUaeStyle);
     document.body.setAttribute('data-country-code',iso);
 
     if(isUaeStyle) {
-      // UAE/Japan Travel & Visa Information Layout
+      // UAE/Japan/Denmark Travel & Visa Information Layout
       var visaContent = uaeVisaSelector(visas, country.name, country.summary);
-      var showAttractions = country.slug !== 'japan';
+      var showAttractions = country.slug !== 'japan' && country.slug !== 'denmark' && country.slug !== 'spain' && country.slug !== 'south-korea' && country.slug !== 'switzerland' && country.slug !== 'ireland' && country.slug !== 'france' && country.slug !== 'germany' && country.slug !== 'greece' && country.slug !== 'azerbaijan';
       root.innerHTML =
         uaeHeroBanner(country, image, visas) +
         '<div class="uae-travel-body-section">' +
@@ -1188,7 +1380,7 @@
             '<div>'+CHECK+'<span><b>Extra documents, if needed</b></span></div>'+
           '</div>'+
         '</div>';
-      var heroStyle=image?' style="--country-hero-image:url(&quot;'+esc(image)+'&quot;)"':'';
+      var heroStyle=image?" style=\"--country-hero-image:url('" + esc(image) + "')\"":"";
       var heroMarkup=isEnhanced?
         '<section class="country-detail-hero uae-hero-giant"'+heroStyle+'><div class="container country-detail-grid">'+
           '<div class="country-detail-copy uae-giant-copy">'+
@@ -1252,6 +1444,38 @@
   }
 
   var FALLBACK_COUNTRIES = {
+    spain: {
+      name: 'Spain',
+      slug: 'spain',
+      iso2: 'ES',
+      seo_title: 'Spain Schengen Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a Spain Schengen tourist visa with a simple guided application.',
+      summary: 'Apply for a Spain Schengen short-stay visa with a simple guided form and document upload.'
+    },
+    'south-korea': {
+      name: 'South Korea',
+      slug: 'south-korea',
+      iso2: 'KR',
+      seo_title: 'South Korea Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a South Korea tourist visa with a simple guided application.',
+      summary: 'Apply for a South Korea tourist visa with a simple guided form and document upload.'
+    },
+    switzerland: {
+      name: 'Switzerland',
+      slug: 'switzerland',
+      iso2: 'CH',
+      seo_title: 'Switzerland Schengen Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a Switzerland Schengen tourist visa with a simple guided application.',
+      summary: 'Apply for a Switzerland Schengen short-stay visa with a simple guided form and PDF generation.'
+    },
+    ireland: {
+      name: 'Ireland',
+      slug: 'ireland',
+      iso2: 'IE',
+      seo_title: 'Ireland Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for an Ireland tourist visa online with simple guided steps.',
+      summary: 'Explore Dublin, Galway, and the Emerald Isle with simple online visa application.'
+    },
     uae: {
       name: 'United Arab Emirates',
       slug: 'uae',
@@ -1259,6 +1483,70 @@
       seo_title: 'UAE Visas — Apply Online | Visa Doo',
       seo_description: 'Apply for 30-day and 60-day UAE tourist visas online with quick processing and transparent pricing.',
       summary: 'Explore Dubai, Abu Dhabi, and all seven Emirates with simple online visa processing.'
+    },
+    france: {
+      name: 'France',
+      slug: 'france',
+      iso2: 'FR',
+      seo_title: 'France Schengen Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a France Schengen tourist visa with a simple guided application.',
+      summary: 'Apply for a France Schengen short-stay visa with a simple guided form and document upload.'
+    },
+    germany: {
+      name: 'Germany',
+      slug: 'germany',
+      iso2: 'DE',
+      seo_title: 'Germany Schengen Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a Germany Schengen tourist visa with a simple guided application.',
+      summary: 'Apply for a Germany Schengen short-stay visa with a simple guided form and document upload.'
+    },
+    greece: {
+      name: 'Greece',
+      slug: 'greece',
+      iso2: 'GR',
+      seo_title: 'Greece Schengen Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a Greece Schengen tourist visa with a simple guided application.',
+      summary: 'Apply for a Greece Schengen short-stay visa with a simple guided form and document upload.'
+    },
+    azerbaijan: {
+      name: 'Azerbaijan',
+      slug: 'azerbaijan',
+      iso2: 'AZ',
+      seo_title: 'Azerbaijan eVisa — Apply Online | Visa Doo',
+      seo_description: 'Apply for an Azerbaijan tourist eVisa with a simple guided application.',
+      summary: 'Apply for an Azerbaijan tourist eVisa with a simple guided form and document upload.'
+    },
+    thailand: {
+      name: 'Thailand',
+      slug: 'thailand',
+      iso2: 'TH',
+      seo_title: 'Thailand Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a Thailand tourist visa with a simple guided application.',
+      summary: 'Apply for a Thailand tourist visa with a simple guided form and document upload.'
+    },
+    indonesia: {
+      name: 'Indonesia',
+      slug: 'indonesia',
+      iso2: 'ID',
+      seo_title: 'Indonesia Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for an Indonesia tourist visa with a simple guided application.',
+      summary: 'Apply for an Indonesia tourist visa with a simple guided form and document upload.'
+    },
+    russia: {
+      name: 'Russia',
+      slug: 'russia',
+      iso2: 'RU',
+      seo_title: 'Russia Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a Russia tourist visa with a simple guided application.',
+      summary: 'Apply for a Russia tourist visa with a simple guided form and document upload.'
+    },
+    kenya: {
+      name: 'Kenya',
+      slug: 'kenya',
+      iso2: 'KE',
+      seo_title: 'Kenya Visa — Apply Online | Visa Doo',
+      seo_description: 'Apply for a Kenya tourist visa with a simple guided application.',
+      summary: 'Apply for a Kenya tourist visa with a simple guided form and document upload.'
     }
   };
 
@@ -1298,6 +1586,58 @@
         processing_time_unit: 'days'
       }
     ],
+    spain: [
+      {
+        slug: 'spain-schengen-tourist',
+        name: 'Spain Schengen Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Short Stay',
+        price_aed: 6500,
+        processing_time_value: 15,
+        processing_time_unit: 'days'
+      }
+    ],
+    'south-korea': [
+      {
+        slug: 'south-korea-tourist-visa',
+        name: 'South Korea Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Short Stay',
+        price_aed: 6500,
+        processing_time_value: 20,
+        processing_time_unit: 'days'
+      }
+    ],
+    switzerland: [
+      {
+        slug: 'switzerland-schengen-tourist',
+        name: 'Switzerland Schengen Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Short Stay',
+        price_aed: 6500,
+        processing_time_value: 15,
+        processing_time_unit: 'days'
+      }
+    ],
+    ireland: [
+      {
+        slug: 'ireland-tourist-visa',
+        name: 'Ireland Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Short Stay',
+        price_aed: 6500,
+        processing_time_value: 15,
+        processing_time_unit: 'days'
+      }
+    ],
     japan: [
       {
         slug: 'japan-tourist-visa',
@@ -1332,6 +1672,110 @@
         processing_time_value: 5,
         processing_time_unit: 'days'
       }
+    ],
+    france: [
+      {
+        slug: 'france-schengen-tourist',
+        name: 'France Schengen Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Short Stay',
+        price_aed: 6500,
+        processing_time_value: 15,
+        processing_time_unit: 'days'
+      }
+    ],
+    germany: [
+      {
+        slug: 'germany-schengen-tourist',
+        name: 'Germany Schengen Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Short Stay',
+        price_aed: 6500,
+        processing_time_value: 15,
+        processing_time_unit: 'days'
+      }
+    ],
+    greece: [
+      {
+        slug: 'greece-schengen-tourist',
+        name: 'Greece Schengen Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Short Stay',
+        price_aed: 6500,
+        processing_time_value: 15,
+        processing_time_unit: 'days'
+      }
+    ],
+    azerbaijan: [
+      {
+        slug: 'azerbaijan-tourist-visa',
+        name: 'Azerbaijan Tourist eVisa',
+        category: 'Tourist',
+        stay_period_value: 30,
+        stay_period_unit: 'days',
+        sub: 'Single Entry',
+        price_aed: 3500,
+        processing_time_value: 3,
+        processing_time_unit: 'days'
+      }
+    ],
+    thailand: [
+      {
+        slug: 'thailand-tourist-visa',
+        name: 'Thailand Tourist Visa',
+        category: 'Tourist',
+        stay_period_value: 60,
+        stay_period_unit: 'days',
+        sub: 'Single Entry',
+        price_aed: 4000,
+        processing_time_value: 3,
+        processing_time_unit: 'days'
+      }
+    ],
+    indonesia: [
+      {
+        slug: 'indonesia-tourist-visa',
+        name: 'Indonesia Tourist eVisa',
+        category: 'Tourist',
+        stay_period_value: 30,
+        stay_period_unit: 'days',
+        sub: 'Single Entry',
+        price_aed: 5000,
+        processing_time_value: 1,
+        processing_time_unit: 'days'
+      }
+    ],
+    russia: [
+      {
+        slug: 'russia-tourist-visa',
+        name: 'Russia Tourist eVisa',
+        category: 'Tourist',
+        stay_period_value: 16,
+        stay_period_unit: 'days',
+        sub: 'Single Entry',
+        price_aed: 6000,
+        processing_time_value: 4,
+        processing_time_unit: 'days'
+      }
+    ],
+    kenya: [
+      {
+        slug: 'kenya-tourist-visa',
+        name: 'Kenya Tourist eVisa',
+        category: 'Tourist',
+        stay_period_value: 90,
+        stay_period_unit: 'days',
+        sub: 'Single Entry',
+        price_aed: 4500,
+        processing_time_value: 3,
+        processing_time_unit: 'days'
+      }
     ]
   };
 
@@ -1341,40 +1785,53 @@
     { name: 'Mohamed Al-Ansari', location: 'Dubai', rating: 5, body: 'Seamless experience. Applied online and received the electronic visa directly in my email. Very professional.' }
   ];
 
-  var slug = getSlug() || 'uae';
+  var slug = 'uae';
 
-  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY){
-    var fallbackC = FALLBACK_COUNTRIES[slug] || FALLBACK_COUNTRIES.uae;
-    var fallbackV = FALLBACK_VISAS[slug] || FALLBACK_VISAS.uae;
-    window.UAE_REVIEWS = FALLBACK_REVIEWS;
-    renderCountry(fallbackC, fallbackV, FALLBACK_REVIEWS);
-    return;
-  }
+  resolveSlug().then(function(resolvedSlug){
+    slug = resolvedSlug;
+    var visaQuery = '';
+    var parts = window.location.pathname.split('/').filter(Boolean);
+    if(parts.indexOf('visa') > -1 && parts[parts.indexOf('visa') + 1]) {
+      visaQuery = decodeURIComponent(parts[parts.indexOf('visa') + 1]);
+      // Set the query parameter so country-experience/application knows to select this visa
+      var newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('visa', visaQuery);
+      window.history.replaceState({}, '', newUrl.pathname + newUrl.search + newUrl.hash);
+    }
 
-  Promise.all([
-    fetchJson('/rest/v1/countries?slug=eq.'+encodeURIComponent(slug)+'&active=eq.true&select=*'),
-    fetchJson('/rest/v1/visa_types?country_slug=eq.'+encodeURIComponent(slug)+'&active=eq.true&order=sort_order&select=*'),
-    fetchJson('/rest/v1/reviews?active=eq.true&order=sort_order&select=*').catch(function(){ return []; }),
-    fetchJson('/rest/v1/countries?active=eq.true&slug=neq.'+encodeURIComponent(slug)+'&limit=8').catch(function(){ return []; })
-  ]).then(function(data){
-    var c = (data[0] && data[0].length) ? data[0][0] : (FALLBACK_COUNTRIES[slug] || FALLBACK_COUNTRIES.uae);
-    var v = (data[1] && data[1].length) ? data[1] : (FALLBACK_VISAS[slug] || FALLBACK_VISAS.uae);
-    var r = (data[2] && data[2].length) ? data[2] : FALLBACK_REVIEWS;
-    var others = (data[3] && data[3].length) ? data[3] : [];
-    window.UAE_REVIEWS = r;
-    if(!c){
-      renderError('Destination not found','This destination is not available right now.');
+    if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY){
+      var fallbackC = FALLBACK_COUNTRIES[slug] || FALLBACK_COUNTRIES.uae;
+      var fallbackV = FALLBACK_VISAS[slug] || FALLBACK_VISAS.uae;
+      window.UAE_REVIEWS = FALLBACK_REVIEWS;
+      renderCountry(fallbackC, fallbackV, FALLBACK_REVIEWS);
       return;
     }
-    renderCountry(c, v, r, others);
-  }).catch(function(){
-    var fallbackC = FALLBACK_COUNTRIES[slug] || FALLBACK_COUNTRIES.uae;
-    var fallbackV = FALLBACK_VISAS[slug] || FALLBACK_VISAS.uae;
-    window.UAE_REVIEWS = FALLBACK_REVIEWS;
-    if(fallbackC){
-      renderCountry(fallbackC, fallbackV, FALLBACK_REVIEWS, []);
-    } else {
-      renderError('Could not load this destination','Please check your connection and try again.');
-    }
+
+    Promise.all([
+      fetchJson('/rest/v1/countries?slug=eq.'+encodeURIComponent(slug)+'&active=eq.true&select=*'),
+      fetchJson('/rest/v1/visa_types?country_slug=eq.'+encodeURIComponent(slug)+'&active=eq.true&order=sort_order&select=*'),
+      fetchJson('/rest/v1/reviews?active=eq.true&order=sort_order&select=*').catch(function(){ return []; }),
+      fetchJson('/rest/v1/countries?active=eq.true&slug=neq.'+encodeURIComponent(slug)+'&limit=8').catch(function(){ return []; })
+    ]).then(function(data){
+      var c = (data[0] && data[0].length) ? data[0][0] : (FALLBACK_COUNTRIES[slug] || FALLBACK_COUNTRIES.uae);
+      var v = (data[1] && data[1].length) ? data[1] : (FALLBACK_VISAS[slug] || FALLBACK_VISAS.uae);
+      var r = (data[2] && data[2].length) ? data[2] : FALLBACK_REVIEWS;
+      var others = (data[3] && data[3].length) ? data[3] : [];
+      window.UAE_REVIEWS = r;
+      if(!c){
+        renderError('Destination not found','This destination is not available right now.');
+        return;
+      }
+      renderCountry(c, v, r, others);
+    }).catch(function(){
+      var fallbackC = FALLBACK_COUNTRIES[slug] || FALLBACK_COUNTRIES.uae;
+      var fallbackV = FALLBACK_VISAS[slug] || FALLBACK_VISAS.uae;
+      window.UAE_REVIEWS = FALLBACK_REVIEWS;
+      if(fallbackC){
+        renderCountry(fallbackC, fallbackV, FALLBACK_REVIEWS, []);
+      } else {
+        renderError('Could not load this destination','Please check your connection and try again.');
+      }
+    });
   });
 })();

@@ -28,6 +28,15 @@
     var places=placeMap[slug]||[];
     var existing=box.querySelector('img');
     var initialSrc=photoMap[slug+'-banner']||photoMap[slug]||box.getAttribute('data-initial-image')||(existing&&existing.getAttribute('src'))||'';
+    if (!initialSrc) {
+      var fallbacks = {
+        'thailand': 'https://images.unsplash.com/photo-1528181304800-2f19024b321d?auto=format&fit=crop&w=1200&q=84',
+        'indonesia': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=84',
+        'russia': 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?auto=format&fit=crop&w=1200&q=84',
+        'kenya': 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=84'
+      };
+      initialSrc = fallbacks[slug.toLowerCase()] || '';
+    }
     if(/flagcdn\.com|flagsapi\.com|\/flags?\//i.test(initialSrc)) initialSrc='';
     var hero=box.closest?box.closest('.country-detail-hero'):null;
     if(hero&&initialSrc){

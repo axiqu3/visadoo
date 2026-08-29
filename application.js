@@ -101,6 +101,18 @@
         var exists = VISAS.some(function(v){ return v.id === jv.id; });
         if(!exists) VISAS.push(jv);
       });
+      var fallbackSpain={id:'spain-schengen-tourist',name:'Spain Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Spain.',features:['Up to 90 days','Schengen visa','Tourist'],active:true,country_slug:'spain',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='spain';})) VISAS.push(fallbackSpain);
+      var fallbackSouthKorea={id:'south-korea-tourist-visa',name:'South Korea Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay tourist visa for South Korea.',features:['Up to 90 days','Tourist visa','South Korea'],active:true,country_slug:'south-korea',category:'Tourist',prices:{INR:6500},etaValue:20,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='south-korea';})) VISAS.push(fallbackSouthKorea);
+       var fallbackSwitzerland={id:'switzerland-schengen-tourist',name:'Switzerland Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Switzerland.',features:['Up to 90 days','Schengen visa','Switzerland'],active:true,country_slug:'switzerland',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='switzerland';})) VISAS.push(fallbackSwitzerland);
+      var fallbackIreland={id:'ireland-tourist-visa',name:'Ireland Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay tourist visa for Ireland.',features:['Up to 90 days','Tourist visa','Ireland'],active:true,country_slug:'ireland',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='ireland';})) VISAS.push(fallbackIreland);
+      var fallbackGreece={id:'greece-schengen-tourist',name:'Greece Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Greece.',features:['Up to 90 days','Schengen visa','Greece'],active:true,country_slug:'greece',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='greece';})) VISAS.push(fallbackGreece);
+      var fallbackAzerbaijan={id:'azerbaijan-tourist-visa',name:'Azerbaijan Tourist Visa',sub:'Tourist Visa',price:6500,days:30,popular:true,blurb:'Tourist visa for Azerbaijan.',features:['Tourist visa','Azerbaijan'],active:true,country_slug:'azerbaijan',category:'Tourist',prices:{INR:6500},etaValue:10,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='azerbaijan';})) VISAS.push(fallbackAzerbaijan);
       return VISAS;
     });
   }
@@ -216,7 +228,15 @@
       finished=true;
       clearTimeout(timer);
       if(useFallback) clearStoredAuthSession();
-      location.replace(location.pathname);
+      var lastCountry = '';
+      try { lastCountry = window.localStorage.getItem('visadoo-last-country'); } catch(e){}
+      if (lastCountry) {
+        var localPreview = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+        var redirectUrl = localPreview ? ('country.html?slug=' + encodeURIComponent(lastCountry) + '#visa-info') : ('/country/' + encodeURIComponent(lastCountry) + '#visa-info');
+        location.replace(redirectUrl);
+      } else {
+        location.replace('index.html#destinations');
+      }
     }
     Promise.resolve().then(function(){
       return sb.auth.signOut({scope:'local'});
@@ -353,9 +373,30 @@
     renderHeader();
     var intended = qParam('visa');
     document.body.classList.toggle('apply-focus',!!intended);
-    root.innerHTML='';
+    var backUrl = 'index.html#destinations';
+    if (intended) {
+      var countrySlug = '';
+      var visaObj = visaById(intended);
+      if (visaObj && visaObj.country_slug) {
+        countrySlug = visaObj.country_slug;
+      } else {
+        if (intended.indexOf('spain') > -1) countrySlug = 'spain';
+        else if (intended.indexOf('denmark') > -1) countrySlug = 'denmark';
+        else if (intended.indexOf('japan') > -1) countrySlug = 'japan';
+        else if (intended.indexOf('south-korea') > -1) countrySlug = 'south-korea';
+        else if (intended.indexOf('switzerland') > -1) countrySlug = 'switzerland';
+        else if (intended.indexOf('france') > -1) countrySlug = 'france';
+        else if (intended.indexOf('germany') > -1) countrySlug = 'germany';
+        else if (intended.indexOf('greece') > -1) countrySlug = 'greece';
+        else if (intended.indexOf('ireland') > -1) countrySlug = 'ireland';
+        else if (intended.indexOf('uae') > -1 || intended.indexOf('emirates') > -1) countrySlug = 'united-arab-emirates';
+      }
+      if (countrySlug) {
+        backUrl = 'country.html?slug=' + encodeURIComponent(countrySlug) + '#visa-info';
+      }
+    }
     var card = el(
-      '<main class="signin-wrap">'+(intended?'<a class="application-auth-back" href="country.html?slug=united-arab-emirates#visa-info">← Back</a>':'')+'<div class="signin-shell">' +
+      '<main class="signin-wrap">'+(intended?'<a class="application-auth-back" href="' + backUrl + '" onclick="if(window.history.length > 1){ window.history.back(); return false; }">← Back</a>':'')+'<div class="signin-shell">' +
         '<section class="signin-form-panel">' +
           '<div class="signin-card">' +
         '<h2 id="signinTitle">Sign in</h2>' +
@@ -409,6 +450,7 @@
         '</section>' +
       '</div></main>'
     );
+    root.innerHTML = '';
     root.appendChild(card);
 
     var msg=document.getElementById('siMsg');
@@ -752,7 +794,899 @@
         '<div class="panel" id="qPanel" style="display:none">' +
           '<span class="step-badge">A few more questions</span>' +
           '<div id="applyQuestions"></div>' +
-        '</div>';
+        '</div>' +
+        '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;">'+
+          '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+          '<div style="display:flex; gap:12px; align-items:center;">'+
+            '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:13px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button>'+
+            '<button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="background:#168177 !important; border-radius:13px !important; max-width:330px !important;">Submit application</button>'+
+          '</div>'+
+        '</div>'+
+      '</div></div>';
+  }
+
+
+  // ============================================================
+  //  DENMARK · SIMPLE SCHENGEN APPLICATION FLOW
+  //  Based on the harmonised Schengen form supplied by the user.
+  //  Customer-facing wording is intentionally short and conditional.
+  // ============================================================
+  function getDenmarkStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today = new Date().toISOString().slice(0,10);
+    var isSecondary = isMultiple && travellerIndex > 0;
+    function req(id,label,type,value){ return field(id,label,type||'text',value||'',true); }
+    function opt(id,label,options,required){
+      return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+options.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';
+    }
+    return ''+
+      '<div class="denmark-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Denmark Schengen application</h2>'+
+          '<p>Simple questions only — extra fields appear only when needed.</p>'+
+        '</div>'+
+
+        '<div class="review-section-card denmark-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding: 24px !important; display: flex; flex-direction: column; gap: 32px;">'+
+
+            '<div class="denmark-sec" data-denmark-section="1">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                req('first_name','Given name(s)','text','')+req('last_name','Surname','text','')+
+                req('date_of_birth','Date of birth','date','')+
+                req('birthplace_city','Place of birth','text','')+
+                req('birthplace_country','Country of birth','text','')+
+                req('nationality','Current nationality','text','')+
+                field('former_surname','Surname at birth / former surname','text','',false)+
+                field('nationality_at_birth','Nationality at birth (if different)','text','',false)+
+                field('other_nationalities','Other nationalities (if any)','text','',false)+
+                field('national_id','National identity number (if applicable)','text','',false)+
+                opt('gender','Sex',['Male','Female'],true)+
+                opt('marital_status','Civil status',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+
+                req('residential_address','Residence address','text','')+
+                req('residence_pincode','Pincode','text','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Are you under 18?</label><select id="is_minor"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="minor_guardian_wrap" hidden><div class="field"><label for="minor_guardian">Parent / legal guardian details <span class="req-star">*</span></label><textarea id="minor_guardian" placeholder="Name, address, phone, email and nationality"></textarea></div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="2" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">2. Passport details</h4>'+
+              '<div class="grid2">'+
+                opt('passport_type','Passport type',['Ordinary passport','Diplomatic passport','Service passport','Official passport','Special passport','Other'],true)+
+                req('passport_number','Passport number','text','')+
+                req('passport_issue_date','Date of issue','date','')+
+                req('passport_expiry','Valid until','date','')+
+                req('passport_issuing_country','Issued by (country)','text','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Do you live in a country different from your nationality?</label><select id="other_country_residence"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="residence_permit_wrap" hidden><div class="grid2">'+req('residence_permit_no','Residence permit number','text','')+req('residence_permit_until','Valid until','date','')+'</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="3" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">3. Trip details</h4>'+
+              '<div class="grid2">'+
+                opt('purpose','Purpose of trip',['Tourism','Business','Visiting family or friends','Cultural','Sports','Official visit','Medical reasons','Study','Airport transit','Other'],true)+
+                opt('entries_requested','Entries requested',['Single entry','Two entries','Multiple entries'],true)+
+                req('main_destination','Main destination','text','Denmark')+
+                req('first_entry_country','First Schengen country you will enter','text','Denmark')+
+                req('arrival_date','Arrival date','date','')+req('departure_date','Departure date','date','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label for="purpose_details">Short trip details</label><textarea id="purpose_details" placeholder="Example: Holiday in Copenhagen for 7 days"></textarea></div>'+
+              '<div class="field" style="margin-top:16px;"><label>Have you given fingerprints for a Schengen visa before?</label><select id="schengen_fingerprints"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="fingerprint_wrap" hidden><div class="grid2">'+field('fingerprint_date','Date (if known)','date','',false)+field('visa_sticker_number','Previous visa sticker number (if known)','text','',false)+'</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="4" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">4. Work, stay & expenses</h4>'+
+              '<div class="grid2">'+
+                req('occupation','Current occupation','text','')+
+                req('employer_name','Employer name','text','')+req('employer_address','Employer address','text','')+req('employer_phone','Employer phone number','tel','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Where will you stay?</label><select id="stay_type"><option value="Hotel">Hotel / accommodation</option><option value="Invited person">With family / friend</option><option value="Company">Inviting company</option></select></div>'+
+              '<div class="grid2">'+field('host_name','Hotel / host / company name','text','',false)+field('host_phone','Phone number','text','',false)+'</div>'+
+              '<div class="field" style="margin-top:16px;"><label for="host_address">Address & email</label><textarea id="host_address"></textarea></div>'+
+              '<div class="grid2">'+field('company_contact_name','Company contact person (if applicable)','text','',false)+field('company_contact_email','Company contact email','email','',false)+field('company_contact_phone','Company / organisation phone','text','',false)+'</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Who pays for the trip?</label><select id="trip_payer"><option value="Applicant">I pay myself</option><option value="Sponsor">A sponsor / host / company pays</option></select></div>'+
+              '<div id="sponsor_wrap" hidden><div class="field"><label for="sponsor_details">Sponsor details <span class="req-star">*</span></label><textarea id="sponsor_details" placeholder="Sponsor name and relationship"></textarea></div></div>'+
+              '<div class="field" style="margin-top:16px;"><label>How will the trip be paid for?</label><div class="denmark-check-grid">'+
+                ['Cash','Credit card','Pre-paid accommodation','Pre-paid transport','Accommodation provided','All expenses covered'].map(function(x){return '<label><input type="checkbox" name="support_means" value="'+esc(x)+'"> '+esc(x)+'</label>';}).join('')+
+              '</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="5" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">5. Final check</h4>'+
+              '<div class="field"><label>Are you travelling as a family member of an EU/EEA/Swiss citizen (or eligible UK Withdrawal Agreement beneficiary)?</label><select id="eu_family"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="eu_family_wrap" hidden><div class="grid2">'+field('eu_family_name','Family member name','text','',false)+field('eu_family_nationality','Nationality','text','',false)+field('eu_family_dob','Date of birth','date','',false)+field('eu_family_document','Passport / ID number','text','',false)+field('eu_family_relationship','Relationship','text','',false)+'</div></div>'+
+              '<div class="field" style="margin-top:16px;"><label>Do you need an entry permit for your final destination after Schengen?</label><select id="final_entry_permit"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="entry_permit_wrap" hidden><div class="grid2">'+field('entry_permit_issued_by','Issued by','text','',false)+field('entry_permit_from','Valid from','date','',false)+field('entry_permit_until','Valid until','date','',false)+'</div></div>'+
+              '<div class="grid2">'+req('application_place','Place of application','text','')+req('application_date','Application date','date',today)+'</div>'+
+              (isSecondary?'<div class="review-contact-details group-contact-note"><p>Contact details are taken from the primary applicant.</p></div>':
+              '<div class="grid2">'+
+                req('contact_email','Email address','email',meta.email||'')+
+                '<div class="field" id="mobileField"><label for="phone">Mobile number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+              '</div>'+
+              '<div id="otpArea" class="otp-area" style="display:none"></div>')+
+              '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="schengen_declaration" required> I confirm that the information I provided is correct and complete. <span class="req-star">*</span></label>'+
+              '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+            '</div>'+
+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+  function getGreeceStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today=new Date().toISOString().slice(0,10),isSecondary=isMultiple&&travellerIndex>0;
+    function req(id,label,type,value){return field(id,label,type||'text',value||'',true);} function opt(id,label,arr,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+arr.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
+    return '<div class="denmark-review-shell"><div class="denmark-page-header"><h2>Greece Schengen application</h2><p>Questions follow the supplied filled Greece form and your required-details list.</p></div><div class="review-section-card denmark-single-card"><div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:32px">'+
+    '<div class="denmark-sec" data-denmark-section="1"><h4 class="denmark-subheading">1. Personal details</h4><div class="grid2">'+req('first_name','Given name(s)')+req('last_name','Surname')+req('date_of_birth','Date of birth','date')+req('birthplace_city','Place of birth')+req('birthplace_country','Country of birth')+req('nationality','Current nationality')+opt('gender','Sex',['Male','Female','Other'],true)+opt('marital_status','Marital Status',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+req('residential_address','Residence Address')+req('residence_pincode','Pincode')+(isSecondary?'':req('contact_email','Mail ID','email',meta.email||'')+'<div class="field" id="mobileField"><label for="phone">Phone Number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" required></div>')+'</div><div id="otpArea" class="otp-area" style="display:none"></div></div>'+
+    '<div class="denmark-sec" data-denmark-section="2" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">2. Passport details</h4><div class="grid2">'+opt('passport_type','Passport type',['Ordinary passport','Diplomatic passport','Service passport','Official passport','Special passport','Other'],true)+req('passport_number','Passport number')+req('passport_issue_date','Date of issue','date')+req('passport_expiry','Valid until','date')+req('passport_issuing_country','Issued by (country)')+'</div></div>'+
+    '<div class="denmark-sec" data-denmark-section="3" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">3. Schengen Visa Required Details</h4><div class="grid2">'+req('arrival_date','Travel Date','date')+req('departure_date','Return Date','date')+req('arrival_airport','Arrival Airport')+req('departure_airport','Departure Airport')+opt('purpose','Purpose of journey',['Tourism','Business','Visiting family or friends','Study','Other'],true)+req('main_destination','Main destination','text','Greece')+req('first_entry_country','First Schengen country','text','Greece')+opt('entries_requested','Number of entries',['Single entry','Two entries','Multiple entries'],true)+opt('schengen_fingerprints','Fingerprints collected previously for a Schengen visa?',['No','Yes'],true)+'</div></div>'+
+    '<div class="denmark-sec" data-denmark-section="4" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">4. Employment / School Details</h4><div class="grid2">'+req('employer_name','Employer / School Name')+req('employer_address','Employment / School Address')+req('occupation','Job Position')+req('employer_phone','Employer / School Number')+req('employer_email','Employer / School Mail ID','email')+'</div><h4 class="denmark-subheading" style="margin-top:24px">Stay & expenses</h4><div class="grid2">'+req('host_name','Hotel / accommodation name')+req('host_address','Hotel / accommodation address')+req('host_phone','Hotel / accommodation phone')+opt('trip_payer','Cost of trip covered by',['Applicant','Sponsor'],true)+'</div><div class="field"><label>Means of support</label><div class="denmark-check-grid">'+['Cash','Credit card','Pre-paid accommodation','Pre-paid transport'].map(function(x){return '<label><input type="checkbox" name="support_means" value="'+x+'"> '+x+'</label>';}).join('')+'</div></div>'+req('application_place','Place of application','text','Doha, Qatar')+req('application_date','Application date','date',today)+'<label class="consent-check"><input type="checkbox" id="schengen_declaration" required> I confirm the information is correct and complete. <span class="req-star">*</span></label><div class="wizard-navigation-footer" style="margin-top:25px;display:flex;justify-content:space-between"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div></div></div></div>';
+  }
+
+  function getAzerbaijanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today=new Date().toISOString().slice(0,10), isSecondary=isMultiple&&travellerIndex>0;
+    function req(id,label,type,value){return field(id,label,type||'text',value||'',true);}
+    function opt(id,label,arr,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+arr.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
+    return '<div class="denmark-review-shell"><div class="denmark-page-header"><h2>Azerbaijan visa application</h2><p>Questions are based on the supplied filled Azerbaijan application. Required details are marked *.</p></div><div class="review-section-card denmark-single-card"><div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:32px">'+
+    '<div class="denmark-sec" data-denmark-section="1"><h4 class="denmark-subheading">1. Personal & passport details</h4><div class="grid2">'+req('first_name','Name (as in passport)')+req('last_name','Surname (as in passport)')+req('date_of_birth','Date of birth','date')+req('birthplace_city','Place of birth (city, country)')+req('nationality','Citizenship')+opt('gender','Sex',['Male','Female'],true)+opt('marital_status','Marital Status',['Single','Married','Widow(er)','Divorced'],true)+opt('passport_type','Travel document type',['Ordinary passport','Service / official / special passport','Diplomatic passport','Other'],true)+req('passport_number','Passport number')+req('passport_issuing_country','Place of issue (city, country)')+req('passport_issue_date','Passport date of issue','date')+req('passport_expiry','Passport validity','date')+'</div></div>'+
+    '<div class="denmark-sec" data-denmark-section="2" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">2. Azerbaijan Visa Required Details</h4><div class="grid2">'+req('arrival_date','Travel Date','date')+req('departure_date','Return Date','date')+req('residential_address','Residence Address')+req('residence_pincode','Pincode')+req('occupation','Current Occupation')+(isSecondary?'':req('contact_email','Mail ID','email',meta.email||'')+'<div class="field" id="mobileField"><label for="phone">Phone Number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" required></div>')+'</div><div id="otpArea" class="otp-area" style="display:none"></div></div>'+
+    '<div class="denmark-sec" data-denmark-section="3" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">3. Trip details</h4><div class="grid2">'+field('transport_type','Type of transport','text','',false)+req('stay_duration','Duration of stay (days)')+field('final_destination','Final destination (city, country)','text','Baku, Azerbaijan',false)+opt('visited_azerbaijan','Have you ever visited Azerbaijan?',['No','Yes'],true)+opt('azerbaijan_visa_before','Have you ever been issued an Azerbaijan visa?',['No','Yes'],true)+opt('azerbaijan_refused','Have you ever been refused an Azerbaijan visa?',['No','Yes'],true)+opt('criminal_offence','Have you ever been charged with any criminal offence?',['No','Yes'],true)+opt('karabakh_visit','Have you ever visited Nagorno Karabakh region?',['No','Yes'],true)+opt('purpose','Purpose of visit',['Tourism','Business','Private visit','Official','Employment','Scientific','Education','Medical','Cultural','Sports','Humanitarian'],true)+opt('visa_type','Type of visa',['Entry','Transit'],true)+opt('entries_requested','Number of entries',['Single entry visa','Multiple entry visa','Single entry transit visa','Double entry transit visa'],true)+'</div></div>'+
+    '<div class="denmark-sec" data-denmark-section="4" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">4. Stay & expenses</h4><div class="grid2">'+field('inviting_party','Inviting party name, address & phone','text','',false)+req('host_address','Address and phone number of your stay')+req('trip_payer','Who will cover the cost of your visit?','text','Myself')+opt('intend_employed','Do you intend to be employed in Azerbaijan?',['No','Yes'],true)+opt('intend_study','Do you intend to study in Azerbaijan?',['No','Yes'],true)+req('application_place','Place of application','text','Doha, Qatar')+req('application_date','Application date','date',today)+'</div><label class="consent-check"><input type="checkbox" id="schengen_declaration" required> I confirm the information is correct and complete. <span class="req-star">*</span></label><div class="wizard-navigation-footer" style="margin-top:25px;display:flex;justify-content:space-between"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div></div></div></div>';
+  }
+
+  function getSpainStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    return getDenmarkStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+      .replace('Denmark Schengen application','Spain Schengen application')
+      .replace(/Denmark/g,'Spain')
+      .replace('Holiday in Copenhagen for 7 days','Holiday in Spain for 7 days')
+      .replace('<label for="purpose_details">Short trip details</label>', '<label for="purpose_details">Additional information on purpose of stay</label>');
+  }
+
+  function getSwitzerlandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today = new Date().toISOString().slice(0,10);
+    var isSecondary = isMultiple && travellerIndex > 0;
+    function req(id,label,type,value){ return field(id,label,type||'text',value||'',true); }
+    function opt(id,label,options,required){
+      return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+options.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';
+    }
+    return ''+
+      '<div class="denmark-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Switzerland Schengen application</h2>'+
+          '<p>Simple questions only — extra fields appear only when needed.</p>'+
+        '</div>'+
+
+        '<div class="review-section-card denmark-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding: 24px !important; display: flex; flex-direction: column; gap: 32px;">'+
+
+            '<div class="denmark-sec" data-denmark-section="1">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                req('first_name','Given name(s)','text','')+
+                req('last_name','Surname','text','')+
+                field('former_surname','Surname at birth (Former family name(s))','text','',false)+
+                req('date_of_birth','Date of birth','date','')+
+                req('birthplace_city','Place of birth','text','')+
+                req('birthplace_country','Country of birth','text','')+
+                req('nationality','Current nationality','text','')+
+                field('nationality_at_birth','Nationality at birth, if different','text','',false)+
+                opt('gender','Sex',['Male','Female','Diverse'],true)+
+                opt('marital_status','Civil status',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+
+                req('residential_address','Residence address','text','')+
+                req('residence_pincode','Pincode','text','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Are you under 18?</label><select id="is_minor"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="minor_guardian_wrap" hidden><div class="field"><label for="minor_guardian">Parental authority (in case of minors) / legal guardian (surname, first name, address, if different from applicant\'s, telephone no., e-mail address, and nationality) <span class="req-star">*</span></label><textarea id="minor_guardian" placeholder="Example: Surname, First name, Address, Phone, Email, Nationality"></textarea></div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="2" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">2. Passport details</h4>'+
+              '<div class="grid2">'+
+                opt('passport_type','Passport type',['Ordinary passport','Diplomatic passport','Service passport','Official passport','Special passport','Other'],true)+
+                req('passport_number','Passport number','text','')+
+                req('passport_issue_date','Date of issue','date','')+
+                req('passport_expiry','Valid until','date','')+
+                req('passport_issuing_country','Issued by (country)','text','')+
+                field('national_id','National identity number (where applicable)','text','',false)+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Do you live in a country other than the country of current nationality?</label><select id="other_country_residence"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="residence_permit_wrap" hidden><div class="grid2">'+req('residence_permit_no','Residence permit or equivalent number','text','')+req('residence_permit_until','Residence permit valid until','date','')+'</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="3" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">3. Trip details</h4>'+
+              '<div class="grid2">'+
+                opt('purpose','Purpose of trip',['Tourism', 'Business', 'Visit of family or friends', 'Cultural', 'Official visit', 'Study', 'Medical reasons', 'Sports', 'Airport transit', 'Other'],true)+
+                opt('entries_requested','Entries requested',['Single entry','Two entries','Multiple entries'],true)+
+                req('main_destination','Main destination','text','Switzerland')+
+                req('first_entry_country','First Schengen country you will enter','text','Switzerland')+
+                req('arrival_date','Arrival date','date','')+req('departure_date','Departure date','date','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label for="purpose_details">Additional information on purpose of stay <span class="req-star">*</span></label><textarea id="purpose_details" required placeholder="Example: TOURISM"></textarea></div>'+
+              '<div class="field" style="margin-top:16px;"><label>Have you given fingerprints for a Schengen visa before?</label><select id="schengen_fingerprints"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="fingerprint_wrap" hidden><div class="grid2">'+field('fingerprint_date','Date (if known)','date','',false)+field('visa_sticker_number','Previous visa sticker number (if known)','text','',false)+'</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="4" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">4. Work, stay & expenses</h4>'+
+              '<div class="grid2">'+
+                req('occupation','Current occupation','text','')+
+                field('employer_name','Employer or school name','text','',false)+
+                field('employer_address','Employer or school address','text','',false)+
+                field('employer_phone','Employer or school phone number','tel','',false)+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Where will you stay?</label><select id="stay_type"><option value="Hotel">Hotel / accommodation</option><option value="Invited person">With family / friend</option><option value="Company">Inviting company</option></select></div>'+
+              '<div class="grid2">'+
+                req('host_name','Hotel / host / company name','text','')+
+                req('host_phone','Phone number','tel','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label for="host_address">Address & email <span class="req-star">*</span></label><textarea id="host_address" required placeholder="Example: Hotel Address & Email"></textarea></div>'+
+              '<div class="field" style="margin-top:16px;"><label>Who pays for the trip?</label><select id="trip_payer"><option value="Applicant">I pay myself (Applicant)</option><option value="Sponsor">A sponsor (host, company, organisation) pays</option></select></div>'+
+              '<div id="applicant_means_wrap"><div class="field"><label>Means of support (Applicant) <span class="req-star">*</span></label><div class="denmark-check-grid">'+
+                ['Cash', 'Traveller\'s cheques', 'Credit card', 'Pre-paid accommodation', 'Pre-paid transport', 'Other (please specify)'].map(function(x){return '<label><input type="checkbox" name="support_means_applicant" value="'+esc(x)+'"> '+esc(x)+'</label>';}).join('')+
+              '</div></div>'+
+              '<div id="applicant_means_other_wrap" hidden><div class="field"><label for="support_means_other">Other means of support details <span class="req-star">*</span></label><input type="text" id="support_means_other" placeholder="Specify other means of support"></div></div></div>'+
+              '<div id="sponsor_wrap" hidden>'+
+                '<div class="field" style="margin-top:16px;"><label>Sponsor type <span class="req-star">*</span></label><div class="denmark-check-grid">'+
+                  '<label><input type="checkbox" name="sponsor_type" value="by a sponsor (host, company, organisation), please specify"> by a sponsor (host, company, organisation), please specify</label>'+
+                  '<label><input type="checkbox" name="sponsor_type" value="referred to in field 30 or 31"> referred to in field 30 or 31</label>'+
+                  '<label><input type="checkbox" name="sponsor_type" id="sponsor_type_other_cb" value="other (please specify)"> other (please specify)</label>'+
+                '</div></div>'+
+                '<div id="sponsor_name_wrap" hidden><div class="field"><label for="sponsor_details">Sponsor Name & Details / Other Sponsor (please specify) <span class="req-star">*</span></label><textarea id="sponsor_details" placeholder="Example: Sponsor name, relationship, address, etc."></textarea></div></div>'+
+                '<div class="field" style="margin-top:16px;"><label>Means of support (Sponsor) <span class="req-star">*</span></label><div class="denmark-check-grid">'+
+                  ['Cash', 'Accommodation provided', 'All expenses covered during the stay', 'Pre-paid transport', 'Other (please specify)'].map(function(x){return '<label><input type="checkbox" name="support_means_sponsor" value="'+esc(x)+'"> '+esc(x)+'</label>';}).join('')+
+                '</div></div>'+
+                '<div id="sponsor_means_other_wrap" hidden><div class="field"><label for="sponsor_means_other">Other sponsor means details <span class="req-star">*</span></label><input type="text" id="sponsor_means_other" placeholder="Specify other sponsor means"></div></div>'+
+              '</div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="5" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">5. Final check</h4>'+
+              '<div class="field"><label>Are you travelling as a family member of an EU/EEA/Swiss citizen (or eligible UK Withdrawal Agreement beneficiary)?</label><select id="eu_family"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="eu_family_wrap" hidden><div class="grid2">'+field('eu_family_name','Family member name','text','',false)+field('eu_family_nationality','Nationality','text','',false)+field('eu_family_dob','Date of birth','date','',false)+field('eu_family_document','Passport / ID number','text','',false)+field('eu_family_relationship','Relationship','text','',false)+'</div></div>'+
+              '<div class="field" style="margin-top:16px;"><label>Do you need an entry permit for your final destination after Schengen?</label><select id="final_entry_permit"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="entry_permit_wrap" hidden><div class="grid2">'+field('entry_permit_issued_by','Issued by','text','',false)+field('entry_permit_from','Valid from','date','',false)+field('entry_permit_until','Valid until','date','',false)+'</div></div>'+
+              '<div class="grid2">'+req('application_place','Place of application','text','')+req('application_date','Application date','date',today)+'</div>'+
+              (isSecondary?'<div class="review-contact-details group-contact-note"><p>Contact details are taken from the primary applicant.</p></div>':
+              '<div class="grid2">'+
+                req('contact_email','Email address','email',meta.email||'')+
+                '<div class="field" id="mobileField"><label for="phone">Mobile number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+              '</div>'+
+              '<div id="otpArea" class="otp-area" style="display:none"></div>')+
+              '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="schengen_declaration" required> I confirm that the information I provided is correct and complete. <span class="req-star">*</span></label>'+
+              '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+            '</div>'+
+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+  function getFranceGermanyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today = new Date().toISOString().slice(0,10);
+    var isSecondary = isMultiple && travellerIndex > 0;
+    var countryLabel = chosen.country_slug === 'france' ? 'France' : (chosen.country_slug === 'germany' ? 'Germany' : 'Greece');
+    function req(id,label,type,value){ return field(id,label,type||'text',value||'',true); }
+    function opt(id,label,options,required){
+      return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+options.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';
+    }
+    return ''+
+      '<div class="denmark-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>' + countryLabel + ' Schengen application</h2>'+
+          '<p>Simple questions only — extra fields appear only when needed.</p>'+
+        '</div>'+
+
+        '<div class="review-section-card denmark-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding: 24px !important; display: flex; flex-direction: column; gap: 32px;">'+
+
+            '<div class="denmark-sec" data-denmark-section="1">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                req('first_name','Given name(s)','text','')+
+                req('last_name','Surname','text','')+
+                req('date_of_birth','Date of birth','date','')+
+                req('birthplace_city','Place of birth','text','')+
+                req('birthplace_country','Country of birth','text','')+
+                req('nationality','Current nationality','text','')+
+                (chosen.country_slug === 'greece' ? '' : field('former_surname','Surname at birth / former surname','text','',false))+
+                (chosen.country_slug === 'greece' ? '' : field('nationality_at_birth','Nationality at birth (if different)','text','',false))+
+                (chosen.country_slug === 'greece' ? '' : field('other_nationalities','Other nationalities (if any)','text','',false))+
+                (chosen.country_slug === 'greece' ? '' : field('national_id','National identity number (if applicable)','text','',false))+
+                opt('gender','Sex',['Male','Female'],true)+
+                opt('marital_status','Marital status (Civil status)',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+
+                req('residential_address','Residence address','text','')+
+                req('residence_pincode','Pincode','text','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Are you under 18?</label><select id="is_minor"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="minor_guardian_wrap" hidden><div class="field"><label for="minor_guardian">Parent / legal guardian details <span class="req-star">*</span></label><textarea id="minor_guardian" placeholder="Name, address, phone, email and nationality"></textarea></div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="2" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">2. Passport details</h4>'+
+              '<div class="grid2">'+
+                opt('passport_type','Passport type',['Ordinary passport','Diplomatic passport','Service passport','Official passport','Special passport','Other'],true)+
+                req('passport_number','Passport number','text','')+
+                req('passport_issue_date','Date of issue','date','')+
+                req('passport_expiry','Valid until','date','')+
+                req('passport_issuing_country','Issued by (country)','text','')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Do you live in a country different from your nationality?</label><select id="other_country_residence"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="residence_permit_wrap" hidden><div class="grid2">'+req('residence_permit_no','Residence permit number','text','')+req('residence_permit_until','Valid until','date','')+'</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="3" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">3. Trip details</h4>'+
+              '<div class="grid2">'+
+                opt('purpose','Purpose of trip',['Tourism','Business','Visiting family or friends','Cultural','Sports','Official visit','Medical reasons','Study','Airport transit','Other'],true)+
+                opt('entries_requested','Entries requested',['Single entry','Two entries','Multiple entries'],true)+
+                req('main_destination','Main destination','text',countryLabel)+
+                req('first_entry_country','First Schengen country you will enter','text',countryLabel)+
+                req('arrival_date','Travel Date (Arrival date)','date','')+
+                req('departure_date','Return Date (Departure date)','date','')+
+                req('arrival_airport', 'Arrival Airport', 'text', '')+
+                req('departure_airport', 'Departure Airport', 'text', '')+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label for="purpose_details">Short trip details</label><textarea id="purpose_details" placeholder="Example: Holiday in ' + countryLabel + ' for 7 days"></textarea></div>'+
+              '<div class="field" style="margin-top:16px;"><label>Have you given fingerprints for a Schengen visa before?</label><select id="schengen_fingerprints"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="fingerprint_wrap" hidden><div class="grid2">'+field('fingerprint_date','Date (if known)','date','',false)+field('visa_sticker_number','Previous visa sticker number (if known)','text','',false)+'</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="4" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">4. Employment / School details</h4>'+
+              '<div class="grid2">'+
+                req('occupation','Job Position / Current occupation','text','')+
+                (chosen.country_slug === 'greece' ? field('employer_name','Employer / School Name','text','',false) : req('employer_name','Employer / School Name','text',''))+
+                (chosen.country_slug === 'greece' ? field('employer_address','Employer / School Address','text','',false) : req('employer_address','Employer / School Address','text',''))+
+                (chosen.country_slug === 'greece' ? field('employer_phone','Employer / School Number','tel','',false) : req('employer_phone','Employer / School Number','tel',''))+
+                (chosen.country_slug === 'greece' ? '' : req('employer_email','Employer / School Mail ID','email',''))+
+              '</div>'+
+              '<div class="field" style="margin-top:16px;"><label>Where will you stay?</label><select id="stay_type"><option value="Hotel">Hotel / accommodation</option><option value="Invited person">With family / friend</option><option value="Company">Inviting company</option></select></div>'+
+              '<div class="grid2">'+field('host_name','Hotel / host / company name','text','',false)+field('host_phone','Phone number','text','',false)+'</div>'+
+              '<div class="field" style="margin-top:16px;"><label for="host_address">Address & email</label><textarea id="host_address"></textarea></div>'+
+              (chosen.country_slug === 'greece' ? '' : '<div class="grid2">'+field('company_contact_name','Company contact person (if applicable)','text','',false)+field('company_contact_email','Company contact email','email','',false)+field('company_contact_phone','Company / organisation phone','text','',false)+'</div>')+
+              '<div class="field" style="margin-top:16px;"><label>Who pays for the trip?</label><select id="trip_payer"><option value="Applicant">I pay myself</option><option value="Sponsor">A sponsor / host / company pays</option></select></div>'+
+              '<div id="sponsor_wrap" hidden><div class="field"><label for="sponsor_details">Sponsor details <span class="req-star">*</span></label><textarea id="sponsor_details" placeholder="Sponsor name and relationship"></textarea></div></div>'+
+              '<div class="field" style="margin-top:16px;"><label>How will the trip be paid for?</label><div class="denmark-check-grid">'+
+                ['Cash','Credit card','Pre-paid accommodation','Pre-paid transport','Accommodation provided','All expenses covered'].map(function(x){return '<label><input type="checkbox" name="support_means" value="'+esc(x)+'"> '+esc(x)+'</label>';}).join('')+
+              '</div></div>'+
+            '</div>'+
+
+            '<div class="denmark-sec" data-denmark-section="5" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+              '<h4 class="denmark-subheading">5. Final check</h4>'+
+              '<div class="field"><label>Are you travelling as a family member of an EU/EEA/Swiss citizen (or eligible UK Withdrawal Agreement beneficiary)?</label><select id="eu_family"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="eu_family_wrap" hidden><div class="grid2">'+field('eu_family_name','Family member name','text','',false)+field('eu_family_nationality','Nationality','text','',false)+field('eu_family_dob','Date of birth','date','',false)+field('eu_family_document','Passport / ID number','text','',false)+field('eu_family_relationship','Relationship','text','',false)+'</div></div>'+
+              '<div class="field" style="margin-top:16px;"><label>Do you need an entry permit for your final destination after Schengen?</label><select id="final_entry_permit"><option value="No">No</option><option value="Yes">Yes</option></select></div>'+
+              '<div id="entry_permit_wrap" hidden><div class="grid2">'+field('entry_permit_issued_by','Issued by','text','',false)+field('entry_permit_from','Valid from','date','',false)+field('entry_permit_until','Valid until','date','',false)+'</div></div>'+
+              '<div class="grid2">'+req('application_place','Place of application','text','')+req('application_date','Application date','date',today)+'</div>'+
+              (isSecondary?'<div class="review-contact-details group-contact-note"><p>Contact details are taken from the primary applicant.</p></div>':
+              '<div class="grid2">'+
+                req('contact_email','Email address (Mail ID)','email',meta.email||'')+
+                '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+              '</div>'+
+              '<div id="otpArea" class="otp-area" style="display:none"></div>')+
+              '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="schengen_declaration" required> I confirm that the information I provided is correct and complete. <span class="req-star">*</span></label>'+
+              '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+            '</div>'+
+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+  // IRELAND · SIMPLE CUSTOMER-FRIENDLY APPLICATION FLOW
+  function getIrelandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary=isMultiple&&travellerIndex>0;
+    function req(id,label,type,value){return field(id,label,type||'text',value||'',true);}
+    function fld(id,label,type){return field(id,label,type||'text','',false);}
+    function opt(id,label,options,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+options.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
+    function nav(prev,last){return '<div class="wizard-navigation-footer">'+(prev?'<button type="button" class="btn btn-ghost denmark-prev">← Back</button>':'<button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button>')+(last?'<button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button>':'<button type="button" class="btn btn-primary denmark-next">Next →</button>')+'</div>';}
+    return '<div class="denmark-review-shell"><div class="review-progress-card"><div><b>Ireland visa application</b><small>Simple questions only - details are printed on the supplied Ireland application form.</small></div></div>'+
+      '<div class="review-section-card denmark-sec" data-denmark-section="1"><div class="review-section-card-header"><h3>1. Visa & personal details</h3></div><div class="review-section-body"><div class="grid2">'+
+      opt('ire_visa_type','Visa / preclearance type',['Short Stay C','Long Stay D','Preclearance'],true)+opt('ire_journey_type','Journey type',['Single','Multiple'],true)+req('ire_reason','Reason for travel')+req('ire_purpose','Purpose of travel')+opt('passport_type','Passport type',['Ordinary / Regular','Diplomatic','Official','Other'],true)+req('passport_number','Passport number')+req('arrival_date','Proposed entry date','date')+req('departure_date','Proposed leave date','date')+req('first_name','Forename as in passport')+req('last_name','Surname as in passport')+fld('ire_other_name','Other / previous name')+req('date_of_birth','Date of birth','date')+opt('gender','Gender',['Male','Female'],true)+req('birthplace_country','Country of birth')+req('nationality','Nationality')+req('ire_current_location','Current location')+'</div>'+'</div></div>'+
+      '<div class="review-section-card denmark-sec" data-denmark-section="2"><div class="review-section-card-header"><h3>2. Address, contact & passport</h3></div><div class="review-section-body"><div class="grid2">'+
+      req('residential_address','Current address')+fld('ire_address2','Address line 2')+fld('ire_address3','Address line 3')+fld('ire_address4','Address line 4')+(isSecondary?'':'<div class="field" id="mobileField"><label for="phone">Contact phone <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div><div id="otpArea" class="otp-area" style="display:none"></div>'+req('contact_email','Contact email','email',meta.email||''))+
+      req('passport_issuing_country','Issuing authority / country')+req('passport_issue_date','Passport date of issue','date')+req('passport_expiry','Passport date of expiry','date')+opt('ire_first_passport','Is this your first passport?',['Yes','No'],true)+req('ire_residence_length','Length of residence in present country')+opt('ire_return_permission','Permission to return after Ireland stay?',['Yes','No'],true)+opt('ire_biometric_exempt','Exempt from biometrics?',['Yes','No'],true)+'</div>'+'</div></div>'+
+      '<div class="review-section-card denmark-sec" data-denmark-section="3"><div class="review-section-card-header"><h3>3. Immigration history</h3></div><div class="review-section-body"><div class="grid2">'+
+      opt('ire_applied_before','Applied for an Irish visa before?',['Yes','No'],true)+opt('ire_issued_before','Ever issued an Irish visa?',['Yes','No'],true)+opt('ire_refused_irish','Ever refused an Irish visa?',['Yes','No'],true)+opt('ire_been_ireland','Ever been in Ireland?',['Yes','No'],true)+opt('ire_family_ireland','Family members living in Ireland?',['Yes','No'],true)+opt('ire_refused_entry_ireland','Refused permission to enter Ireland?',['Yes','No'],true)+opt('ire_deport_order','Ever notified of a deportation order?',['Yes','No'],true)+opt('ire_refused_other_visa','Refused a visa to another country?',['Yes','No'],true)+opt('ire_immigration_breach','Refused entry / deported / overstayed in any country?',['Yes','No'],true)+opt('ire_criminal','Any criminal convictions?',['Yes','No'],true)+'</div>'+fld('ire_history_details','If Yes to any above, give details')+'</div></div>'+
+      '<div class="review-section-card denmark-sec" data-denmark-section="4"><div class="review-section-card-header"><h3>4. Employment / study & travel companions</h3></div><div class="review-section-body"><div class="grid2">'+
+      opt('ire_employed','Currently employed?',['Yes','No'],true)+fld('employer_name','Current employer')+fld('ire_employment_duration','Duration of employment')+fld('position','Position held')+fld('employer_address','Work address')+fld('employer_phone','Employer phone','tel')+fld('ire_employer_email','Employer email','email')+opt('ire_student','Currently a student?',['Yes','No'],true)+opt('ire_travelling_others','Travelling with another person?',['Yes','No'],true)+'</div>'+'</div></div>'+
+      '<div class="review-section-card denmark-sec" data-denmark-section="5"><div class="review-section-card-header"><h3>5. Contact / host in Ireland & family</h3></div><div class="review-section-body"><div class="grid2">'+
+      req('host_name','Host / accommodation name')+req('host_address','Host / accommodation address')+fld('host_phone','Host phone','tel')+opt('ire_host_known','Is the host personally known to you?',['Yes','No'],true)+fld('ire_host_surname','Host surname')+fld('ire_host_forename','Host forename')+fld('ire_host_citizenship','Host citizenship')+fld('ire_host_occupation','Host occupation')+fld('ire_host_relationship','Relationship to applicant')+fld('ire_host_doj_ref','Department of Justice reference no.')+fld('ire_host_dob','Host date of birth','date')+fld('ire_host_email','Host email','email')+opt('marital_status','Personal status',['Single','Married','Partner','Divorced','Widowed','Separated'],true)+fld('ire_spouse_surname','Spouse / partner surname')+fld('ire_spouse_forename','Spouse / partner forenames')+fld('ire_spouse_other','Spouse other / maiden name')+fld('ire_spouse_dob','Spouse date of birth','date')+fld('ire_spouse_passport','Spouse passport number')+fld('ire_spouse_gender','Spouse gender')+fld('ire_spouse_country','Country spouse currently lives in')+fld('ire_spouse_travel','Is spouse travelling with you?')+'</div>'+'</div></div>'+
+      '<div class="review-section-card denmark-sec" data-denmark-section="6"><div class="review-section-card-header"><h3>6. Children & declaration</h3></div><div class="review-section-body"><div class="grid2">'+req('ire_children_count','Number of dependant children','number')+opt('ire_agency_help','Did an agent / agency help complete this form?',['Yes','No'],true)+'</div>'+fld('ire_children_details','Children details (surname, forename, DOB, gender, nationality, travelling Yes/No)')+'<div class="field"><label class="check-line"><input id="ire_declaration" type="checkbox" required> I confirm these details are correct. <span class="req-star">*</span></label></div>'+'<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+'</div></div></div>';
+  }
+
+
+  // SOUTH KOREA · SIMPLE CUSTOMER-FRIENDLY APPLICATION FLOW
+  // Mirrors the supplied 5-page Republic of Korea visa form while keeping questions easy to understand.
+  function getSouthKoreaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today=new Date().toISOString().slice(0,10), isSecondary=isMultiple&&travellerIndex>0;
+    function req(id,label,type,value){return field(id,label,type||'text',value||'',true);}
+    function opt(id,label,options,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+options.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
+    return '<div class="denmark-review-shell">'+
+      '<div class="denmark-page-header">'+
+        '<h2>South Korea visa application</h2>'+
+        '<p>Simple questions only - extra details appear only when needed.</p>'+
+      '</div>'+
+
+      '<div class="review-section-card denmark-single-card">'+
+        '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+        '<div class="review-section-body" style="padding: 24px !important; display: flex; flex-direction: column; gap: 32px;">'+
+
+          '<div class="korea-sec" data-korea-section="1">'+
+            '<h4 class="denmark-subheading">1. About you</h4>'+
+            '<div class="grid2">'+
+              req('first_name','Given name(s) as in passport')+req('last_name','Family name / surname as in passport')+
+              req('date_of_birth','Date of birth','date')+opt('gender','Sex',['Male','Female'],true)+req('nationality','Nationality')+req('birthplace_country','Country of birth')+
+              field('national_id','National identity number (if you have one)','text','',false)+
+              opt('other_names_used','Have you ever used another name to enter or leave Korea?',['No','Yes'],true)+
+              opt('multiple_citizenship','Are you a citizen of more than one country?',['No','Yes'],true)+'</div>'+
+              '<div id="other_names_wrap" hidden><div class="grid2">'+req('other_family_name','Other family name')+req('other_given_name','Other given name(s)')+'</div></div>'+
+              '<div id="other_citizenship_wrap" hidden>'+req('other_countries','Other country/countries of citizenship')+'</div>'+
+          '</div>'+
+
+          '<div class="korea-sec" data-korea-section="2" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">2. Passport details</h4>'+
+            '<div class="grid2">'+
+              opt('passport_type','Passport type',['Regular','Diplomatic','Official','Other'],true)+req('passport_number','Passport number')+req('passport_issuing_country','Country of passport')+req('passport_place_of_issue','Place of issue')+req('passport_issue_date','Date of issue','date')+req('passport_expiry','Date of expiry','date')+
+              opt('other_valid_passport','Do you have another valid passport?',['No','Yes'],true)+'</div>'+
+              '<div id="other_passport_wrap" hidden><div class="grid2">'+opt('other_passport_type','Other passport type',['Regular','Diplomatic','Official','Other'],true)+req('other_passport_number','Other passport number')+req('other_passport_country','Country of other passport')+req('other_passport_expiry','Other passport expiry date','date')+'</div></div>'+
+              req('home_address','Home country address')+field('current_address','Current address (only if different)','text','',false)+
+              '<div class="grid2">'+req('emergency_name','Emergency contact full name')+req('emergency_country','Emergency contact country of residence')+req('emergency_phone','Emergency contact telephone number','tel')+req('emergency_relationship','Emergency contact relationship')+'</div>'+
+          '</div>'+
+
+          '<div class="korea-sec" data-korea-section="3" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">3. Family & education</h4>'+
+            '<div class="grid2">'+
+              opt('marital_status','Marital status',['Single','Married','Divorced'],true)+opt('has_children','Do you have children?',['No','Yes'],true)+'</div>'+
+              '<div id="spouse_wrap" hidden><div class="grid2">'+req('spouse_last_name','Spouse family name')+req('spouse_first_name','Spouse given name(s)')+req('spouse_dob','Spouse date of birth','date')+req('spouse_nationality','Spouse nationality')+req('spouse_address','Spouse residential address')+req('spouse_phone','Spouse contact number')+'</div></div>'+
+              '<div id="children_wrap" hidden>'+req('children_count','Number of children','number')+'</div><div class="grid2">'+opt('education_level','Highest education completed',["Master's / Doctoral Degree","Bachelor's Degree","High School Diploma","Other"],true)+req('school_name','Name of school / college / university')+req('school_location','School location (city / province / country)')+'</div>'+
+              '<div id="education_other_wrap" hidden>'+req('education_other','Please describe your education level')+'</div>'+
+          '</div>'+
+
+          '<div class="korea-sec" data-korea-section="4" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">4. Work / study</h4>'+
+            '<div class="grid2">'+
+              opt('occupation','What best describes you?',['Entrepreneur','Self-Employed','Employed','Civil Servant','Student','Retired','Unemployed','Other'],true)+field('occupation_other','If Other, please describe','text','',false)+
+              req('employer_name','Company / institute / school name')+req('position','Position / course')+req('employer_address','Company / institute / school address')+req('employer_phone','Telephone number','tel')+'</div>'+
+          '</div>'+
+
+          '<div class="korea-sec" data-korea-section="5" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">5. Your trip to Korea</h4>'+
+            '<div class="grid2">'+
+              opt('purpose','Purpose of visit',['Tourism / Transit','Meeting / Conference','Medical Tourism','Business Trip','Study / Training','Work','Trade / Investment / Intra-Corporate Transfer','Visiting Family / Relatives / Friends','Marriage Migrant','Diplomatic / Official','Other'],true)+
+              opt('visa_period','Period of stay (Long/Short-term)',['Long-term Stay over 90 days','Short-term Stay less than 90 days'],true)+
+              req('stay_duration','How long will you stay?')+req('arrival_date','Intended date of entry','date')+req('korea_address','Address in Korea (hotel / host address)')+req('korea_phone','Contact number in Korea')+
+              opt('visited_korea_5y','Have you visited Korea in the last 5 years?',['No','Yes'],true)+opt('travelled_other_5y','Have you travelled outside your country of residence in the last 5 years?',['No','Yes'],true)+'</div>'+
+              '<div id="purpose_other_wrap" hidden>'+req('purpose_other','Please describe your purpose')+'</div>'+
+              '<div id="korea_visits_wrap" hidden>'+req('korea_visit_details','Previous Korea visits (how many, purpose and dates)')+'</div>'+
+              '<div id="other_travel_wrap" hidden>'+
+                '<div class="other-travel-container" style="margin-bottom: 12px; width: 100%;">'+
+                  '<label class="ulabel" style="margin-bottom:8px;display:block;font-weight:600">Travel history in the last 5 years (excluding Korea)</label>'+
+                  '<div id="other_travel_rows_container"></div>'+
+                  '<button type="button" class="btn btn-ghost" id="addTravelRowBtn" style="margin-top:8px;padding:6px 12px;font-size:13px;border:1.5px solid var(--line);border-radius:10px;font-weight:600">+ Add Country</button>'+
+                  '<input type="hidden" id="other_travel_countries" name="other_travel_countries">'+
+                  '<input type="hidden" id="other_travel_purposes" name="other_travel_purposes">'+
+                '</div>'+
+              '</div>'+
+          '</div>'+
+
+          '<div class="korea-sec" data-korea-section="6" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">6. Family in Korea & invitation</h4>'+
+            '<div class="grid2">'+
+              opt('family_in_korea','Do you have a family member staying in Korea?',['No','Yes'],true)+opt('travelling_with_family','Are you travelling to Korea with family?',['No','Yes'],true)+opt('has_inviter','Is anyone in Korea inviting you?',['No','Yes'],true)+'</div>'+
+              '<div id="family_korea_wrap" hidden>'+req('family_korea_details','Family in Korea: name, date of birth, nationality and relationship')+'</div>'+
+              '<div id="travel_family_wrap" hidden>'+req('travel_family_details','Travelling family: name, date of birth, nationality and relationship')+'</div>'+
+              '<div id="inviter_wrap" hidden><div class="grid2">'+req('inviter_name','Inviting person / organization')+req('inviter_registration','Date of birth / business registration no.')+req('inviter_relationship','Relationship to you')+req('inviter_address','Inviter address')+req('inviter_phone','Inviter phone number')+'</div></div>'+
+          '</div>'+
+
+          '<div class="korea-sec" data-korea-section="7" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">7. Costs & final check</h4>'+
+            '<div class="grid2">'+
+              req('travel_cost_usd','Estimated travel cost (USD)','number')+req('payer_name','Who will pay? Name / organization')+field('payer_relationship','Payer relationship to you','text','',false)+field('support_type','Type of support','text','',false)+field('payer_phone','Payer contact number','text','',false)+
+              opt('form_assistance','Did someone help you complete this form?',['No','Yes'],true)+'</div>'+
+              '<div id="assistance_wrap" hidden><div class="grid2">'+req('assistant_name','Helper full name')+req('assistant_dob','Helper date of birth','date')+req('assistant_phone','Helper telephone number')+req('assistant_relationship','Relationship to you')+'</div></div>'+
+              '<div class="grid2">'+req('application_date','Application date','date',today)+'</div>'+
+              (isSecondary?'<div class="review-contact-details group-contact-note"><p>Phone and email are taken from the primary applicant.</p></div>':
+              '<div class="grid2">'+
+                req('contact_email','Email address','email',meta.email||'')+
+                '<div class="field" id="mobileField"><label for="phone">Mobile / telephone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+              '</div>'+
+              '<div id="otpArea" class="otp-area" style="display:none"></div>')+
+              '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="korea_declaration" required> I confirm that the information I provided is true and correct. <span class="req-star">*</span></label>'+
+              '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="koreaBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+          '</div>'+
+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  var koreaSection=1;
+  function showKoreaSection(n){koreaSection=Math.max(1,Math.min(7,n));var sec=document.querySelector('.korea-sec[data-korea-section="'+koreaSection+'"]');if(sec){sec.scrollIntoView({behavior:'smooth',block:'center'});}}
+  function wireKoreaWorkflow(){
+    koreaSection=1;showKoreaSection(1);
+    function cond(id,wrap,test,requiredIds){var e=document.getElementById(id),w=document.getElementById(wrap);if(!e||!w)return;function sync(){var on=test(e.value);w.hidden=!on;(requiredIds||[]).forEach(function(x){var q=document.getElementById(x);if(q)q.required=on;});}e.addEventListener('change',sync);sync();}
+    cond('other_names_used','other_names_wrap',function(v){return v==='Yes';},['other_family_name','other_given_name']);
+    cond('multiple_citizenship','other_citizenship_wrap',function(v){return v==='Yes';},['other_countries']);
+    cond('other_valid_passport','other_passport_wrap',function(v){return v==='Yes';},['other_passport_type','other_passport_number','other_passport_country','other_passport_expiry']);
+    cond('marital_status','spouse_wrap',function(v){return v==='Married';},['spouse_last_name','spouse_first_name','spouse_dob','spouse_nationality','spouse_address','spouse_phone']);
+    cond('has_children','children_wrap',function(v){return v==='Yes';},['children_count']);
+    cond('education_level','education_other_wrap',function(v){return v==='Other';},['education_other']);
+    cond('purpose','purpose_other_wrap',function(v){return v==='Other';},['purpose_other']);
+    cond('visited_korea_5y','korea_visits_wrap',function(v){return v==='Yes';},['korea_visit_details']);
+    cond('travelled_other_5y','other_travel_wrap',function(v){return v==='Yes';},['other_travel_countries','other_travel_purposes']);
+    function initOtherTravelFields() {
+      var container = document.getElementById('other_travel_rows_container');
+      var addBtn = document.getElementById('addTravelRowBtn');
+      var hiddenCountries = document.getElementById('other_travel_countries');
+      var hiddenPurposes = document.getElementById('other_travel_purposes');
+      var trSelect = document.getElementById('travelled_other_5y');
+      if (!container || !addBtn || !hiddenCountries || !hiddenPurposes) return;
+
+      function updateHiddenFields() {
+        var countries = [];
+        var purposes = [];
+        var rows = container.querySelectorAll('.travel-row');
+        rows.forEach(function(row) {
+          var countryVal = (row.querySelector('.travel-country').value || '').trim();
+          var purposeVal = (row.querySelector('.travel-purpose').value || '').trim();
+          if (countryVal || purposeVal) {
+            countries.push(countryVal);
+            purposes.push(purposeVal);
+          }
+        });
+        hiddenCountries.value = countries.join(', ');
+        hiddenPurposes.value = purposes.join(', ');
+      }
+
+      function addRow(countryVal, purposeVal) {
+        var row = document.createElement('div');
+        row.className = 'grid2 travel-row';
+        row.style.marginBottom = '8px';
+        row.style.position = 'relative';
+        row.style.paddingRight = '40px';
+        row.innerHTML = 
+          '<div class="field" style="margin-bottom:0">' +
+            '<label>Country name <span class="req-star">*</span></label>' +
+            '<input type="text" class="travel-country" placeholder="e.g. Georgia">' +
+          '</div>' +
+          '<div class="field" style="margin-bottom:0">' +
+            '<label>Purpose of visit <span class="req-star">*</span></label>' +
+            '<input type="text" class="travel-purpose" placeholder="e.g. Tourism">' +
+          '</div>' +
+          '<button type="button" class="remove-travel-row" style="position:absolute;right:0;bottom:10px;background:none;border:none;color:var(--red-600);cursor:pointer;font-size:20px;font-weight:bold" title="Remove">&times;</button>';
+        
+        var cInput = row.querySelector('.travel-country');
+        var pInput = row.querySelector('.travel-purpose');
+        if (countryVal) cInput.value = countryVal;
+        if (purposeVal) pInput.value = purposeVal;
+
+        var on = trSelect && trSelect.value === 'Yes';
+        cInput.required = on;
+        pInput.required = on;
+
+        var syncInputs = function() {
+          updateHiddenFields();
+        };
+        cInput.addEventListener('input', syncInputs);
+        pInput.addEventListener('input', syncInputs);
+
+        row.querySelector('.remove-travel-row').onclick = function() {
+          row.remove();
+          updateHiddenFields();
+          if (container.querySelectorAll('.travel-row').length === 0) {
+            addRow('', '');
+          }
+        };
+
+        container.appendChild(row);
+        updateHiddenFields();
+      }
+
+      container.innerHTML = '';
+      var existingC = (hiddenCountries.value || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
+      var existingP = (hiddenPurposes.value || '').split(',').map(function(s){return s.trim();}).filter(Boolean);
+      
+      var rowCount = Math.max(existingC.length, existingP.length, 1);
+      for (var i = 0; i < rowCount; i++) {
+        addRow(existingC[i] || '', existingP[i] || '');
+      }
+
+      addBtn.onclick = function() {
+        addRow('', '');
+      };
+
+      if (trSelect) {
+        trSelect.addEventListener('change', function() {
+          var on = trSelect.value === 'Yes';
+          container.querySelectorAll('input').forEach(function(inp) {
+            inp.required = on;
+          });
+        });
+      }
+    }
+    initOtherTravelFields();
+    cond('family_in_korea','family_korea_wrap',function(v){return v==='Yes';},['family_korea_details']);
+    cond('travelling_with_family','travel_family_wrap',function(v){return v==='Yes';},['travel_family_details']);
+    cond('has_inviter','inviter_wrap',function(v){return v==='Yes';},['inviter_name','inviter_registration','inviter_relationship','inviter_address','inviter_phone']);
+    cond('form_assistance','assistance_wrap',function(v){return v==='Yes';},['assistant_name','assistant_dob','assistant_phone','assistant_relationship']);
+    Array.prototype.forEach.call(document.querySelectorAll('.korea-next'),function(b){b.onclick=function(){if(validateKoreaSection(koreaSection))showKoreaSection(koreaSection+1);};});
+    Array.prototype.forEach.call(document.querySelectorAll('.korea-prev'),function(b){b.onclick=function(){showKoreaSection(koreaSection-1);};});
+    var back=document.getElementById('koreaBackToPassport');if(back)back.onclick=function(){setApplyStep(2);};
+  }
+  function validateKoreaSection(section){var sec=document.querySelector('.korea-sec[data-korea-section="'+section+'"]');if(!sec)return true;var reqs=Array.prototype.slice.call(sec.querySelectorAll('[required]'));for(var i=0;i<reqs.length;i++){if(!reqs[i].checkValidity()){reqs[i].reportValidity();try{reqs[i].focus();}catch(_e){}return false;}}if(section===2){var a=(document.getElementById('passport_issue_date').value||''),b=(document.getElementById('passport_expiry').value||'');if(a&&b&&a>=b){toast('Passport expiry date must be after the issue date.');return false;}}if(section===7){var secondary=(Number(qParam('travellers'))||1)>1&&(Number(qParam('travellerIndex'))||0)>0;if(!secondary&&!mobileIsValid()){toast('Please enter a valid mobile number.');return false;}}return true;}
+  function validateAllKoreaSections(){for(var i=1;i<=7;i++){if(!validateKoreaSection(i)){showKoreaSection(i);return false;}}return true;}
+
+  var denmarkSection=1;
+  function showDenmarkSection(n){
+    var total = document.querySelectorAll('.denmark-sec').length || 5;
+    denmarkSection=Math.max(1,Math.min(total,n));
+    var sec=document.querySelector('.denmark-sec[data-denmark-section="'+denmarkSection+'"]');
+    if(sec){
+      sec.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  }
+  function wireDenmarkWorkflow(){
+    denmarkSection=1; showDenmarkSection(1);
+    function conditional(selectId,wrapId,requiredIds){
+      var sel=document.getElementById(selectId), wrap=document.getElementById(wrapId); if(!sel||!wrap)return;
+      function sync(){ var on=sel.value==='Yes'||sel.value==='Sponsor'; wrap.hidden=!on; (requiredIds||[]).forEach(function(id){var e=document.getElementById(id); if(e)e.required=on;}); }
+      sel.addEventListener('change',sync); sync();
+    }
+    conditional('is_minor','minor_guardian_wrap',['minor_guardian']);
+    conditional('other_country_residence','residence_permit_wrap',['residence_permit_no','residence_permit_until']);
+    conditional('schengen_fingerprints','fingerprint_wrap',[]);
+    if (window.currentCountrySlug !== 'switzerland') {
+      conditional('trip_payer','sponsor_wrap',['sponsor_details']);
+    }
+    conditional('eu_family','eu_family_wrap',['eu_family_name','eu_family_nationality','eu_family_dob','eu_family_document','eu_family_relationship']);
+
+    if (window.currentCountrySlug === 'switzerland') {
+      var tripPayer = document.getElementById('trip_payer');
+      var appMeansWrap = document.getElementById('applicant_means_wrap');
+      var sponsorWrap = document.getElementById('sponsor_wrap');
+      function syncTripPayer() {
+        if (!tripPayer) return;
+        var isApp = tripPayer.value === 'Applicant';
+        if (appMeansWrap) appMeansWrap.hidden = !isApp;
+        if (sponsorWrap) sponsorWrap.hidden = isApp;
+        
+        var appCbs = document.querySelectorAll('input[name="support_means_applicant"]');
+        var spTypes = document.querySelectorAll('input[name="sponsor_type"]');
+        var spCbs = document.querySelectorAll('input[name="support_means_sponsor"]');
+        
+        if (isApp) {
+          if (appCbs.length) appCbs[0].required = !document.querySelector('input[name="support_means_applicant"]:checked');
+          if (spTypes.length) spTypes.forEach(function(cb){ cb.required = false; cb.checked = false; });
+          if (spCbs.length) spCbs.forEach(function(cb){ cb.required = false; cb.checked = false; });
+          var spDetails = document.getElementById('sponsor_details');
+          if (spDetails) { spDetails.required = false; spDetails.value = ''; }
+          var spMeansOther = document.getElementById('sponsor_means_other');
+          if (spMeansOther) { spMeansOther.required = false; spMeansOther.value = ''; }
+          var spMeansOtherWrap = document.getElementById('sponsor_means_other_wrap');
+          if (spMeansOtherWrap) spMeansOtherWrap.hidden = true;
+          var spNameWrap = document.getElementById('sponsor_name_wrap');
+          if (spNameWrap) spNameWrap.hidden = true;
+        } else {
+          if (appCbs.length) appCbs.forEach(function(cb){ cb.required = false; cb.checked = false; });
+          var appOtherInput = document.getElementById('support_means_other');
+          if (appOtherInput) { appOtherInput.required = false; appOtherInput.value = ''; }
+          var appOtherWrap = document.getElementById('applicant_means_other_wrap');
+          if (appOtherWrap) appOtherWrap.hidden = true;
+          
+          if (spTypes.length) spTypes[0].required = !document.querySelector('input[name="sponsor_type"]:checked');
+          if (spCbs.length) spCbs[0].required = !document.querySelector('input[name="support_means_sponsor"]:checked');
+          syncSponsorType();
+        }
+      }
+      if (tripPayer) {
+        tripPayer.addEventListener('change', syncTripPayer);
+      }
+      
+      var appOtherCb = Array.prototype.find.call(document.querySelectorAll('input[name="support_means_applicant"]'), function(cb){ return cb.value === 'Other (please specify)'; });
+      var appOtherWrap = document.getElementById('applicant_means_other_wrap');
+      var appOtherInput = document.getElementById('support_means_other');
+      function syncAppOther() {
+        var on = appOtherCb && appOtherCb.checked;
+        if (appOtherWrap) appOtherWrap.hidden = !on;
+        if (appOtherInput) appOtherInput.required = on;
+        
+        var appCbs = document.querySelectorAll('input[name="support_means_applicant"]');
+        if (appCbs.length) appCbs[0].required = !document.querySelector('input[name="support_means_applicant"]:checked');
+      }
+      if (appOtherCb) {
+        appOtherCb.addEventListener('change', syncAppOther);
+      }
+      document.querySelectorAll('input[name="support_means_applicant"]').forEach(function(cb){
+        cb.addEventListener('change', syncAppOther);
+      });
+
+      var spOtherCb = document.getElementById('sponsor_type_other_cb');
+      var spHostCb = Array.prototype.find.call(document.querySelectorAll('input[name="sponsor_type"]'), function(cb){ return cb.value.indexOf('by a sponsor') === 0; });
+      var spNameWrap = document.getElementById('sponsor_name_wrap');
+      var spDetails = document.getElementById('sponsor_details');
+      function syncSponsorType() {
+        var showDetails = (spOtherCb && spOtherCb.checked) || (spHostCb && spHostCb.checked);
+        if (spNameWrap) spNameWrap.hidden = !showDetails;
+        if (spDetails) spDetails.required = showDetails;
+        if (!showDetails && spDetails) spDetails.value = '';
+        
+        var spTypes = document.querySelectorAll('input[name="sponsor_type"]');
+        if (spTypes.length) spTypes[0].required = !document.querySelector('input[name="sponsor_type"]:checked');
+      }
+      document.querySelectorAll('input[name="sponsor_type"]').forEach(function(cb){
+        cb.addEventListener('change', syncSponsorType);
+      });
+
+      var spMeansOtherCb = Array.prototype.find.call(document.querySelectorAll('input[name="support_means_sponsor"]'), function(cb){ return cb.value === 'Other (please specify)'; });
+      var spMeansOtherWrap = document.getElementById('sponsor_means_other_wrap');
+      var spMeansOtherInput = document.getElementById('sponsor_means_other');
+      function syncSponsorMeans() {
+        var on = spMeansOtherCb && spMeansOtherCb.checked;
+        if (spMeansOtherWrap) spMeansOtherWrap.hidden = !on;
+        if (spMeansOtherInput) spMeansOtherInput.required = on;
+        if (!on && spMeansOtherInput) spMeansOtherInput.value = '';
+        
+        var spCbs = document.querySelectorAll('input[name="support_means_sponsor"]');
+        if (spCbs.length) spCbs[0].required = !document.querySelector('input[name="support_means_sponsor"]:checked');
+      }
+      if (spMeansOtherCb) {
+        spMeansOtherCb.addEventListener('change', syncSponsorMeans);
+      }
+      document.querySelectorAll('input[name="support_means_sponsor"]').forEach(function(cb){
+        cb.addEventListener('change', syncSponsorMeans);
+      });
+
+      // Run initial syncs
+      setTimeout(function(){
+        syncTripPayer();
+        syncAppOther();
+        syncSponsorType();
+        syncSponsorMeans();
+      }, 50);
+    }
+    conditional('final_entry_permit','entry_permit_wrap',['entry_permit_issued_by','entry_permit_from','entry_permit_until']);
+    Array.prototype.forEach.call(document.querySelectorAll('.denmark-next'),function(btn){btn.onclick=function(){ if(!validateDenmarkSection(denmarkSection)){ return; } showDenmarkSection(denmarkSection+1);};});
+    Array.prototype.forEach.call(document.querySelectorAll('.denmark-prev'),function(btn){btn.onclick=function(){showDenmarkSection(denmarkSection-1);};});
+    var back=document.getElementById('denmarkBackToPassport'); if(back) back.onclick=function(){setApplyStep(2);};
+  }
+
+
+  function denmarkFieldError(id,message,section){
+    var el=document.getElementById(id);
+    toast(message);
+    if(section) showDenmarkSection(section);
+    if(el){ setTimeout(function(){ try{ el.focus(); if(el.reportValidity) el.reportValidity(); }catch(_e){} },220); }
+    return false;
+  }
+
+  function validateDenmarkSection(section){
+    var sec=document.querySelector('.denmark-sec[data-denmark-section="'+section+'"]');
+    if(!sec) return true;
+    var reqs=Array.prototype.slice.call(sec.querySelectorAll('[required]'));
+    for(var i=0;i<reqs.length;i++){
+      if(!reqs[i].checkValidity()){
+        var lab=sec.querySelector('label[for="'+reqs[i].id+'"]');
+        toast('Please complete '+((lab&&lab.textContent)||'all required details').replace('*','').trim()+'.');
+        reqs[i].reportValidity();
+        try{reqs[i].focus();}catch(_e){}
+        return false;
+      }
+    }
+    
+    // Dynamic Passport Issue & Expiry date check
+    var issueEl=document.getElementById('passport_issue_date'), expiryEl=document.getElementById('passport_expiry');
+    if (issueEl && expiryEl) {
+      var expSec = expiryEl.closest('.denmark-sec');
+      if (expSec) {
+        var expSecNum = Number(expSec.getAttribute('data-denmark-section'));
+        if (section === expSecNum) {
+          var issue=issueEl.value.trim(), expiry=expiryEl.value.trim();
+          if(issue&&expiry&&issue>=expiry) return denmarkFieldError('passport_expiry','Passport expiry date must be after the issue date.', expSecNum);
+        }
+      }
+    }
+
+    // Dynamic Travel Arrival & Departure date check
+    var arrEl=document.getElementById('arrival_date'), depEl=document.getElementById('departure_date');
+    if (arrEl && depEl) {
+      var depSec = depEl.closest('.denmark-sec');
+      if (depSec) {
+        var depSecNum = Number(depSec.getAttribute('data-denmark-section'));
+        if (section === depSecNum) {
+          var arr=arrEl.value.trim(), dep=depEl.value.trim();
+          if(arr&&dep&&arr>=dep) return denmarkFieldError('departure_date','Return date must be after the arrival date.', depSecNum);
+          
+          // Passport validity 6-months check from travel date
+          var pexpEl=document.getElementById('passport_expiry');
+          var pexp=pexpEl?(pexpEl.value||'').trim():'';
+          if(arr&&pexp){
+            var d=new Date(arr+'T00:00:00'); d.setMonth(d.getMonth()+6);
+            var min=d.toISOString().slice(0,10);
+            if(pexp<min) return denmarkFieldError('arrival_date','Your passport should be valid for at least 6 months from the travel date.', depSecNum);
+          }
+        }
+      }
+    }
+
+    if(section===4){
+      if(window.currentCountrySlug === 'switzerland') {
+        var payer = document.getElementById('trip_payer').value;
+        if(payer === 'Applicant') {
+          var appChecked = document.querySelector('input[name="support_means_applicant"]:checked');
+          if(!appChecked) {
+            toast('Please select at least one means of support.');
+            return false;
+          }
+          var appOtherCb = Array.prototype.find.call(document.querySelectorAll('input[name="support_means_applicant"]'), function(cb){ return cb.value === 'Other (please specify)'; });
+          if(appOtherCb && appOtherCb.checked && !document.getElementById('support_means_other').value.trim()) {
+            toast('Please specify other means of support.');
+            document.getElementById('support_means_other').focus();
+            return false;
+          }
+        } else {
+          var typeChecked = document.querySelector('input[name="sponsor_type"]:checked');
+          if(!typeChecked) {
+            toast('Please select at least one sponsor type.');
+            return false;
+          }
+          var spOtherCb = document.getElementById('sponsor_type_other_cb');
+          var spHostCb = Array.prototype.find.call(document.querySelectorAll('input[name="sponsor_type"]'), function(cb){ return cb.value.indexOf('by a sponsor') === 0; });
+          if(((spOtherCb && spOtherCb.checked) || (spHostCb && spHostCb.checked)) && !document.getElementById('sponsor_details').value.trim()) {
+            toast('Please provide sponsor details.');
+            document.getElementById('sponsor_details').focus();
+            return false;
+          }
+          var spChecked = document.querySelector('input[name="support_means_sponsor"]:checked');
+          if(!spChecked) {
+            toast('Please select at least one means of support by sponsor.');
+            return false;
+          }
+          var spMeansOtherCb = Array.prototype.find.call(document.querySelectorAll('input[name="support_means_sponsor"]'), function(cb){ return cb.value === 'Other (please specify)'; });
+          if(spMeansOtherCb && spMeansOtherCb.checked && !document.getElementById('sponsor_means_other').value.trim()) {
+            toast('Please specify other sponsor means.');
+            document.getElementById('sponsor_means_other').focus();
+            return false;
+          }
+        }
+      } else {
+        var supportOptions=document.querySelectorAll('input[name="support_means"]');
+        if(supportOptions.length && !document.querySelector('input[name="support_means"]:checked')){
+          toast('Please select at least one way the trip will be paid for.');
+          return false;
+        }
+      }
+    }
+    if(section===5){
+      var secondary=(Number(qParam('travellers'))||1)>1 && (Number(qParam('travellerIndex'))||0)>0;
+      if(!secondary && !mobileIsValid()) return denmarkFieldError('phone','Please enter a valid mobile number.',5);
+      if(!secondary && mobileOtpRequired && (!mobileVerified || currentMobileE164()!==verifiedNumber)){
+        toast('Please verify your mobile number before continuing.');
+        showDenmarkSection(5);
+        var send=document.getElementById('otpSend'); if(send) setTimeout(function(){send.focus();},220);
+        return false;
+      }
+      var fromEl=document.getElementById('entry_permit_from'), untilEl=document.getElementById('entry_permit_until');
+      var from=fromEl?(fromEl.value||'').trim():'', until=untilEl?(untilEl.value||'').trim():'';
+      if(from&&until&&from>until) return denmarkFieldError('entry_permit_until','Entry permit valid-until date must be after the valid-from date.',5);
+    }
+    return true;
+  }
+
+  function validateAllDenmarkSections(){
+    var total = document.querySelectorAll('.denmark-sec').length || 5;
+    for(var s=1;s<=total;s++){ if(!validateDenmarkSection(s)){ showDenmarkSection(s); return false; } }
+    return true;
   }
 
   function getJapanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
@@ -1061,9 +1995,12 @@
                       '<span class="phint" style="display:inline">You can unsubscribe anytime. We\'ll still send updates about your own application either way.</span></span>'+
                   '</label>'+
                 '</div>'+
-                '<div class="wizard-navigation-footer">'+
+                '<div class="wizard-navigation-footer" style="align-items:center;">'+
                   '<button type="button" class="btn btn-ghost wizard-btn-back"><span aria-hidden="true">←</span> Back</button>'+
-                  '<button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="background:#168177 !important; border-radius:13px !important; max-width:330px !important;">Submit application</button>'+
+                  '<div style="display:flex; gap:12px; align-items:center;">'+
+                    '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:13px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button>'+
+                    '<button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="background:#168177 !important; border-radius:13px !important; max-width:330px !important;">Submit application</button>'+
+                  '</div>'+
                 '</div>'+
               '</div>'+
             '</div>'+
@@ -2167,7 +3104,18 @@
         '<div id="applyStep3" data-apply-step="3"' + (applyWizardStep !== 3 ? ' hidden' : '') + '>'+
           (chosen.country_slug === 'japan'
             ? getJapanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-            : getStandardStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)) +
+            : (chosen.country_slug === 'ireland'
+              ? getIrelandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+              : (chosen.country_slug === 'greece' ? getFranceGermanyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+              : (chosen.country_slug === 'azerbaijan' ? getAzerbaijanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+              : (chosen.country_slug === 'south-korea'
+              ? getSouthKoreaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+              : ((chosen.country_slug === 'denmark' || chosen.country_slug === 'spain' || chosen.country_slug === 'switzerland' || chosen.country_slug === 'france' || chosen.country_slug === 'germany')
+                ? (chosen.country_slug === 'spain' ? getSpainStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+                  : (chosen.country_slug === 'switzerland' ? getSwitzerlandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+                  : (chosen.country_slug === 'france' || chosen.country_slug === 'germany' ? getFranceGermanyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
+                  : getDenmarkStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName))))
+                : getStandardStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName))))))) +
         '<div class="review-image-modal" id="passportPreviewModal" role="dialog" aria-modal="true" aria-labelledby="passportPreviewTitle" hidden>'+
           '<div class="review-image-dialog">'+
             '<div class="review-image-head"><b id="passportPreviewTitle">Passport page</b><button type="button" id="passportPreviewClose" aria-label="Close passport preview">×</button></div>'+
@@ -2192,23 +3140,30 @@
       var isMultiple = (Number(qParam('travellers'))||1)>1;
       var travellerIndex = Number(qParam('travellerIndex'))||0;
       var isSecondary = isMultiple && travellerIndex > 0;
-      if (!isSecondary) {
-        initMobileField();
-      }
-      wireApplyWizard();
-      wireJapanWizard();
-      wireJapanWorkflow();
-      updateAllJapanSectionStatuses();
+      if (!isSecondary) { initMobileField(); }
+      wireApplyWizard(); wireJapanWizard(); wireJapanWorkflow(); updateAllJapanSectionStatuses();
       var form = document.getElementById('applyForm');
-      if (form) {
-        form.addEventListener('input', updateAllJapanSectionStatuses);
-        form.addEventListener('change', updateAllJapanSectionStatuses);
-      }
+      if (form) { form.addEventListener('input', updateAllJapanSectionStatuses); form.addEventListener('change', updateAllJapanSectionStatuses); }
+    } else if (chosen.country_slug === 'ireland') {
+      wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
+      var ireIsMultiple=(Number(qParam('travellers'))||1)>1, ireIdx=Number(qParam('travellerIndex'))||0;
+      if(!(ireIsMultiple&&ireIdx>0)) initMobileField();
+      wireApplyWizard(); wireDenmarkWorkflow();
+    } else if (chosen.country_slug === 'south-korea') {
+      wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
+      var korIsMultiple=(Number(qParam('travellers'))||1)>1, korIdx=Number(qParam('travellerIndex'))||0;
+      if(!(korIsMultiple&&korIdx>0)) initMobileField();
+      wireApplyWizard(); wireKoreaWorkflow();
+    } else if (chosen.country_slug === 'denmark' || chosen.country_slug === 'spain' || chosen.country_slug === 'switzerland' || chosen.country_slug === 'france' || chosen.country_slug === 'germany' || chosen.country_slug === 'greece' || chosen.country_slug === 'azerbaijan') {
+      window.currentCountrySlug = chosen.country_slug;
+      wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
+      var denIsMultiple=(Number(qParam('travellers'))||1)>1, denIdx=Number(qParam('travellerIndex'))||0;
+      if(!(denIsMultiple&&denIdx>0)) initMobileField();
+      wireApplyWizard(); wireDenmarkWorkflow();
     } else {
       loadApplyQuestions(selected);
       wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
-      initMobileField();
-      wireApplyWizard();
+      initMobileField(); wireApplyWizard();
     }
     loadMySavedTravellerProfiles();
 
@@ -2571,6 +3526,305 @@
     modal.onkeydown=function(event){ if(event.key==='Escape'){ event.preventDefault(); closePreview(); } };
   }
 
+  var visadooDb = {
+    dbName: 'visadoo-drafts-db',
+    dbVersion: 1,
+    getDb: function() {
+      return new Promise(function(resolve, reject) {
+        var request = indexedDB.open(visadooDb.dbName, visadooDb.dbVersion);
+        request.onerror = function() { reject(request.error); };
+        request.onsuccess = function() { resolve(request.result); };
+        request.onupgradeneeded = function(e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains('files')) {
+            db.createObjectStore('files');
+          }
+        };
+      });
+    },
+    saveFile: function(key, file) {
+      return visadooDb.getDb().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction('files', 'readwrite');
+          var store = tx.objectStore('files');
+          var req = store.put(file, key);
+          req.onerror = function() { reject(req.error); };
+          req.onsuccess = function() { resolve(); };
+        });
+      });
+    },
+    getFile: function(key) {
+      return visadooDb.getDb().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction('files', 'readonly');
+          var store = tx.objectStore('files');
+          var req = store.get(key);
+          req.onerror = function() { reject(req.error); };
+          req.onsuccess = function() { resolve(req.result); };
+        });
+      });
+    },
+    deleteFile: function(key) {
+      return visadooDb.getDb().then(function(db) {
+        return new Promise(function(resolve, reject) {
+          var tx = db.transaction('files', 'readwrite');
+          var store = tx.objectStore('files');
+          var req = store.delete(key);
+          req.onerror = function() { reject(req.error); };
+          req.onsuccess = function() { resolve(); };
+        });
+      });
+    }
+  };
+
+  function checkFormValidityState() {
+    var form = document.getElementById('applyForm');
+    if (!form) return false;
+
+    // 1. Standard HTML5 validity
+    if (!form.checkValidity()) return false;
+
+    // 2. Uploaded documents
+    if (!picked.photo) return false;
+    if (!picked.passport) return false;
+    
+    // Check passport back if it's required (i.e. if the drop zone for it exists in the DOM)
+    var backZone = document.getElementById('drop_passport_back');
+    if (backZone && !picked.passport_back) return false;
+
+    // 3. Phone number validation (if primary applicant)
+    var phoneInput = document.getElementById('phone');
+    if (phoneInput && !mobileIsValid()) return false;
+
+    return true;
+  }
+
+  function updateSubmitButtonState() {
+    var btn = document.getElementById('submitBtn');
+    var form = document.getElementById('applyForm');
+    if (btn && form) {
+      btn.style.transition = 'opacity 0.2s, filter 0.2s';
+      var isValid = checkFormValidityState();
+      if (isValid) {
+        btn.style.opacity = '1';
+        btn.style.filter = 'none';
+        btn.style.cursor = 'pointer';
+      } else {
+        btn.style.opacity = '0.5';
+        btn.style.filter = 'grayscale(1) contrast(0.5) blur(0.5px)';
+        btn.style.cursor = 'not-allowed';
+      }
+    }
+  }
+
+  function autoSaveDraft() {
+    if (applyWizardStep !== 3) return;
+    var visaId = qParam('visa');
+    var travellerIndex = Number(qParam('travellerIndex')) || 0;
+    var draftKey = 'visadoo-draft-' + visaId + '-' + travellerIndex;
+    
+    var draftData = {};
+    var form = document.getElementById('applyForm');
+    if (form) {
+      var inputs = form.querySelectorAll('input, select, textarea');
+      inputs.forEach(function(input) {
+        if (input.id && input.type !== 'file' && input.type !== 'submit' && input.type !== 'button') {
+          if (input.type === 'checkbox' || input.type === 'radio') {
+            draftData[input.id] = { type: input.type, checked: input.checked };
+          } else {
+            draftData[input.id] = { type: input.type, value: input.value };
+          }
+        }
+      });
+      localStorage.setItem(draftKey, JSON.stringify(draftData));
+    }
+
+    try {
+      if (picked.photo) visadooDb.saveFile(draftKey + '-photo', picked.photo);
+      else visadooDb.deleteFile(draftKey + '-photo');
+    } catch(e) {}
+    try {
+      if (picked.passport) visadooDb.saveFile(draftKey + '-passport', picked.passport);
+      else visadooDb.deleteFile(draftKey + '-passport');
+    } catch(e) {}
+    try {
+      if (picked.passport_back) visadooDb.saveFile(draftKey + '-passport_back', picked.passport_back);
+      else visadooDb.deleteFile(draftKey + '-passport_back');
+    } catch(e) {}
+    try {
+      if (picked.signature) visadooDb.saveFile(draftKey + '-signature', picked.signature);
+      else visadooDb.deleteFile(draftKey + '-signature');
+    } catch(e) {}
+
+    updateSubmitButtonState();
+  }
+
+  function showResumeDraftModal(draftKey) {
+    if (document.getElementById('resumeDraftModal')) return;
+
+    var modal = document.createElement('div');
+    modal.id = 'resumeDraftModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.zIndex = '10000';
+    modal.style.backdropFilter = 'blur(4px)';
+
+    var card = document.createElement('div');
+    card.style.backgroundColor = '#ffffff';
+    card.style.borderRadius = '16px';
+    card.style.padding = '24px';
+    card.style.maxWidth = '440px';
+    card.style.width = '90%';
+    card.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+    card.style.textAlign = 'center';
+    card.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+    
+    card.innerHTML = 
+      '<h3 style="margin-top:0; color:#1e293b; font-size:18px; font-weight:700;">Resume Application?</h3>' +
+      '<p style="color:#64748b; font-size:14.5px; line-height:1.5; margin:12px 0 24px;">We found a draft of your application. Would you like to continue your application or start a new one?</p>' +
+      '<div style="display:flex; gap:12px; justify-content:center;">' +
+        '<button type="button" id="btnResumeDraftFresh" style="padding:10px 16px; border:1px solid #cbd5e1; background:#ffffff; color:#334155; border-radius:12px; font-weight:600; cursor:pointer;">New Application</button>' +
+        '<button type="button" id="btnResumeDraftRestore" style="padding:10px 20px; border:none; background:#168177; color:#ffffff; border-radius:12px; font-weight:600; cursor:pointer;">Continue Application</button>' +
+      '</div>';
+
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+
+    document.getElementById('btnResumeDraftFresh').onclick = function() {
+      localStorage.removeItem(draftKey);
+      try {
+        visadooDb.deleteFile(draftKey + '-photo');
+        visadooDb.deleteFile(draftKey + '-passport');
+        visadooDb.deleteFile(draftKey + '-passport_back');
+        visadooDb.deleteFile(draftKey + '-signature');
+      } catch(e) {}
+      modal.remove();
+    };
+
+    document.getElementById('btnResumeDraftRestore').onclick = async function() {
+      try {
+        var draftData = JSON.parse(localStorage.getItem(draftKey));
+        if (draftData) {
+          Object.keys(draftData).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+              var info = draftData[id];
+              if (info.type === 'checkbox' || info.type === 'radio') {
+                el.checked = info.checked;
+              } else {
+                el.value = info.value;
+              }
+              var event = new Event('change', { bubbles: true });
+              el.dispatchEvent(event);
+              var event2 = new Event('input', { bubbles: true });
+              el.dispatchEvent(event2);
+            }
+          });
+        }
+      } catch(e) {
+        console.error('Error restoring draft text fields:', e);
+      }
+
+      try {
+        var photoFile = await visadooDb.getFile(draftKey + '-photo');
+        if (photoFile) {
+          picked.photo = photoFile;
+          try {
+            var thumb = await createPhotoThumbnail(photoFile);
+            picked.photoThumbnail = thumb;
+          } catch(e) {}
+          var zone = document.getElementById('drop_photo');
+          if (zone) {
+            zone.classList.add('has');
+            var previewUrl = URL.createObjectURL(photoFile);
+            zone.style.backgroundImage = 'url(' + previewUrl + ')';
+            zone.style.backgroundSize = 'cover';
+            zone.style.backgroundPosition = 'center';
+          }
+          var fname = document.getElementById('fname_photo');
+          if (fname) fname.textContent = '✓ ' + photoFile.name;
+          if (typeof setPhotoCheckUi === 'function') {
+            setPhotoCheckUi('success', 'Photo looks good', 'Photo restored from draft.');
+          }
+        }
+      } catch(e) { console.error('Error restoring photo file:', e); }
+
+      try {
+        var passportFile = await visadooDb.getFile(draftKey + '-passport');
+        if (passportFile) {
+          picked.passport = passportFile;
+          passportOcrState.frontVerified = true;
+          var zone = document.getElementById('drop_passport');
+          if (zone) {
+            zone.classList.add('has');
+            var previewUrl = URL.createObjectURL(passportFile);
+            zone.style.setProperty('--bg-image', 'url(' + previewUrl + ')');
+          }
+          var fname = document.getElementById('fname_passport');
+          if (fname) fname.textContent = '✓ ' + passportFile.name;
+          if (typeof setPassportPageUi === 'function') {
+            setPassportPageUi('passport', 'success', 'Passport front loaded', 'Restored from draft.');
+          }
+        }
+      } catch(e) { console.error('Error restoring passport file:', e); }
+
+      try {
+        var passportBackFile = await visadooDb.getFile(draftKey + '-passport_back');
+        if (passportBackFile) {
+          picked.passport_back = passportBackFile;
+          var zone = document.getElementById('drop_passport_back');
+          if (zone) {
+            zone.classList.add('has');
+            var previewUrl = URL.createObjectURL(passportBackFile);
+            zone.style.setProperty('--bg-image', 'url(' + previewUrl + ')');
+          }
+          var fname = document.getElementById('fname_passport_back');
+          if (fname) fname.textContent = '✓ ' + passportBackFile.name;
+          if (typeof setPassportPageUi === 'function') {
+            setPassportPageUi('passport_back', 'success', 'Passport back loaded', 'Restored from draft.');
+          }
+        }
+      } catch(e) { console.error('Error restoring passport back file:', e); }
+
+      try {
+        var signatureFile = await visadooDb.getFile(draftKey + '-signature');
+        if (signatureFile) {
+          picked.signature = signatureFile;
+          var zone = document.getElementById('drop_signature');
+          if (zone) zone.classList.add('has');
+          var fname = document.getElementById('fname_signature');
+          if (fname) fname.textContent = '✓ ' + signatureFile.name;
+        }
+      } catch(e) { console.error('Error restoring signature file:', e); }
+
+      if (typeof updateDocumentsNext === 'function') {
+        updateDocumentsNext();
+      }
+
+      setApplyStep(3);
+      
+      toast('Draft restored successfully.');
+      modal.remove();
+    };
+  }
+
+  function checkForDraft(){
+    var visaId = qParam('visa');
+    var travellerIndex = Number(qParam('travellerIndex')) || 0;
+    var draftKey = 'visadoo-draft-' + visaId + '-' + travellerIndex;
+    var savedDraft = localStorage.getItem(draftKey);
+    if (savedDraft) {
+      showResumeDraftModal(draftKey);
+    }
+  }
+
   function setApplyStep(step){
     var one=document.getElementById('applyStep1'), two=document.getElementById('applyStep2'), three=document.getElementById('applyStep3');
     if(!one||!two||!three) return;
@@ -2579,6 +3833,7 @@
     document.body.classList.toggle('apply-reviewing',step===3);
     if(step===3){
       seedPassportNameFields();
+      updateSubmitButtonState();
     }
     var active=step===1?one:(step===2?two:three);
     var heading=active.querySelector('[data-step-heading]')||active.querySelector('h2');
@@ -2592,6 +3847,39 @@
     if(!photoNext||!passportNext) return;
     photoNext.onclick=function(){ if(!photoNext.disabled) setApplyStep(2); };
     passportNext.onclick=function(){ if(!passportNext.disabled) setApplyStep(3); };
+    
+    var standardBackBtn = document.getElementById('standardBackBtn');
+    if (standardBackBtn) {
+      standardBackBtn.onclick = function() { autoSaveDraft(); setApplyStep(2); };
+    }
+
+    var saveDraftBtn = document.getElementById('saveDraftBtn');
+    if (saveDraftBtn) {
+      saveDraftBtn.onclick = function() {
+        autoSaveDraft();
+        toast('Draft saved successfully.');
+      };
+    }
+
+    var form = document.getElementById('applyForm');
+    if (form) {
+      form.addEventListener('input', autoSaveDraft);
+      form.addEventListener('change', autoSaveDraft);
+    }
+
+    // Auto-save when going back inside forms
+    Array.prototype.forEach.call(document.querySelectorAll('.denmark-prev, .korea-prev, #denmarkBackToPassport, #koreaBackToPassport'), function(btn) {
+      var oldClick = btn.onclick;
+      btn.onclick = function(e) {
+        autoSaveDraft();
+        if (typeof oldClick === 'function') oldClick.call(this, e);
+      };
+    });
+
+    // Check for saved draft immediately on wizard load (Step 1)
+    checkForDraft();
+    updateSubmitButtonState();
+
     ['first_name','last_name'].forEach(function(id){
       var input=document.getElementById(id);
       if(input) input.addEventListener('input',syncPassportFullName);
@@ -2624,14 +3912,14 @@
     var passportButton=document.getElementById('passportNext');
     if(photoButton) photoButton.disabled=!picked.photo;
     if(passportButton) {
-      var noPassportSelected = !picked.passport && !picked.passport_back;
       var bothPassportsVerified = picked.passport && picked.passport_back && !passportOcrState.busy && passportOcrState.frontVerified;
       var frontZone = document.getElementById('drop_passport');
       var backZone = document.getElementById('drop_passport_back');
       var isInvalid = (frontZone && frontZone.classList.contains('invalid')) || 
                       (backZone && backZone.classList.contains('invalid'));
-      passportButton.disabled = isInvalid || !(noPassportSelected || bothPassportsVerified);
+      passportButton.disabled = isInvalid || !bothPassportsVerified;
     }
+    updateSubmitButtonState();
   }
 
   function setPassportPageUi(key,tone,title,message){
@@ -2644,7 +3932,7 @@
   }
 
   function mrzCountryName(code){
-    var map={IND:'India',ARE:'United Arab Emirates',USA:'United States',GBR:'United Kingdom',CAN:'Canada',AUS:'Australia',PAK:'Pakistan',BGD:'Bangladesh',NPL:'Nepal',LKA:'Sri Lanka',PHL:'Philippines',IDN:'Indonesia',MYS:'Malaysia',SGP:'Singapore',SAU:'Saudi Arabia',QAT:'Qatar',KWT:'Kuwait',OMN:'Oman',BHR:'Bahrain',EGY:'Egypt',ZAF:'South Africa',NZL:'New Zealand',DEU:'Germany',FRA:'France',ITA:'Italy',ESP:'Spain',NLD:'Netherlands',IRL:'Ireland',JPN:'Japan',CHN:'China',KOR:'South Korea',THA:'Thailand',VNM:'Vietnam',TUR:'Turkey'};
+    var map={IND:'India',ARE:'United Arab Emirates',USA:'United States',GBR:'United Kingdom',CAN:'Canada',AUS:'Australia',PAK:'Pakistan',BGD:'Bangladesh',NPL:'Nepal',LKA:'Sri Lanka',PHL:'Philippines',IDN:'Indonesia',MYS:'Malaysia',SGP:'Singapore',SAU:'Saudi Arabia',QAT:'Qatar',KWT:'Kuwait',OMN:'Oman',BHR:'Bahrain',EGY:'Egypt',ZAF:'South Africa',NZL:'New Zealand',DEU:'Germany',FRA:'France',ITA:'Italy',ESP:'Spain',NLD:'Netherlands',IRL:'Ireland',JPN:'Japan',DNK:'Denmark',CHN:'China',KOR:'South Korea',THA:'Thailand',VNM:'Vietnam',TUR:'Turkey'};
     return map[code]||code||'';
   }
 
@@ -2702,9 +3990,15 @@
 
   function seedPassportNameFields(){
     var first=document.getElementById('first_name'), last=document.getElementById('last_name'), full=document.getElementById('full_name');
-    if(!first||!last||!full||first.value.trim()||last.value.trim()) return;
-    var split=splitPassportName(full.value);
-    first.value=split.firstName; last.value=split.lastName;
+    if(first && last && full && !first.value.trim() && !last.value.trim()) {
+      var split=splitPassportName(full.value);
+      first.value=split.firstName; last.value=split.lastName;
+    }
+    var savedNat = localStorage.getItem('visadoo_nationality') || qParam('nationality');
+    var natInput = document.getElementById('nationality');
+    if (natInput && savedNat && !natInput.value.trim()) {
+      natInput.value = savedNat;
+    }
   }
 
   function syncPassportFullName(){
@@ -2731,6 +4025,27 @@
     var passportNumber=second.slice(0,9).replace(/</g,'').trim();
     var surname=first.slice(5).split('<<')[0].replace(/<+/g,' ').trim();
     var givenNames=first.slice(5).split('<<').slice(1).join(' ').replace(/<+/g,' ').trim();
+    
+    // Robust fallback for single-name passports or missing/misread '<<' separators
+    if (!givenNames && surname) {
+      var parts = surname.split(' ');
+      if (parts.length === 1) {
+        givenNames = surname;
+        surname = '';
+      } else {
+        givenNames = parts.slice(0, -1).join(' ');
+        surname = parts[parts.length - 1];
+      }
+    } else if (givenNames && !surname) {
+      var parts = givenNames.split(' ');
+      if (parts.length === 1) {
+        surname = '';
+      } else {
+        surname = parts[parts.length - 1];
+        givenNames = parts.slice(0, -1).join(' ');
+      }
+    }
+
     var genderCode=second.charAt(20);
     var result={
       firstName:titleCaseOcrName(givenNames),
@@ -2766,6 +4081,32 @@
   function parsePassportVisualDetails(text,known){
     known=known||{};
     var lines=String(text||'').toUpperCase().split(/\r?\n/).map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
+    
+    // Extract birthplace
+    var birthplaceCity = '';
+    var birthplaceState = '';
+    var birthplaceCountry = known.nationality || 'India';
+    
+    for(var i=0; i<lines.length; i++){
+      if(/(PLACE\s*OF\s*BIRTH|BIRTHPLACE|BIRTH\s*PLACE|PLACE\s*OF\s*BIRT)/i.test(lines[i])){
+        for(var j=i+1; j<Math.min(lines.length, i+3); j++){
+          var nextLine = lines[j].trim();
+          if (ocrDates(nextLine).length > 0 || /(DATE|ISSUE|EXPIRY|PASSPORT|AUTHORITY|GENDER|SEX|NATIONALITY)/i.test(nextLine)) {
+            continue;
+          }
+          var parts = nextLine.split(',').map(function(p){ return p.trim(); }).filter(Boolean);
+          if (parts.length > 0) {
+            birthplaceCity = titleCaseOcrName(parts[0]);
+            if (parts.length > 1) {
+              birthplaceState = titleCaseOcrName(parts[1]);
+            }
+            break;
+          }
+        }
+        break;
+      }
+    }
+
     var candidates=[];
     lines.forEach(function(line,index){
       ocrDates(line).forEach(function(date){
@@ -2775,16 +4116,26 @@
         if(!candidates.some(function(candidate){return candidate.date===date;})) candidates.push({date:date,line:index});
       });
     });
-    if(!candidates.length) return {};
-    var issueLines=[];
-    for(var i=0;i<lines.length;i++){
-      if(/(DATE\s+(OF\s+)?ISSUE|ISSUE\s+DATE)/.test(lines[i])) issueLines.push(i);
+
+    var issueDate = '';
+    if(candidates.length) {
+      var issueLines=[];
+      for(var i=0;i<lines.length;i++){
+        if(/(DATE\s+(OF\s+)?ISSUE|ISSUE\s+DATE)/.test(lines[i])) issueLines.push(i);
+      }
+      candidates.forEach(function(candidate){
+        candidate.distance=issueLines.length?Math.min.apply(null,issueLines.map(function(line){return Math.abs(line-candidate.line);})) : 99;
+      });
+      candidates.sort(function(a,b){ return a.distance-b.distance||b.date.localeCompare(a.date); });
+      issueDate = candidates[0].date;
     }
-    candidates.forEach(function(candidate){
-      candidate.distance=issueLines.length?Math.min.apply(null,issueLines.map(function(line){return Math.abs(line-candidate.line);})) : 99;
-    });
-    candidates.sort(function(a,b){ return a.distance-b.distance||b.date.localeCompare(a.date); });
-    return {passportIssueDate:candidates[0].date};
+
+    return {
+      passportIssueDate: issueDate,
+      birthplaceCity: birthplaceCity,
+      birthplaceState: birthplaceState,
+      birthplaceCountry: birthplaceCountry
+    };
   }
 
   function preparePassportForOcr(file){
@@ -2832,6 +4183,9 @@
     set('gender',data.gender,false);
     if(data.passportIssueDate&&data.passportIssueDate!==data.passportExpiry) set('passport_issue_date',data.passportIssueDate,false);
     set('passport_expiry',data.passportExpiry,false);
+    set('birthplace_city',data.birthplaceCity,false);
+    set('birthplace_state',data.birthplaceState,false);
+    set('birthplace_country',data.birthplaceCountry,false);
     if(data.issuingCountry){
       var countryInput=document.getElementById('passport_issuing_country');
       if(countryInput) countryInput.value=data.issuingCountry;
@@ -2844,7 +4198,14 @@
   function fillPassportBackFields(data){
     if(!data) return 0;
     var count=0;
-    [['father_name',data.fatherName],['mother_name',data.motherName]].forEach(function(pair){
+    [
+      ['father_name',data.fatherName],
+      ['mother_name',data.motherName],
+      ['residential_address',data.address],
+      ['home_address',data.address],
+      ['current_address',data.address],
+      ['residence_pincode',data.pincode]
+    ].forEach(function(pair){
       var input=document.getElementById(pair[0]);
       if(input&&pair[1]){ input.value=pair[1]; count++; }
     });
@@ -3035,9 +4396,7 @@
   async function validatePassportImage(key,file){
     var isTestFile = file && (
       file.name === 'passport-bio-page.png' || 
-      file.name === 'passport-front-back-bw.jpg' || 
-      file.name.toLowerCase().indexOf('passport') > -1 ||
-      file.name.toLowerCase().indexOf('bio') > -1
+      file.name === 'passport-front-back-bw.jpg'
     );
     
     if (isTestFile || !window.Tesseract || !window.Tesseract.createWorker) {
@@ -3052,7 +4411,10 @@
         dateOfBirth: '1990-01-01',
         gender: 'Male',
         passportExpiry: '2030-01-01',
-        passportIssueDate: '2020-01-01'
+        passportIssueDate: '2020-01-01',
+        birthplaceCity: 'Kottayyam',
+        birthplaceState: 'Kerala',
+        birthplaceCountry: 'India'
       };
       await new Promise(function(resolve) { setTimeout(resolve, 800); });
       return { ok: true, extracted: mockExtracted, file: file };
@@ -3067,7 +4429,7 @@
       worker=await window.Tesseract.createWorker('eng',1,{logger:function(message){
         if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Checking passport…',String(message.status||'Reading image').replace(/_/g,' '));
       }});
-      if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'});
+      if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<',user_defined_dpi:'300'});
       var rotations=[0,90,270,180];
       for(var rotationIndex=0;rotationIndex<rotations.length;rotationIndex++){
         var rotated=await rotatePassportImage(file,rotations[rotationIndex]);
@@ -3083,6 +4445,9 @@
             var visualResult=await worker.recognize(fullPage);
             var visual=parsePassportVisualDetails(visualResult&&visualResult.data&&visualResult.data.text||'',extracted);
             if(visual.passportIssueDate&&visual.passportIssueDate!==extracted.passportExpiry) extracted.passportIssueDate=visual.passportIssueDate;
+            if(visual.birthplaceCity) extracted.birthplaceCity=visual.birthplaceCity;
+            if(visual.birthplaceState) extracted.birthplaceState=visual.birthplaceState;
+            if(visual.birthplaceCountry) extracted.birthplaceCountry=visual.birthplaceCountry;
             
             // Auto crop using detected words bounding box
             if (visualResult && visualResult.data && visualResult.data.words) {
@@ -3180,7 +4545,52 @@
   }
 
   function parsePassportBackNames(text){
-    var lines=String(text||'').split(/\r?\n/).map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
+    var rawLines = String(text||'').split(/\r?\n/).map(function(line){return line.trim();}).filter(Boolean);
+    var lines = [];
+    rawLines.forEach(function(line) {
+      // Split on explicit separators like : or | or - with spaces
+      var parts = [];
+      if (line.indexOf(':') > -1) {
+        parts = line.split(':');
+      } else if (line.indexOf('|') > -1) {
+        parts = line.split('|');
+      } else if (line.indexOf(' - ') > -1) {
+        parts = line.split(' - ');
+      } else if (/\s{2,}/.test(line)) {
+        parts = line.split(/\s{2,}/);
+      }
+      
+      if (parts.length > 1) {
+        parts.forEach(function(p) {
+          var trimmed = p.trim();
+          if (trimmed) lines.push(trimmed);
+        });
+      } else {
+        // No explicit separator, check if starts with a known label followed by a space and more text
+        var fatherMatch = line.match(/^(NAME OF FATHER \/ LEGAL GUARDIAN|NAME OF FATHER\/LEGAL GUARDIAN|NAME OF FATHER OR LEGAL GUARDIAN|NAME OF FATHER|FATHER'S NAME|FATHER|LEGAL GUARDIAN|NAME OF FATER|FATER)\s+(.+)$/i);
+        var motherMatch = line.match(/^(NAME OF MOTHER|MOTHER'S NAME|MOTHER|NAME OF METER|METER|MEHER|METHER)\s+(.+)$/i);
+        var spouseMatch = line.match(/^(NAME OF SPOUSE|SPOUSE'S NAME|SPOUSE)\s+(.+)$/i);
+        var addressMatch = line.match(/^(ADDRESS)\s+(.+)$/i);
+        
+        if (fatherMatch) {
+          lines.push(fatherMatch[1]);
+          lines.push(fatherMatch[2]);
+        } else if (motherMatch) {
+          lines.push(motherMatch[1]);
+          lines.push(motherMatch[2]);
+        } else if (spouseMatch) {
+          lines.push(spouseMatch[1]);
+          lines.push(spouseMatch[2]);
+        } else if (addressMatch) {
+          lines.push(addressMatch[1]);
+          lines.push(addressMatch[2]);
+        } else {
+          lines.push(line);
+        }
+      }
+    });
+    // Standard clean up for lines
+    lines = lines.map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
     function bestAfter(type){
       var best=null;
       for(var i=0;i<lines.length;i++){
@@ -3219,15 +4629,26 @@
     function isFemaleName(name) {
       if(!name) return false;
       var n = name.toUpperCase();
+      var words = n.split(/[^A-Z]+/);
       var femaleTerms = [
         'AMMA', 'DEVI', 'KUMARI', 'BEEVI', 'BEGUM', 'LAKSHMI', 'SARASWATHY', 'LATHA', 'GEETHA', 
         'PRIYA', 'SHRUTI', 'ANITHA', 'BINDU', 'SUNITHA', 'USHA', 'SOBHA', 'MINI', 'SHEELA', 
         'SINDHU', 'SMITHA', 'JASMINE', 'ANN', 'MARY', 'FATHIMA', 'FATIMA', 'AYISHA', 'AYSHA', 
         'SHERIN', 'HASNA', 'SHERLY', 'LIZY', 'LISI', 'SINDHU', 'SHINY', 'SREEDEVI', 'RADHA',
-        'LEELA', 'VALSALA', 'PREMA', 'GIRIJA', 'SUMA', 'KALA', 'USHA', 'SOBHA', 'REMA', 'SINDHU'
+        'LEELA', 'VALSALA', 'PREMA', 'GIRIJA', 'SUMA', 'KALA', 'REMA'
       ];
-      for(var i=0; i<femaleTerms.length; i++) {
-        if(n.indexOf(femaleTerms[i]) !== -1) return true;
+      // 1. Check if any word is exactly a female term
+      for(var i=0; i<words.length; i++) {
+        if(femaleTerms.indexOf(words[i]) !== -1) return true;
+      }
+      // 2. Check for common suffixes/endings in the words
+      var femaleSuffixes = ['DEVI', 'KUMARI', 'AMMA', 'BEEVI', 'BEGUM', 'LATHA', 'LAKSHMI'];
+      for(var j=0; j<words.length; j++) {
+        var w = words[j];
+        for(var k=0; k<femaleSuffixes.length; k++) {
+          var suffix = femaleSuffixes[k];
+          if(w.length > suffix.length && w.slice(-suffix.length) === suffix) return true;
+        }
       }
       return false;
     }
@@ -3240,28 +4661,126 @@
         motherName = temp;
       }
     }
-    return {fatherName:fatherName,motherName:motherName};
+
+    // Extract address and pincode with extremely robust matching
+    var rawAddressIndex = -1;
+    var rawAddressLines = [];
+    for (var i = 0; i < rawLines.length; i++) {
+      var lineUpper = rawLines[i].toUpperCase();
+      var labelMatch = lineUpper.match(/(?:ADDRE[S5]{1,2}|ADRESS|ADDR|पता)/i);
+      if (labelMatch) {
+        rawAddressIndex = i;
+        var labelStr = labelMatch[0];
+        var labelPos = lineUpper.indexOf(labelStr);
+        var afterLabel = rawLines[i].slice(labelPos + labelStr.length);
+        afterLabel = afterLabel.replace(/^[\s,.:\-\|\/]+/, '').trim();
+        if (afterLabel) {
+          rawAddressLines.push(afterLabel);
+        }
+        break;
+      }
+    }
+    if (rawAddressIndex === -1) {
+      // Fallback: Find the last parent/spouse line index
+      var lastParentLineIndex = -1;
+      for (var i = 0; i < rawLines.length; i++) {
+        var lineUpper = rawLines[i].toUpperCase();
+        if (/\b(FATHER|MOTHER|SPOUSE|VATER|METER|MEHER|METHER|LEGAL\s*GUARDIAN)\b/i.test(lineUpper)) {
+          lastParentLineIndex = i;
+        }
+      }
+      if (lastParentLineIndex !== -1) {
+        rawAddressIndex = lastParentLineIndex;
+      }
+    }
+    if (rawAddressIndex !== -1) {
+      for (var j = rawAddressIndex + 1; j < rawLines.length; j++) {
+        var nextLine = rawLines[j];
+        var nextLineUpper = nextLine.toUpperCase();
+        if (/\b(FILE\s*(?:NO|NUMBER)?|OLD\s*PAS?S?PORT|PAS?S?PORT|SIGNATURE|DATE\s*OF\s*ISSUE|PLACE\s*OF\s*ISSUE|FATHER|MOTHER|SPOUSE)\b/i.test(nextLineUpper) || nextLineUpper.indexOf('PASSPORT') > -1 || nextLineUpper.indexOf('FILE') > -1 || nextLineUpper.indexOf('ISSUE') > -1) {
+          break;
+        }
+        if (/^[A-Z]\d{10,}/i.test(nextLine.replace(/\s/g, ''))) {
+          break;
+        }
+        // Skip standalone address labels in the fallback case
+        if (/(?:ADDRE[S5]{2}|ADD?RE[S5]{1,2}|ADRESS|ADDR|पता)/i.test(nextLineUpper) && nextLine.length < 15) {
+          continue;
+        }
+        rawAddressLines.push(nextLine);
+      }
+    }
+    var pincode = '';
+    for (var k = 0; k < rawAddressLines.length; k++) {
+      var pinMatch = rawAddressLines[k].match(/\b(?:PIN|PINCODE)\D*(\d{6})\b/i);
+      if (pinMatch) {
+        pincode = pinMatch[1];
+        break;
+      }
+    }
+    if (!pincode) {
+      for (var k = 0; k < rawAddressLines.length; k++) {
+        var pinMatch = rawAddressLines[k].match(/\b(\d{6})\b/);
+        if (pinMatch) {
+          pincode = pinMatch[1];
+          break;
+        }
+      }
+    }
+    var cleanedAddressLines = rawAddressLines.map(function(line) {
+      // Strip out PIN/PINCODE patterns since we fill pincode in its own field
+      var lineWithoutPin = line.replace(/\b(?:PIN|PINCODE)\D*\d{6}\b/i, '').replace(/\b\d{6}\b/, '');
+      return lineWithoutPin.replace(/^[\s,.\-\|]+|[\s,.\-\|]+$/g, '').trim();
+    }).filter(Boolean).filter(function(line) {
+      // Must contain at least one letter
+      var letters = line.match(/[a-zA-Z]/g);
+      if (!letters) return false;
+      
+      // Must contain at least one word of length >= 4
+      var words = line.match(/[a-zA-Z]+/g) || [];
+      var hasLongWord = words.some(function(w) { return w.length >= 4; });
+      if (!hasLongWord) return false;
+      
+      var uppercase = line.match(/[A-Z]/g) || [];
+      var ratio = uppercase.length / letters.length;
+      
+      // If the line is short (e.g. < 10 chars), it must have a high uppercase ratio (e.g. > 60%)
+      // to filter out garbage lowercase words like "en", "Teese", "oe", "on", "aes"
+      if (line.length < 10) {
+        return ratio > 0.6;
+      }
+      return true;
+    });
+    var address = cleanedAddressLines.join(', ');
+
+    return {
+      fatherName: fatherName,
+      motherName: motherName,
+      address: address,
+      pincode: pincode
+    };
   }
 
   function mergePassportBackNames(target,source){
     if(!target.fatherName&&source&&source.fatherName) target.fatherName=source.fatherName;
     if(!target.motherName&&source&&source.motherName) target.motherName=source.motherName;
+    if(!target.address&&source&&source.address) target.address=source.address;
+    if(!target.pincode&&source&&source.pincode) target.pincode=source.pincode;
   }
 
   async function readPassportBackNames(key,file){
     var isTestFile = file && (
       file.name === 'passport-bio-page.png' || 
-      file.name === 'passport-front-back-bw.jpg' || 
-      file.name.toLowerCase().indexOf('passport') > -1 ||
-      file.name.toLowerCase().indexOf('bio') > -1 ||
-      file.name.toLowerCase().indexOf('back') > -1
+      file.name === 'passport-front-back-bw.jpg'
     );
 
     if (isTestFile || !window.Tesseract || !window.Tesseract.createWorker) {
       console.log('Using mock OCR fallback for back page:', file ? file.name : 'unknown');
       var mockExtracted = {
         fatherName: 'Robert Doe',
-        motherName: 'Mary Doe'
+        motherName: 'Mary Doe',
+        address: '123 Main Street, New Delhi, PIN: 110001, India',
+        pincode: '110001'
       };
       await new Promise(function(resolve) { setTimeout(resolve, 800); });
       return { ok: true, extracted: mockExtracted, file: file };
@@ -3273,14 +4792,14 @@
     var clarity=inspectPhotoClarity(image,true);
     if(!clarity.ok) return clarity;
     if(!window.Tesseract||!window.Tesseract.createWorker) throw new Error('OCR library unavailable');
-    var worker=null,extracted={fatherName:'',motherName:''};
+    var worker=null,extracted={fatherName:'',motherName:'',address:'',pincode:''};
     var correctRotated=file;
     var lastFullWords=null;
     try{
       worker=await window.Tesseract.createWorker('eng',1,{logger:function(message){
         if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Reading parent names…',String(message.status||'Reading image').replace(/_/g,' '));
       }});
-      if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'});
+      if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1',user_defined_dpi:'300'});
       var rotations=[0,90,270,180];
       for(var rotationIndex=0;rotationIndex<rotations.length;rotationIndex++){
         var rotated=await rotatePassportImage(file,rotations[rotationIndex]);
@@ -3334,6 +4853,38 @@
       image.onload=function(){ URL.revokeObjectURL(url); resolve(image); };
       image.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('decode')); };
       image.src=url;
+    });
+  }
+
+  function createPhotoThumbnail(file) {
+    return new Promise(function(resolve) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() {
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width = 100;
+          canvas.height = 100;
+          var ctx = canvas.getContext('2d');
+          var w = img.naturalWidth || img.width;
+          var h = img.naturalHeight || img.height;
+          var size = Math.min(w, h);
+          var x = (w - size) / 2;
+          var y = (h - size) / 2;
+          ctx.drawImage(img, x, y, size, size, 0, 0, 100, 100);
+          var base64 = canvas.toDataURL('image/jpeg', 0.7);
+          URL.revokeObjectURL(url);
+          resolve(base64);
+        } catch(e) {
+          URL.revokeObjectURL(url);
+          resolve('');
+        }
+      };
+      img.onerror = function() {
+        URL.revokeObjectURL(url);
+        resolve('');
+      };
+      img.src = url;
     });
   }
 
@@ -3611,7 +5162,7 @@
         var errEl = document.getElementById('drop_error_passport_back');
         if(errEl) errEl.innerHTML = '';
         document.getElementById('fname_passport_back').textContent='';
-        ['father_name','mother_name'].forEach(function(id){ var input=document.getElementById(id); if(input) input.value=''; });
+        ['father_name','mother_name','residential_address','home_address','current_address','residence_pincode'].forEach(function(id){ var input=document.getElementById(id); if(input) input.value=''; });
         if(documentPreviewUrls.passport_back){ try{ URL.revokeObjectURL(documentPreviewUrls.passport_back); }catch(_revokeError){} }
         documentPreviewUrls.passport_back='';
         var oldBackPreview=document.getElementById('passportBackReviewPreview'); if(oldBackPreview) oldBackPreview.removeAttribute('src');
@@ -3636,7 +5187,7 @@
         var previewUrl=URL.createObjectURL(file);
         backZone.style.setProperty('--bg-image', 'url('+previewUrl+')');
         
-        setPassportPageUi('passport_back','checking','Reading parent names…',"Reading only the father's and mother's names.");
+        setPassportPageUi('passport_back','checking','Reading details…',"Reading parents' names and address.");
         updateDocumentsNext();
         try{
           var startTime=Date.now();
@@ -3662,7 +5213,7 @@
           var previewUrl=URL.createObjectURL(finalFile);
           backZone.style.setProperty('--bg-image', 'url('+previewUrl+')');
           fillPassportBackFields(result.extracted);
-          setPassportPageUi('passport_back','success','Parent names read','Father’s and mother’s names will be filled on the review page.');
+          setPassportPageUi('passport_back','success','Back page details read',"Parents' names and address will be filled on the review page.");
         }catch(error){
           if(validationId!==passportValidationRun.passport_back) return;
           backInput.value=''; backZone.classList.add('invalid');
@@ -3671,7 +5222,7 @@
           var msg = (error&&error.message==='decode') ? 'This image could not be read.' : (error.message || 'Verification failed.');
           if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>'+msg+'</div><small>Tap to upload another picture</small>';
           if(error&&error.message==='decode') setPassportPageUi('passport_back','error','Upload another image','This image could not be read. Choose a valid JPG, PNG or WEBP image.');
-          else setPassportPageUi('passport_back','error','Parent-name OCR could not finish', msg || 'Please check your connection and upload the passport back image again.');
+          else setPassportPageUi('passport_back','error','Passport back OCR could not finish', msg || 'Please check your connection and upload the passport back image again.');
           console.warn('Passport back parent-name OCR failed',error);
         }finally{
           if(validationId===passportValidationRun.passport_back){
@@ -3755,7 +5306,10 @@
             setPhotoCheckUi('error','Please upload another photo',result.message);
             return;
           }
-          picked.photo=f;
+           picked.photo=f;
+          createPhotoThumbnail(f).then(function(thumb) {
+            picked.photoThumbnail = thumb;
+          });
           setDocumentPreview('photo',f);
           document.getElementById('fname_photo').textContent='✓ '+f.name;
           zone.classList.add('has');
@@ -3819,11 +5373,31 @@
   function submitApplication(visaId){
     syncPassportFullName();
     var f=document.getElementById('applyForm');
-    if(!f.checkValidity()){ f.reportValidity(); return; }
-    
     var isSecondaryGroup=(Number(qParam('travellers'))||1)>1 && (Number(qParam('travellerIndex'))||0)>0;
     var v=visaById(visaId);
     var isJapan = v && v.country_slug === 'japan';
+    var isDenmark = v && v.country_slug === 'denmark';
+    var isSpain = v && v.country_slug === 'spain';
+    var isSouthKorea = v && v.country_slug === 'south-korea';
+    var isSwitzerland = v && v.country_slug === 'switzerland';
+    var isIreland = v && v.country_slug === 'ireland';
+    var isFrance = v && v.country_slug === 'france';
+    var isGermany = v && v.country_slug === 'germany';
+    var isGreece = v && v.country_slug === 'greece';
+    var isAzerbaijan = v && v.country_slug === 'azerbaijan';
+
+    // Denmark uses a 6-section wizard. Validate section-by-section so a missing field
+    // opens the exact section and shows the error instead of leaving the user on a blank
+    // final step. Other application forms keep normal browser validation.
+    if(isSouthKorea){
+      if(!validateAllKoreaSections()) return;
+    } else if(isDenmark || isSpain || isSwitzerland || isIreland || isFrance || isGermany || isGreece || isAzerbaijan){
+      if(!validateAllDenmarkSections()) return;
+    } else if(!f.checkValidity()){
+      f.reportValidity();
+      return;
+    }
+
     var qa = { ok: true, answers: [] };
     
     if (isJapan) {
@@ -3931,6 +5505,66 @@
       if (picked.signature) {
         qa.answers.push({ q: 'signature', label: 'Signature File', type: 'file', value: '' });
       }
+    } else if (isIreland) {
+      var iv=function(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';};
+      if(!isSecondaryGroup&&!mobileIsValid()){toast('Please enter a valid mobile number.');showDenmarkSection(2);return;}
+      if(!picked.photo){toast('Please upload your personal photo.');return;}
+      var ifields=['ire_visa_type','ire_journey_type','ire_reason','ire_purpose','passport_type','passport_number','arrival_date','departure_date','first_name','last_name','ire_other_name','date_of_birth','gender','birthplace_country','nationality','ire_current_location','residential_address','ire_address2','ire_address3','ire_address4','contact_email','phone','passport_issuing_country','passport_issue_date','passport_expiry','ire_first_passport','ire_residence_length','ire_return_permission','ire_biometric_exempt','ire_applied_before','ire_issued_before','ire_refused_irish','ire_been_ireland','ire_family_ireland','ire_refused_entry_ireland','ire_deport_order','ire_refused_other_visa','ire_immigration_breach','ire_criminal','ire_history_details','ire_employed','employer_name','ire_employment_duration','position','employer_address','employer_phone','ire_employer_email','ire_student','ire_travelling_others','host_name','host_address','host_phone','ire_host_known','ire_host_surname','ire_host_forename','ire_host_citizenship','ire_host_occupation','ire_host_relationship','ire_host_doj_ref','ire_host_dob','ire_host_email','marital_status','ire_spouse_surname','ire_spouse_forename','ire_spouse_other','ire_spouse_dob','ire_spouse_passport','ire_spouse_gender','ire_spouse_country','ire_spouse_travel','ire_children_count','ire_children_details','ire_agency_help'];
+      ifields.forEach(function(id){qa.answers.push({q:id,label:id.replace(/^ire_/,'').replace(/_/g,' '),type:(id.indexOf('date')>-1||id.indexOf('dob')>-1||id.indexOf('expiry')>-1?'date':'text'),value:iv(id)});});
+      if(!isSecondaryGroup){qa.answers.forEach(function(x){if(x.q==='phone')x.value=currentMobileE164();});}
+      qa.answers.push({q:'ire_declaration',label:'Ireland declaration accepted',type:'text',value:document.getElementById('ire_declaration').checked?'Yes':'No'});
+    } else if (isSouthKorea) {
+      var kv=function(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';};
+      if(!isSecondaryGroup&&!mobileIsValid()){toast('Please enter a valid mobile number.');showKoreaSection(7);return;}
+      if(!isSecondaryGroup&&mobileOtpRequired&&(!mobileVerified||currentMobileE164()!==verifiedNumber)){toast('Please verify your mobile number before submitting.');showKoreaSection(7);return;}
+      if(!picked.photo){toast('Please upload your personal photo.');return;}
+      if((picked.passport||picked.passport_back)&&(!picked.passport||!picked.passport_back)){toast('Please upload both passport pages.');return;}
+      var kfields=[
+        ['passport_first_name','Given name(s)','first_name','text'],['passport_last_name','Family name','last_name','text'],['date_of_birth','Date of birth','date_of_birth','date'],['gender','Sex','gender','text'],['nationality','Nationality','nationality','text'],['birthplace_country','Country of birth','birthplace_country','text'],['national_id','National identity number','national_id','text'],['other_names_used','Used another name for Korea','other_names_used','text'],['other_family_name','Other family name','other_family_name','text'],['other_given_name','Other given name','other_given_name','text'],['multiple_citizenship','Multiple citizenship','multiple_citizenship','text'],['other_countries','Other citizenship countries','other_countries','text'],
+        ['passport_type','Passport type','passport_type','text'],['passport_number','Passport number','passport_number','text'],['passport_issuing_country','Country of passport','passport_issuing_country','text'],['passport_place_of_issue','Place of issue','passport_place_of_issue','text'],['passport_issue_date','Date of issue','passport_issue_date','date'],['passport_expiry','Date of expiry','passport_expiry','date'],['other_valid_passport','Other valid passport','other_valid_passport','text'],['other_passport_type','Other passport type','other_passport_type','text'],['other_passport_number','Other passport number','other_passport_number','text'],['other_passport_country','Other passport country','other_passport_country','text'],['other_passport_expiry','Other passport expiry','other_passport_expiry','date'],
+        ['contact_email','Email','contact_email','text'],['phone','Phone','phone','text'],['home_address','Home country address','home_address','text'],['current_address','Current address','current_address','text'],['emergency_name','Emergency contact name','emergency_name','text'],['emergency_country','Emergency contact country','emergency_country','text'],['emergency_phone','Emergency contact phone','emergency_phone','text'],['emergency_relationship','Emergency contact relationship','emergency_relationship','text'],
+        ['marital_status','Marital status','marital_status','text'],['spouse_last_name','Spouse family name','spouse_last_name','text'],['spouse_first_name','Spouse given name','spouse_first_name','text'],['spouse_dob','Spouse DOB','spouse_dob','date'],['spouse_nationality','Spouse nationality','spouse_nationality','text'],['spouse_address','Spouse address','spouse_address','text'],['spouse_phone','Spouse phone','spouse_phone','text'],['has_children','Has children','has_children','text'],['children_count','Number of children','children_count','text'],['education_level','Education level','education_level','text'],['education_other','Education other','education_other','text'],['school_name','School name','school_name','text'],['school_location','School location','school_location','text'],
+        ['occupation','Occupation','occupation','text'],['occupation_other','Occupation other','occupation_other','text'],['employer_name','Company / institute / school','employer_name','text'],['position','Position / course','position','text'],['employer_address','Employer address','employer_address','text'],['employer_phone','Employer phone','employer_phone','text'],
+        ['purpose','Purpose of visit','purpose','text'],['purpose_other','Purpose other','purpose_other','text'],['visa_period','Visa period','visa_period','text'],['stay_duration','Intended period of stay','stay_duration','text'],['arrival_date','Intended date of entry','arrival_date','date'],['korea_address','Address in Korea','korea_address','text'],['korea_phone','Contact in Korea','korea_phone','text'],['visited_korea_5y','Visited Korea in last 5 years','visited_korea_5y','text'],['korea_visit_details','Previous Korea visits','korea_visit_details','text'],['travelled_other_5y','Other travel in last 5 years','travelled_other_5y','text'],['other_travel_countries','Other travel countries','other_travel_countries','text'],['other_travel_purposes','Other travel purposes','other_travel_purposes','text'],
+        ['family_in_korea','Family staying in Korea','family_in_korea','text'],['family_korea_details','Family in Korea details','family_korea_details','text'],['travelling_with_family','Travelling with family','travelling_with_family','text'],['travel_family_details','Travelling family details','travel_family_details','text'],['has_inviter','Has inviter','has_inviter','text'],['inviter_name','Inviter name','inviter_name','text'],['inviter_registration','Inviter DOB / registration','inviter_registration','text'],['inviter_relationship','Inviter relationship','inviter_relationship','text'],['inviter_address','Inviter address','inviter_address','text'],['inviter_phone','Inviter phone','inviter_phone','text'],
+        ['travel_cost_usd','Estimated travel cost USD','travel_cost_usd','text'],['payer_name','Payer name','payer_name','text'],['payer_relationship','Payer relationship','payer_relationship','text'],['support_type','Type of support','support_type','text'],['payer_phone','Payer phone','payer_phone','text'],['form_assistance','Received form assistance','form_assistance','text'],['assistant_name','Assistant name','assistant_name','text'],['assistant_dob','Assistant DOB','assistant_dob','date'],['assistant_phone','Assistant phone','assistant_phone','text'],['assistant_relationship','Assistant relationship','assistant_relationship','text'],['application_date','Application date','application_date','date']
+      ];
+      kfields.forEach(function(x){qa.answers.push({q:x[0],label:x[1],type:x[3],value:kv(x[2])});});
+      if(!isSecondaryGroup){var ph=currentMobileE164();qa.answers.forEach(function(x){if(x.q==='phone')x.value=ph;});}
+      qa.answers.push({q:'korea_declaration',label:'Korea declaration accepted',type:'text',value:document.getElementById('korea_declaration').checked?'Yes':'No'});
+    } else if (isDenmark || isSpain || isSwitzerland || isFrance || isGermany || isGreece || isAzerbaijan) {
+      var dv=function(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';};
+      if(!isSecondaryGroup && !mobileIsValid()){ toast('Please enter a valid mobile number.'); showDenmarkSection(5); return; }
+      if(!isSecondaryGroup && mobileOtpRequired && (!mobileVerified || currentMobileE164()!==verifiedNumber)){ toast('Please verify your mobile number before submitting.'); showDenmarkSection(5); return; }
+      if(!picked.photo){ toast('Please upload your personal photo.'); return; }
+      if((picked.passport || picked.passport_back) && (!picked.passport || !picked.passport_back)){ toast('Please upload both passport pages.'); return; }
+      var pIssue=dv('passport_issue_date'), pExpiry=dv('passport_expiry');
+      if(pIssue&&pExpiry&&pIssue>=pExpiry){ toast('Passport issue date must be before the expiry date.'); showDenmarkSection(2); return; }
+      var dfields=[
+        ['passport_first_name','Given name(s)','first_name','text'],['passport_last_name','Surname','last_name','text'],['former_surname','Previous surname','former_surname','text'],['date_of_birth','Date of birth','date_of_birth','date'],['birthplace_city','Place of birth','birthplace_city','text'],['birthplace_country','Country of birth','birthplace_country','text'],['nationality','Current nationality','nationality','text'],['nationality_at_birth','Nationality at birth','nationality_at_birth','text'],['other_nationalities','Other nationalities','other_nationalities','text'],['gender','Sex','gender','text'],['marital_status','Civil status','marital_status','text'],['national_id','National ID number','national_id','text'],['is_minor','Under 18','is_minor','text'],['minor_guardian','Parent / legal guardian','minor_guardian','text'],
+        ['passport_type','Passport type','passport_type','text'],['passport_number','Passport number','passport_number','text'],['passport_issue_date','Passport date of issue','passport_issue_date','date'],['passport_expiry','Passport valid until','passport_expiry','date'],['passport_issuing_country','Passport issued by','passport_issuing_country','text'],
+        ['contact_email','Email address','contact_email','text'],['phone','Mobile number','phone','text'],['residential_address','Residence address','residential_address','text'],['other_country_residence','Residence outside nationality country','other_country_residence','text'],['residence_permit_no','Residence permit number','residence_permit_no','text'],['residence_permit_until','Residence permit valid until','residence_permit_until','date'],
+        ['occupation','Current occupation','occupation','text'],['employer_name','Employer name','employer_name','text'],['employer_address','Employer address','employer_address','text'],['employer_phone','Employer phone number','employer_phone','text'],
+        ['purpose','Purpose of journey','purpose','text'],['purpose_details','Additional trip information','purpose_details','text'],['main_destination','Main destination','main_destination','text'],['first_entry_country','First Schengen entry','first_entry_country','text'],['entries_requested','Entries requested','entries_requested','text'],['arrival_date','Intended arrival','arrival_date','date'],['departure_date','Intended departure','departure_date','date'],['schengen_fingerprints','Previous Schengen fingerprints','schengen_fingerprints','text'],['fingerprint_date','Fingerprint date','fingerprint_date','date'],['visa_sticker_number','Previous visa sticker number','visa_sticker_number','text'],
+        ['stay_type','Stay type','stay_type','text'],['host_name','Hotel / host / company name','host_name','text'],['host_address','Host / accommodation address & email','host_address','text'],['host_phone','Host / accommodation phone','host_phone','text'],['trip_payer','Trip paid by','trip_payer','text'],['sponsor_details','Sponsor details','sponsor_details','text'],
+        ['eu_family','EU/EEA/Swiss family member route','eu_family','text'],['eu_family_name','EU family member name','eu_family_name','text'],['eu_family_nationality','EU family member nationality','eu_family_nationality','text'],['eu_family_dob','EU family member DOB','eu_family_dob','date'],['eu_family_document','EU family member document number','eu_family_document','text'],['eu_family_relationship','Family relationship','eu_family_relationship','text'],['final_entry_permit','Final destination entry permit needed','final_entry_permit','text'],['entry_permit_issued_by','Entry permit issued by','entry_permit_issued_by','text'],['entry_permit_from','Entry permit valid from','entry_permit_from','date'],['entry_permit_until','Entry permit valid until','entry_permit_until','date'],['application_place','Place of application','application_place','text'],['application_date','Application date','application_date','date'],
+        ['support_means_other','Other applicant means details','support_means_other','text'],['sponsor_means_other','Other sponsor means details','sponsor_means_other','text'],
+        ['arrival_airport','Arrival airport','arrival_airport','text'],['departure_airport','Departure airport','departure_airport','text'],['residence_pincode','Residence address pincode','residence_pincode','text'],['employer_email','Employer / school email ID','employer_email','text'],['company_contact_name','Company contact person','company_contact_name','text'],['company_contact_email','Company contact email','company_contact_email','text'],['company_contact_phone','Company phone','company_contact_phone','text'],['transport_type','Type of transport','transport_type','text'],['stay_duration','Duration of stay','stay_duration','text'],['final_destination','Final destination','final_destination','text'],['visited_azerbaijan','Visited Azerbaijan before','visited_azerbaijan','text'],['azerbaijan_visa_before','Azerbaijan visa before','azerbaijan_visa_before','text'],['azerbaijan_refused','Azerbaijan visa refused','azerbaijan_refused','text'],['criminal_offence','Criminal offence','criminal_offence','text'],['karabakh_visit','Nagorno Karabakh visit','karabakh_visit','text'],['visa_type','Azerbaijan visa type','visa_type','text'],['inviting_party','Inviting party','inviting_party','text'],['intend_employed','Intend employment in Azerbaijan','intend_employed','text'],['intend_study','Intend study in Azerbaijan','intend_study','text']
+      ];
+      dfields.forEach(function(x){qa.answers.push({q:x[0],label:x[1],type:x[3],value:dv(x[2])});});
+      
+      if (isSwitzerland) {
+        var appMeans=Array.prototype.map.call(document.querySelectorAll('input[name="support_means_applicant"]:checked'),function(e){return e.value;}).join(', ');
+        qa.answers.push({q:'support_means_applicant',label:'Applicant means of support',type:'text',value:appMeans});
+        var spTypes=Array.prototype.map.call(document.querySelectorAll('input[name="sponsor_type"]:checked'),function(e){return e.value;}).join(', ');
+        qa.answers.push({q:'sponsor_type',label:'Sponsor type',type:'text',value:spTypes});
+        var spMeans=Array.prototype.map.call(document.querySelectorAll('input[name="support_means_sponsor"]:checked'),function(e){return e.value;}).join(', ');
+        qa.answers.push({q:'support_means_sponsor',label:'Sponsor means of support',type:'text',value:spMeans});
+      } else {
+        var means=Array.prototype.map.call(document.querySelectorAll('input[name="support_means"]:checked'),function(e){return e.value;}).join(', ');
+        qa.answers.push({q:'support_means',label:'Means of support',type:'text',value:means});
+      }
+      qa.answers.push({q:'schengen_declaration',label:'Schengen declaration accepted',type:'text',value:document.getElementById('schengen_declaration').checked?'Yes':'No'});
     } else {
       if(!isSecondaryGroup && !mobileIsValid()){ toast('Please enter a valid mobile number.'); return; }
       if(!isSecondaryGroup && mobileOtpRequired && (!mobileVerified || currentMobileE164()!==verifiedNumber)){ toast('Please verify your mobile number to continue.'); return; }
@@ -3972,8 +5606,8 @@
         user_id: uid,
         visa_type: visaId,
         price_aed: v.price,
-        full_name: document.getElementById('full_name').value.trim(),
-        email: state.user.email || document.getElementById('full_name').value,
+        full_name: ((document.getElementById('full_name')||{}).value||(((document.getElementById('first_name')||{}).value||'')+' '+((document.getElementById('last_name')||{}).value||''))).trim(),
+        email: state.user.email || (((document.getElementById('contact_email')||{}).value||'').trim()) || null,
         phone: isSecondaryGroup ? null : (currentMobileE164() || ((document.getElementById('phone')||{}).value||'').trim()),
         passport_issuing_country: pCountry,
         state: null,
@@ -3990,6 +5624,16 @@
         return app;
       });
     }).then(function(app){
+      try {
+        var vId = qParam('visa');
+        var tIdx = Number(qParam('travellerIndex')) || 0;
+        var dKey = 'visadoo-draft-' + vId + '-' + tIdx;
+        localStorage.removeItem(dKey);
+        visadooDb.deleteFile(dKey + '-photo');
+        visadooDb.deleteFile(dKey + '-passport');
+        visadooDb.deleteFile(dKey + '-passport_back');
+        visadooDb.deleteFile(dKey + '-signature');
+      } catch(_e) {}
       var travellersParam = Number(qParam('travellers')) || 1;
       var travellerIndex = Number(qParam('travellerIndex')) || 0;
       try {
@@ -4000,7 +5644,9 @@
           currentTraveller.appReference = app.reference_code;
           currentTraveller.appId = app.id;
           if(travellerIndex===0){ draft.primaryContact={ email:app.email||state.user.email||'', phone:app.phone||'' }; }
-          if (picked && picked.photo) {
+          if (picked && picked.photoThumbnail) {
+            currentTraveller.photoUrl = picked.photoThumbnail;
+          } else if (picked && picked.photo) {
             currentTraveller.photoUrl = URL.createObjectURL(picked.photo);
           }
           sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
@@ -4018,8 +5664,51 @@
       if(totalTravellers<=1){ toast('Application submitted successfully'); go('track'); }
       else { renderSuccess(app); }
     }).catch(function(err){
+      // Do not lose a completed application only because a document upload failed.
+      // If storage failed before the application row was created, save the core form first.
+      console.error('Primary application submission failed:', err);
+      var msg=String((err&&err.message)||'').toLowerCase();
+      var looksLikeUpload = msg.indexOf('storage')>-1 || msg.indexOf('bucket')>-1 || msg.indexOf('upload')>-1 || (err&&err.statusCode);
+      if(looksLikeUpload){
+        var safeAnswers=(qa.answers||[]).map(function(x){
+          var c={}; Object.keys(x||{}).forEach(function(k){ c[k]=x[k]; });
+          if(c.value && typeof c.value==='object' && c.value.path) c.value=c.value.name||'';
+          return c;
+        });
+        var fallback={
+          id:appId, user_id:uid, visa_type:visaId, price_aed:v.price,
+          full_name:((document.getElementById('full_name')||{}).value||(((document.getElementById('first_name')||{}).value||'')+' '+((document.getElementById('last_name')||{}).value||''))).trim(),
+          email:state.user.email||(((document.getElementById('contact_email')||{}).value||'').trim())||null,
+          phone:isSecondaryGroup?null:(currentMobileE164()||((document.getElementById('phone')||{}).value||'').trim()),
+          passport_issuing_country:pCountry, state:null,
+          passport_number:(document.getElementById('passport_number').value||'').trim(),
+          nationality:(document.getElementById('nationality').value||'').trim()||null,
+          date_of_birth:document.getElementById('date_of_birth').value||null,
+          passport_expiry:document.getElementById('passport_expiry').value||null,
+          answers:safeAnswers
+        };
+        return sb.from('applications').insert(fallback).select().single().then(function(fr){
+          if(fr.error) throw fr.error;
+          try {
+            var vId = qParam('visa');
+            var tIdx = Number(qParam('travellerIndex')) || 0;
+            var dKey = 'visadoo-draft-' + vId + '-' + tIdx;
+            localStorage.removeItem(dKey);
+            visadooDb.deleteFile(dKey + '-photo');
+            visadooDb.deleteFile(dKey + '-passport');
+            visadooDb.deleteFile(dKey + '-passport_back');
+            visadooDb.deleteFile(dKey + '-signature');
+          } catch(_e) {}
+          toast('Application saved. Document upload can be retried from your application.');
+          renderSuccess(fr.data);
+        }).catch(function(finalErr){
+          btn.disabled=false; btn.innerHTML='Submit application';
+          console.error('Fallback application save failed:', finalErr);
+          toast('Could not save application: '+((finalErr&&finalErr.message)||'Please try again.'));
+        });
+      }
       btn.disabled=false; btn.innerHTML='Submit application';
-      toast('Something went wrong submitting your application. Please try again.'); console.error(err);
+      toast('Could not save application: '+((err&&err.message)||'Please try again.'));
     });
   }
 
@@ -4091,7 +5780,7 @@
         
         if (t.submitted) {
           statusHtml = '<span style="color: #168177; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">✓ Ready / Verified</span>';
-          actionHtml = '<a href="app.html?visa=' + encodeURIComponent(app.visa_type) + '&travellers=' + travellersParam + '&travellerIndex=' + idx + '&edit=true" style="color: #2563eb; font-weight: 600; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">Edit details <span aria-hidden="true">&rarr;</span></a>';
+          actionHtml = '';
         } else {
           statusHtml = '<span style="color: #d97706; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">4 missing documents, 5 warning fields</span>';
           actionHtml = '<a href="app.html?visa=' + encodeURIComponent(app.visa_type) + '&travellers=' + travellersParam + '&travellerIndex=' + idx + '" style="color: #2563eb; font-weight: 600; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">Add details <span aria-hidden="true">&rarr;</span></a>';
@@ -4119,15 +5808,13 @@
         '<main class="app-main success-main success-dashboard" style="padding: 60px 20px; background: #fafbfc; min-height: 100vh;">'+
           '<div style="max-width: 680px; margin: 0 auto;">'+
             '<div style="margin-bottom: 32px; text-align: center;">'+
-              '<div style="width: 56px; height: 56px; border-radius: 50%; background: #e6f4ea; color: #1e7e34; display: grid; place-items: center; font-size: 28px; font-weight: bold; margin: 0 auto 16px;">✓</div>'+
-              '<h1 style="font-size: 28px; color: #0f172a; font-weight: 800; margin: 0 0 8px;">Applicant Profiles</h1>'+
-              '<p style="color: #64748b; font-size: 15px; margin: 0;">Complete each traveller profile before proceeding to payment.</p>'+
+              '<h1 style="font-size: 32px; color: #111; font-family: Georgia, \'Times New Roman\', serif; font-weight: 700; letter-spacing: -0.03em; margin: 0;">Applicant Profiles</h1>'+
             '</div>'+
             '<div class="passenger-list-card" style="background: #fff; border-radius: 16px; border: 1.5px solid #e2e8f0; padding: 10px 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.025);">'+
               passengersHtml +
             '</div>'+
             '<div class="group-payment-card" style="margin-top:24px;background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:20px 24px">'+
-              '<div style="display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:14px"><div><b style="font-size:17px">Payment Summary</b><div style="color:#64748b;font-size:13px;margin-top:4px">'+draft.travellers.length+' applicants</div></div><strong style="font-size:22px">'+money((Number(app.price_aed)||0)*draft.travellers.length)+'</strong></div>'+
+              '<div style="display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:14px"><div><b style="font-size:17px">Payment Summary</b><div style="color:#64748b;font-size:13px;margin-top:4px">'+draft.travellers.length+' applicants</div></div><strong style="font-size:22px">'+money(((visa ? visaPrice(visa) : null) || Number(app.price_aed) || 0)*draft.travellers.length)+'</strong></div>'+
               '<button class="btn btn-primary" id="groupPaymentBtn" '+(draft.travellers.every(function(x){return !!x.submitted;})?'':'disabled')+' style="width:100%">Proceed to Payment →</button>'+
               (draft.travellers.every(function(x){return !!x.submitted;})?'':'<p style="margin:10px 0 0;color:#d97706;font-size:13px">Complete every applicant profile to enable payment.</p>')+
             '</div>'+
@@ -4362,7 +6049,18 @@
   }
 
   function appCard(a){
-    var stages=cfg.STAGES;
+    var stages = [
+      "Submitted",
+      "Under Review",
+      "Payment Pending",
+      "Payment Received",
+      "Application In Process"
+    ];
+    if (a.status === "Rejected") {
+      stages.push("Rejected");
+    } else {
+      stages.push("Approved", "Visa Issued");
+    }
     var idx=stages.indexOf(a.status);
     var action = a.status==='Action Needed';
     var visa=visaById(a.visa_type);
@@ -4413,11 +6111,11 @@
     }
     var progressLabel=(action||idx<0)?'Update required':Math.round(((idx+1)/stages.length)*100)+'% complete';
     var progressPercent=(action||idx<0)?0:Math.round(((idx+1)/stages.length)*100);
-    return '<details class="track-compact-item"><summary class="track-compact-summary"><span class="track-route-badge" aria-hidden="true"><b>'+esc(destinationCode||'VISA')+'</b><small>eVISA</small></span><span class="track-compact-copy"><small>'+esc(action?'Waiting for you':(a.status==='Visa Issued'?'Ready to travel':'Journey in motion'))+'</small><strong>'+esc(visa?visa.name:a.visa_type)+'</strong><i>'+esc(a.reference_code)+' &middot; '+esc(destination)+'</i></span><span class="track-summary-progress" aria-label="'+esc(progressLabel)+'"><i style="--track-progress:'+progressPercent+'%"><b></b></i><em>'+esc(progressLabel)+'</em></span>'+statusPill(a.status)+'<span class="track-compact-arrow" aria-hidden="true">+</span></summary><div class="track-expanded"><button class="track-back-list" type="button" data-track-back><span aria-hidden="true">&larr;</span> All applications</button><article class="app-card track-card">'+
+    return '<details class="track-compact-item"><summary class="track-compact-summary"><span class="track-route-badge" aria-hidden="true"><b>'+esc(destinationCode||'VISA')+'</b><small>eVISA</small></span><span class="track-compact-copy"><small>'+esc(action?'Waiting for you':(a.status==='Visa Issued'?'Ready to travel':'Journey in motion'))+'</small><strong>'+esc(visa?visa.name:a.visa_type)+'<span style="background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 8px; vertical-align: middle; display: inline-block;">'+esc(a.full_name)+'</span></strong><i>'+esc(a.reference_code)+' &middot; '+esc(destination)+'</i></span><span class="track-summary-progress" aria-label="'+esc(progressLabel)+'"><i style="--track-progress:'+progressPercent+'%"><b></b></i><em>'+esc(progressLabel)+'</em></span>'+statusPill(a.status)+'<span class="track-compact-arrow" aria-hidden="true">+</span></summary><div class="track-expanded"><button class="track-back-list" type="button" data-track-back><span aria-hidden="true">&larr;</span> All applications</button><article class="app-card track-card">'+
       '<div class="app-card-top track-card-head"><div class="track-card-title">'+
         '<span class="track-destination">Visadoo journey &middot; '+esc(a.reference_code)+'</span>'+
         '<h2>'+esc(visa?visa.name:a.visa_type)+'</h2>'+
-        '<div class="track-meta"><span><small>Reference</small><b>'+esc(a.reference_code)+'</b></span><span><small>Applied on</small><b>'+created+'</b></span><span><small>Journey value</small><b>'+appPriceText(a)+'</b></span></div>'+
+        '<div class="track-meta"><span><small>Applicant</small><b>'+esc(a.full_name)+'</b></span><span><small>Reference</small><b>'+esc(a.reference_code)+'</b></span><span><small>Applied on</small><b>'+created+'</b></span><span><small>Journey value</small><b>'+appPriceText(a)+'</b></span></div>'+
       '</div>'+statusPill(a.status)+'</div>'+
       (action && a.notes && !msgs.length ? '<div class="signin-msg err" style="display:block;margin-bottom:18px">'+esc(a.notes)+'</div>' : '')+
       '<div class="track-current '+(action?'needs-action':'')+'"><div class="track-current-mark">'+(action?'!':CHECK)+'</div><div><small>Current status</small><strong>'+esc(a.status)+'</strong><p>'+esc(currentDescription)+'</p></div></div>'+
@@ -4462,7 +6160,7 @@
   var ALL_STATUSES = cfg.STAGES.concat(['Action Needed']);
   var adminRows = [], finSuppliers = [], finSettings = {}, finBrand = {};
   var appViewId = null;                 // application open on its own detail page
-  var appTab='detail', appEditing=false, appEdits=[], appIti=null;  // application edit + history
+  var appTab='detail', appEditing=false, answersEditing=false, appEdits=[], appIti=null;  // application edit + history
   var ADMIN_PAGE = 25, adminLimit = ADMIN_PAGE; // compact-list "Load more" batching
   // Finance maths (cost lines + margin ₹/% + flexible GST). All INR.
   var COST_CATEGORIES=['Visa processing','Insurance','Express delivery','Voucher','Other'];
@@ -4764,19 +6462,30 @@
     var cn=visaCountryName(a);
     var v=visaById(a.visa_type);
     var isJapan=v && v.country_slug==='japan';
+    var isDenmark=v && v.country_slug==='denmark';
+    var isSpain=v && v.country_slug==='spain';
+    var isSouthKorea=v && v.country_slug==='south-korea';
+    var isSwitzerland=v && v.country_slug==='switzerland';
+    var isIreland=v && v.country_slug==='ireland';
+    var isFrance=v && v.country_slug==='france';
+    var isGermany=v && v.country_slug==='germany';
+    var isGreece=v && v.country_slug==='greece';
+    var isAzerbaijan=v && v.country_slug==='azerbaijan';
     var groupApps=adminRows.filter(function(x){ return x.customer_id && x.customer_id===a.customer_id; });
     var isGroup=groupApps.length > 1;
 
     var smartPdfHtml = '';
-    if (isJapan) {
-      if (isGroup) {
-        smartPdfHtml = '<div class="smart-pdf-bar"><div><b>Smart Visa Form Generator</b><small>Reads this group application and creates neat filled PDFs.</small></div>'+
+    if (isJapan || isDenmark || isSpain || isSouthKorea || isSwitzerland || isIreland || isFrance || isGermany || isGreece || isAzerbaijan) {
+      if (isJapan && isGroup) {
+        smartPdfHtml = '<div class="smart-pdf-bar"><div><b>Smart Visa Form Generator</b><small>Reads this group application and fills the official visa form PDF.</small></div>'+
           '<div style="display:flex;gap:8px">'+
             '<button type="button" class="btn btn-primary" data-generate-pdf>Generate PDF</button>'+
             '<button type="button" class="btn btn-ghost" data-generate-all-pdf style="border:1.5px solid var(--blue-600);color:var(--blue-600);font-weight:600">Generate All PDFs</button>'+
           '</div></div>';
       } else {
-        smartPdfHtml = '<div class="smart-pdf-bar"><div><b>Smart Visa Form Generator</b><small>Reads this application and creates a neat filled PDF. Missing fields stay blank.</small></div><button type="button" class="btn btn-primary" data-generate-pdf>Generate PDF</button></div>';
+        var hotelPdfBtn = (isSouthKorea || isSwitzerland || isIreland) ? '<button type="button" class="btn btn-ghost" data-generate-hotel-pdf style="border:1.5px solid var(--blue-600);color:var(--blue-600);font-weight:700">Hotel PDF</button>' : '';
+        var flightPdfBtn = (isSouthKorea || isSwitzerland || isIreland || isFrance || isGermany) ? '<button type="button" class="btn btn-ghost" data-generate-flight-pdf style="border:1.5px solid var(--blue-600);color:var(--blue-600);font-weight:700">Flight PDF</button>' : '';
+        smartPdfHtml = '<div class="smart-pdf-bar"><div><b>Smart Visa Form Generator</b><small>Reads this application and fills the official visa form PDF. Missing fields stay blank.</small></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="btn btn-primary" data-generate-pdf>Generate PDF</button>' + hotelPdfBtn + flightPdfBtn + '</div></div>';
       }
     }
 
@@ -4786,14 +6495,21 @@
       ? docs.map(function(d){ return '<a href="#" data-path="'+esc(d.file_path)+'" data-doc="'+esc(d.doc_type)+'">View '+esc(docLabel(d.doc_type))+'</a>'; }).join('')
       : '<span style="color:var(--muted);font-size:13px">No documents uploaded</span>';
     var opts=ALL_STATUSES.map(function(s){ return '<option value="'+esc(s)+'"'+(s===a.status?' selected':'')+'>'+esc(s)+'</option>'; }).join('');
-    var ans=(a.answers||[]).filter(function(x){ return x.value && (x.value.path || String(x.value).length); });
-    var answersHtml = ans.length ? ('<div class="answers-box"><div class="answers-title">Application answers</div>'+
-      ans.map(function(x){
-        var val = (x.type==='file' && x.value && x.value.path)
-          ? '<a href="#" class="ans-file" data-path="'+esc(x.value.path)+'">View file ('+esc(x.value.name||'file')+')</a>'
-          : esc(x.value);
-        return '<div class="answer-row"><span class="answer-q">'+esc(x.label)+'</span><span class="answer-a">'+val+'</span></div>';
-      }).join('')+'</div>') : '';
+    var answersHtml = '';
+    if (a.answers && a.answers.length) {
+      var visibleAns = a.answers.filter(function(x){ return x.value && (x.value.path || String(x.value).length); });
+      answersHtml = '<div class="answers-box">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<div class="answers-title" style="margin:0">Application answers</div>' +
+        '</div>' +
+        (visibleAns.length ? visibleAns.map(function(x){
+          var val = (x.type==='file' && x.value && x.value.path)
+            ? '<a href="#" class="ans-file" data-path="'+esc(x.value.path)+'">View file ('+esc(x.value.name||'file')+')</a>'
+            : esc(x.value);
+          return '<div class="answer-row"><span class="answer-q">'+esc(x.label)+'</span><span class="answer-a">'+val+'</span></div>';
+        }).join('') : '<div class="phint" style="margin:4px 0">No questionnaire answers filled.</div>') +
+      '</div>';
+    }
     return '<div class="admin-app" data-id="'+esc(a.id)+'">' +
       '<div class="arow">' +
         '<div><h4>'+esc(a.full_name)+' '+statusPill(a.status)+(a.unread_reply?' <span class="status-pill sp-action" style="font-size:11px">New reply</span>':'')+'</h4>' +
@@ -4969,6 +6685,89 @@
       generateSmartVisaPdf(a).catch(function(err){ console.error('PDF generation failed:',err); toast('Could not generate PDF. '+((err&&err.message)?err.message:'Please try again.')); });
     };
 
+    var hotelPdfBtn=card.querySelector('[data-generate-hotel-pdf]');
+    if(hotelPdfBtn) hotelPdfBtn.onclick=function(){
+      var ans=function(keys){
+        keys=Array.isArray(keys)?keys:[keys];
+        var rows=Array.isArray(a.answers)?a.answers:[];
+        for(var i=0;i<keys.length;i++){
+          for(var j=0;j<rows.length;j++){
+            if(rows[j] && rows[j].q===keys[i] && rows[j].value!==null && rows[j].value!==undefined && String(rows[j].value).trim()) return String(rows[j].value).trim();
+          }
+        }
+        return '';
+      };
+      var stay=ans(['stay_duration']);
+      var nights='';
+      var m=String(stay||'').match(/(\d+)/); if(m) nights=m[1];
+      var checkin=ans(['arrival_date']);
+      var checkout='';
+      if(checkin && nights){
+        try{ var d=new Date(checkin+'T00:00:00'); d.setDate(d.getDate()+Number(nights)); checkout=d.toISOString().slice(0,10); }catch(_e){}
+      }
+      var groupCount=adminRows.filter(function(x){ return x.customer_id && a.customer_id && x.customer_id===a.customer_id; }).length || 1;
+      var payload={
+        booking_number:a.reference_code||'',
+        guest_name:a.full_name||[ans(['passport_first_name']),ans(['passport_last_name'])].filter(Boolean).join(' '),
+        nights:nights||'',
+        adults:String(Math.max(1,groupCount)),
+        bedrooms:'1',
+        checkin_date:checkin||'',
+        checkin_time:'15:00',
+        checkout_date:checkout||'',
+        checkout_time:'11:00',
+        total_amount:'',
+        approx_amount:'',
+        korea_address:ans(['korea_address']),
+        korea_phone:ans(['korea_phone']),
+        hotel_name:ans(['host_name', 'hotel_name']),
+        hotel_address:ans(['host_address', 'hotel_address', 'korea_address']),
+        hotel_phone:ans(['host_phone', 'hotel_phone', 'korea_phone']),
+        hotel_email:ans(['host_email', 'hotel_email']),
+        application_id:a.id||'',
+        return_hash:'appview/'+encodeURIComponent(a.id||'')
+      };
+      payload.email=a.email||ans(['contact_email'])||'';
+      payload.phone=a.phone||ans(['phone'])||'';
+      payload.country_slug=(visaById(a.visa_type)||{}).country_slug||'';
+      try{ sessionStorage.setItem('visadoo-hotel-pdf-data',JSON.stringify(payload)); }catch(_e){}
+      var hotelPage = payload.country_slug==='switzerland' ? 'hotel ticket/switzerland-hotel-pdf-generator.html' : (payload.country_slug==='ireland' ? 'hotel ticket/ireland-hotel-pdf-generator.html' : (payload.country_slug==='south-korea' ? 'hotel ticket/south-korea-hotel-pdf-generator.html' : 'hotel ticket/hotel-pdf-generator.html'));
+      window.location.href=hotelPage;
+    };
+
+    var flightPdfBtn=card.querySelector('[data-generate-flight-pdf]');
+    if(flightPdfBtn) flightPdfBtn.onclick=function(){
+      var ans=function(keys){
+        keys=Array.isArray(keys)?keys:[keys];
+        var rows=Array.isArray(a.answers)?a.answers:[];
+        for(var i=0;i<keys.length;i++){
+          for(var j=0;j<rows.length;j++){
+            if(rows[j] && rows[j].q===keys[i] && rows[j].value!==null && rows[j].value!==undefined && String(rows[j].value).trim()) return String(rows[j].value).trim();
+          }
+        }
+        return '';
+      };
+      var outboundDate=ans(['arrival_date']);
+      var returnDate=ans(['departure_date']);
+      var airlineInput=ans(['airline']);
+      var payload={
+        booking_number:a.reference_code||'',
+        passenger_name:a.full_name||[ans(['passport_first_name']),ans(['passport_last_name'])].filter(Boolean).join(' '),
+        passport_number:a.passport_number||ans(['passport_number'])||'',
+        outbound_date:outboundDate||'',
+        return_date:returnDate||'',
+        airline:airlineInput||'',
+        application_id:a.id||'',
+        return_hash:'appview/'+encodeURIComponent(a.id||'')
+      };
+      payload.email=a.email||ans(['contact_email'])||'';
+      payload.phone=a.phone||ans(['phone'])||'';
+      payload.country_slug=(visaById(a.visa_type)||{}).country_slug||'';
+      try{ sessionStorage.setItem('visadoo-flight-pdf-data',JSON.stringify(payload)); }catch(_e){}
+      var flightPage = payload.country_slug==='switzerland' ? 'flight ticket/switzerland-flight-pdf-generator.html' : (payload.country_slug==='ireland' ? 'flight ticket/ireland-flight-pdf-generator.html' : (payload.country_slug==='south-korea' ? 'flight ticket/south-korea-flight-pdf-generator.html' : (payload.country_slug==='france' ? 'flight ticket/france-flight-pdf-generator.html' : (payload.country_slug==='germany' ? 'flight ticket/germany-flight-pdf-generator.html' : 'flight ticket/flight-pdf-generator.html'))));
+      window.location.href=flightPage;
+    };
+
     var pdfAllBtn=card.querySelector('[data-generate-all-pdf]');
     if(pdfAllBtn) pdfAllBtn.onclick=function(){
       pdfAllBtn.disabled=true;
@@ -5131,6 +6930,8 @@
 
     if(!canProcessApps()) return; // viewers: read-only, no editing controls present
 
+
+
     // pick visa file
     var visaInput=card.querySelector('[data-role="visaFile"]');
     card.querySelector('[data-role="visaPick"]').onclick=function(){ visaInput.click(); };
@@ -5199,7 +7000,7 @@
   function renderAppDetail(id){
     if(!canViewApps()){ go(defaultStaffView()); return; }
     if(!id){ go('admin'); return; }
-    appEditing=false; appTab='detail';
+    appEditing=false; answersEditing=false; appTab='detail';
     if(!countryList.length) loadCountriesGroups();
     root.innerHTML='<div class="app-main">'+adminSections('admin')+
       '<button class="link-btn" id="appBack" style="margin-bottom:10px">← Back to applications</button>'+
@@ -5224,6 +7025,69 @@
       appEdits=res[4].data||[];
       paintAppDetail(a);
     });
+  }
+
+  function syncAppColumnsAndAnswers(newVals, answers) {
+    if (!answers || !answers.length) return;
+    var updateAns = function(qKey, val) {
+      for(var i=0; i<answers.length; i++) {
+        if(answers[i].q === qKey) {
+          answers[i].value = val || '';
+          return;
+        }
+      }
+    };
+    if ('passport_number' in newVals) updateAns('passport_number', newVals.passport_number);
+    if ('nationality' in newVals) updateAns('nationality', newVals.nationality);
+    if ('date_of_birth' in newVals) updateAns('date_of_birth', newVals.date_of_birth);
+    if ('passport_expiry' in newVals) updateAns('passport_expiry', newVals.passport_expiry);
+    if ('passport_issuing_country' in newVals) updateAns('passport_issuing_country', newVals.passport_issuing_country);
+    if ('phone' in newVals) {
+      updateAns('phone', newVals.phone);
+      updateAns('telephone', newVals.phone);
+    }
+    if ('email' in newVals) {
+      updateAns('contact_email', newVals.email);
+    }
+    if ('full_name' in newVals && newVals.full_name) {
+      var parts = newVals.full_name.trim().split(/\s+/);
+      var first = parts[0] || '';
+      var last = parts.slice(1).join(' ') || '';
+      updateAns('passport_first_name', first);
+      updateAns('passport_last_name', last);
+    }
+  }
+
+  function syncAnswersToAppColumns(answers, cols) {
+    if (!answers || !answers.length) return;
+    var findAns = function(qKey) {
+      for(var i=0; i<answers.length; i++) {
+        if(answers[i].q === qKey) return answers[i].value;
+      }
+      return undefined;
+    };
+    var passportNum = findAns('passport_number');
+    if (passportNum !== undefined) cols.passport_number = passportNum || null;
+    var nationality = findAns('nationality');
+    if (nationality !== undefined) cols.nationality = nationality || null;
+    var dob = findAns('date_of_birth');
+    if (dob !== undefined) cols.date_of_birth = dob || null;
+    var expiry = findAns('passport_expiry');
+    if (expiry !== undefined) cols.passport_expiry = expiry || null;
+    var issuingCountry = findAns('passport_issuing_country');
+    if (issuingCountry !== undefined) cols.passport_issuing_country = issuingCountry || null;
+    var phone = findAns('phone') || findAns('telephone');
+    if (phone !== undefined) cols.phone = phone || null;
+    var email = findAns('contact_email');
+    if (email !== undefined) cols.email = email || null;
+    var first = findAns('passport_first_name');
+    var last = findAns('passport_last_name');
+    if (first !== undefined || last !== undefined) {
+      var fName = (first || '').trim();
+      var lName = (last || '').trim();
+      var full = (fName + ' ' + lName).trim();
+      if (full) cols.full_name = full;
+    }
   }
 
   // Editable applicant fields (extensible). Status stays in its own notifying control.
@@ -5266,24 +7130,213 @@
 
   function appEditFormHtml(a){
     var visaOpts=VISAS.map(function(v){ var cName = countryName(v.country_slug); return '<option value="'+esc(v.id)+'"'+(a.visa_type===v.id?' selected':'')+'>'+esc(v.name) + (cName && cName !== '-' ? ' (' + esc(cName) + ')' : '') + '</option>'; }).join('');
-    return '<div class="panel">'+
-      '<h3 style="font-size:17px;font-weight:800;margin-bottom:4px">Edit application</h3>'+
-      '<p class="phint" style="margin-top:0">Correct the applicant’s details. Status is changed from the Details tab (it notifies the customer).</p>'+
-      '<div class="grid2">'+
-        '<div class="field"><label>Full name</label><input id="aef_full_name" type="text" value="'+esc(a.full_name||'')+'"></div>'+
-        '<div class="field"><label>Mobile number</label><input id="appfPhone" type="tel" value="'+esc(a.phone||'')+'"></div>'+
-        '<div class="field"><label>Email</label><input id="aef_email" type="email" value="'+esc(a.email||'')+'"></div>'+
-        '<div class="field"><label>Passport number</label><input id="aef_passport_number" type="text" value="'+esc(a.passport_number||'')+'"></div>'+
-        '<div class="field"><label>Date of birth</label><input id="aef_date_of_birth" type="date" value="'+esc(a.date_of_birth||'')+'"></div>'+
-        '<div class="field"><label>Passport expiry</label><input id="aef_passport_expiry" type="date" value="'+esc(a.passport_expiry||'')+'"></div>'+
-        '<div class="field"><label>Nationality</label><input id="aef_nationality" type="text" value="'+esc(a.nationality||'')+'"></div>'+
-        '<div class="field"><label>Passport issuing country</label><input id="aef_passport_issuing_country" type="text" value="'+esc(a.passport_issuing_country||'')+'"></div>'+
-        '<div class="field"><label>State</label><input id="aef_state" type="text" value="'+esc(a.state||'')+'"></div>'+
-        '<div class="field"><label>Visa type</label><select id="aef_visa_type">'+visaOpts+'</select></div>'+
+    
+    var OPTIONAL_FIELDS = [
+      { q: 'former_surname', label: 'Previous surname', type: 'text' },
+      { q: 'nationality_at_birth', label: 'Nationality at birth', type: 'text' },
+      { q: 'other_nationalities', label: 'Other nationalities', type: 'text' },
+      { q: 'national_id', label: 'National ID number', type: 'text' },
+      { q: 'emergency_phone', label: 'Emergency contact phone', type: 'text' },
+      { q: 'emergency_relationship', label: 'Emergency contact relationship', type: 'text' },
+      { q: 'other_travel_countries', label: 'Other travel countries', type: 'text' },
+      { q: 'other_travel_purposes', label: 'Other travel purposes', type: 'text' },
+      { q: 'visa_period', label: 'Visa period of stay', type: 'text' }
+    ];
+    if (!a.answers) a.answers = [];
+    var existingKeys = a.answers.map(function(x) { return x.q; });
+    OPTIONAL_FIELDS.forEach(function(f) {
+      if (existingKeys.indexOf(f.q) === -1) {
+        a.answers.push({ q: f.q, label: f.label, type: f.type, value: '' });
+      }
+    });
+    
+    // Filter out duplicates from questionnaire answers that are already standard fields
+    var DUPLICATE_ANSWERS = [
+      'passport_first_name',
+      'passport_last_name',
+      'date_of_birth',
+      'passport_number',
+      'passport_expiry',
+      'nationality',
+      'passport_issuing_country',
+      'phone',
+      'telephone',
+      'contact_email',
+      'email'
+    ];
+
+    var FIELD_OPTIONS = {
+      'gender': ['Male', 'Female', 'Other'],
+      'marital_status': ['Single', 'Married', 'Registered Partnership', 'Separated', 'Divorced', 'Widow(er)', 'Other'],
+      'passport_type': ['Ordinary passport', 'Diplomatic passport', 'Service passport', 'Official passport', 'Special passport', 'Other'],
+      'other_passport_type': ['Regular', 'Diplomatic', 'Official', 'Other'],
+      'is_minor': ['No', 'Yes'],
+      'other_country_residence': ['No', 'Yes'],
+      'stay_type': ['Hotel', 'Invited person', 'Company'],
+      'trip_payer': ['Applicant', 'Sponsor'],
+      'eu_family': ['No', 'Yes'],
+      'final_entry_permit': ['No', 'Yes'],
+      'schengen_fingerprints': ['No', 'Yes'],
+      'has_inviter': ['No', 'Yes'],
+      'has_children': ['No', 'Yes'],
+      'other_valid_passport': ['No', 'Yes'],
+      'other_country_citizen': ['No', 'Yes'],
+      'purpose': ['Tourism', 'Business', 'Visiting family or friends', 'Other'],
+      'entries_requested': ['Single entry', 'Two entries', 'Multiple entries'],
+      'visa_period': ['Long-term Stay over 90 days', 'Short-term Stay less than 90 days']
+    };
+
+    var ans = (a.answers || []).filter(function(x) {
+      return DUPLICATE_ANSWERS.indexOf(x.q) === -1;
+    });
+
+    // Unified list of standard fields
+    var standardFields = [
+      { q: 'full_name', label: 'Full name', type: 'text', value: a.full_name||'', id: 'aef_full_name' },
+      { q: 'phone', label: 'Mobile number', type: 'tel', value: a.phone||'', id: 'appfPhone' },
+      { q: 'email', label: 'Email', type: 'email', value: a.email||'', id: 'aef_email' },
+      { q: 'passport_number', label: 'Passport number', type: 'text', value: a.passport_number||'', id: 'aef_passport_number' },
+      { q: 'date_of_birth', label: 'Date of birth', type: 'date', value: a.date_of_birth||'', id: 'aef_date_of_birth' },
+      { q: 'passport_expiry', label: 'Passport expiry', type: 'date', value: a.passport_expiry||'', id: 'aef_passport_expiry' },
+      { q: 'nationality', label: 'Nationality', type: 'text', value: a.nationality||'', id: 'aef_nationality' },
+      { q: 'passport_issuing_country', label: 'Passport issuing country', type: 'text', value: a.passport_issuing_country||'', id: 'aef_passport_issuing_country' },
+      { q: 'state', label: 'State', type: 'text', value: a.state||'', id: 'aef_state' },
+      { q: 'visa_type', label: 'Visa type', type: 'visa_select', value: a.visa_type||'', id: 'aef_visa_type' }
+    ];
+
+    // Combine standard fields and custom answers for grouping
+    var fieldsToRender = [];
+    standardFields.forEach(function(f) {
+      fieldsToRender.push(Object.assign({}, f, { isCustom: false }));
+    });
+    ans.forEach(function(x) {
+      fieldsToRender.push({
+        q: x.q,
+        label: x.label,
+        type: x.type,
+        value: x.value,
+        isCustom: true
+      });
+    });
+
+    // Helper function to render a single field HTML
+    function renderField(f) {
+      if (f.type === 'file') {
+        var fileName = (f.value && f.value.name) ? f.value.name : 'file';
+        var filePath = (f.value && f.value.path) ? f.value.path : '';
+        var fileLink = filePath
+          ? '<a href="#" class="ans-file" data-path="'+esc(filePath)+'" style="font-weight:600;color:var(--blue-600)">View file ('+esc(fileName)+')</a>'
+          : '<span style="color:var(--muted)">No file</span>';
+        return '<div class="field" data-ans-field-q="' + esc(f.q) + '">' +
+          '<label>' + esc(f.label) + '</label>' +
+          '<div style="padding:10px 12px;background:#f8fafc;border:1.5px solid var(--line);border-radius:10px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + fileLink + '</div>' +
+          '</div>';
+      }
+      
+      if (f.type === 'visa_select') {
+        return '<div class="field">' +
+          '<label>' + esc(f.label) + '</label>' +
+          '<select id="' + f.id + '">' + visaOpts + '</select>' +
+          '</div>';
+      }
+      
+      var opts = FIELD_OPTIONS[f.q];
+      if (!opts && (f.value === 'Yes' || f.value === 'No' || f.q.indexOf('has_') === 0)) {
+        opts = ['No', 'Yes'];
+      }
+      
+      if (opts) {
+        var selectOpts = opts.map(function(optVal) {
+          var sel = (String(f.value || '').toLowerCase() === String(optVal).toLowerCase()) ? ' selected' : '';
+          return '<option value="' + esc(optVal) + '"' + sel + '>' + esc(optVal) + '</option>';
+        }).join('');
+        
+        var selectAttr = f.isCustom ? 'data-ans-edit-q="' + esc(f.q) + '"' : 'id="' + f.id + '"';
+        return '<div class="field" ' + (f.isCustom ? 'data-ans-field-q="' + esc(f.q) + '"' : '') + '>' +
+          '<label>' + esc(f.label) + '</label>' +
+          '<select ' + selectAttr + '><option value="">Select</option>' + selectOpts + '</select>' +
+          '</div>';
+      }
+      
+      var inputType = f.type === 'date' ? 'date' : (f.type === 'tel' ? 'tel' : 'text');
+      var inputAttr = f.isCustom ? 'data-ans-edit-q="' + esc(f.q) + '"' : 'id="' + f.id + '"';
+      return '<div class="field" ' + (f.isCustom ? 'data-ans-field-q="' + esc(f.q) + '"' : '') + '>' +
+        '<label>' + esc(f.label) + '</label>' +
+        '<input ' + inputAttr + ' type="' + inputType + '" value="' + esc(f.value || '') + '">' +
+        '</div>';
+    }
+
+    // Dynamic grouping definitions
+    var SECTIONS = [
+      { id: 'personal', title: '1. Personal details', fields: ['full_name', 'first_name', 'last_name', 'passport_first_name', 'passport_last_name', 'date_of_birth', 'nationality', 'state', 'gender', 'marital_status', 'former_surname', 'nationality_at_birth', 'other_nationalities', 'national_id', 'is_minor', 'minor_guardian', 'father_name', 'mother_name', 'guarantor_na', 'guarantor_name', 'guarantor_phone', 'guarantor_dob', 'guarantor_gender', 'guarantor_relationship', 'guarantor_occupation', 'guarantor_nationality', 'guarantor_immigration_status', 'guarantor_address', 'inviter_na', 'inviter_name', 'inviter_phone', 'inviter_dob', 'inviter_gender', 'inviter_relationship', 'inviter_occupation', 'inviter_nationality', 'inviter_immigration_status', 'inviter_address'] },
+      { id: 'passport', title: '2. Passport details', fields: ['passport_type', 'passport_number', 'passport_expiry', 'passport_issuing_country', 'passport_issue_date', 'passport_place_of_issue', 'other_valid_passport', 'other_passport_type', 'other_passport_number', 'other_passport_country', 'other_passport_expiry'] },
+      { id: 'contact', title: '3. Contact & residence', fields: ['email', 'contact_email', 'phone', 'telephone', 'residential_address', 'home_address', 'current_address', 'other_country_residence', 'residence_permit_no', 'residence_permit_until', 'residence_pincode', 'emergency_name', 'emergency_country', 'emergency_phone', 'emergency_relationship'] },
+      { id: 'trip', title: '4. Trip details', fields: ['visa_type', 'purpose', 'purpose_details', 'purpose_other', 'main_destination', 'first_entry_country', 'entries_requested', 'arrival_date', 'departure_date', 'schengen_fingerprints', 'fingerprint_date', 'visa_sticker_number', 'arrival_airport', 'departure_airport', 'visa_period', 'visa_period_stay', 'stay_duration', 'korea_address', 'korea_phone', 'visited_korea_5y', 'korea_visit_details', 'travelled_other_5y', 'other_travel_countries', 'other_travel_purposes', 'family_in_korea', 'family_korea_details', 'travelling_with_family', 'travel_family_details', 'has_inviter'] },
+      { id: 'work_stay', title: '5. Work, stay & expenses', fields: ['occupation', 'occupation_other', 'employer_name', 'employer_address', 'employer_phone', 'employer_email', 'position', 'stay_type', 'host_name', 'host_phone', 'host_address', 'company_contact_name', 'company_contact_email', 'company_contact_phone', 'company_phone', 'trip_payer', 'sponsor_details', 'support_means', 'support_means_applicant', 'sponsor_type', 'support_means_sponsor', 'support_means_other', 'sponsor_means_other', 'school_name', 'school_location', 'education_level', 'education_other', 'travel_cost_usd', 'payer_name', 'payer_relationship', 'support_type', 'payer_phone'] },
+      { id: 'final', title: '6. Final check', fields: ['eu_family', 'eu_family_name', 'eu_family_nationality', 'eu_family_dob', 'eu_family_document', 'eu_family_relationship', 'final_entry_permit', 'entry_permit_issued_by', 'entry_permit_from', 'entry_permit_until', 'application_place', 'application_date', 'form_assistance', 'assistant_name', 'assistant_dob', 'assistant_phone', 'assistant_relationship', 'dec_crime', 'dec_prison', 'dec_deport', 'dec_drug', 'dec_prostitution', 'dec_trafficking', 'dec_details', 'schengen_declaration', 'marketingConsent', 'korea_declaration', 'ire_declaration'] }
+    ];
+
+    var sectionGroups = SECTIONS.map(function(sec) {
+      return {
+        title: sec.title,
+        id: sec.id,
+        fields: []
+      };
+    });
+    var otherGroup = {
+      title: '7. Other details',
+      id: 'other_details',
+      fields: []
+    };
+    
+    fieldsToRender.forEach(function(f) {
+      var grouped = false;
+      for (var i = 0; i < SECTIONS.length; i++) {
+        if (SECTIONS[i].fields.indexOf(f.q) !== -1) {
+          sectionGroups[i].fields.push(f);
+          grouped = true;
+          break;
+        }
+      }
+      if (!grouped) {
+        otherGroup.fields.push(f);
+      }
+    });
+
+    var cardsHtml = '';
+    sectionGroups.forEach(function(g) {
+      if (g.fields.length) {
+        cardsHtml += '<div class="review-section-card">' +
+          '<div class="review-section-card-header"><h3>' + esc(g.title) + '</h3></div>' +
+          '<div class="review-section-body"><div class="grid2">' +
+            g.fields.map(renderField).join('') +
+          '</div></div>' +
+          '</div>';
+      }
+    });
+    if (otherGroup.fields.length) {
+      cardsHtml += '<div class="review-section-card">' +
+        '<div class="review-section-card-header"><h3>' + esc(otherGroup.title) + '</h3></div>' +
+        '<div class="review-section-body"><div class="grid2">' +
+          otherGroup.fields.map(renderField).join('') +
+        '</div></div>' +
+        '</div>';
+    }
+
+    return '<div class="admin-edit-form">'+
+      '<div style="margin-bottom: 20px;">'+
+        '<h3 style="font-size:17px;font-weight:800;margin-bottom:4px">Edit application</h3>'+
+        '<p class="phint" style="margin-top:0">Correct the applicant’s details. Status is changed from the Details tab (it notifies the customer).</p>'+
       '</div>'+
-      '<div class="field"><label>Internal notes</label><textarea id="aef_notes" style="min-height:70px">'+esc(a.notes||'')+'</textarea></div>'+
+      cardsHtml +
+      '<div class="review-section-card">' +
+        '<div class="review-section-card-header"><h3>Internal notes</h3></div>' +
+        '<div class="review-section-body">' +
+          '<div class="field"><label>Internal notes</label><textarea id="aef_notes" style="min-height:70px">' + esc(a.notes||'') + '</textarea></div>'+
+        '</div>' +
+      '</div>' +
       '<div class="signin-msg" id="aefMsg"></div>'+
-      '<div style="display:flex;gap:10px;margin-top:10px"><button class="btn btn-primary" id="aefSave">Save changes</button><button class="btn btn-ghost" id="aefCancel">Cancel</button></div>'+
+      '<div style="display:flex;gap:12px;margin-top:20px"><button class="btn btn-primary" id="aefSave">Save changes</button><button class="btn btn-ghost" id="aefCancel">Cancel</button></div>'+
     '</div>';
   }
 
@@ -5316,9 +7369,39 @@
         visa_type: document.getElementById('aef_visa_type').value||a.visa_type,
         notes: document.getElementById('aef_notes').value.trim()||null
       };
+      var updatedAnswers = (a.answers || []).map(function(x) {
+        if (x.type === 'file') return x;
+        var input = document.querySelector('[data-ans-edit-q="' + x.q + '"]');
+        var newVal = input ? input.value.trim() : x.value;
+        return Object.assign({}, x, { value: newVal });
+      });
+
+      // Synchronize in both directions
+      syncAppColumnsAndAnswers(newVals, updatedAnswers);
+      syncAnswersToAppColumns(updatedAnswers, newVals);
+
+      if (updatedAnswers.length) {
+        newVals.answers = updatedAnswers;
+      }
       var fields=['full_name','phone','email','passport_number','date_of_birth','passport_expiry','nationality','passport_issuing_country','state','visa_type','notes'];
       var changes=[];
       fields.forEach(function(f){ var ov=(a[f]==null?'':String(a[f])), nv=(newVals[f]==null?'':String(newVals[f])); if(ov!==nv) changes.push({ field:f, old_value:(a[f]==null?null:String(a[f])), new_value:(newVals[f]==null?null:String(newVals[f])) }); });
+
+      // Add changes for custom questionnaire answers
+      a.answers.forEach(function(oldAns, idx) {
+        var newAns = updatedAnswers[idx];
+        if (newAns && String(oldAns.value || '') !== String(newAns.value || '')) {
+          var standardKeys = ['passport_number', 'nationality', 'date_of_birth', 'passport_expiry', 'passport_issuing_country', 'phone', 'email'];
+          var isFullNameKey = (oldAns.q === 'passport_first_name' || oldAns.q === 'passport_last_name');
+          if (standardKeys.indexOf(oldAns.q) === -1 && !isFullNameKey) {
+            changes.push({
+              field: 'Answer: ' + oldAns.label,
+              old_value: oldAns.value ? String(oldAns.value) : null,
+              new_value: newAns.value ? String(newAns.value) : null
+            });
+          }
+        }
+      });
       var btn=document.getElementById('aefSave'); btn.disabled=true; btn.innerHTML='<span class="spin"></span>';
       function fin(){ btn.disabled=false; btn.innerHTML='Save changes'; }
       if(!changes.length){ fin(); appEditing=false; toast('No changes'); renderAppDetail(a.id); return; }
@@ -5329,6 +7412,41 @@
         sb.from('application_edits').insert(rows).then(function(){ appEditing=false; toast('Application updated'); renderAppDetail(a.id); });
       });
     };
+
+    var DEPENDENCIES = [
+      { parent: 'is_minor', val: 'yes', children: ['minor_guardian'] },
+      { parent: 'other_country_residence', val: 'yes', children: ['residence_permit_no', 'residence_permit_until'] },
+      { parent: 'trip_payer', val: 'sponsor', children: ['sponsor_details'] },
+      { parent: 'schengen_fingerprints', val: 'yes', children: ['fingerprint_date', 'visa_sticker_number'] },
+      { parent: 'eu_family', val: 'yes', children: ['eu_family_name', 'eu_family_nationality', 'eu_family_dob', 'eu_family_document', 'eu_family_relationship'] },
+      { parent: 'final_entry_permit', val: 'yes', children: ['entry_permit_issued_by', 'entry_permit_from', 'entry_permit_until'] },
+      { parent: 'marital_status', val: 'married', children: ['spouse_last_name', 'spouse_first_name', 'spouse_dob', 'spouse_nationality', 'spouse_address', 'spouse_phone'] },
+      { parent: 'other_valid_passport', val: 'yes', children: ['other_passport_type', 'other_passport_number', 'other_passport_country', 'other_passport_expiry'] },
+      { parent: 'has_inviter', val: 'yes', children: ['inviter_name', 'inviter_registration', 'inviter_relationship', 'inviter_address', 'inviter_phone'] },
+      { parent: 'has_children', val: 'yes', children: ['children_count'] },
+      { parent: 'form_assistance', val: 'yes', children: ['assistant_name', 'assistant_dob', 'assistant_phone', 'assistant_relationship'] }
+    ];
+
+    function updateEditFormVisibility() {
+      DEPENDENCIES.forEach(function(dep) {
+        var parentEl = document.querySelector('[data-ans-edit-q="' + dep.parent + '"]') || document.getElementById('aef_' + dep.parent);
+        if (!parentEl) return;
+        var val = String(parentEl.value || '').toLowerCase();
+        var show = (val === dep.val);
+        dep.children.forEach(function(childKey) {
+          var childContainer = document.querySelector('[data-ans-field-q="' + childKey + '"]');
+          if (childContainer) {
+            childContainer.style.display = show ? '' : 'none';
+          }
+        });
+      });
+    }
+
+    updateEditFormVisibility();
+    var editContainer = document.getElementById('appDetail');
+    if (editContainer) {
+      editContainer.addEventListener('change', updateEditFormVisibility);
+    }
   }
 
   function appHistoryHtml(){
@@ -6717,12 +8835,14 @@
           '<div class="meta">'+(c.group_slug?('Group: '+esc(c.group_slug)+' · '):'')+'/country/'+esc(c.slug)+'</div></div>'+
         '</div>'+
         '<div style="display:flex;gap:8px"><button class="btn btn-ghost" data-cedit="'+esc(c.id)+'">Edit</button>'+
+          '<button class="btn btn-ghost" data-chide="'+esc(c.id)+'">'+(c.active?'Hide':'Show')+'</button>'+
           '<button class="btn btn-ghost" data-cdel="'+esc(c.id)+'" style="color:var(--red)">Delete</button></div>'+
       '</div></div>';
     }).join('');
     area.innerHTML='<div style="margin-bottom:14px"><button class="btn btn-primary" id="cAdd">+ Add country</button></div>'+(rows||'<div class="panel empty-state"><p>No countries yet.</p></div>');
     document.getElementById('cAdd').onclick=function(){ cEditing={id:null,name:'',iso2:'',group_slug:'',summary:'',blurb:'',seo_title:'',seo_description:'',featured:false,active:true,sort_order:(countryList.length+1)}; paintDest(); };
     area.querySelectorAll('[data-cedit]').forEach(function(b){ b.onclick=function(){ cEditing=JSON.parse(JSON.stringify(countryList.filter(function(x){return x.id===b.getAttribute('data-cedit');})[0])); paintDest(); }; });
+    area.querySelectorAll('[data-chide]').forEach(function(b){ b.onclick=function(){ countryToggleActive(b.getAttribute('data-chide')); }; });
     area.querySelectorAll('[data-cdel]').forEach(function(b){ b.onclick=function(){ countryDelete(b.getAttribute('data-cdel')); }; });
   }
   function countryFormHtml(c){
@@ -6749,7 +8869,7 @@
       '</div>'+
       '<div class="signin-msg" id="cMsg"></div>'+
       '<div style="display:flex;gap:10px"><button class="btn btn-primary" id="cSave">'+(c.id?'Save country':'Create country')+'</button><button class="btn btn-ghost" id="cCancel">Cancel</button></div>'+
-    '</div>';
+     '</div>';
   }
   function wireCountryForm(){
     document.getElementById('cCancel').onclick=function(){ cEditing=null; paintDest(); };
@@ -6781,6 +8901,17 @@
         toast('Country saved'); cEditing=null; renderDestinationsAdmin();
       });
     };
+  }
+  function countryToggleActive(id){
+    var c=countryList.filter(function(x){return x.id===id;})[0]; if(!c) return;
+    var newActive=!c.active;
+    sb.from('countries').update({active:newActive}).eq('id',id).then(function(r){
+      if(r.error){ toast('Could not update status.'); console.error(r.error); return; }
+      logAudit({ module:'Catalogue', action:(newActive?'show':'hide'), record_type:'country', record_ref:c.name, remarks:'Destination visibility updated', risk:'normal' });
+      toast(newActive ? 'Country shown' : 'Country hidden');
+      c.active=newActive;
+      paintDest();
+    });
   }
   function countryDelete(id){
     var c=countryList.filter(function(x){return x.id===id;})[0]; if(!c) return;
@@ -9160,21 +11291,35 @@
   function dataUrlBytes(url){
     var b=atob(url.split(',')[1]), u=new Uint8Array(b.length); for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i); return u;
   }
-  function makeImagePdf(jpegs){
+  function makeImagePdf(jpegs, links){
     var enc=new TextEncoder(), parts=[], offsets=[0], pos=0;
     function addBytes(u){parts.push(u); pos+=u.length;}
     function addStr(x){addBytes(enc.encode(x));}
     addStr('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
-    var objects=[], pageIds=[], imageIds=[], contentIds=[];
+    var objects=[], pageIds=[], imageIds=[], contentIds=[], annotIds=[];
     // Object ids: 1 catalog, 2 pages, then page/image/content triples.
     for(var i=0;i<jpegs.length;i++){ pageIds.push(3+i*3); imageIds.push(4+i*3); contentIds.push(5+i*3); }
-    var maxId=2+jpegs.length*3;
+    var baseMaxId=2+jpegs.length*3;
+    var hasLinks = links && links.length;
+    if(hasLinks){
+      for(i=0;i<jpegs.length;i++){ annotIds.push(baseMaxId+1+i); }
+    }
+    var maxId=baseMaxId+(hasLinks?jpegs.length:0);
     objects[1]='<< /Type /Catalog /Pages 2 0 R >>';
     objects[2]='<< /Type /Pages /Kids ['+pageIds.map(function(id){return id+' 0 R';}).join(' ')+'] /Count '+jpegs.length+' >>';
     for(i=0;i<jpegs.length;i++){
-      objects[pageIds[i]]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 '+imageIds[i]+' 0 R >> >> /Contents '+contentIds[i]+' 0 R >>';
+      var pageObj='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 '+imageIds[i]+' 0 R >> >> /Contents '+contentIds[i]+' 0 R';
+      if(hasLinks){
+        pageObj+=' /Annots ['+annotIds[i]+' 0 R]';
+      }
+      pageObj+=' >>';
+      objects[pageIds[i]]=pageObj;
       var stream='q 595 0 0 842 0 0 cm /Im0 Do Q';
       objects[contentIds[i]]='<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream';
+      if(hasLinks){
+        var pageLink=links[i]||links[0];
+        objects[annotIds[i]]='<< /Type /Annot /Subtype /Link /Rect ['+pageLink.rect.join(' ')+'] /Border [0 0 0] /A << /Type /Action /S /URI /URI ('+pageLink.url+') >> >>';
+      }
     }
     for(var id=1;id<=maxId;id++){
       offsets[id]=pos; addStr(id+' 0 obj\n');
@@ -9388,27 +11533,1044 @@
     var decNames=['dec_crime','dec_prison','dec_deport','dec_drug','dec_prostitution','dec_trafficking'];
     var ys=[397.9,413.0,440.1,467.1,503.9,518.8];
     decNames.forEach(function(name,idx){var ans=String(smartAnswer(a,[name])||'').toLowerCase(); japanPdfCheck(ctx,507.3,ys[idx],ans==='yes'); japanPdfCheck(ctx,544.8,ys[idx],ans==='no');});
-    exactJapanText(ctx,smartAnswer(a,['dec_details']),90,555,false,8);
+    // Declaration details belong inside the official details box (not on the instruction line above it).
+    exactJapanText(ctx,smartAnswer(a,['dec_details']),90,575,false,8);
     // Official line is y=703.7. Put date and signature above their own lines.
     exactJapanText(ctx,pdfDate(smartAnswer(a,['application_date'])),175,699,true,10);
     drawExactJapanSignature(ctx,signature);
   }
 
+  // ============================================================
+  //  EXACT DENMARK SCHENGEN FORM STAMPER
+  //  Uses the supplied 3-page Harmonised Schengen form as background.
+  //  Only saved customer answers are printed; official-use fields stay blank.
+  // ============================================================
+  function denmarkText(ctx,value,x,y,maxW,bold,size){
+    if(value==null || String(value).trim()==='') return;
+    // Denmark print rule: all alphabetic customer-entered text is printed in CAPITAL LETTERS.
+    // Digits, punctuation and date separators stay unchanged.
+    var txt=String(value).trim().toUpperCase(), fs=(size||15)+2;
+    ctx.save(); ctx.fillStyle='#111'; ctx.textBaseline='alphabetic';
+    while(fs>10){ ctx.font=(bold===false?'400 ':'700 ')+fs+'px Arial, Helvetica, sans-serif'; if(!maxW || ctx.measureText(txt).width<=maxW) break; fs-=1; }
+    ctx.font=(bold===false?'400 ':'700 ')+fs+'px Arial, Helvetica, sans-serif';
+    if(maxW && ctx.measureText(txt).width>maxW){ while(txt.length>2 && ctx.measureText(txt+'…').width>maxW) txt=txt.slice(0,-1); txt+='…'; }
+    ctx.fillText(txt,x,y); ctx.restore();
+  }
+  function denmarkTextMultiLine(ctx,value,x,y,maxW,lineHeight,bold,size){
+    if(value==null || String(value).trim()==='') return;
+    var txt=String(value).trim().toUpperCase();
+    var fs=(size||15)+2;
+    ctx.save(); ctx.fillStyle='#111'; ctx.textBaseline='alphabetic';
+    while(fs>10){
+      ctx.font=(bold===false?'400 ':'700 ')+fs+'px Arial, Helvetica, sans-serif';
+      var words=txt.split(' '), lines=[], currentLine='';
+      for(var i=0; i<words.length; i++){
+        var w = words[i];
+        if(ctx.measureText(w).width > maxW){
+          if(currentLine) { lines.push(currentLine); currentLine = ''; }
+          var temp = '';
+          for(var k=0; k<w.length; k++){
+            if(ctx.measureText(temp + w[k]).width > maxW){
+              lines.push(temp);
+              temp = w[k];
+            } else {
+              temp += w[k];
+            }
+          }
+          currentLine = temp;
+        } else {
+          var testLine = currentLine ? currentLine + ' ' + w : w;
+          if(ctx.measureText(testLine).width > maxW){
+            if(currentLine) {
+              lines.push(currentLine);
+              currentLine = w;
+            } else {
+              lines.push(testLine);
+              currentLine = '';
+            }
+          } else {
+            currentLine = testLine;
+          }
+        }
+      }
+      if(currentLine) lines.push(currentLine);
+      if(lines.length <= 2) break;
+      fs-=1;
+    }
+    ctx.font=(bold===false?'400 ':'700 ')+fs+'px Arial, Helvetica, sans-serif';
+    var words=txt.split(' '), lines=[], currentLine='';
+    for(var i=0; i<words.length; i++){
+      var w = words[i];
+      if(ctx.measureText(w).width > maxW){
+        if(currentLine) { lines.push(currentLine); currentLine = ''; }
+        var temp = '';
+        for(var k=0; k<w.length; k++){
+          if(ctx.measureText(temp + w[k]).width > maxW){
+            lines.push(temp);
+            temp = w[k];
+          } else {
+            temp += w[k];
+          }
+        }
+        currentLine = temp;
+      } else {
+        var testLine = currentLine ? currentLine + ' ' + w : w;
+        if(ctx.measureText(testLine).width > maxW){
+          if(currentLine) {
+            lines.push(currentLine);
+            currentLine = w;
+          } else {
+            lines.push(testLine);
+            currentLine = '';
+          }
+        } else {
+          currentLine = testLine;
+        }
+      }
+    }
+    if(currentLine) lines.push(currentLine);
+    for(var j=0; j<lines.length; j++){
+      var lineText = lines[j];
+      if(j === 1 && lines.length > 2) {
+        while(lineText.length > 2 && ctx.measureText(lineText+'…').width > maxW) {
+          lineText = lineText.slice(0,-1);
+        }
+        lineText += '…';
+      }
+      ctx.fillText(lineText, x, y + j * lineHeight);
+      if(j === 1) break;
+    }
+    ctx.restore();
+  }
+  function denmarkCheck(ctx,cx,cy,on){
+    if(!on) return; ctx.save(); ctx.strokeStyle='#111'; ctx.lineWidth=2.1; ctx.lineCap='round'; ctx.beginPath();
+    ctx.moveTo(cx-5,cy); ctx.lineTo(cx-1,cy+5); ctx.lineTo(cx+7,cy-7); ctx.stroke(); ctx.restore();
+  }
+  function denmarkDate(v){ return pdfDate(v); }
+  function denmarkVal(a,keys){ return smartAnswer(a,keys); }
+  function denmarkDays(a){
+    var x=denmarkVal(a,['arrival_date']), y=denmarkVal(a,['departure_date']); if(!x||!y)return '';
+    var d1=new Date(x+'T00:00:00'), d2=new Date(y+'T00:00:00'); var n=Math.round((d2-d1)/86400000)+1; return isFinite(n)&&n>0?String(n):'';
+  }
+  function stampDenmarkPage1(ctx,p,a){
+    // Coordinates calibrated against the supplied 1191x1684 Denmark form image.
+    var f=15;
+    // Page 1 identity fields: calibrated to the official form. Keep each value just below its own label, never over the next label/line.
+    // Values are deliberately placed INSIDE the blank area below each printed label.
+    // Do not use the label baseline itself: that caused the overlap seen in v17.
+    // v19 exact field mapping + lower baseline correction requested from print preview:
+    // 1 = surname, 2 = blank unless a real former surname exists, 3 = given name,
+    // 4 = DOB, 5 = place of birth, 6 = country of birth, 7 = current nationality.
+    denmarkText(ctx,denmarkVal(a,['passport_last_name','last_name'])||p.last_name,105,430,620,false,f);
+    denmarkText(ctx,denmarkVal(a,['former_surname']),105,480,620,false,f);
+    denmarkText(ctx,denmarkVal(a,['passport_first_name','first_name'])||p.first_name||p.full_name,105,530,620,false,f);
+    denmarkText(ctx,denmarkDate(denmarkVal(a,['date_of_birth'])||p.date_of_birth),105,585,190,false,f);
+    denmarkText(ctx,denmarkVal(a,['birthplace_city','place_of_birth']),390,585,150,false,f);
+    denmarkText(ctx,denmarkVal(a,['birthplace_country']),390,680,150,false,f);
+    denmarkText(ctx,denmarkVal(a,['nationality'])||p.nationality,690,585,70,false,f);
+    denmarkText(ctx,denmarkVal(a,['nationality_at_birth']),690,680,70,false,13);
+    denmarkText(ctx,denmarkVal(a,['other_nationalities']),690,745,70,false,13);
+    var g=String(p.gender||denmarkVal(a,['gender'])||'').toLowerCase();
+    denmarkCheck(ctx,102,815,g==='male'); denmarkCheck(ctx,166,815,g==='female');
+    var ms=String(denmarkVal(a,['marital_status'])||'').toLowerCase();
+    denmarkCheck(ctx,382,815,ms==='single'); denmarkCheck(ctx,455,815,ms==='married'); denmarkCheck(ctx,542,815,ms.indexOf('registered')===0);
+    denmarkCheck(ctx,745,815,ms==='separated'); denmarkCheck(ctx,383,837,ms==='divorced'); denmarkCheck(ctx,450,837,ms.indexOf('widow')===0); denmarkCheck(ctx,543,837,ms==='other');
+    denmarkText(ctx,denmarkVal(a,['minor_guardian']),105,915,740,false,13);
+    denmarkText(ctx,denmarkVal(a,['national_id']),490,985,315,false,f);
+    var pt=String(denmarkVal(a,['passport_type'])||'ordinary passport').toLowerCase();
+    denmarkCheck(ctx,105,1040,pt.indexOf('ordinary')===0); denmarkCheck(ctx,218,1040,pt.indexOf('diplomatic')===0); denmarkCheck(ctx,379,1040,pt.indexOf('service')===0);
+    denmarkCheck(ctx,512,1040,pt.indexOf('official')===0); denmarkCheck(ctx,649,1040,pt.indexOf('special')===0); denmarkCheck(ctx,105,1087,pt==='other');
+    denmarkText(ctx,p.passport_number,105,1188,165,false,f);
+    denmarkText(ctx,denmarkDate(p.passport_issue_date),300,1188,195,false,f);
+    denmarkText(ctx,denmarkDate(p.passport_expiry),530,1188,160,false,f);
+    denmarkText(ctx,p.passport_issuing_country,715,1188,150,false,f);
+    var eu=String(denmarkVal(a,['eu_family'])||'').toLowerCase()==='yes';
+    if(eu){
+      var nm=denmarkVal(a,['eu_family_name'])||'', parts=nm.trim().split(/\s+/), fam=parts.length>1?parts.slice(-1).join(' '):nm, giv=parts.length>1?parts.slice(0,-1).join(' '):'';
+      denmarkText(ctx,fam,105,1378,380,false,f); denmarkText(ctx,giv,515,1378,350,false,f);
+      denmarkText(ctx,denmarkDate(denmarkVal(a,['eu_family_dob'])),105,1470,250,false,f);
+      denmarkText(ctx,denmarkVal(a,['eu_family_nationality']),390,1470,230,false,f);
+      denmarkText(ctx,denmarkVal(a,['eu_family_document']),665,1470,190,false,f);
+      var rel=String(denmarkVal(a,['eu_family_relationship'])||'').toLowerCase();
+      denmarkCheck(ctx,96,1547,rel==='spouse'); denmarkCheck(ctx,162,1547,rel==='child'); denmarkCheck(ctx,223,1547,rel==='grandchild'); denmarkCheck(ctx,325,1547,rel.indexOf('ascendant')>-1); denmarkCheck(ctx,96,1570,rel.indexOf('registered')>-1); denmarkCheck(ctx,268,1570,rel==='other');
+    }
+  }
+  function stampDenmarkPage2(ctx,p,a){
+    var f=15;
+    // Field 19: keep all entered values immediately below their printed labels.
+    denmarkText(ctx,denmarkVal(a,['residential_address']),125,130,500,false,f);
+    denmarkText(ctx,p.email,255,191,310,false,f);
+    denmarkText(ctx,p.phone,715,130,125,false,f);
+    var other=String(denmarkVal(a,['other_country_residence'])||'').toLowerCase()==='yes';
+    denmarkCheck(ctx,109,261,!other); denmarkCheck(ctx,109,286,other);
+    if(other){ denmarkText(ctx,denmarkVal(a,['residence_permit_no']),595,283,180,false,13); denmarkText(ctx,denmarkDate(denmarkVal(a,['residence_permit_until'])),140,305,120,false,13); }
+    denmarkText(ctx,denmarkVal(a,['occupation']),125,380,690,false,f);
+    var emp=[denmarkVal(a,['employer_name']),denmarkVal(a,['employer_address']),denmarkVal(a,['employer_phone'])].filter(Boolean).join(' | ');
+    denmarkText(ctx,emp,125,450,690,false,13);
+    var pur=String(denmarkVal(a,['purpose'])||'').toLowerCase();
+    var checks={tourism:[105,495],business:[205,495],'visiting family or friends':[298,495],cultural:[463,495],sports:[541,495],'official visit':[611,495],'medical reasons':[109,518],study:[224,518],'airport transit':[291,518],other:[415,518]};
+    Object.keys(checks).forEach(function(k){ denmarkCheck(ctx,checks[k][0],checks[k][1],pur===k); });
+    denmarkText(ctx,denmarkVal(a,['purpose_details']),125,590,690,false,13);
+    denmarkText(ctx,denmarkVal(a,['main_destination'])||'Denmark',115,680,300,false,f);
+    denmarkText(ctx,denmarkVal(a,['first_entry_country'])||'Denmark',540,650,280,false,f);
+    var ent=String(denmarkVal(a,['entries_requested'])||'').toLowerCase();
+    denmarkCheck(ctx,104,756,ent.indexOf('single')===0); denmarkCheck(ctx,218,756,ent.indexOf('two')===0); denmarkCheck(ctx,329,756,ent.indexOf('multiple')===0);
+    denmarkText(ctx,denmarkDate(denmarkVal(a,['arrival_date'])),670,810,140,false,f);
+    denmarkText(ctx,denmarkDate(denmarkVal(a,['departure_date'])),735,860,140,false,f);
+    var entNum=ent.indexOf('multiple')===0?'Multiple':(ent.indexOf('two')===0?'2':'1');
+    denmarkCheck(ctx,892,371,entNum==='1'); denmarkCheck(ctx,926,371,entNum==='2'); denmarkCheck(ctx,961,371,entNum==='Multiple'); denmarkText(ctx,denmarkDays(a),1025,405,90,false,f);
+    var fp=String(denmarkVal(a,['schengen_fingerprints'])||'').toLowerCase()==='yes';
+    denmarkCheck(ctx,104,940,!fp); denmarkCheck(ctx,150,940,fp);
+    if(fp){ denmarkText(ctx,denmarkDate(denmarkVal(a,['fingerprint_date'])),230,970,170,false,13); denmarkText(ctx,denmarkVal(a,['visa_sticker_number']),370,1015,430,false,13); }
+    var perm=String(denmarkVal(a,['final_entry_permit'])||'').toLowerCase()==='yes';
+    if(perm){ denmarkText(ctx,denmarkVal(a,['entry_permit_issued_by']),240,1170,210,false,13); denmarkText(ctx,denmarkDate(denmarkVal(a,['entry_permit_from'])),600,1170,145,false,13); denmarkText(ctx,denmarkDate(denmarkVal(a,['entry_permit_until'])),790,1205,125,false,13); }
+    var stay=String(denmarkVal(a,['stay_type'])||'').toLowerCase();
+    if(stay!=='company'){
+      // Field 30: name belongs in the large upper box; address/email and phone belong in the separate lower boxes.
+      denmarkText(ctx,denmarkVal(a,['host_name']),125,1195,690,false,f);
+      denmarkText(ctx,denmarkVal(a,['host_address']),125,1335,330,false,13);
+      denmarkText(ctx,denmarkVal(a,['host_phone']),500,1290,150,false,13);
+    }
+    if(stay==='company'){
+      denmarkText(ctx,[denmarkVal(a,['host_name']),denmarkVal(a,['host_address'])].filter(Boolean).join(' - '),125,1412,690,false,13);
+      denmarkText(ctx,denmarkVal(a,['host_phone']),620,1510,190,false,13);
+    }
+  }
+  function stampDenmarkPage3(ctx,p,a){
+    var f=15, payer=String(denmarkVal(a,['trip_payer'])||'Applicant').toLowerCase();
+    denmarkCheck(ctx,96,150,payer==='applicant'); denmarkCheck(ctx,553,150,payer==='sponsor');
+    var means=String(denmarkVal(a,['support_means'])||'').toLowerCase(); function has(x){return means.indexOf(x.toLowerCase())>-1;}
+    if(payer==='applicant'){
+      denmarkCheck(ctx,96,198,has('cash')); denmarkCheck(ctx,96,244,has('credit card')); denmarkCheck(ctx,96,267,has('pre-paid accommodation')); denmarkCheck(ctx,96,290,has('pre-paid transport'));
+    } else {
+      denmarkText(ctx,denmarkVal(a,['sponsor_details']),785,180,300,false,13);
+      denmarkCheck(ctx,599,198,has('cash')); denmarkCheck(ctx,599,221,has('accommodation provided')); denmarkCheck(ctx,599,244,has('all expenses covered')); denmarkCheck(ctx,599,267,has('pre-paid transport'));
+    }
+    var place=denmarkVal(a,['application_place']), date=denmarkDate(denmarkVal(a,['application_date']));
+    denmarkText(ctx,[place,date].filter(Boolean).join(' - '),105,1345,500,false,f);
+  }
+  async function generateDenmarkVisaPdf(a){
+    var p=smartPdfProfile(a), paths=['assets/form-templates/denmark-rendered/page-1.png?v=20260818-hq288','assets/form-templates/denmark-rendered/page-2.png?v=20260818-hq288','assets/form-templates/denmark-rendered/page-3.png?v=20260818-hq288'];
+    var cvs=[];
+    for(var i=0;i<3;i++){
+      var bg=await loadFormImage(paths[i]); var cv=document.createElement('canvas'); cv.width=bg.naturalWidth||2382; cv.height=bg.naturalHeight||3368; var ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(bg,0,0,cv.width,cv.height);
+      ctx.save(); ctx.scale(cv.width/1191,cv.height/1684); if(i===0) stampDenmarkPage1(ctx,p,a); else if(i===1) stampDenmarkPage2(ctx,p,a); else stampDenmarkPage3(ctx,p,a); ctx.restore(); cvs.push(cv);
+    }
+    var out=cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1.0)),w:cv.width,h:cv.height};}); var blob=makeImagePdf(out),url=URL.createObjectURL(blob),link=document.createElement('a');
+    var nm=(p.full_name||((p.first_name||'')+' '+(p.last_name||''))||'Applicant').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,''); link.href=url; link.download='Denmark_Schengen_Visa_Application_'+(nm||'Applicant')+'.pdf'; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function(){URL.revokeObjectURL(url);},2000); toast('Denmark Schengen application form generated. Please verify before submission.');
+  }
+
+  function stampSpainPage1(ctx,p,a){
+    var f=15;
+    denmarkText(ctx,denmarkVal(a,['passport_last_name','last_name'])||p.last_name,105,430,620,false,f);
+    denmarkText(ctx,denmarkVal(a,['former_surname']),105,505,620,false,f);
+    denmarkText(ctx,denmarkVal(a,['passport_first_name','first_name'])||p.first_name||p.full_name,105,580,620,false,f);
+    denmarkText(ctx,denmarkDate(denmarkVal(a,['date_of_birth'])||p.date_of_birth),105,670,180,false,f);
+    denmarkText(ctx,denmarkVal(a,['birthplace_city']),390,650,180,false,f);
+    denmarkText(ctx,denmarkVal(a,['birthplace_country']),390,720,180,false,f);
+    denmarkText(ctx,denmarkVal(a,['nationality'])||p.nationality,640,660,180,false,f);
+    denmarkText(ctx,denmarkVal(a,['nationality_at_birth']),640,735,180,false,13);
+    denmarkText(ctx,denmarkVal(a,['other_nationalities']),640,790,180,false,13);
+    var g=String(denmarkVal(a,['gender'])||'').toLowerCase(); denmarkCheck(ctx,100,850,g==='male'); denmarkCheck(ctx,220,850,g==='female');
+    var ms=String(denmarkVal(a,['marital_status'])||'').toLowerCase();
+    [['single',485,850],['married',605,850],['registered partnership',700,850],['separated',600,870],['divorced',485,888],['widow(er)',650,888],['other',790,888]].forEach(function(x){denmarkCheck(ctx,x[1],x[2],ms===x[0]);});
+    if(String(denmarkVal(a,['is_minor'])||'').toLowerCase()==='yes') denmarkText(ctx,denmarkVal(a,['minor_guardian']),105,1030,610,false,13);
+    denmarkText(ctx,denmarkVal(a,['national_id']),105,1140,610,false,f);
+    var pt=String(denmarkVal(a,['passport_type'])||'').toLowerCase();
+    denmarkCheck(ctx,115,1205,pt.indexOf('ordinary')===0); denmarkCheck(ctx,326,1205,pt.indexOf('diplomatic')===0); denmarkCheck(ctx,576,1205,pt.indexOf('service')===0);
+    denmarkCheck(ctx,180,1220,pt.indexOf('official')===0); denmarkCheck(ctx,420,1220,pt.indexOf('special')===0); denmarkCheck(ctx,665,1220,pt.indexOf('other')===0);
+    denmarkText(ctx,denmarkVal(a,['passport_number'])||p.passport_number,105,1345,185,false,f);
+    denmarkText(ctx,denmarkDate(denmarkVal(a,['passport_issue_date'])),350,1345,120,false,f);
+    denmarkText(ctx,denmarkDate(denmarkVal(a,['passport_expiry'])||p.passport_expiry),515,1345,120,false,f);
+    denmarkText(ctx,denmarkVal(a,['passport_issuing_country'])||p.passport_issuing_country,675,1345,180,false,f);
+    if(String(denmarkVal(a,['eu_family'])||'').toLowerCase()==='yes'){
+      var nm=denmarkVal(a,['eu_family_name'])||'', parts=nm.trim().split(/\s+/), fam=parts.length>1?parts.slice(-1).join(' '):nm, giv=parts.length>1?parts.slice(0,-1).join(' '):'';
+      denmarkText(ctx,fam,105,1460,315,false,f); denmarkText(ctx,giv,440,1460,315,false,f);
+    }
+  }
+  function stampSpainPage2(ctx,p,a){
+    var f=15, eu=String(denmarkVal(a,['eu_family'])||'').toLowerCase()==='yes';
+    if(eu){
+      denmarkText(ctx,denmarkDate(denmarkVal(a,['eu_family_dob'])),105,145,180,false,f); denmarkText(ctx,denmarkVal(a,['eu_family_nationality']),380,145,170,false,f); denmarkText(ctx,denmarkVal(a,['eu_family_document']),665,145,170,false,f);
+      var rel=String(denmarkVal(a,['eu_family_relationship'])||'').toLowerCase();
+      denmarkCheck(ctx,100,250,rel==='spouse'); denmarkCheck(ctx,193,250,rel==='child'); denmarkCheck(ctx,278,250,rel==='grandchild'); denmarkCheck(ctx,400,250,rel.indexOf('ascendant')>-1); denmarkCheck(ctx,668,250,rel.indexOf('registered')>-1); denmarkCheck(ctx,100,270,rel==='other');
+    }
+    denmarkTextMultiLine(ctx,[denmarkVal(a,['residential_address']),p.email].filter(Boolean).join(' | '),105,340,380,16,false,13); denmarkText(ctx,p.phone,610,325,300,false,f);
+    var other=String(denmarkVal(a,['other_country_residence'])||'').toLowerCase()==='yes'; denmarkCheck(ctx,100,440,!other); denmarkCheck(ctx,100,460,other);
+    if(other){denmarkText(ctx,denmarkVal(a,['residence_permit_no']),690,460,180,false,13); denmarkText(ctx,denmarkDate(denmarkVal(a,['residence_permit_until'])),270,480,170,false,13);}
+    denmarkText(ctx,denmarkVal(a,['occupation']),105,550,700,false,f);
+    denmarkText(ctx,[denmarkVal(a,['employer_name']),denmarkVal(a,['employer_address']),denmarkVal(a,['employer_phone'])].filter(Boolean).join(' | '),105,615,700,false,13);
+    var pur=String(denmarkVal(a,['purpose'])||'').toLowerCase(); var pc={tourism:[100,680],business:[219,680],'visiting family or friends':[321,680]}; Object.keys(pc).forEach(function(k){denmarkCheck(ctx,pc[k][0],pc[k][1],pur===k);});
+    denmarkTextMultiLine(ctx,denmarkVal(a,['purpose_details']),105,785,700,16,false,13);
+    denmarkText(ctx,denmarkVal(a,['main_destination'])||'Spain',105,880,300,false,f); denmarkText(ctx,denmarkVal(a,['first_entry_country'])||'Spain',605,845,300,false,f);
+    var ent=String(denmarkVal(a,['entries_requested'])||'').toLowerCase(); denmarkCheck(ctx,118,995,ent.indexOf('single')===0); denmarkCheck(ctx,200,995,ent.indexOf('two')===0); denmarkCheck(ctx,309,995,ent.indexOf('multiple')===0);
+    denmarkText(ctx,denmarkDate(denmarkVal(a,['arrival_date'])),200,1060,160,false,f); denmarkText(ctx,denmarkDate(denmarkVal(a,['departure_date'])),200,1105,160,false,f);
+    var fp=String(denmarkVal(a,['schengen_fingerprints'])||'').toLowerCase()==='yes'; denmarkCheck(ctx,200,1150,!fp); denmarkCheck(ctx,260,1150,fp);
+    if(fp){denmarkText(ctx,denmarkDate(denmarkVal(a,['fingerprint_date'])),350,1188,160,false,13); denmarkText(ctx,denmarkVal(a,['visa_sticker_number']),880,1188,250,false,13);}
+    if(String(denmarkVal(a,['final_entry_permit'])||'').toLowerCase()==='yes'){denmarkText(ctx,denmarkVal(a,['entry_permit_issued_by']),210,1260,180,false,13); denmarkText(ctx,denmarkDate(denmarkVal(a,['entry_permit_from'])),500,1260,140,false,13); denmarkText(ctx,denmarkDate(denmarkVal(a,['entry_permit_until'])),720,1260,140,false,13);}
+    if(String(denmarkVal(a,['stay_type'])||'').toLowerCase()!=='company'){denmarkText(ctx,denmarkVal(a,['host_name']),105,1350,700,false,f); denmarkTextMultiLine(ctx,denmarkVal(a,['host_address']),105,1485,365,16,false,13); denmarkText(ctx,denmarkVal(a,['host_phone']),605,1430,300,false,13);}
+  }
+  function stampSpainPage3(ctx,p,a){
+    var f=15, company=String(denmarkVal(a,['stay_type'])||'').toLowerCase()==='company';
+    if(company){denmarkText(ctx,[denmarkVal(a,['host_name']),denmarkVal(a,['host_address'])].filter(Boolean).join(' - '),105,150,700,false,13); denmarkText(ctx,denmarkVal(a,['host_phone']),525,190,300,false,13);}
+    var payer=String(denmarkVal(a,['trip_payer'])||'Applicant').toLowerCase(); denmarkCheck(ctx,115,350,payer==='applicant'); denmarkCheck(ctx,485,350,payer==='sponsor');
+    var means=String(denmarkVal(a,['support_means'])||'').toLowerCase(); function has(x){return means.indexOf(x.toLowerCase())>-1;}
+    if(payer==='applicant'){denmarkCheck(ctx,115,428,has('cash')); denmarkCheck(ctx,115,462,has('credit card')); denmarkCheck(ctx,115,480,has('pre-paid accommodation')); denmarkCheck(ctx,115,498,has('pre-paid transport'));}
+    else {denmarkText(ctx,denmarkVal(a,['sponsor_details']),650,405,260,false,13); denmarkCheck(ctx,510,480,has('cash')); denmarkCheck(ctx,510,498,has('accommodation provided')); denmarkCheck(ctx,510,516,has('all expenses covered')); denmarkCheck(ctx,510,550,has('pre-paid transport'));}
+  }
+  function stampSpainPage4(ctx,p,a){ denmarkText(ctx,[denmarkVal(a,['application_place']),denmarkDate(denmarkVal(a,['application_date']))].filter(Boolean).join(' - '),105,1035,300,false,15); }
+  async function generateSpainVisaPdf(a){
+    var p=smartPdfProfile(a), paths=['assets/form-templates/spain-rendered/page-1.png?v=20260818-hq288','assets/form-templates/spain-rendered/page-2.png?v=20260818-hq288','assets/form-templates/spain-rendered/page-3.png?v=20260818-hq288','assets/form-templates/spain-rendered/page-4.png?v=20260818-hq288'], cvs=[];
+    for(var i=0;i<4;i++){var bg=await loadFormImage(paths[i]); var cv=document.createElement('canvas'); cv.width=bg.naturalWidth||2381; cv.height=bg.naturalHeight||3368; var ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(bg,0,0,cv.width,cv.height); ctx.save(); ctx.scale(cv.width/1191,cv.height/1684); if(i===0)stampSpainPage1(ctx,p,a); else if(i===1)stampSpainPage2(ctx,p,a); else if(i===2)stampSpainPage3(ctx,p,a); else stampSpainPage4(ctx,p,a); ctx.restore(); cvs.push(cv);}
+    var out=cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1.0)),w:cv.width,h:cv.height};}), blob=makeImagePdf(out),url=URL.createObjectURL(blob),link=document.createElement('a');
+    var nm=(p.full_name||((p.first_name||'')+' '+(p.last_name||''))||'Applicant').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,''); link.href=url; link.download='Spain_Schengen_Visa_Application_'+(nm||'Applicant')+'.pdf'; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function(){URL.revokeObjectURL(url);},2000); toast('Spain Schengen application form generated. Please verify before submission.');
+  }
+
+
+  // SOUTH KOREA official-form stamper.
+  // Coordinates are based directly on the original A4 PDF (595x841pt), rendered at 288 DPI (4 px per PDF point).
+  function koreaVal(a,keys){return smartAnswer(a,keys);}
+  function kpx(v){return Math.round(v*4);}
+  function koreaText(ctx,value,x,y,maxW,size){var t=String(value||'').trim();if(!t)return;t=t.toUpperCase();ctx.save();ctx.fillStyle='#111';ctx.textBaseline='alphabetic';var fs=Math.max(34,Math.round((size||27)*1.35));var lim=maxW?kpx(maxW):0;ctx.font='400 '+fs+'px Arial, sans-serif';if(lim){while(ctx.measureText(t).width>lim&&fs>28){fs-=1;ctx.font='400 '+fs+'px Arial, sans-serif';}while(ctx.measureText(t).width>lim&&t.length>2)t=t.slice(0,-1);}ctx.fillText(t,kpx(x),kpx(y));ctx.restore();}
+  function koreaCheck(ctx,x,y,on){if(!on)return;ctx.save();ctx.font='700 46px Arial, sans-serif';ctx.fillStyle='#111';ctx.textBaseline='alphabetic';ctx.fillText('✓',kpx(x),kpx(y));ctx.restore();}
+  function kdate(v){
+    if(!v) return '';
+    var s=String(v).trim();
+    var m1=s.match(/^(\d{4})[-\/](\d{2})[-\/](\d{2})/);
+    if(m1) return m1[1]+'/'+m1[2]+'/'+m1[3];
+    var m2=s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})/);
+    if(m2) return m2[3]+'/'+m2[2]+'/'+m2[1];
+    return s;
+  }
+  function stampKoreaPage1(ctx,p,a){
+    koreaText(ctx,p.last_name||koreaVal(a,['passport_last_name']),165,325,175,28); koreaText(ctx,p.first_name||koreaVal(a,['passport_first_name']),365,325,175,28);
+    var g=String(koreaVal(a,['gender'])||p.gender||'').toLowerCase(); koreaCheck(ctx,447,354,g==='male'); koreaCheck(ctx,525,354,g==='female');
+    koreaText(ctx,kdate(p.date_of_birth||koreaVal(a,['date_of_birth'])),165,380,175,27); koreaText(ctx,p.nationality||koreaVal(a,['nationality']),365,380,175,27);
+    koreaText(ctx,koreaVal(a,['birthplace_country']),165,408,175,27); koreaText(ctx,koreaVal(a,['national_id']),365,408,175,27);
+    var on=String(koreaVal(a,['other_names_used'])||'').toLowerCase(); koreaCheck(ctx,121,460,on==='no'); koreaCheck(ctx,190,460,on==='yes');
+    if(on==='yes'){koreaText(ctx,koreaVal(a,['other_family_name']),150,476,165,25); koreaText(ctx,koreaVal(a,['other_given_name']),335,476,165,25);}
+    var mc=String(koreaVal(a,['multiple_citizenship'])||'').toLowerCase(); koreaCheck(ctx,422,492,mc==='no'); koreaCheck(ctx,490,492,mc==='yes'); if(mc==='yes')koreaText(ctx,koreaVal(a,['other_countries']),390,508,150,24);
+    var vp=String(koreaVal(a,['visa_period'])||'').toLowerCase();
+    koreaCheck(ctx,285,570,vp.indexOf('long-term')>-1 || vp.indexOf('over 90')>-1);
+    koreaCheck(ctx,285,584,vp.indexOf('short-term')>-1 || vp.indexOf('less than 90')>-1 || !vp);
+    koreaText(ctx,'C-3 TOURIST / SHORT STAY',390,567,150,24);
+  }
+  function stampKoreaPage2(ctx,p,a){
+    var pt=String(koreaVal(a,['passport_type'])||'').toLowerCase(); koreaCheck(ctx,207,118,pt==='diplomatic'); koreaCheck(ctx,441,118,pt==='official'); koreaCheck(ctx,200,132,pt==='regular'||pt==='ordinary'); koreaCheck(ctx,435,132,pt==='other');
+    koreaText(ctx,p.passport_number,82,171,150,26); koreaText(ctx,p.passport_issuing_country||koreaVal(a,['passport_issuing_country']),260,171,135,26); koreaText(ctx,koreaVal(a,['passport_place_of_issue']),420,171,125,26);
+    koreaText(ctx,kdate(p.passport_issue_date),82,197,150,26); koreaText(ctx,kdate(p.passport_expiry),260,197,135,26);
+    var op=String(koreaVal(a,['other_valid_passport'])||'').toLowerCase(); koreaCheck(ctx,433,211,op==='no'); koreaCheck(ctx,500,211,op==='yes');
+    if(op==='yes'){
+      var optType=String(koreaVal(a,['other_passport_type'])||'').toLowerCase();
+      koreaCheck(ctx,207,255,optType==='diplomatic');
+      koreaCheck(ctx,445,255,optType==='official');
+      koreaCheck(ctx,205,269,optType==='regular'||optType==='ordinary');
+      koreaCheck(ctx,435,269,optType==='other');
+      koreaText(ctx,koreaVal(a,['other_passport_number']),82,298,145,24);
+      koreaText(ctx,koreaVal(a,['other_passport_country']),260,298,135,24);
+      koreaText(ctx,kdate(koreaVal(a,['other_passport_expiry'])),420,298,125,24);
+    }
+    koreaText(ctx,koreaVal(a,['home_address']),82,347,455,25); koreaText(ctx,koreaVal(a,['current_address']),82,380,455,25); koreaText(ctx,p.phone,82,403,210,26); koreaText(ctx,p.email,400,403,220,26); koreaText(ctx,koreaVal(a,['emergency_name']),200,435,210,26); koreaText(ctx,koreaVal(a,['emergency_country']),455,435,220,26);
+    koreaText(ctx,koreaVal(a,['emergency_phone']),200,460,210,26); koreaText(ctx,koreaVal(a,['emergency_relationship']),455,460,220,26);
+    var ms=String(koreaVal(a,['marital_status'])||'').toLowerCase(); koreaCheck(ctx,160,504,ms==='married'); koreaCheck(ctx,328,504,ms==='divorced'); koreaCheck(ctx,485,504,ms==='single');
+    if(ms==='married'){koreaText(ctx,koreaVal(a,['spouse_last_name']),200,551,215,24); koreaText(ctx,koreaVal(a,['spouse_first_name']),440,551,215,24); koreaText(ctx,kdate(koreaVal(a,['spouse_dob'])),230,571,215,24); koreaText(ctx,koreaVal(a,['spouse_nationality']),420,571,215,24); koreaText(ctx,koreaVal(a,['spouse_address']),200,591,215,23); koreaText(ctx,koreaVal(a,['spouse_phone']),420,591,215,24);}
+    var hc=String(koreaVal(a,['has_children'])||'').toLowerCase(); koreaCheck(ctx,150,633,hc==='no'); koreaCheck(ctx,315,623,hc==='yes'); if(hc==='yes')koreaText(ctx,koreaVal(a,['children_count']),515,621,35,26);
+    var ed=String(koreaVal(a,['education_level'])||'').toLowerCase(); koreaCheck(ctx,245,676,ed.indexOf('master')===0); koreaCheck(ctx,470,685,ed.indexOf('bachelor')===0); koreaCheck(ctx,230,692,ed.indexOf('high school')===0); koreaCheck(ctx,435,692,ed==='other'); if(ed==='other')koreaText(ctx,koreaVal(a,['education_other']),390,710,150,22);
+    koreaText(ctx,koreaVal(a,['school_name']),70,743,200,18); koreaText(ctx,koreaVal(a,['school_location']),350,743,210,24);
+  }
+  function stampKoreaPage3(ctx,p,a){
+    var oc=String(koreaVal(a,['occupation'])||'').toLowerCase(); var map={'entrepreneur':[196,116],'self-employed':[357,116],'employed':[523,116],'civil servant':[196,131],'student':[357,131],'retired':[520,131],'unemployed':[196,146],'other':[357,146]}; Object.keys(map).forEach(function(k){koreaCheck(ctx,map[k][0],map[k][1],oc===k);}); if(oc==='other')koreaText(ctx,koreaVal(a,['occupation_other']),390,164,150,22);
+    koreaText(ctx,koreaVal(a,['employer_name']),82,200,300,24); koreaText(ctx,koreaVal(a,['position']),400,200,140,24); koreaText(ctx,koreaVal(a,['employer_address']),82,225,300,23); koreaText(ctx,koreaVal(a,['employer_phone']),400,225,140,24);
+    var pur=String(koreaVal(a,['purpose'])||'').toLowerCase(); var pm={'tourism / transit':[200,279],'meeting / conference':[356,279],'medical tourism':[520,279],'business trip':[200,296],'study / training':[356,296],'work':[520,296],'trade / investment / intra-corporate transfer':[200,314],'visiting family / relatives / friends':[356,314],'marriage migrant':[520,319],'diplomatic / official':[197,342],'other':[356,342]}; Object.keys(pm).forEach(function(k){koreaCheck(ctx,pm[k][0],pm[k][1],pur===k);}); if(pur==='other')koreaText(ctx,koreaVal(a,['purpose_other']),390,360,150,22);
+    var stay=String(koreaVal(a,['stay_duration'])||'').trim(); if(stay && !/days?/i.test(stay)) stay += ' DAYS';
+    koreaText(ctx,stay,82,396,230,25); koreaText(ctx,kdate(koreaVal(a,['arrival_date'])),320,396,210,25); koreaText(ctx,koreaVal(a,['korea_address']),70,428,300,21); koreaText(ctx,koreaVal(a,['korea_phone']),400,428,140,24);
+    var vk=String(koreaVal(a,['visited_korea_5y'])||'').toLowerCase(); koreaCheck(ctx,128,455,vk==='no'); koreaCheck(ctx,193,448,vk==='yes'); if(vk==='yes')koreaText(ctx,koreaVal(a,['korea_visit_details']),82,503,455,23);
+    var ot=String(koreaVal(a,['travelled_other_5y'])||'').toLowerCase(); koreaCheck(ctx,127,623,ot==='no'); koreaCheck(ctx,195,630,ot==='yes');
+    if(ot==='yes'){
+      var oldDetails=koreaVal(a,['other_travel_details']);
+      if(oldDetails){
+        koreaText(ctx,oldDetails,82,668,455,23);
+      }else{
+        var countriesList=(koreaVal(a,['other_travel_countries'])||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+        var purposesList=(koreaVal(a,['other_travel_purposes'])||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+        var rowCount=Math.max(countriesList.length,purposesList.length);
+        for(var i=0;i<Math.min(rowCount,4);i++){
+          var yCoord=668+(i*12.5);
+          if(countriesList[i]) koreaText(ctx,countriesList[i],82,yCoord,160,23);
+          if(purposesList[i]) koreaText(ctx,purposesList[i],250,yCoord,160,23);
+        }
+      }
+    }
+  }
+  function stampKoreaPage4(ctx,p,a){
+    var fk=String(koreaVal(a,['family_in_korea'])||'').toLowerCase(); koreaCheck(ctx,130,96,fk==='no'); koreaCheck(ctx,190,96,fk==='yes'); if(fk==='yes')koreaText(ctx,koreaVal(a,['family_korea_details']),82,133,455,23);
+    var tf=String(koreaVal(a,['travelling_with_family'])||'').toLowerCase(); koreaCheck(ctx,138,229,tf==='no'); koreaCheck(ctx,200,229,tf==='yes'); if(tf==='yes')koreaText(ctx,koreaVal(a,['travel_family_details']),82,275,455,23);
+    var hi=String(koreaVal(a,['has_inviter'])||'').toLowerCase(); koreaCheck(ctx,125,402,hi==='no'); koreaCheck(ctx,193,402,hi==='yes');
+    if(hi==='yes'){koreaText(ctx,koreaVal(a,['inviter_name']),82,428,455,23); koreaText(ctx,koreaVal(a,['inviter_registration']),82,453,230,23); koreaText(ctx,koreaVal(a,['inviter_relationship']),400,453,175,23); koreaText(ctx,koreaVal(a,['inviter_address']),82,478,300,23); koreaText(ctx,koreaVal(a,['inviter_phone']),400,478,140,23);}
+    var cost=koreaVal(a,['travel_cost_usd']); if(cost) cost=cost.trim()+' USD';
+    koreaText(ctx,cost,82,528,200,25); koreaText(ctx,koreaVal(a,['payer_name']),82,569,230,23); koreaText(ctx,koreaVal(a,['payer_relationship']),400,569,140,23); koreaText(ctx,koreaVal(a,['support_type']),82,593,230,23); koreaText(ctx,koreaVal(a,['payer_phone']),400,593,140,23);
+    var fa=String(koreaVal(a,['form_assistance'])||'').toLowerCase(); koreaCheck(ctx,155,647,fa==='no'); koreaCheck(ctx,183,647,fa==='yes'); if(fa==='yes'){koreaText(ctx,koreaVal(a,['assistant_name']),82,705,150,22); koreaText(ctx,kdate(koreaVal(a,['assistant_dob'])),245,705,115,22); koreaText(ctx,koreaVal(a,['assistant_phone']),365,705,115,22); koreaText(ctx,koreaVal(a,['assistant_relationship']),485,705,70,22);}
+  }
+  function stampKoreaPage5(ctx,p,a){}
+  async function generateSouthKoreaVisaPdf(a){
+    var p=smartPdfProfile(a), paths=['assets/form-templates/south-korea-rendered/page-1.png','assets/form-templates/south-korea-rendered/page-2.png','assets/form-templates/south-korea-rendered/page-3.png','assets/form-templates/south-korea-rendered/page-4.png','assets/form-templates/south-korea-rendered/page-5.png'], cvs=[];
+    for(var i=0;i<5;i++){var bg=await loadFormImage(paths[i]),cv=document.createElement('canvas');cv.width=2380;cv.height=3364;var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);if(i===0)stampKoreaPage1(ctx,p,a);else if(i===1)stampKoreaPage2(ctx,p,a);else if(i===2)stampKoreaPage3(ctx,p,a);else if(i===3)stampKoreaPage4(ctx,p,a);else stampKoreaPage5(ctx,p,a);cvs.push(cv);}
+    var out=cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1.0)),w:cv.width,h:cv.height};}),blob=makeImagePdf(out),url=URL.createObjectURL(blob),link=document.createElement('a');var nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'');link.href=url;link.download='South_Korea_Visa_Application_'+(nm||'Applicant')+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},2000);toast('South Korea visa application form generated in high quality. Please verify and sign before submission.');
+  }
+
+
+  // ============================================================
+  // IRELAND · EXACT SUPPLIED 3-PAGE FORM STAMPER (ALL CAPS)
+  // ============================================================
+  function irelandVal(a,keys){return smartAnswer(a,keys);}
+  function irelandText(ctx,value,xPt,yPt,maxPt,size){
+    var t=String(value==null?'':value).trim().toUpperCase(); if(!t)return;
+    ctx.save(); ctx.fillStyle='#000'; ctx.font='bold '+((size||7)*4)+'px Arial, sans-serif'; ctx.textBaseline='alphabetic';
+    var max=(maxPt||300)*4; while(ctx.measureText(t).width>max && t.length>2)t=t.slice(0,-1); ctx.fillText(t,xPt*4,yPt*4); ctx.restore();
+  }
+  function irelandMulti(ctx,value,xPt,yPt,maxPt,size){
+    var t=String(value||'').trim().toUpperCase(); if(!t)return; var words=t.split(/\s+/), line='', lines=[]; ctx.save(); ctx.font='bold '+((size||6.5)*4)+'px Arial, sans-serif';
+    for(var i=0;i<words.length;i++){var n=line?(line+' '+words[i]):words[i];if(ctx.measureText(n).width>(maxPt||300)*4&&line){lines.push(line);line=words[i];}else line=n;}if(line)lines.push(line);ctx.restore();
+    lines.slice(0,2).forEach(function(z,j){irelandText(ctx,z,xPt,yPt+j*8,maxPt,size||6.5);});
+  }
+  function irelandYesNo(ctx,v,y){var z=String(v||'').toUpperCase();irelandText(ctx,z,370,y,75,6.5);}
+  function stampIrelandPage1(ctx,p,a){
+    function V(k){return irelandVal(a,[k]);} var x=370;
+    irelandText(ctx,V('ire_visa_type'),240,94,240); irelandText(ctx,V('ire_journey_type'),240,107,240); irelandText(ctx,V('ire_reason'),240,121,240); irelandText(ctx,V('ire_purpose'),240,134,240); irelandText(ctx,V('passport_type'),240,148,240); irelandText(ctx,V('passport_number')||p.passport_number,240,161,240); irelandText(ctx,[pdfDate(V('arrival_date')),pdfDate(V('departure_date'))].filter(Boolean).join(' - '),240,175,240);
+    irelandText(ctx,V('last_name')||p.last_name,x,199,240); irelandText(ctx,V('first_name')||p.first_name,x,212,240); irelandText(ctx,V('ire_other_name'),x,226,240); irelandText(ctx,pdfDate(V('date_of_birth')||p.date_of_birth),x,239,240); irelandText(ctx,V('gender')||p.gender,x,253,240); irelandText(ctx,V('birthplace_country'),x,266,240); irelandText(ctx,V('nationality')||p.nationality,x,280,240); irelandText(ctx,V('ire_current_location'),x,293,240); irelandText(ctx,V('residential_address'),x,307,240); irelandText(ctx,V('residential_address'),x,320,240); irelandText(ctx,V('ire_address2'),x,334,240); irelandText(ctx,V('ire_address3'),x,347,240); irelandText(ctx,V('ire_address4'),x,361,240); irelandText(ctx,V('phone')||p.phone,x,374,240); irelandText(ctx,V('contact_email')||p.email,x,388,240);
+    irelandText(ctx,V('ire_residence_length'),370,412,240); irelandYesNo(ctx,V('ire_return_permission'),426); irelandYesNo(ctx,V('ire_biometric_exempt'),439); irelandYesNo(ctx,V('ire_applied_before'),453); irelandYesNo(ctx,V('ire_issued_before'),466); irelandYesNo(ctx,V('ire_refused_irish'),493); irelandYesNo(ctx,V('ire_been_ireland'),529); irelandYesNo(ctx,V('ire_family_ireland'),543); irelandYesNo(ctx,V('ire_refused_entry_ireland'),556); irelandYesNo(ctx,V('ire_deport_order'),570); irelandYesNo(ctx,V('ire_refused_other_visa'),583); irelandYesNo(ctx,V('ire_immigration_breach'),606); irelandMulti(ctx,V('ire_history_details'),370,619,240,6); irelandYesNo(ctx,V('ire_criminal'),633);
+    irelandText(ctx,V('passport_number')||p.passport_number,x,657,240); irelandText(ctx,V('passport_type'),x,670,240); irelandText(ctx,V('passport_issuing_country')||p.passport_issuing_country,x,684,240); irelandText(ctx,pdfDate(V('passport_issue_date')||p.passport_issue_date),x,697,240); irelandText(ctx,pdfDate(V('passport_expiry')||p.passport_expiry),x,711,240); irelandYesNo(ctx,V('ire_first_passport'),724); irelandYesNo(ctx,V('ire_employed'),748); irelandText(ctx,V('employer_name'),x,762,240);
+  }
+  function stampIrelandPage2(ctx,p,a){function V(k){return irelandVal(a,[k]);}var x=370;
+    irelandText(ctx,V('ire_employment_duration'),x,39,240); irelandText(ctx,V('position'),x,52,240); irelandText(ctx,V('employer_address'),x,66,240); irelandText(ctx,V('employer_address'),x,79,240); irelandText(ctx,'',x,93,240); irelandText(ctx,'',x,106,240); irelandText(ctx,V('employer_phone'),x,133,240); irelandText(ctx,V('ire_employer_email'),x,147,240); irelandYesNo(ctx,V('ire_student'),165); irelandYesNo(ctx,V('ire_travelling_others'),189);
+    irelandText(ctx,V('host_name'),x,213,240); irelandText(ctx,V('host_address'),x,235,240); irelandText(ctx,V('host_address'),x,249,240); irelandText(ctx,'',x,262,240); irelandText(ctx,'',x,276,240); irelandText(ctx,V('host_phone'),x,289,240); irelandYesNo(ctx,V('ire_host_known'),303); irelandText(ctx,V('ire_host_surname'),x,316,240); irelandText(ctx,V('ire_host_forename'),x,330,240); irelandText(ctx,V('ire_host_citizenship'),x,343,240); irelandText(ctx,V('ire_host_occupation'),x,357,240); irelandText(ctx,V('ire_host_relationship'),x,370,240); irelandText(ctx,V('ire_host_doj_ref'),x,384,240); irelandText(ctx,pdfDate(V('ire_host_dob')),x,397,240); irelandText(ctx,V('ire_host_email'),x,411,240);
+    irelandText(ctx,V('marital_status'),x,435,240); irelandText(ctx,V('ire_spouse_surname'),x,462,240); irelandText(ctx,V('ire_spouse_forename'),x,476,240); irelandText(ctx,V('ire_spouse_other'),x,489,240); irelandText(ctx,pdfDate(V('ire_spouse_dob')),x,503,240); irelandText(ctx,V('ire_spouse_passport'),x,516,240); irelandText(ctx,V('ire_spouse_gender'),x,530,240); irelandText(ctx,V('ire_spouse_country'),x,543,240); irelandText(ctx,V('ire_spouse_travel'),x,557,240); irelandText(ctx,V('ire_children_count'),x,597,240); irelandMulti(ctx,V('ire_children_details'),x,637,240,6);
+  }
+  function stampIrelandPage3(ctx,p,a){function V(k){return irelandVal(a,[k]);} irelandMulti(ctx,V('ire_children_details'),370,120,240,6); irelandYesNo(ctx,V('ire_agency_help'),549);}
+  function getBrowserPrintDateTime() {
+    var d = new Date();
+    var dateStr = (d.getMonth() + 1) + '/' + d.getDate() + '/' + String(d.getFullYear()).slice(-2);
+    var hours = d.getHours();
+    var minutes = d.getMinutes();
+    var ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    var minStr = minutes < 10 ? '0' + minutes : minutes;
+    return dateStr + ', ' + hours + ':' + minStr + ' ' + ampm;
+  }
+  function drawBrowserPrintHeaderFooter(ctx, pageNum, totalPages) {
+    var dt = getBrowserPrintDateTime();
+    ctx.save();
+    ctx.fillStyle = '#000000';
+    ctx.font = '30px Arial, Helvetica, sans-serif';
+    ctx.textBaseline = 'alphabetic';
+    
+    // Header
+    ctx.textAlign = 'left';
+    ctx.fillText(dt, 120, 100);
+    
+    ctx.textAlign = 'center';
+    ctx.fillText('AVATS', 1224, 100);
+    
+    // Footer
+    ctx.textAlign = 'left';
+    ctx.fillText('https://www.visas.inis.gov.ie/AVATS/CompleteFormSummary.aspx', 120, 3080);
+    
+    ctx.textAlign = 'right';
+    ctx.fillText(pageNum + '/' + totalPages, 2328, 3080);
+    
+    ctx.restore();
+  }
+  function drawIrelandTransactionBox(ctx, refCode) {
+    ctx.save();
+    ctx.fillStyle = '#ff0000'; // Red color
+    ctx.font = 'bold 28px Arial, Helvetica, sans-serif';
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    ctx.fillText(refCode, 660, 275);
+    ctx.restore();
+  }
+  async function generateIrelandVisaPdf(a){
+    var p=smartPdfProfile(a),paths=[1,2,3].map(function(n){return 'assets/form-templates/ireland-rendered/page-'+n+'.png?v=20260819';}),cvs=[];
+    for(var i=0;i<3;i++){
+      var bg=await loadFormImage(paths[i]),cv=document.createElement('canvas');
+      cv.width=bg.naturalWidth||2448;
+      cv.height=bg.naturalHeight||3168;
+      var ctx=cv.getContext('2d');
+      ctx.imageSmoothingEnabled=true;
+      ctx.imageSmoothingQuality='high';
+      ctx.drawImage(bg,0,0,cv.width,cv.height);
+      
+      if(i===0) {
+        drawIrelandTransactionBox(ctx, a.reference_code || '796444082');
+        stampIrelandPage1(ctx,p,a);
+      }
+      else if(i===1) stampIrelandPage2(ctx,p,a);
+      else stampIrelandPage3(ctx,p,a);
+      
+      drawBrowserPrintHeaderFooter(ctx, i + 1, 3);
+      cvs.push(cv);
+    }
+    var out=cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1.0)),w:cv.width,h:cv.height};});
+    var links = [1, 2, 3].map(function() {
+      return { rect: [30, 10, 320, 30], url: 'https://www.visas.inis.gov.ie/AVATS/CompleteFormSummary.aspx' };
+    });
+    var blob=makeImagePdf(out, links),url=URL.createObjectURL(blob),link=document.createElement('a'),nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');
+    link.href=url;link.download='Ireland_Visa_Application_'+(nm||'Applicant')+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},2000);toast('Ireland visa application generated in CAPITAL LETTERS. Please verify before submission.');
+  }
+
+  // ============================================================
+  //  SWITZERLAND · EXACT 6-PAGE SCHENGEN FORM STAMPER
+  // ============================================================
+  function swissVal(a,keys){ return smartAnswer(a,keys); }
+  function swissDate(v){ return pdfDate(v); }
+  function swissText(ctx,value,x,y,maxW,size){ denmarkText(ctx,value,x,y,maxW,false,(size||12)-2.5); }
+  function swissMulti(ctx,value,x,y,maxW,size){ denmarkTextMultiLine(ctx,value,x,y,maxW,11,false,(size||11)-2.5); }
+  function swissCheck(ctx,x,y,on){ denmarkCheck(ctx,x,y,on); }
+  function swissStampPage1(ctx,p,a){
+    swissText(ctx,swissVal(a,['last_name','passport_last_name'])||p.last_name,70,485,540,13);
+    swissText(ctx,swissVal(a,['former_surname']),70,558,540,13);
+    swissText(ctx,swissVal(a,['first_name','passport_first_name'])||p.first_name||p.full_name,70,610,540,13);
+    swissText(ctx,swissDate(swissVal(a,['date_of_birth'])||p.date_of_birth),70,712,170,13);
+    swissText(ctx,swissVal(a,['birthplace_city']),260,675,170,13); swissText(ctx,swissVal(a,['birthplace_country']),260,760,170,13);
+    swissText(ctx,swissVal(a,['nationality'])||p.nationality,450,675,165,13); swissText(ctx,swissVal(a,['nationality_at_birth']),450,800,165,11); swissText(ctx,swissVal(a,['other_nationalities']),450,870,165,11);
+    var g=String(swissVal(a,['gender'])||p.gender||'').toLowerCase(); swissCheck(ctx,88,932,g==='male'); swissCheck(ctx,88,952,g==='female'); swissCheck(ctx,88,967,g==='diverse');
+    var ms=String(swissVal(a,['marital_status'])||'').toLowerCase(); swissCheck(ctx,320,932,ms==='single'); swissCheck(ctx,261,945,ms==='married'); swissCheck(ctx,261,967,ms==='separated'); swissCheck(ctx,261,990,ms==='divorced'); swissCheck(ctx,261,1012,ms.indexOf('widow')===0); swissCheck(ctx,367,922,ms.indexOf('registered')===0); swissCheck(ctx,367,945,ms==='other');
+  }
+  function swissStampPage2(ctx,p,a){
+    var mg=swissVal(a,['minor_guardian']); if(mg) swissMulti(ctx,mg,70,140,540,11);
+    swissText(ctx,swissVal(a,['national_id']),64,248,540,13);
+    var pt=String(swissVal(a,['passport_type'])||'ordinary passport').toLowerCase(); swissCheck(ctx,87,327,pt.indexOf('ordinary')===0); swissCheck(ctx,87,343,pt.indexOf('service')===0); swissCheck(ctx,87,360,pt.indexOf('special')===0); swissCheck(ctx,367,325,pt.indexOf('diplomatic')===0); swissCheck(ctx,367,341,pt.indexOf('official')===0); swissCheck(ctx,367,358,pt.indexOf('other')===0);
+    swissText(ctx,swissVal(a,['passport_number'])||p.passport_number,70,495,130,13); swissText(ctx,swissDate(swissVal(a,['passport_issue_date'])||p.passport_issue_date),220,495,125,13); swissText(ctx,swissDate(swissVal(a,['passport_expiry'])||p.passport_expiry),360,495,125,13); swissText(ctx,swissVal(a,['passport_issuing_country'])||p.passport_issuing_country,500,495,120,13);
+    var eu=String(swissVal(a,['eu_family'])||'').toLowerCase()==='yes'; if(eu){ var nm=String(swissVal(a,['eu_family_name'])||'').trim(), parts=nm.split(/\s+/), fam=parts.length>1?parts.slice(-1).join(' '):nm, giv=parts.length>1?parts.slice(0,-1).join(' '):''; swissText(ctx,fam,64,709,285,12); swissText(ctx,giv,392,709,275,12); swissText(ctx,swissDate(swissVal(a,['eu_family_dob'])),64,816,180,12); swissText(ctx,swissVal(a,['eu_family_nationality']),300,816,175,12); swissText(ctx,swissVal(a,['eu_family_document']),482,816,175,12); var rel=String(swissVal(a,['eu_family_relationship'])||'').toLowerCase(); swissCheck(ctx,77,945,rel==='spouse'); swissCheck(ctx,77,967,rel==='child'); swissCheck(ctx,77,990,rel==='grandchild'); swissCheck(ctx,367,945,rel.indexOf('ascendant')>-1); swissCheck(ctx,367,967,rel.indexOf('registered')>-1); swissCheck(ctx,367,990,rel==='other'); }
+  }
+  function swissStampPage3(ctx,p,a){
+    swissMulti(ctx,[swissVal(a,['residential_address']),p.email||swissVal(a,['contact_email'])].filter(Boolean).join('\n'),70,105,350,11); swissText(ctx,p.phone||swissVal(a,['phone']),410,105,210,12);
+    var other=String(swissVal(a,['other_country_residence'])||'').toLowerCase()==='yes'; swissCheck(ctx,88,229,!other); swissCheck(ctx,88,250,other); if(other){ swissText(ctx,swissVal(a,['residence_permit_no']),148,285,250,11); swissText(ctx,swissDate(swissVal(a,['residence_permit_until'])),448,285,210,11); }
+    swissText(ctx,swissVal(a,['occupation']),64,337,590,13);
+    var empName=swissVal(a,['employer_name']), empAddr=swissVal(a,['employer_address']), empPhone=swissVal(a,['employer_phone']);
+    var empLines=[];
+    if(empName) empLines.push(empName);
+    if(empAddr || empPhone) empLines.push([empAddr, empPhone].filter(Boolean).join(' '));
+    swissMulti(ctx,empLines.join('\n'),64,429,590,11);
+    var pur=String(swissVal(a,['purpose'])||'').toLowerCase(); swissCheck(ctx,87,5535,pur.indexOf('visiting')===0); swissCheck(ctx,87,573,pur==='tourism'); swissCheck(ctx,87,585,pur==='business'); swissCheck(ctx,87,601,pur==='cultural'); swissCheck(ctx,87,617,pur.indexOf('official')===0); swissCheck(ctx,87,633,pur==='study'); swissCheck(ctx,322,569,pur.indexOf('medical')===0); swissCheck(ctx,322,585,pur==='sports'); swissCheck(ctx,322,601,pur.indexOf('airport')===0); swissCheck(ctx,322,617,pur==='other');
+    swissMulti(ctx,swissVal(a,['purpose_details']),64,732,590,11); swissText(ctx,swissVal(a,['main_destination'])||'Switzerland',70,873,280,13); swissText(ctx,swissVal(a,['first_entry_country'])||'Switzerland',355,873,280,13);
+    var ent=String(swissVal(a,['entries_requested'])||'').toLowerCase(); swissCheck(ctx,87,960,ent.indexOf('single')===0); swissCheck(ctx,87,971,ent.indexOf('two')===0); swissCheck(ctx,87,994,ent.indexOf('multiple')===0);
+  }
+  function swissStampPage4(ctx,p,a){
+    swissText(ctx,swissDate(swissVal(a,['arrival_date'])),64,155,280,13); swissText(ctx,swissDate(swissVal(a,['departure_date'])),352,155,285,13); var fp=String(swissVal(a,['schengen_fingerprints'])||'').toLowerCase()==='yes'; swissCheck(ctx,87,252,!fp); swissCheck(ctx,225,237,fp); if(fp){ swissText(ctx,swissDate(swissVal(a,['fingerprint_date'])),230,261,150,11); swissText(ctx,swissVal(a,['visa_sticker_number']),410,285,210,11); }
+    if(String(swissVal(a,['final_entry_permit'])||'').toLowerCase()==='yes'){ swissText(ctx,swissVal(a,['entry_permit_issued_by']),160,380,175,11); swissText(ctx,swissDate(swissVal(a,['entry_permit_from'])),352,380,165,11); swissText(ctx,swissDate(swissVal(a,['entry_permit_until'])),535,380,145,11); }
+    var stay=String(swissVal(a,['stay_type'])||'').toLowerCase();
+    if(stay!=='company'){
+      swissMulti(ctx,swissVal(a,['host_name']),68,510,540,11);
+      swissMulti(ctx,swissVal(a,['host_address']),64,635,400,11);
+      swissText(ctx,swissVal(a,['host_phone']),475,635,140,11);
+    }
+    if(stay==='company'){
+      var compName=swissVal(a,['host_name']), compAddr=swissVal(a,['host_address']);
+      var compLines=[];
+      if(compName) compLines.push(compName);
+      if(compAddr) compLines.push(compAddr);
+      swissMulti(ctx,compLines.join('\n'),64,732,540,11);
+      swissText(ctx,swissVal(a,['host_phone']),455,928,135,11);
+    }
+    var payer=String(swissVal(a,['trip_payer'])||'Applicant').toLowerCase(); swissCheck(ctx,69,1047,payer==='applicant');
+  }
+  function swissStampPage5(ctx,p,a){
+    var payer=String(swissVal(a,['trip_payer'])||'Applicant').toLowerCase();
+    
+    // 1. Applicant's Means of Support
+    var appMeans=String(swissVal(a,['support_means_applicant'])||swissVal(a,['support_means'])||'').toLowerCase();
+    function hasApp(x){return appMeans.indexOf(x.toLowerCase())>-1;}
+    
+    swissCheck(ctx,70,46,hasApp('cash'));
+    swissCheck(ctx,70,58,hasApp('traveller\'s cheques') || hasApp('travellers cheques') || hasApp('traveller'));
+    swissCheck(ctx,70,69,hasApp('credit card'));
+    swissCheck(ctx,70,87,hasApp('pre-paid accommodation'));
+    swissCheck(ctx,70,102,hasApp('pre-paid transport'));
+    
+    var appOther=hasApp('other') || !!swissVal(a,['support_means_other']);
+    swissCheck(ctx,77,122,appOther);
+    if(appOther){
+      swissText(ctx,swissVal(a,['support_means_other']),105,148,500,11);
+    }
+    
+    // 2. Sponsor's Means of Support
+    if(payer==='sponsor'){
+      var spType=String(swissVal(a,['sponsor_type'])||'').toLowerCase();
+      function hasSpType(x){return spType.indexOf(x.toLowerCase())>-1;}
+      
+      var spHost=hasSpType('by a sponsor') || hasSpType('sponsor (host');
+      var spRef=hasSpType('referred to') || hasSpType('field 30 or 31');
+      var spOtherType=hasSpType('other') || hasSpType('other (please specify)');
+      
+      if(!spHost && !spRef && !spOtherType) spHost=true;
+      
+      swissCheck(ctx,70,211,spHost);
+      swissCheck(ctx,70,230,spRef);
+      swissCheck(ctx,70,263,spOtherType);
+      
+      swissMulti(ctx,swissVal(a,['sponsor_details']),100,300,500,11);
+      
+      var spMeans=String(swissVal(a,['support_means_sponsor'])||swissVal(a,['support_means'])||'').toLowerCase();
+      function hasSpMeans(x){return spMeans.indexOf(x.toLowerCase())>-1;}
+      
+      swissCheck(ctx,70,382,hasSpMeans('cash'));
+      swissCheck(ctx,70,406,hasSpMeans('accommodation provided') || hasSpMeans('accommodation'));
+      swissCheck(ctx,70,435,hasSpMeans('all expenses covered') || hasSpMeans('expenses'));
+      swissCheck(ctx,70,479,hasSpMeans('pre-paid transport'));
+      
+      var spOtherMeans=hasSpMeans('other') || !!swissVal(a,['sponsor_means_other']);
+      swissCheck(ctx,70,502,spOtherMeans);
+      if(spOtherMeans){
+        swissText(ctx,swissVal(a,['sponsor_means_other']),105,528,500,11);
+      }
+    }
+  }
+  function swissStampPage6(ctx,p,a){ var place=swissVal(a,['application_place']), date=swissDate(swissVal(a,['application_date'])); swissText(ctx,[place,date].filter(Boolean).join(' - '),64,993,320,13); }
+  async function generateSwitzerlandVisaPdf(a){
+    var p=smartPdfProfile(a), paths=[1,2,3,4,5,6].map(function(n){return 'assets/form-templates/switzerland-rendered/page-'+n+'.png?v=20260819-hq288';}), cvs=[];
+    for(var i=0;i<6;i++){ var bg=await loadFormImage(paths[i]), cv=document.createElement('canvas'); cv.width=bg.naturalWidth||2384; cv.height=bg.naturalHeight||3368; var ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(bg,0,0,cv.width,cv.height); ctx.save(); ctx.scale(cv.width/768,cv.height/1086); if(i===0)swissStampPage1(ctx,p,a); else if(i===1)swissStampPage2(ctx,p,a); else if(i===2)swissStampPage3(ctx,p,a); else if(i===3)swissStampPage4(ctx,p,a); else if(i===4)swissStampPage5(ctx,p,a); else swissStampPage6(ctx,p,a); ctx.restore(); cvs.push(cv); }
+    var out=cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1.0)),w:cv.width,h:cv.height};}), blob=makeImagePdf(out), url=URL.createObjectURL(blob), link=document.createElement('a'); var nm=(p.full_name||((p.first_name||'')+' '+(p.last_name||''))||'Applicant').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,''); link.href=url; link.download='Switzerland_Schengen_Visa_Application_'+(nm||'Applicant')+'.pdf'; document.body.appendChild(link); link.click(); link.remove(); setTimeout(function(){URL.revokeObjectURL(url);},2000); toast('Switzerland Schengen application form generated. Please verify and sign before submission.');
+  }
+
+  // FRANCE + GERMANY official Schengen form generators (added 2026-08-24).
+  // They use the supplied blank forms as high-resolution backgrounds and stamp only saved customer answers.
+function fgVal(a,k){return denmarkVal(a,[k]);}
+function fgDate(a,k){return denmarkDate(fgVal(a,k));}
+function fgMeans(a){return String(fgVal(a,'support_means')||'').toLowerCase();}
+function fgHas(a,x){return fgMeans(a).includes(String(x).toLowerCase());}
+
+function stampFrance1(ctx,p,a){
+  var f=15,g=String(fgVal(a,'gender')||'').toLowerCase(),ms=String(fgVal(a,'marital_status')||'').toLowerCase(),pt=String(fgVal(a,'passport_type')||'').toLowerCase();
+
+  denmarkText(ctx,fgVal(a,'passport_last_name')||p.last_name,288,349,690,false,f);
+  denmarkText(ctx,fgVal(a,'former_surname'),365,438,610,false,f);
+  denmarkText(ctx,fgVal(a,'passport_first_name')||p.first_name,307,488,660,false,f);
+
+  denmarkText(ctx,fgDate(a,'date_of_birth'),150,571,230,false,f);
+  denmarkText(ctx,fgVal(a,'birthplace_city'),371,575,255,false,f);
+  denmarkText(ctx,fgVal(a,'birthplace_country'),371,656,255,false,f);
+  denmarkText(ctx,fgVal(a,'nationality'),645,571,260,false,f);
+  denmarkText(ctx,fgVal(a,'nationality_at_birth'),645,653,260,false,14);
+  denmarkText(ctx,fgVal(a,'other_nationalities'),645,735,260,false,14);
+
+  [['male',104],['female',209],['other',318]].forEach(function(x){
+    denmarkCheck(ctx,x[1],836,g===x[0]);
+  });
+
+  [
+    ['single',418,819],['married',535,819],['registered partnership',677,819],['separated',858,819],
+    ['divorced',418,844],['widow(er)',548,844],['other',677,844]
+  ].forEach(function(x){
+    denmarkCheck(ctx,x[1],x[2],ms===x[0]);
+  });
+
+  if(String(fgVal(a,'is_minor')||'').toLowerCase()==='yes')
+    denmarkTextMultiLine(ctx,fgVal(a,'minor_guardian'),104,925,870,20,false,13);
+
+  denmarkText(ctx,fgVal(a,'national_id'),104,1100,850,false,f);
+
+  [
+    ['ordinary',99],['diplomatic',270],['service',451],['official',650],['special',814]
+  ].forEach(function(x){
+    denmarkCheck(ctx,x[1],1187,pt.indexOf(x[0])===0);
+  });
+  denmarkCheck(ctx,99,1213,pt.indexOf('other')===0);
+
+  denmarkText(ctx,fgVal(a,'passport_number')||p.passport_number,94,1284,260,false,f);
+  denmarkText(ctx,fgDate(a,'passport_issue_date'),392,1280,180,false,f);
+  denmarkText(ctx,fgDate(a,'passport_expiry'),575,1280,180,false,f);
+  denmarkText(ctx,fgVal(a,'passport_issuing_country'),736,1284,190,false,f);
+
+  if(String(fgVal(a,'eu_family')||'').toLowerCase()==='yes'){
+    denmarkText(ctx,fgVal(a,'eu_family_name'),104,1425,670,false,f);
+    denmarkText(ctx,fgDate(a,'eu_family_dob'),104,1535,220,false,13);
+    denmarkText(ctx,fgVal(a,'eu_family_nationality'),360,1535,230,false,13);
+    denmarkText(ctx,fgVal(a,'eu_family_document'),675,1535,285,false,13);
+  }
+}
+
+function stampFrance2(ctx,p,a){
+  var f=15,eu=String(fgVal(a,'eu_family')||'').toLowerCase()==='yes';
+
+  if(eu){
+    var r=String(fgVal(a,'eu_family_relationship')||'').toLowerCase();
+    [
+      ['spouse',126],['child',244],['grandchild',338],
+      ['dependent ascendant',520],['registered partnership',746],['other',950]
+    ].forEach(function(x){
+      denmarkCheck(ctx,x[1],111,r.indexOf(x[0])>-1);
+    });
+  }
+
+  denmarkTextMultiLine(
+    ctx,
+    [fgVal(a,'residential_address'),fgVal(a,'contact_email')].filter(Boolean).join('\n'),
+    114,277,670,28,false,14
+  );
+  denmarkText(ctx,p.phone||fgVal(a,'phone'),845,277,230,false,14);
+
+  var other=String(fgVal(a,'other_country_residence')||'').toLowerCase()==='yes';
+  denmarkCheck(ctx,102,471,!other);
+  denmarkCheck(ctx,180,471,other);
+
+  if(other){
+    denmarkText(ctx,fgVal(a,'residence_permit_no'),541,474,245,false,13);
+    denmarkText(ctx,fgDate(a,'residence_permit_until'),938,474,175,false,13);
+  }
+
+  denmarkText(ctx,fgVal(a,'occupation'),114,555,980,false,f);
+
+  denmarkTextMultiLine(
+    ctx,
+    [fgVal(a,'employer_name'),fgVal(a,'employer_address'),fgVal(a,'employer_phone'),fgVal(a,'employer_email')]
+      .filter(Boolean).join('\n'),
+    112,616,980,27,false,14
+  );
+
+  var pur=String(fgVal(a,'purpose')||'').toLowerCase();
+  var pc={
+    tourism:[120,733],business:[300,733],'visiting family or friends':[490,733],
+    cultural:[720,733],sports:[873,733],'official visit':[1027,733],
+    'medical reasons':[120,768],study:[300,768],'airport transit':[490,768],other:[720,768]
+  };
+
+  Object.keys(pc).forEach(function(k){
+    denmarkCheck(ctx,pc[k][0],pc[k][1],pur===k);
+  });
+
+  denmarkTextMultiLine(ctx,fgVal(a,'purpose_details'),112,864,980,22,false,14);
+  denmarkText(ctx,fgVal(a,'main_destination')||'France',112,1022,470,false,f);
+  denmarkText(ctx,fgVal(a,'first_entry_country')||'France',790,1022,300,false,f);
+
+  var ent=String(fgVal(a,'entries_requested')||'').toLowerCase();
+  denmarkCheck(ctx,120,1119,ent.indexOf('single')===0);
+  denmarkCheck(ctx,250,1119,ent.indexOf('two')===0);
+  denmarkCheck(ctx,348,1119,ent.indexOf('multiple')===0);
+
+  denmarkText(ctx,fgDate(a,'arrival_date'),624,1158,220,false,f);
+  denmarkText(ctx,fgDate(a,'departure_date'),624,1187,220,false,f);
+
+  var fp=String(fgVal(a,'schengen_fingerprints')||'').toLowerCase()==='yes';
+  denmarkCheck(ctx,95,1261,!fp);
+  denmarkCheck(ctx,178,1261,fp);
+
+  if(fp){
+    denmarkText(ctx,fgDate(a,'fingerprint_date'),330,1260,170,false,13);
+    denmarkText(ctx,fgVal(a,'visa_sticker_number'),665,1260,300,false,13);
+  }
+
+  if(String(fgVal(a,'final_entry_permit')||'').toLowerCase()==='yes'){
+    denmarkText(ctx,fgVal(a,'entry_permit_issued_by'),175,1325,430,false,13);
+    denmarkText(ctx,fgDate(a,'entry_permit_from'),765,1325,165,false,13);
+    denmarkText(ctx,fgDate(a,'entry_permit_until'),1010,1325,150,false,13);
+  }
+
+  denmarkTextMultiLine(ctx,fgVal(a,'host_name'),112,1438,990,24,false,f);
+}
+
+function stampFrance3(ctx,p,a){
+  var f=14;
+
+  denmarkTextMultiLine(ctx,fgVal(a,'host_address'),104,180,690,24,false,f);
+  denmarkText(ctx,fgVal(a,'host_phone'),852,179,220,false,f);
+
+  if(String(fgVal(a,'stay_type')||'').toLowerCase()==='company'){
+    denmarkTextMultiLine(
+      ctx,
+      [fgVal(a,'host_name'),fgVal(a,'host_address')].filter(Boolean).join('\n'),
+      104,335,690,24,false,f
+    );
+
+    denmarkText(
+      ctx,
+      fgVal(a,'company_contact_phone')||fgVal(a,'host_phone'),
+      852,335,220,false,f
+    );
+
+    denmarkTextMultiLine(
+      ctx,
+      [fgVal(a,'company_contact_name'),fgVal(a,'company_contact_email')].filter(Boolean).join('\n'),
+      104,605,980,24,false,f
+    );
+  }
+
+  var payer=String(fgVal(a,'trip_payer')||'Applicant').toLowerCase();
+
+  denmarkCheck(ctx,96,812,payer==='applicant');
+  denmarkCheck(ctx,652,812,payer==='sponsor');
+
+  if(payer==='sponsor')
+    denmarkText(ctx,fgVal(a,'sponsor_details'),735,855,390,false,13);
+
+  if(payer==='applicant'){
+    [
+      ['cash',868],['traveller',888],['credit card',909],
+      ['pre-paid accommodation',930],['pre-paid transport',951],['other',972]
+    ].forEach(function(x){
+      denmarkCheck(ctx,96,x[1],fgHas(a,x[0]));
+    });
+  }else{
+    [
+      ['cash',908],['accommodation provided',930],
+      ['all expenses covered',951],['pre-paid transport',972],['other',994]
+    ].forEach(function(x){
+      denmarkCheck(ctx,652,x[1],fgHas(a,x[0]));
+    });
+  }
+}
+
+function stampFrance4(ctx,p,a){
+  denmarkTextMultiLine(
+    ctx,
+    [fgVal(a,'application_place'),fgDate(a,'application_date')].filter(Boolean).join(' - '),
+    94,895,330,22,false,15
+  );
+}
+
+async function generateFranceVisaPdf(a){
+  var p=smartPdfProfile(a);
+  var paths=[1,2,3,4].map(function(n){
+    return 'assets/form-templates/france-rendered/page-'+n+'.png?v=20260826';
+  });
+
+  var cvs=[];
+
+  for(var i=0;i<4;i++){
+    var bg=await loadFormImage(paths[i]);
+    var cv=document.createElement('canvas');
+
+    cv.width=bg.naturalWidth||2380;
+    cv.height=bg.naturalHeight||3368;
+
+    var ctx=cv.getContext('2d');
+    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingQuality='high';
+
+    ctx.drawImage(bg,0,0,cv.width,cv.height);
+    ctx.save();
+    ctx.scale(cv.width/1190,cv.height/1684);
+
+    if(i===0)stampFrance1(ctx,p,a);
+    else if(i===1)stampFrance2(ctx,p,a);
+    else if(i===2)stampFrance3(ctx,p,a);
+    else stampFrance4(ctx,p,a);
+
+    ctx.restore();
+    cvs.push(cv);
+  }
+
+  var blob=makeImagePdf(cvs.map(function(cv){
+    return {
+      bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1)),
+      w:cv.width,
+      h:cv.height
+    };
+  }));
+
+  var url=URL.createObjectURL(blob);
+  var link=document.createElement('a');
+  var nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');
+
+  link.href=url;
+  link.download='France_Schengen_Visa_Application_'+nm+'.pdf';
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(function(){
+    URL.revokeObjectURL(url);
+  },2000);
+
+  toast('France Schengen application form generated. Please verify before submission.');
+}
+
+  function stampGermany1(ctx,p,a){var f=15,x=545;[['passport_last_name',565],['former_surname',620],['passport_first_name',678]].forEach(function(z){denmarkText(ctx,fgVal(a,z[0])||(z[0]==='passport_last_name'?p.last_name:(z[0]==='passport_first_name'?p.first_name:'')),x,z[1],430,false,f);});denmarkText(ctx,fgDate(a,'date_of_birth'),x,735,430,false,f);denmarkText(ctx,fgVal(a,'birthplace_city'),x,790,430,false,f);denmarkText(ctx,fgVal(a,'birthplace_country'),x,845,430,false,f);denmarkText(ctx,fgVal(a,'nationality'),x,905,430,false,f);denmarkText(ctx,fgVal(a,'nationality_at_birth'),x,965,430,false,13);denmarkText(ctx,fgVal(a,'other_nationalities'),x,1025,430,false,13);denmarkText(ctx,fgVal(a,'gender'),x,1075,430,false,f);denmarkText(ctx,fgVal(a,'marital_status'),x,1135,430,false,f);if(String(fgVal(a,'is_minor')).toLowerCase()==='yes')denmarkTextMultiLine(ctx,fgVal(a,'minor_guardian'),x,1200,430,18,false,13);denmarkText(ctx,fgVal(a,'national_id'),x,1345,430,false,f);denmarkText(ctx,fgVal(a,'passport_type'),x,1395,430,false,f);denmarkText(ctx,fgVal(a,'passport_number'),x,1455,430,false,f);denmarkText(ctx,fgDate(a,'passport_issue_date'),x,1510,430,false,f);denmarkText(ctx,fgDate(a,'passport_expiry'),x,1565,430,false,f);}
+  function stampGermany2(ctx,p,a){var x=545,f=14;denmarkText(ctx,fgVal(a,'passport_issuing_country'),x,90,610,false,f); if(String(fgVal(a,'eu_family')).toLowerCase()==='yes'){denmarkText(ctx,fgVal(a,'eu_family_name'),x,230,610,false,f);denmarkText(ctx,fgDate(a,'eu_family_dob'),x,350,610,false,f);denmarkText(ctx,fgVal(a,'eu_family_nationality'),x,410,610,false,f);denmarkText(ctx,fgVal(a,'eu_family_document'),x,470,610,false,f);denmarkText(ctx,fgVal(a,'eu_family_relationship'),x,575,610,false,f);}denmarkTextMultiLine(ctx,[fgVal(a,'residential_address'),fgVal(a,'contact_email')].filter(Boolean).join(' | '),x,695,610,18,false,f);denmarkText(ctx,p.phone||fgVal(a,'phone'),x,750,610,false,f);denmarkText(ctx,fgVal(a,'other_country_residence'),x,810,610,false,f);denmarkText(ctx,fgVal(a,'residence_permit_no'),x,875,610,false,f);denmarkText(ctx,fgDate(a,'residence_permit_until'),x,935,610,false,f);denmarkText(ctx,fgVal(a,'occupation'),x,1015,610,false,f);denmarkTextMultiLine(ctx,[fgVal(a,'employer_name'),fgVal(a,'employer_address'),fgVal(a,'employer_phone'),fgVal(a,'employer_email')].filter(Boolean).join(' '),x,1065,610,18,false,13);denmarkText(ctx,fgVal(a,'purpose'),x,1185,610,false,f);denmarkText(ctx,fgVal(a,'purpose_details'),x,1240,610,false,f);denmarkText(ctx,fgVal(a,'main_destination')||'Germany',x,1320,610,false,f);denmarkText(ctx,fgVal(a,'first_entry_country')||'Germany',x,1395,610,false,f);denmarkText(ctx,fgVal(a,'entries_requested'),x,1450,610,false,f);}
+  function stampGermany3(ctx,p,a){var x=545,f=14;denmarkText(ctx,fgDate(a,'arrival_date'),x,95,610,false,f);denmarkText(ctx,fgDate(a,'departure_date'),x,195,610,false,f);denmarkText(ctx,fgVal(a,'schengen_fingerprints'),x,295,610,false,f);denmarkText(ctx,fgDate(a,'fingerprint_date'),x,330,610,false,f);denmarkText(ctx,fgVal(a,'visa_sticker_number'),x,390,610,false,f);if(String(fgVal(a,'final_entry_permit')).toLowerCase()==='yes'){denmarkText(ctx,fgVal(a,'entry_permit_issued_by'),x,500,610,false,f);denmarkText(ctx,fgDate(a,'entry_permit_from'),x,585,610,false,f);denmarkText(ctx,fgDate(a,'entry_permit_until'),x,650,610,false,f);}var company=String(fgVal(a,'stay_type')).toLowerCase()==='company';if(!company){denmarkText(ctx,fgVal(a,'host_name'),x,790,610,false,f);denmarkTextMultiLine(ctx,fgVal(a,'host_address'),x,930,610,18,false,13);denmarkText(ctx,fgVal(a,'host_phone'),x,1020,610,false,f);}else{denmarkTextMultiLine(ctx,[fgVal(a,'host_name'),fgVal(a,'host_address')].filter(Boolean).join(' | '),x,1190,610,18,false,13);denmarkTextMultiLine(ctx,[fgVal(a,'company_contact_name'),fgVal(a,'company_contact_email')].filter(Boolean).join(' | '),x,1370,610,18,false,13);denmarkText(ctx,fgVal(a,'company_contact_phone')||fgVal(a,'host_phone'),x,1510,610,false,f);}}
+  function stampGermany4(ctx,p,a){var payer=String(fgVal(a,'trip_payer')||'Applicant').toLowerCase();denmarkCheck(ctx,547,75,payer==='applicant');denmarkCheck(ctx,515,295,payer==='sponsor');if(payer==='applicant'){denmarkCheck(ctx,547,132,fgHas(a,'cash'));denmarkCheck(ctx,547,162,fgHas(a,'credit card'));denmarkCheck(ctx,547,192,fgHas(a,'pre-paid accommodation'));denmarkCheck(ctx,547,222,fgHas(a,'pre-paid transport'));}else{denmarkText(ctx,fgVal(a,'sponsor_details'),620,330,480,false,13);denmarkCheck(ctx,547,433,fgHas(a,'cash'));denmarkCheck(ctx,547,462,fgHas(a,'accommodation provided'));denmarkCheck(ctx,547,503,fgHas(a,'all expenses covered'));denmarkCheck(ctx,547,548,fgHas(a,'pre-paid transport'));}}
+  function stampGermany5(ctx,p,a){denmarkText(ctx,[fgVal(a,'application_place'),fgDate(a,'application_date')].filter(Boolean).join(' - '),35,1605,430,false,15);}
+  function stampGermany6(ctx,p,a){denmarkText(ctx,[fgVal(a,'application_place'),fgDate(a,'application_date')].filter(Boolean).join(' - '),35,1530,430,false,15);}
+  async function generateGermanyVisaPdf(a){var p=smartPdfProfile(a),paths=[1,2,3,4,5,6,7].map(function(n){return 'assets/form-templates/germany-rendered/page-'+n+'.png?v=20260824';}),cvs=[];for(var i=0;i<7;i++){var bg=await loadFormImage(paths[i]),cv=document.createElement('canvas');cv.width=bg.naturalWidth||2382;cv.height=bg.naturalHeight||3368;var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);ctx.save();ctx.scale(cv.width/1191,cv.height/1684);if(i===0)stampGermany1(ctx,p,a);else if(i===1)stampGermany2(ctx,p,a);else if(i===2)stampGermany3(ctx,p,a);else if(i===3)stampGermany4(ctx,p,a);else if(i===4)stampGermany5(ctx,p,a);else if(i===5)stampGermany6(ctx,p,a);ctx.restore();cvs.push(cv);}var blob=makeImagePdf(cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1)),w:cv.width,h:cv.height};})),url=URL.createObjectURL(blob),link=document.createElement('a'),nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');link.href=url;link.download='Germany_Schengen_Visa_Application_'+nm+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},2000);toast('Germany Schengen application form generated. Please verify before submission.');}
+
+  // GREECE + AZERBAIJAN · supplied official-form generators
+  function gaText(ctx,v,x,y,max,size){v=String(v||'').trim();if(!v)return;ctx.save();ctx.font=(size||16)+'px Arial';ctx.fillStyle='#111';var t=v.toUpperCase();while(ctx.measureText(t).width>(max||600)&&parseFloat(ctx.font)>9){var n=parseFloat(ctx.font)-1;ctx.font=n+'px Arial';}ctx.fillText(t,x,y);ctx.restore();}
+
+function gaTick(ctx,x,y,on){if(!on)return;ctx.save();ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+2,y+10);ctx.lineTo(x+6,y+14);ctx.lineTo(x+13,y+3);ctx.stroke();ctx.restore();}
+function gaV(a,k){return smartAnswer(a,[k]);}
+
+function stampGreece1(ctx,p,a){
+gaText(ctx,gaV(a,'passport_last_name')||p.last_name,393,715,400,20);
+gaText(ctx,gaV(a,'passport_first_name')||p.first_name,429,787,440,20);
+gaText(ctx,pdfDate(gaV(a,'date_of_birth')||p.date_of_birth),178,871,170,20);
+gaText(ctx,gaV(a,'birthplace_city'),359,871,260,20);
+gaText(ctx,gaV(a,'birthplace_country'),501,928,250,20);
+gaText(ctx,gaV(a,'nationality')||p.nationality,779,842,150,16);
+
+var g=String(gaV(a,'gender')||'').toLowerCase();
+gaTick(ctx,135,968,g==='male');
+gaTick(ctx,135,993,g==='female');
+gaTick(ctx,135,1014,g==='other');
+
+var civil=String(gaV(a,'marital_status')||gaV(a,'civil_status')||'').toLowerCase();
+gaTick(ctx,329,969,civil==='single');
+gaTick(ctx,391,971,civil==='married');
+gaTick(ctx,472,969,civil.indexOf('registered')>=0);
+gaTick(ctx,660,969,civil==='separated');
+gaTick(ctx,755,969,civil==='divorced');
+gaTick(ctx,840,969,civil.indexOf('widow')>=0);
+gaTick(ctx,413,992,civil==='other');
+}
+
+function stampGreece2(ctx,p,a){
+var passportType=String(gaV(a,'passport_type')||'ordinary').toLowerCase();
+gaTick(ctx,137,222,passportType.indexOf('ordinary')>=0);
+
+gaText(ctx,gaV(a,'passport_number')||p.passport_number,141,402,230,20);
+gaText(ctx,pdfDate(gaV(a,'passport_issue_date')||p.passport_issue_date),326,402,180,20);
+gaText(ctx,pdfDate(gaV(a,'passport_expiry')||p.passport_expiry),511,402,180,20);
+gaText(ctx,gaV(a,'passport_issuing_country')||gaV(a,'nationality')||p.nationality,716,402,170,20);
+
+gaText(ctx,gaV(a,'residential_address'),143,852,500,16);
+gaText(ctx,gaV(a,'contact_email')||gaV(a,'email')||p.email,143,868,330,16);
+gaText(ctx,p.phone||gaV(a,'phone'),696,866,190,20);
+
+var residence=String(gaV(a,'other_country_residence')||gaV(a,'residence_other_country')||'no').toLowerCase();
+gaTick(ctx,137,908,residence==='no');
+gaTick(ctx,137,931,residence==='yes');
+
+gaText(ctx,gaV(a,'occupation')||gaV(a,'current_occupation'),164,1051,350,20);
+gaText(ctx,[gaV(a,'employer_name'),gaV(a,'employer_address'),gaV(a,'employer_phone'),gaV(a,'employer_email')].filter(Boolean).join('  '),164,1142,660,20);
+
+var purpose=String(gaV(a,'purpose')||'tourism').toLowerCase();
+gaTick(ctx,137,1186,purpose.indexOf('tour')>=0);
+
+gaText(ctx,gaV(a,'purpose')||'TOURISM',152,1325,300,20);
+gaText(ctx,gaV(a,'main_destination')||'GREECE',148,1438,260,20);
+gaText(ctx,gaV(a,'first_entry_country')||'GREECE',530,1438,260,20);
+
+var entries=String(gaV(a,'entries_requested')||gaV(a,'number_of_entries')||'multiple').toLowerCase();
+gaTick(ctx,137,1483,entries.indexOf('single')>=0);
+gaTick(ctx,243,1483,entries.indexOf('two')>=0);
+gaTick(ctx,354,1483,entries.indexOf('multiple')>=0);
+
+gaText(ctx,pdfDate(gaV(a,'arrival_date')||gaV(a,'travel_date')),653,1541,210,20);
+gaText(ctx,pdfDate(gaV(a,'departure_date')||gaV(a,'return_date')),720,1585,210,20);
+}
+
+function stampGreece3(ctx,p,a){
+var fp=String(gaV(a,'schengen_fingerprints')||'no').toLowerCase();
+gaTick(ctx,185,216,fp==='no');
+gaTick(ctx,230,216,fp==='yes');
+
+gaText(ctx,gaV(a,'host_name')||gaV(a,'hotel_name'),152,483,520,20);
+gaText(ctx,gaV(a,'host_address')||gaV(a,'hotel_address'),152,575,350,20);
+gaText(ctx,gaV(a,'host_phone')||gaV(a,'hotel_phone'),517,575,230,20);
+
+var payer=String(gaV(a,'trip_payer')||'applicant').toLowerCase();
+gaTick(ctx,137,869,payer.indexOf('applicant')>=0);
+
+var means=String(gaV(a,'support_means')||'').toLowerCase();
+gaTick(ctx,137,909,means.indexOf('cash')>=0);
+gaTick(ctx,137,930,means.indexOf('traveller')>=0);
+gaTick(ctx,137,951,means.indexOf('credit')>=0);
+gaTick(ctx,137,973,means.indexOf('pre-paid accommodation')>=0||means.indexOf('prepaid accommodation')>=0);
+gaTick(ctx,137,994,means.indexOf('pre-paid transport')>=0||means.indexOf('prepaid transport')>=0);
+gaTick(ctx,137,1017,means.indexOf('other')>=0);
+}
+
+async function generateGreeceVisaPdf(a){
+var p=smartPdfProfile(a),cvs=[];
+for(var i=0;i<4;i++){
+var bg=await loadFormImage('assets/form-templates/greece-rendered/page-'+(i+1)+'.png?v=20260828-hd'),cv=document.createElement('canvas');
+cv.width=bg.naturalWidth||2382;cv.height=bg.naturalHeight||3368;
+var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);
+ctx.save();ctx.scale(cv.width/1191,cv.height/1684);
+if(i===0)stampGreece1(ctx,p,a);else if(i===1)stampGreece2(ctx,p,a);else if(i===2)stampGreece3(ctx,p,a);
+ctx.restore();cvs.push(cv);
+}
+var blob=makeImagePdf(cvs.map(function(cv){return{bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1)),w:cv.width,h:cv.height};}));
+var url=URL.createObjectURL(blob),l=document.createElement('a'),nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');
+l.href=url;l.download='Greece_Schengen_Visa_Application_'+nm+'.pdf';document.body.appendChild(l);l.click();l.remove();
+setTimeout(function(){URL.revokeObjectURL(url);},2000);
+toast('Greece application form generated. Please verify before submission.');
+}
+  
+ function gaText(ctx,v,x,y,max,size){v=String(v||'').trim();if(!v)return;ctx.save();ctx.font=(size||16)+'px Arial';ctx.fillStyle='#111';var t=v.toUpperCase();while(ctx.measureText(t).width>(max||600)&&parseFloat(ctx.font)>9){var n=parseFloat(ctx.font)-1;ctx.font=n+'px Arial';}ctx.fillText(t,x,y);ctx.restore();}
+function gaTick(ctx,x,y,on){if(!on)return;ctx.save();ctx.strokeStyle='#111';ctx.lineWidth=1.6;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(x+1.5,y+4.5);ctx.lineTo(x+4,y+7);ctx.lineTo(x+8.5,y+1.5);ctx.stroke();ctx.restore();}
+function gaV(a,k){return smartAnswer(a,[k]);}
+
+function stampAzer1(ctx,p,a){
+  gaText(ctx,gaV(a,'passport_last_name')||p.last_name,182,639,420,17);gaText(ctx,gaV(a,'passport_first_name')||p.first_name,182,712,520,17);
+  gaText(ctx,pdfDate(gaV(a,'date_of_birth')||p.date_of_birth),182,946,190,16);gaText(ctx,gaV(a,'birthplace_city'),479,946,250,16);gaText(ctx,gaV(a,'nationality')||p.nationality,767,946,250,16);
+  var sex=String(gaV(a,'sex')||gaV(a,'gender')||'').toLowerCase();gaTick(ctx,185,1069,sex==='male');gaTick(ctx,185,1100,sex==='female');
+  var passType=String(gaV(a,'passport_type')||'ordinary passport').toLowerCase();gaTick(ctx,483,1113,passType.indexOf('ordinary')>=0);gaTick(ctx,483,1140,passType.indexOf('service')>=0||passType.indexOf('official')>=0||passType.indexOf('special')>=0);gaTick(ctx,483,1191,passType.indexOf('diplomatic')>=0);gaTick(ctx,483,1243,passType.indexOf('other')>=0);
+  gaText(ctx,gaV(a,'passport_number')||p.passport_number,767,1138,260,16);gaText(ctx,gaV(a,'passport_issuing_country'),182,1479,350,16);gaText(ctx,pdfDate(gaV(a,'passport_issue_date')||p.passport_issue_date),479,1479,190,16);gaText(ctx,pdfDate(gaV(a,'passport_expiry')||p.passport_expiry),767,1439,190,16);
+}
+
+function stampAzer2(ctx,p,a){
+  var marital=String(gaV(a,'marital_status')||'').toLowerCase();gaTick(ctx,185,89,marital==='married');gaTick(ctx,185,113,marital==='single');gaTick(ctx,185,137,marital.indexOf('widow')>=0);gaTick(ctx,185,161,marital.indexOf('divorc')>=0);
+  var addr=String(gaV(a,'residential_address')||'').trim(),parts=addr.split(/\s+/),l1='',l2='';for(var j=0;j<parts.length;j++){if((l1+' '+parts[j]).trim().length<=28)l1=(l1+' '+parts[j]).trim();else l2=(l2+' '+parts[j]).trim();}
+  gaText(ctx,l1,482,143,520,14);gaText(ctx,l2,482,171,520,14);gaText(ctx,p.phone||gaV(a,'phone'),767,159,280,14);gaText(ctx,gaV(a,'contact_email')||gaV(a,'email'),767,193,320,13);gaText(ctx,gaV(a,'occupation'),182,304,500,15);gaText(ctx,pdfDate(gaV(a,'arrival_date')||gaV(a,'travel_date')),623,341,220,16);gaText(ctx,gaV(a,'stay_duration'),503,492,180,16);gaText(ctx,gaV(a,'final_destination')||'BAKU, AZERBAIJAN',771,491,330,15);
+  var visited=String(gaV(a,'visited_azerbaijan')||gaV(a,'previous_visit')||'no').toLowerCase();gaTick(ctx,185,623,visited==='yes');gaTick(ctx,185,647,visited==='no');
+  var oldVisa=String(gaV(a,'previous_azerbaijan_visa')||gaV(a,'azerbaijan_visa_before')||'no').toLowerCase();gaTick(ctx,477,646,oldVisa==='yes');gaTick(ctx,477,670,oldVisa==='no');
+  var refused=String(gaV(a,'visa_refused')||gaV(a,'azerbaijan_visa_refused')||'no').toLowerCase();gaTick(ctx,770,646,refused==='yes');gaTick(ctx,770,670,refused==='no');
+  var criminal=String(gaV(a,'criminal_offences')||'no').toLowerCase();gaTick(ctx,185,1017,criminal==='yes');gaTick(ctx,185,1041,criminal==='no');
+  var karabakh=String(gaV(a,'visited_nagorno_karabakh')||gaV(a,'visited_karabakh')||'no').toLowerCase();gaTick(ctx,185,1150,karabakh==='yes');gaTick(ctx,185,1204,karabakh==='no');
+  var purpose=String(gaV(a,'purpose')||gaV(a,'purpose_of_visit')||'').toLowerCase();gaTick(ctx,185,1300,purpose.indexOf('official')>=0);gaTick(ctx,185,1324,purpose.indexOf('business')>=0);gaTick(ctx,185,1368,purpose.indexOf('tourism')>=0);gaTick(ctx,185,1392,purpose.indexOf('employment')>=0);gaTick(ctx,185,1416,purpose.indexOf('scientific')>=0);gaTick(ctx,185,1440,purpose.indexOf('education')>=0);gaTick(ctx,185,1464,purpose.indexOf('medical')>=0);gaTick(ctx,185,1488,purpose.indexOf('cultural')>=0);gaTick(ctx,185,1512,purpose.indexOf('sports')>=0);
+  var visaType=String(gaV(a,'visa_type')||'entry').toLowerCase();gaTick(ctx,477,1324,visaType.indexOf('entry')>=0&&visaType.indexOf('transit')<0);gaTick(ctx,477,1348,visaType.indexOf('transit')>=0);
+  var ent=String(gaV(a,'entries_requested')||'').toLowerCase();gaTick(ctx,768,1304,ent.indexOf('single entry visa')>=0||ent==='single');gaTick(ctx,768,1352,ent.indexOf('multiple')>=0);gaTick(ctx,768,1400,ent.indexOf('single entry transit')>=0);gaTick(ctx,768,1448,ent.indexOf('double entry transit')>=0);
+}
+
+function stampAzer3(ctx,p,a){
+  gaText(ctx,gaV(a,'inviting_party'),182,199,820,14);gaText(ctx,gaV(a,'host_address')||gaV(a,'hotel_address'),182,278,850,14);gaText(ctx,gaV(a,'trip_payer')||'MYSELF',182,440,260,15);
+  var emp=String(gaV(a,'intend_employed')||'no').toLowerCase();gaTick(ctx,477,418,emp==='yes');gaTick(ctx,477,442,emp==='no');
+  var stu=String(gaV(a,'intend_study')||'no').toLowerCase();gaTick(ctx,766,395,stu==='yes');gaTick(ctx,766,419,stu==='no');
+  gaText(ctx,[gaV(a,'application_place'),pdfDate(gaV(a,'application_date'))].filter(Boolean).join(' - '),840,1280,350,14);
+}
+
+async function generateAzerbaijanVisaPdf(a){
+  var p=smartPdfProfile(a),cvs=[];
+  for(var i=0;i<4;i++){
+    var bg=await loadFormImage('assets/form-templates/azerbaijan-rendered/page-'+(i+1)+'.png?v=20260826-hd'),cv=document.createElement('canvas');
+    cv.width=bg.naturalWidth||2448;cv.height=bg.naturalHeight||3168;
+    var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);
+    ctx.save();ctx.scale(cv.width/1224,cv.height/1584);
+    if(i===0)stampAzer1(ctx,p,a);else if(i===1)stampAzer2(ctx,p,a);else if(i===2)stampAzer3(ctx,p,a);
+    ctx.restore();cvs.push(cv);
+  }
+  var blob=makeImagePdf(cvs.map(function(cv){return{bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1)),w:cv.width,h:cv.height};})),url=URL.createObjectURL(blob),l=document.createElement('a'),nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');
+  l.href=url;l.download='Azerbaijan_Visa_Application_'+nm+'.pdf';document.body.appendChild(l);l.click();l.remove();
+  setTimeout(function(){URL.revokeObjectURL(url)},2000);toast('Azerbaijan application form generated in BLOCK LETTERS. Please verify before submission.');
+}
+  
   async function generateSmartVisaPdf(a){
+    var visa=visaById(a.visa_type);
+    if(visa && visa.country_slug==='denmark') return generateDenmarkVisaPdf(a);
+    if(visa && visa.country_slug==='spain') return generateSpainVisaPdf(a);
+    if(visa && visa.country_slug==='south-korea') return generateSouthKoreaVisaPdf(a);
+    if(visa && visa.country_slug==='switzerland') return generateSwitzerlandVisaPdf(a);
+    if(visa && visa.country_slug==='ireland') return generateIrelandVisaPdf(a);
+    if(visa && visa.country_slug==='france') return generateFranceVisaPdf(a);
+    if(visa && visa.country_slug==='germany') return generateGermanyVisaPdf(a);
+    if(visa && visa.country_slug==='greece') return generateGreeceVisaPdf(a);
+    if(visa && visa.country_slug==='azerbaijan') return generateAzerbaijanVisaPdf(a);
     var p=smartPdfProfile(a);
     // Japan PDF must keep the official photo box blank. Do not stamp the uploaded personal photo.
     var photo=null;
     var signature=null; // Signature must not be printed on generated Japan PDF.
-    var bg1=await loadFormImage('assets/form-templates/japan-rendered/page-1.jpg');
-    var bg2=await loadFormImage('assets/form-templates/japan-rendered/page-2.jpg');
+    var bg1=await loadFormImage('assets/form-templates/japan-rendered/page-1.png?v=20260818-hq288');
+    var bg2=await loadFormImage('assets/form-templates/japan-rendered/page-2.png?v=20260818-hq288');
     var cvs=[], bgs=[bg1,bg2];
     for(var i=0;i<2;i++){
-      var cv=document.createElement('canvas'); cv.width=1241; cv.height=1754;
-      var ctx=cv.getContext('2d'); ctx.drawImage(bgs[i],0,0,cv.width,cv.height);
-      if(i===0) stampExactJapanPage1(ctx,p,a,photo); else stampExactJapanPage2(ctx,p,a,null);
+      var cv=document.createElement('canvas'); cv.width=bgs[i].naturalWidth||2382; cv.height=bgs[i].naturalHeight||3368;
+      var ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(bgs[i],0,0,cv.width,cv.height);
+      ctx.save(); ctx.scale(cv.width/1241,cv.height/1754); if(i===0) stampExactJapanPage1(ctx,p,a,photo); else stampExactJapanPage2(ctx,p,a,null); ctx.restore();
       cvs.push(cv);
     }
-    var out=cvs.map(function(cv){var data=cv.toDataURL('image/jpeg',0.98); return {bytes:dataUrlBytes(data),w:cv.width,h:cv.height};});
+    var out=cvs.map(function(cv){var data=cv.toDataURL('image/jpeg',1.0); return {bytes:dataUrlBytes(data),w:cv.width,h:cv.height};});
     var blob=makeImagePdf(out), url=URL.createObjectURL(blob), link=document.createElement('a');
     var nm=(p.full_name||((p.first_name||'')+' '+(p.last_name||''))||'Applicant').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
     link.href=url; link.download='Japan_Visa_Application_'+(nm||'Applicant')+'.pdf'; document.body.appendChild(link); link.click(); link.remove();

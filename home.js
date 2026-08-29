@@ -88,9 +88,16 @@
 
   function destinationPhoto(c){
     var photos=window.VISADOO_DESTINATION_PHOTOS||{};
-    // Prefer the curated destination scene. Some older country records use a
-    // flag image as image_url, which should never become the card background.
     var src=photos[c.slug+'-card']||photos[c.slug]||c.hero_image_url||c.image_url||'';
+    if (!src) {
+      var fallbacks = {
+        'thailand': 'https://images.unsplash.com/photo-1528181304800-2f19024b321d?auto=format&fit=crop&w=1200&q=84',
+        'indonesia': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=84',
+        'russia': 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?auto=format&fit=crop&w=1200&q=84',
+        'kenya': 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=84'
+      };
+      src = fallbacks[c.slug.toLowerCase()] || '';
+    }
     return /^https?:\/\//i.test(src) ? src : '';
   }
 
@@ -380,12 +387,88 @@
     try{
       var sb=window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
       Promise.all([
-        sb.from('countries').select('*').eq('active',true).order('sort_order'),
+        sb.from('countries').select('*').order('sort_order'),
         sb.from('visa_types').select('slug,country_slug,price_aed,prices,processing_time_value,processing_time_unit').eq('active',true),
         sb.from('visa_groups').select('*').eq('active',true).order('sort_order'),
         sb.from('site_settings').select('hero_image_url,hero_image_alt,active_currency,currencies').eq('id','global').single()
       ]).then(function(res){
-        var countries=(res[0].data)||[], visas=(res[1].data)||[], groups=(res[2].data)||[];
+        var allowedSlugs = [
+          'japan', 'spain', 'denmark', 'france', 'germany', 'switzerland', 
+          'china', 'greece', 'azerbaijan', 'south-korea', 'ireland',
+          'thailand', 'turkey', 'indonesia', 'russia', 'vietnam', 'india', 
+          'sri-lanka', 'kenya', 'morocco'
+        ];
+        
+        var allDbCountries = (res[0].data) || [];
+        var dbSlugs = allDbCountries.map(function(c) { return c.slug.toLowerCase(); });
+
+        var countries = allDbCountries.filter(function(c) {
+          return c.active;
+        });
+
+        // Find and dynamically inject missing database countries
+        var missingSlugs = allowedSlugs.filter(function(slug) {
+          return dbSlugs.indexOf(slug) === -1;
+        });
+        
+        var countryMetadata = {
+          'japan': { name: 'Japan', iso2: 'JP' },
+          'spain': { name: 'Spain', iso2: 'ES' },
+          'denmark': { name: 'Denmark', iso2: 'DK' },
+          'france': { name: 'France', iso2: 'FR' },
+          'germany': { name: 'Germany', iso2: 'DE' },
+          'switzerland': { name: 'Switzerland', iso2: 'CH' },
+          'china': { name: 'China', iso2: 'CN' },
+          'greece': { name: 'Greece', iso2: 'GR' },
+          'azerbaijan': { name: 'Azerbaijan', iso2: 'AZ' },
+          'south-korea': { name: 'South Korea', iso2: 'KR' },
+          'ireland': { name: 'Ireland', iso2: 'IE' },
+          'thailand': { name: 'Thailand', iso2: 'TH' },
+          'turkey': { name: 'Türkiye', iso2: 'TR' },
+          'indonesia': { name: 'Indonesia', iso2: 'ID' },
+          'russia': { name: 'Russia', iso2: 'RU' },
+          'vietnam': { name: 'Vietnam', iso2: 'VN' },
+          'india': { name: 'India', iso2: 'IN' },
+          'sri-lanka': { name: 'Sri Lanka', iso2: 'LK' },
+          'kenya': { name: 'Kenya', iso2: 'KE' },
+          'morocco': { name: 'Morocco', iso2: 'MA' }
+        };
+
+        missingSlugs.forEach(function(slug) {
+          var meta = countryMetadata[slug];
+          if (meta) {
+            countries.push({
+              id: 'mock-' + slug,
+              name: meta.name,
+              slug: slug,
+              iso2: meta.iso2,
+              active: true,
+              featured: false,
+              group_slug: '',
+              visaCount: 1,
+              visaTypes: 'tourist-visa',
+              minPrice: null,
+              eta: null
+            });
+          }
+        });
+        
+        countries.forEach(function(c) {
+          var slug = c.slug.toLowerCase();
+          var schengenSlugs = [
+            'japan', 'spain', 'denmark', 'france', 'germany', 
+            'switzerland', 'china', 'greece', 'south-korea', 'ireland'
+          ];
+          if (!c.group_slug) {
+            if (schengenSlugs.indexOf(slug) > -1) {
+              c.group_slug = 'schengen';
+            } else {
+              c.group_slug = 'e-visa';
+            }
+          }
+        });
+
+        var visas=(res[1].data)||[], groups=(res[2].data)||[];
         var ss=res[3].data||{};
         var heroImg=ss.hero_image_url||null;
         if(heroImg){ var hero=document.querySelector('.hero'); if(hero){ hero.style.backgroundImage='linear-gradient(rgba(244,249,255,.78),rgba(255,255,255,.9)), url('+heroImg+')'; hero.classList.add('has-banner'); if(ss.hero_image_alt){ hero.setAttribute('role','img'); hero.setAttribute('aria-label', ss.hero_image_alt); } } }
@@ -399,14 +482,14 @@
           c.eta=fastestEta(cv);
         });
         render(countries, groups);
-      });
+      }).catch(function(err){ console.error("Error loading home page content:", err); });
 
       // reviews + FAQs + footer pages
       Promise.all([
         sb.from('reviews').select('*').eq('active',true).order('sort_order'),
         sb.from('faqs').select('*').eq('active',true).order('sort_order'),
         sb.from('pages').select('slug,title,sort_order').eq('status','published').eq('show_in_footer',true).order('sort_order')
-      ]).then(function(res){ renderExtras((res[0].data)||[], (res[1].data)||[], (res[2].data)||[]); });
+      ]).then(function(res){ renderExtras((res[0].data)||[], (res[1].data)||[], (res[2].data)||[]); }).catch(function(err){ console.error("Error loading reviews/FAQs/pages:", err); });
     }catch(e){ /* leave empty */ }
   }
 

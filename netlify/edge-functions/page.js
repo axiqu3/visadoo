@@ -29,33 +29,40 @@ function shell(title, desc, canonical, body){
 }
 
 export default async (request) => {
-  const url=new URL(request.url);
-  const parts=url.pathname.split("/").filter(Boolean); // ["p","<slug>"]
-  const slug=parts[1]?decodeURIComponent(parts[1]):"";
-  const settings = await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=brand_color,logo_url,favicon_url,app_icon_url,brand_name");
-  const ss0 = (settings && settings[0]) || {};
-  BRAND = ss0.brand_color || "";
-  LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
-  const rows = slug ? await fetchJson(SUPABASE_URL+"/rest/v1/pages?slug=eq."+encodeURIComponent(slug)+"&status=eq.published&select=*") : null;
-  if(!rows || !rows.length){
-    if(slug){
-      // Address changed? Forward the old address to the current one (301).
-      const moved = await fetchJson(SUPABASE_URL+"/rest/v1/pages?status=eq.published&past_slugs=cs.%7B"+encodeURIComponent(slug)+"%7D&select=slug&limit=1");
-      if(moved && moved.length) return Response.redirect(SITE+"/p/"+moved[0].slug, 301);
+  try {
+    const url=new URL(request.url);
+    const parts=url.pathname.split("/").filter(Boolean); // ["p","<slug>"]
+    const slug=parts[1]?decodeURIComponent(parts[1]):"";
+    const settings = await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=brand_color,logo_url,favicon_url,app_icon_url,brand_name");
+    const ss0 = (settings && settings[0]) || {};
+    BRAND = ss0.brand_color || "";
+    LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
+    const rows = slug ? await fetchJson(SUPABASE_URL+"/rest/v1/pages?slug=eq."+encodeURIComponent(slug)+"&status=eq.published&select=*") : null;
+    if(!rows || !rows.length){
+      if(slug){
+        // Address changed? Forward the old address to the current one (301).
+        const moved = await fetchJson(SUPABASE_URL+"/rest/v1/pages?status=eq.published&past_slugs=cs.%7B"+encodeURIComponent(slug)+"%7D&select=slug&limit=1");
+        if(moved && moved.length) return Response.redirect(SITE+"/p/"+moved[0].slug, 301);
+      }
+      return new Response(shell("Page not found | Visa Doo","",SITE,
+        '<div style="min-height:60vh;display:grid;place-items:center;text-align:center;padding:40px"><div><h1 style="font-size:30px">Page not found</h1><p style="color:#5b6b85;margin:12px 0 22px">This page doesn\'t exist.</p><a href="/" class="btn btn-primary btn-lg">Back to home</a></div></div>'),
+        { status:404, headers:{ "content-type":"text/html; charset=utf-8" } });
     }
-    return new Response(shell("Page not found | Visa Doo","",SITE,
-      '<div style="min-height:60vh;display:grid;place-items:center;text-align:center;padding:40px"><div><h1 style="font-size:30px">Page not found</h1><p style="color:#5b6b85;margin:12px 0 22px">This page doesn\'t exist.</p><a href="/" class="btn btn-primary btn-lg">Back to home</a></div></div>'),
-      { status:404, headers:{ "content-type":"text/html; charset=utf-8" } });
+    const p=rows[0];
+    const title=(p.seo_title&&p.seo_title.trim())||(p.title+' | Visa Doo');
+    const desc=(p.seo_description&&p.seo_description.trim())||(p.title);
+    const body='<article class="article-wrap"><div class="container article-inner">'+
+      '<h1 class="article-title">'+esc(p.title)+'</h1>'+
+      '<div class="article-body" style="margin-top:24px">'+(p.content||'')+'</div></div></article>';
+    return new Response(shell(title, desc, SITE+"/p/"+p.slug, body), {
+      headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
+    });
+  } catch (err) {
+    console.error("Page Edge Function Error:", err);
+    return new Response(shell("Service Temporarily Unavailable | Visa Doo", "Service temporarily unavailable due to technical issues.", SITE,
+      '<div style="min-height:60vh;display:grid;place-items:center;text-align:center;padding:40px"><div><h1 style="font-size:30px">Something went wrong</h1><p style="color:#5b6b85;margin:12px 0 22px">We are experiencing technical difficulties. Please try again later.</p><a href="/" class="btn btn-primary btn-lg">Back to home</a></div></div>'),
+      { status:500, headers:{ "content-type":"text/html; charset=utf-8" } });
   }
-  const p=rows[0];
-  const title=(p.seo_title&&p.seo_title.trim())||(p.title+' | Visa Doo');
-  const desc=(p.seo_description&&p.seo_description.trim())||(p.title);
-  const body='<article class="article-wrap"><div class="container article-inner">'+
-    '<h1 class="article-title">'+esc(p.title)+'</h1>'+
-    '<div class="article-body" style="margin-top:24px">'+(p.content||'')+'</div></div></article>';
-  return new Response(shell(title, desc, SITE+"/p/"+p.slug, body), {
-    headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
-  });
 };
 
 export const config = { path: "/p/:slug" };

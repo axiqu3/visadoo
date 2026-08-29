@@ -110,6 +110,148 @@ function uaeVisaSelector(visas, active){
   '</form>';
 }
 
+function schengenDocuments(countryName){
+  function card(title,text){
+    return '<article class="uae-document-card uae-document-card-simple" style="min-height: auto; padding: 16px;">'+
+      '<div class="uae-document-copy"><h3>'+esc(title)+'</h3><p>'+esc(text)+'</p></div>'+
+    '</article>';
+  }
+  var isKorea = countryName === 'South Korea';
+  var isIreland = countryName === 'Ireland';
+  var docsCount = isKorea ? '8' : (isIreland ? '10' : '6');
+  var headingHtml = (isKorea || isIreland)
+    ? '<p>Prepare these documents before starting your ' + esc(countryName) + ' visa application.</p>'
+    : '<p>Prepare these documents before starting your ' + esc(countryName) + ' Schengen visa application.</p>';
+
+  var docsGrid = '';
+  if (isKorea) {
+    docsGrid =
+      card('Passport','Passport valid.')+
+      card('Qatar ID','Qatar ID (valid more than 3 months from the entry date of Korea).')+
+      card('Passport size photo','Passport size photo (White background).')+
+      card('Employment letter','Recent employment letter from your employer.')+
+      card('Residency Permit Certificate','Certificate which is mentioned your Residency Permit details, including first entry (issuance date) and the expiry date; Apply for \'To Whom It May Concern\' certificate through online Metrash and print.')+
+      card('Company Establishment & CR Cards','Company’s establishment card (Front and back side printed in one page) and English commercial registration that valid more than 3 months from entry date of Korea.')+
+      card('3 Months Bank Statement','Original bank statement showing 3 months salaries.')+
+      card('Travel Record Copy','Copy of previous 5 years of travel record such as exit-entry stamp or visa page on the passport, if you have traveled and applicable. The last entry date to Qatar record must be included.');
+  } else if (isIreland) {
+    docsGrid =
+      card('Passport','Passport (6 Months validity required).')+
+      card('Qatar ID','Qatar ID (3 months validity required from the date of return).')+
+      card('Passport size Photo','Recently taken passport-size photo with a white background.')+
+      card('Travel records photocopy','Photocopy of your bio page, all visa & immigration stamps for all travel.')+
+      card('Last 6 months bank statement','Original bank statement showing latest 6 months transaction history (Sealed and signed).')+
+      card('Employment letter & Salary certificate','Recent employment letter and salary certificate from your employer.')+
+      card('Application form','We will provide a dummy application form.')+
+      card('Hotel booking','Hotel booking will be provided by us.')+
+      card('Flight ticket','We will provide a dummy flight ticket.')+
+      card('Appointment','Visa appointment will be booked and provided by us.');
+  } else {
+    docsGrid =
+      card('Passport','Passport valid for a minimum of 6 months.')+
+      card('Passport size photo','Recent passport-size photo with a white background.')+
+      card('Last 6 months bank statement','Provide your latest 6 months bank statement.')+
+      card('Qatar ID','Clear copy of your valid Qatar ID.')+
+      card('Employment letter','Recent employment letter from your employer.')+
+      card('Previous Schengen visa copy','Upload a previous Schengen visa copy only if you have one.');
+  }
+
+  var detailsTitle = (isKorea || isIreland) ? 'Required details' : 'Required details for Schengen';
+  var detailsList = isKorea
+    ? [
+        'Qatar residence Address',
+        'Phone number',
+        'Email address',
+        'Home country address',
+        'Highest education school name',
+        'School address',
+        'Employer name (Name of the company)',
+        'Company address',
+        'Company phone number',
+        'Date of arrival in Korea',
+        'Date of return',
+        'Your last 5 year travel history (purpose of travel, period of stay)',
+        'Number of children you have',
+        'Marital status (including Spouse name, DOB, nationality, contact number, and residence address if married)'
+      ]
+    : (isIreland
+      ? [
+          'Mobile number',
+          'Email address',
+          'Arrival date and return date',
+          'Residence address in Qatar',
+          'Length of stay in Qatar',
+          'Employer name (company name)',
+          'Employment joined date',
+          'Position',
+          'Employer address (company address)',
+          'Employer phone number',
+          'Employer mail id',
+          'Wife’s surname',
+          'Wife’s Given name',
+          'Wife’s date of birth',
+          'Kid’s Surname',
+          'Kid’s Given name',
+          'Kid’s Gender'
+        ]
+      : ((countryName === 'France' || countryName === 'Germany')
+        ? [
+            'Travel Date',
+            'Return Date',
+            'Arrival Airport',
+            'Departure Airport',
+            'Marital Status',
+            'Residence Address',
+            'Pincode',
+            'Phone Number',
+            'Mail ID',
+            'Employer / School Name',
+            'Employer / School Address',
+            'Job Position',
+            'Employer / School Number',
+            'Employer / School Mail ID'
+          ]
+        : [
+            'Residence address',
+            'Mobile number',
+            'Email address',
+            'Current Occupation',
+            'Employer name',
+            'Employer Address',
+            'Employer phone number',
+            'Date of arrival',
+            'Date of return'
+          ]));
+
+  var detailsHtml = detailsList.map(function(item) {
+    return '<li>' + esc(item) + '</li>';
+  }).join('');
+
+  return '<div class="container uae-documents-simple">'+
+    '<div class="uae-documents-overview">'+
+      '<div class="uae-documents-heading"><span class="eyebrow">Documents</span><h2>Tourist visa requirements</h2>' + headingHtml + '</div>'+
+      '<div class="uae-documents-quick" aria-label="Document preparation summary">'+
+        '<div><strong>' + docsCount + '</strong><span>essential items</span></div>'+
+        '<div><strong>' + (isIreland ? '10-45 days' : '5-20 days') + '</strong><span>processing</span></div>'+
+        '<div><strong>Online</strong><span>guided form</span></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="uae-document-grid" style="grid-template-columns: 1fr; gap: 12px;">'+
+      docsGrid +
+    '</div>'+
+    '<div class="schengen-details-note" style="margin-top: 24px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; text-align: left; width: 100%;">'+
+      '<h3 style="font-size: 15px; font-weight: 800; color: #1e293b; margin: 0 0 12px 0;">' + esc(detailsTitle) + '</h3>'+
+      '<ul style="margin: 0; padding-left: 20px; color: #475569; font-size: 13.5px; line-height: 1.8; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 16px; list-style-type: disc;">'+
+        detailsHtml +
+      '</ul>'+
+    '</div>'+
+    '<div class="uae-documents-footer">'+
+      '<div><span aria-hidden="true">&#8593;</span><p><b>Upload from any device</b><small>Clear phone photos or scans are accepted.</small></p></div>'+
+      '<a href="#visa-info" class="btn btn-primary">Choose visa &amp; start <span aria-hidden="true">&#8594;</span></a>'+
+    '</div>'+
+  '</div>';
+}
+
 function uaeDocuments(){
   function card(label,title,text,image){
     return '<article class="uae-document-card uae-document-card-simple">'+
@@ -266,15 +408,27 @@ function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME|
 function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
 
 function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
+  if(c.slug==='spain') c.name='Spain';
+  if(c.slug==='denmark') c.name='Denmark';
+  if(c.slug==='japan') c.name='Japan';
+  if(c.slug==='south-korea') c.name='South Korea';
+  if(c.slug==='switzerland') c.name='Switzerland';
+  if(c.slug==='ireland') c.name='Ireland';
+  if(c.slug==='france') c.name='France';
+  if(c.slug==='germany') c.name='Germany';
+
   var isUae=String(c.iso2||'').toUpperCase()==='AE'||c.slug==='uae'||c.slug==='united-arab-emirates';
-  var visaSectionTitle=isUae?'Visa types':'Visa options';
+  var isUaeStyle=isUae||c.slug==='japan'||c.slug==='denmark'||c.slug==='spain'||c.slug==='south-korea'||c.slug==='switzerland'||c.slug==='ireland'||c.slug==='france'||c.slug==='germany';
+  var showAttractions=c.slug!=='japan'&&c.slug!=='denmark'&&c.slug!=='spain'&&c.slug!=='south-korea'&&c.slug!=='switzerland'&&c.slug!=='ireland'&&c.slug!=='france'&&c.slug!=='germany';
+  var visaSectionTitle=isUaeStyle?'Visa types':'Visa options';
   var title=(c.seo_title&&c.seo_title.trim())||(c.name+' Visas — Apply Online | Visa Doo');
   var desc=(c.seo_description&&c.seo_description.trim())||(c.summary||('Apply online for your '+c.name+' visa with Visa Doo. Tourist and business visas, document upload and live tracking.')).slice(0,160);
   var canonical=SITE+'/country/'+c.slug;
   var ogImage=c.social_image||defaultImg||'';
   var cards = visas.length ? visas.map(function(v){return visaCard(v, active);}).join('') : '<div class="country-empty"><h3>Options coming soon</h3><a href="/#contact" class="btn btn-primary">Contact us</a></div>';
-  var visaContent=isUae&&visas.length?uaeVisaSelector(visas,active):'<div class="cards">'+cards+'</div>';
-  var documentsContent=isUae?uaeDocuments():
+  var visaContent=isUaeStyle&&visas.length?uaeVisaSelector(visas,active):'<div class="cards">'+cards+'</div>';
+  var documentsContent=(c.slug==='denmark'||c.slug==='spain'||c.slug==='south-korea'||c.slug==='switzerland'||c.slug==='ireland'||c.slug==='france'||c.slug==='germany')?schengenDocuments(c.name):
+    (isUaeStyle?uaeDocuments():
     '<div class="container country-documents-grid">'+
       '<div><span class="eyebrow">Documents</span><h2>Keep these ready</h2></div>'+
       '<div class="country-doc-list">'+
@@ -283,12 +437,18 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
         '<div>'+CHECK+'<span><b>Travel details</b></span></div>'+
         '<div>'+CHECK+'<span><b>Extra documents, if needed</b></span></div>'+
       '</div>'+
-    '</div>';
+    '</div>');
   var bannerOverrides={
     'united-arab-emirates-banner':'/assets/uae-burj-khalifa-hero.jpg',
     'uae-banner':'/assets/uae-burj-khalifa-hero.jpg',
     'united-arab-emirates':'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95',
-    'uae':'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95'
+    'uae':'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95',
+    'japan':'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=2400&q=95',
+    'denmark':'https://images.unsplash.com/photo-1513622470522-26c3c8a854bc?auto=format&fit=crop&w=2400&q=95',
+    'spain':'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=2400&q=95',
+    'south-korea':'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=2400&q=95',
+    'switzerland':'https://images.unsplash.com/photo-1527668752968-14dc70a27c95?auto=format&fit=crop&w=2400&q=95',
+    'ireland':'https://images.unsplash.com/photo-1590089415225-401ed6f9db8e?auto=format&fit=crop&w=2400&q=95'
   };
   var heroImage=bannerOverrides[c.slug+'-banner']||bannerOverrides[c.slug]||c.image_url||c.social_image||defaultImg||'';
   var priced=visas.map(function(v){
@@ -315,7 +475,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
     fastest?'<div><strong>'+esc(fastest)+'</strong><span>Fastest</span></div>':''
   ].filter(Boolean).join('');
   var summary=shortText(c.summary,'Apply online with clear prices and simple tracking.',120);
-  var heroStyle=heroImage?' style="--country-hero-image:url(&quot;'+esc(heroImage)+'&quot;)"':'';
+  var heroStyle=heroImage?" style=\"--country-hero-image:url('" + esc(heroImage) + "')\"":"";
 
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">'+
     '<title>'+esc(title)+'</title><meta name="description" content="'+esc(desc)+'">'+
@@ -330,7 +490,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
     '<link rel="stylesheet" href="/country.css">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
-    '</head><body class="country-page'+(isUae?' uae-country-page':'')+'">'+
+    '</head><body class="country-page'+(isUaeStyle?' uae-country-page':'')+'">'+
     '<header class="header discover-header"><div class="container nav">'+
       '<div class="nav-brand-cluster">'+
         '<a href="/#top" class="brand">'+brandMark()+'</a>'+
@@ -366,18 +526,19 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
       '</div>'+
     '</div></header>'+
     '<main>'+
-    (isUae?
+    (isUaeStyle?
       '<section class="uae-travel-banner" style="background-image: url(&quot;' + esc(heroImage) + '&quot;);">' +
         '<div class="uae-banner-bottom-bar">' +
           '<div class="uae-banner-bottom-bg"></div>' +
           '<div class="container uae-banner-bottom-content">' +
             '<a href="/#destinations" class="uae-travel-back"><span aria-hidden="true">&#8592;</span> All destinations</a>' +
-            '<h1>Apply UAE eVisa</h1>' +
+            '<h1>Apply ' + esc(c.name) + ' ' + (c.slug === 'japan' || isUae ? 'eVisa' : 'Visa') + '</h1>' +
             '<p>' + esc(approvedText) + '. From ' + esc(priceTextStr) + ' all-inclusive. No embassy visit, no paperwork.</p>' +
-            '<button class="uae-attractions-toggle" aria-expanded="false" type="button">' +
-              '<span>Dubai Tourist Attractions</span>' +
+            (showAttractions ?
+            ('<button class="uae-attractions-toggle" aria-expanded="false" type="button">' +
+              '<span>' + esc(c.name === 'United Arab Emirates' || c.name === 'UAE' ? 'Dubai' : c.name) + ' Tourist Attractions</span>' +
               '<svg class="uae-toggle-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M6 9l6 6 6-6"/></svg>' +
-            '</button>' +
+            '</button>') : '') +
           '</div>' +
         '</div>' +
       '</section>':
@@ -394,19 +555,19 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
           '<a href="#visa-info" class="btn btn-primary btn-lg">Choose a visa <span aria-hidden="true">→</span></a>'+
         '</div>'+
       '</div></section>')+
-    (isUae ? '' :
+    (isUaeStyle ? '' :
     '<nav class="country-info-nav" aria-label="Country visa information"><div class="container">'+
       '<a href="#visa-info">Visa Info</a>'+
       '<a href="/requirements.html?slug='+encodeURIComponent(c.slug||'')+'">Visa Requirements</a>'+
     '</div></nav>')+
-    '<section class="section sky country-options'+(isUae?' uae-country-options':'')+'" id="visa-info"><div class="container">'+
-      '<div class="country-section-heading"><span class="eyebrow">Choose a visa</span><h2>'+visaSectionTitle+'</h2>'+(isUae?'<p>Compare UAE visa types, check the key details and continue with the option that fits your trip.</p>':'')+'</div>'+
-      (isUae ? uaeAttractionsDropdownHtml(whatsappNumber) : '') +
+    '<section class="section sky country-options'+(isUaeStyle?' uae-country-options':'')+'" id="visa-info"><div class="container">'+
+      '<div class="country-section-heading"><span class="eyebrow">Choose a visa</span><h2>'+visaSectionTitle+'</h2>'+(isUaeStyle?'<p>Compare '+esc(c.name)+' visa types, check the key details and continue with the option that fits your trip.</p>':'')+'</div>'+
+      (isUaeStyle && showAttractions ? uaeAttractionsDropdownHtml(whatsappNumber) : '') +
       visaContent+
     '</div></section>'+
-    (isUae?'':'<section class="section country-documents'+(isUae?' uae-documents':'')+'" id="documents">'+documentsContent+'</section>')+
-    (isUae?'':'<section class="section country-process'+(isUae?' uae-country-process':'')+'" id="visa-process">'+
-      (isUae?uaeProcess():'<div class="container"><div class="country-process-heading"><span class="eyebrow">Visa Process</span><h2>What to do next</h2><p>Choose your visa, upload the documents and track every update online.</p></div><div class="country-process-flow" role="list" aria-label="Visa application steps"><div class="country-process-step" role="listitem"><i aria-hidden="true">&#10003;</i><b>Choose visa</b><small>Pick the right option</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#8593;</i><b>Upload files</b><small>Add passport and photo</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#9678;</i><b>Track status</b><small>See updates online</small></div></div></div>')+
+    (isUaeStyle?'':'<section class="section country-documents'+(isUaeStyle?' uae-documents':'')+'" id="documents">'+documentsContent+'</section>')+
+    (isUaeStyle?'':'<section class="section country-process'+(isUaeStyle?' uae-country-process':'')+'" id="visa-process">'+
+      (isUaeStyle?uaeProcess():'<div class="container"><div class="country-process-heading"><span class="eyebrow">Visa Process</span><h2>What to do next</h2><p>Choose your visa, upload the documents and track every update online.</p></div><div class="country-process-flow" role="list" aria-label="Visa application steps"><div class="country-process-step" role="listitem"><i aria-hidden="true">&#10003;</i><b>Choose visa</b><small>Pick the right option</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#8593;</i><b>Upload files</b><small>Add passport and photo</small></div><div class="country-process-step" role="listitem"><i aria-hidden="true">&#9678;</i><b>Track status</b><small>See updates online</small></div></div></div>')+
     '</section>')+
     '</main>'+
     '<footer class="footer home-footer"><div class="container">'+
@@ -443,6 +604,8 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
     '<script src="/destination-images.js"></scr'+'ipt>'+
     '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></scr'+'ipt>'+
     '<script src="/config.js"></scr'+'ipt>'+
+    '<script src="/country-experience.js"></scr'+'ipt>'+
+    '<script src="/country-page.js?v=20260805-dynamic-single-active-nav"></scr'+'ipt>'+
     '<script src="/country-history.js?v=20260804-natural-uae-hero"></scr'+'ipt>'+
     '<script>(function(){var b=document.getElementById("menuBtn"),n=document.getElementById("navLinks");if(!b||!n)return;b.addEventListener("click",function(){var o=n.classList.toggle("open");b.setAttribute("aria-expanded",String(o))});n.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){n.classList.remove("open");b.setAttribute("aria-expanded","false")})})})();</scr'+'ipt>'+
     '<script>(function(){var w=document.querySelector("[data-uae-visa-selector]"),c=w&&w.querySelectorAll("[data-uae-choice]");if(!w||!c.length)return;function u(o){if(!o)return;["name","category","stay","entry","processing","price"].forEach(function(k){w.querySelectorAll("[data-uae-"+k+"]").forEach(function(n){n.textContent=o.getAttribute("data-"+k)||""})});c.forEach(function(i){var l=i.closest(".uae-visa-option");if(l)l.classList.toggle("selected",i===o)})}c.forEach(function(i){i.addEventListener("change",function(){if(i.checked)u(i)})});u(w.querySelector("[data-uae-choice]:checked"))})();</scr'+'ipt>'+

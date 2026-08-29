@@ -2608,10 +2608,11 @@ body.traveller-picker-open {
   grid-template-columns: 32px 1fr 1fr !important;
   gap: 16px !important;
   align-items: center !important;
-  padding: 20px !important;
-  border: 1px dashed #c8d5df !important;
-  border-radius: 16px !important;
-  background: #f8fafc !important;
+  padding: 16px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e1e7ea !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   margin-bottom: 14px !important;
   box-sizing: border-box !important;
   box-shadow: none !important;
@@ -2646,14 +2647,31 @@ body.traveller-picker-open {
   text-transform: uppercase !important;
 }
 
-.traveller-person-fields input,
+.traveller-person-fields input {
+  width: 100% !important;
+  height: 40px !important;
+  padding: 7px 0 8px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #1e293b !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  box-sizing: border-box !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+}
+
 .traveller-person-fields select {
   width: 100% !important;
-  height: 42px !important;
-  padding: 10px 14px !important;
-  border: 1px solid #cbd5e1 !important;
-  border-radius: 8px !important;
-  background: #ffffff !important;
+  height: 40px !important;
+  padding: 7px 16px 8px 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-position: right 0 center !important;
   color: #1e293b !important;
   font-size: 13.5px !important;
   font-weight: 500 !important;
@@ -2670,8 +2688,8 @@ body.traveller-picker-open {
 .traveller-person-fields input:focus,
 .traveller-person-fields select:focus {
   outline: none !important;
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  border-bottom-color: #2563eb !important;
+  box-shadow: none !important;
 }
 
 @media (max-width: 520px) {
@@ -2679,12 +2697,99 @@ body.traveller-picker-open {
   .traveller-person-row.traveller-person-self {
     grid-template-columns: 28px 1fr !important;
     gap: 12px !important;
-    padding: 14px !important;
+    padding: 12px 0 !important;
   }
   .traveller-person-row .traveller-person-fields:last-child {
     grid-column: 2 !important;
   }
 }
+
+/* Denmark / Spain Schengen Requirements & Details Styling */
+.denmark-processing-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin: 12px 0 24px;
+  padding: 14px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.denmark-processing-note strong {
+  font-size: 14px;
+  color: #334155;
+}
+.denmark-processing-note span {
+  font-weight: 800;
+  color: #0f172a;
+}
+.denmark-required-details-note {
+  margin: 0 20px 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+}
+@media(max-width:640px) {
+  .denmark-processing-note {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+.schengen-details-note {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+.schengen-details-note h3 {
+  font-size: 15px;
+  font-weight: 850;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.schengen-details-note ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+.schengen-details-note li {
+  font-size: 13.5px;
+  color: #475569;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.schengen-details-note li::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #3b82f6;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .schengen-details-note {
+    padding: 18px;
+  }
+  .schengen-details-note ul {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 
 
 

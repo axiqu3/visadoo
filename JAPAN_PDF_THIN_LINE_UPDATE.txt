@@ -1,4 +1,0 @@
-Japan PDF template update
-- Non-box form rules normalized to a uniform thin stroke.
-- Official-use box, photo box, checkboxes and declaration details box retain their original box borders.
-- Existing field/tick/signature positioning logic unchanged.

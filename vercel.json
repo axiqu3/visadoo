@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/event/:slug",
-      "destination": "/event.html"
+      "destination": "/events/event.html"
     },
     {
       "source": "/article/:slug",
-      "destination": "/article.html"
+      "destination": "/articles/article.html"
     },
     {
       "source": "/country/:slug",

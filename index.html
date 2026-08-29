@@ -77,9 +77,50 @@
       </a>
     </div>
     <nav class="nav-links" id="navLinks">
+      <!-- Nationality Dropdown -->
+      <div class="header-dropdown" id="nationalityDropdown">
+        <button class="header-dropdown-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <img src="https://flagcdn.com/w40/in.png" class="dropdown-flag" id="selectedNationalityFlag" alt="">
+          <span id="selectedNationalityText">Nationalities</span>
+          <span class="dropdown-chevron"></span>
+        </button>
+        <div class="header-dropdown-menu" role="listbox">
+          <div class="header-dropdown-search">
+            <input type="text" placeholder="Search nationality..." class="dropdown-search-input" id="nationalitySearchInput" autocomplete="off">
+          </div>
+          <div class="dropdown-options-list">
+            <button type="button" role="option" data-value="India" data-flag="https://flagcdn.com/w40/in.png">
+              <img src="https://flagcdn.com/w40/in.png" alt=""> <span>India</span>
+            </button>
+            <button type="button" role="option" data-value="Qatar" data-flag="https://flagcdn.com/w40/qa.png">
+              <img src="https://flagcdn.com/w40/qa.png" alt=""> <span>Qatar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Destination Dropdown -->
+      <div class="header-dropdown" id="destinationDropdown">
+        <button class="header-dropdown-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <span id="selectedDestinationText">Destinations</span>
+          <span class="dropdown-chevron"></span>
+        </button>
+        <div class="header-dropdown-menu" role="listbox">
+          <div class="dest-dropdown-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f3f4f6; gap: 12px;">
+            <div class="header-dropdown-search" style="flex: 1; border: none; padding: 0; margin: 0;">
+              <input type="text" placeholder="Search destination..." class="dropdown-search-input" id="destinationSearchInput" autocomplete="off" style="width: 100%;">
+            </div>
+            <button type="button" id="destToggleAllBtn" style="font-size: 13.5px; font-weight: 600; padding: 8px 16px; border-radius: 99px; background: #f1f5f9; color: #1e293b; border: none; cursor: pointer; white-space: nowrap; transition: all 0.15s;">All Countries</button>
+          </div>
+          <div class="dest-dropdown-grid" id="destDropdownGrid">
+            <div style="padding: 20px; text-align: center; color: #64748b; font-size: 14px; grid-column: span 3;">Loading destinations…</div>
+          </div>
+        </div>
+      </div>
+
       <a href="#destinations" class="active">Explore</a>
-      <a href="events.html">Events</a>
-      <a href="articles.html">Articles</a>
+      <a href="events/events.html">Events</a>
+      <a href="articles/articles.html">Articles</a>
     </nav>
     <div class="nav-actions">
       <a href="app.html#track" class="nav-track">Track visa</a>
@@ -266,8 +307,8 @@
         <h5>Explore</h5>
         <ul>
           <li><a href="#destinations">Destinations</a></li>
-          <li><a href="events.html">Events</a></li>
-          <li><a href="articles.html">Articles</a></li>
+          <li><a href="events/events.html">Events</a></li>
+          <li><a href="articles/articles.html">Articles</a></li>
           <li><a href="app.html#track">Track application</a></li>
         </ul>
       </div>

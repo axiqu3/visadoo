@@ -1,4 +1,0 @@
-Generate PDF now uses the exact uploaded 2-page Japan Visa Application blank form as the visual background.
-Application values are overlaid only into their matching fields.
-Applicant photo is cover-cropped inside the printed 45mm x 35mm photo box.
-Unknown/missing values stay blank. The old custom Visa Application Form/Summary generator is not used by Generate PDF.

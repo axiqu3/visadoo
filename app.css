@@ -573,9 +573,9 @@ body.apply-focus{
 .review-contact-fields .otp-help{max-width:620px;margin:14px 0 0;padding-top:12px;border-top:1px solid #e4eaec;color:#6b7d85;font-size:11.5px;line-height:1.55}
 .review-contact-fields .otp-help a{color:#168177;font-weight:750;text-decoration:none}
 .apply-reviewing #applyStep3 .field{margin:0 !important}
-.apply-reviewing #applyStep3 .field label,
+.apply-reviewing #applyStep3 .field > label,
 .apply-reviewing #applyStep3 .ulabel{display:block;margin:0 0 5px;color:#263b45;font-size:9px;font-weight:800;letter-spacing:.075em;text-transform:uppercase}
-.apply-reviewing #applyStep3 .field input:not(#phone),
+.apply-reviewing #applyStep3 .field input:not(#phone):not([type="checkbox"]):not([type="radio"]),
 .apply-reviewing #applyStep3 .field select {
   width: 100% !important;
   padding: 10px 14px !important;
@@ -3406,4 +3406,211 @@ body.apply-focus {
   }
 }
 
+
+
+
+/* Denmark simple Schengen wizard */
+.denmark-review-shell{max-width:980px;margin:0 auto;padding:8px 0 36px;display:flex;flex-direction:column;gap:20px}.review-progress-card{display:flex;justify-content:space-between;gap:18px;align-items:center;background:#fff;border:1px solid #e6ebf2;border-radius:18px;padding:16px 20px;box-shadow:0 8px 28px rgba(15,23,42,.05)}.review-progress-card b{display:block;font-size:15px}.review-progress-card small{display:block;color:#64748b;margin-top:3px}.review-progress-card span{white-space:nowrap;font-weight:800;color:#2563eb;background:#eff6ff;border-radius:999px;padding:7px 11px}.denmark-check-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:8px}.denmark-check-grid label,.consent-check{display:flex;gap:9px;align-items:flex-start;padding:11px 12px;border:1px solid #e2e8f0;border-radius:12px;background:#fff}.denmark-check-grid input,.consent-check input{margin-top:3px}.denmark-sec textarea{min-height:76px}@media(max-width:720px){.denmark-check-grid{grid-template-columns:1fr}.review-progress-card{align-items:flex-start}}
+
+/* Denmark requirements additions */
+.denmark-processing-note{display:flex;justify-content:space-between;gap:16px;align-items:center;margin:12px 0 16px;padding:14px 16px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc}.denmark-processing-note strong{font-size:14px}.denmark-processing-note span{font-weight:800;color:#0f172a}.denmark-required-details-note{margin:0 20px 14px;padding:10px 12px;border-radius:10px;background:#f8fafc;color:#475569;font-size:13px}@media(max-width:640px){.denmark-processing-note{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* Denmark Schengen wizard: each active step must expose its form body.
+   Generic review cards are collapsed by default, so Denmark overrides that behavior. */
+.denmark-review-shell .denmark-sec .review-section-body,
+.denmark-review-shell .korea-sec .review-section-body {
+  max-height: none !important;
+  padding: 24px !important;
+  border-top: 1px solid var(--line) !important;
+  overflow: visible !important;
+}
+.denmark-review-shell .denmark-sec,
+.denmark-review-shell .korea-sec {
+  overflow: visible !important;
+}
+.denmark-review-shell .denmark-required-details-note {
+  margin: 0 24px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f7f9fc;
+  font-size: 14px;
+  color: var(--muted);
+}
+.denmark-review-shell .denmark-check-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin-top: 8px;
+}
+.denmark-review-shell .denmark-check-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+  text-transform: none !important;
+}
+.denmark-review-shell .denmark-check-grid input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  padding: 0 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+  -webkit-appearance: checkbox !important;
+  -moz-appearance: checkbox !important;
+  appearance: checkbox !important;
+}
+@media (max-width: 700px) {
+  .denmark-review-shell .denmark-check-grid { grid-template-columns: 1fr; }
+  .denmark-review-shell .denmark-sec .review-section-body { padding: 18px !important; }
+}
+
+/* Admin application edit form upgrade to match client review styling */
+.admin-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.admin-edit-form .review-section-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: visible !important;
+}
+.admin-edit-form .review-section-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 24px;
+}
+.admin-edit-form .review-section-card-header h3 {
+  margin: 0;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--ink);
+  text-transform: none;
+}
+.admin-edit-form .review-section-body {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 24px !important;
+  border-top: 1px solid var(--line) !important;
+}
+.admin-edit-form .field {
+  margin: 0 !important;
+}
+.admin-edit-form .field label {
+  display: block;
+  margin: 0 0 5px;
+  color: #263b45;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+.admin-edit-form .field input:not(#appfPhone),
+.admin-edit-form .field select,
+.admin-edit-form .field textarea {
+  width: 100% !important;
+  padding: 10px 14px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  color: #101f27 !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  height: 42px !important;
+}
+.admin-edit-form .field textarea {
+  height: auto !important;
+}
+.admin-edit-form .field input:focus,
+.admin-edit-form .field select:focus,
+.admin-edit-form .field textarea:focus {
+  outline: none;
+  border-color: #168177 !important;
+  box-shadow: none !important;
+}
+.admin-edit-form .field input#appfPhone {
+  width: 100% !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  padding-right: 14px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  color: #101f27 !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  height: 42px !important;
+}
+.admin-edit-form .field input#appfPhone:focus {
+  outline: none;
+  border-color: #168177 !important;
+  box-shadow: none !important;
+}
+
+/* Denmark / Spain / Switzerland / Korea single-card subheading styles */
+.denmark-subheading {
+  font-size: 15px !important;
+  font-weight: 850 !important;
+  color: #0f172a !important;
+  margin: 0 0 16px 0 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  display: block !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.denmark-review-shell .denmark-single-card .review-section-body {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 32px !important;
+  border-top: 1px solid var(--line) !important;
+}
+
+/* Denmark / Spain / Switzerland / Korea page header style (no box) */
+.denmark-page-header {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 12px 0 24px 0 !important;
+}
+.denmark-page-header h2 {
+  font-size: 32px !important;
+  font-weight: 850 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  letter-spacing: -0.025em !important;
+  line-height: 1.25 !important;
+}
+.denmark-page-header p {
+  font-size: 15px !important;
+  color: #64748b !important;
+  margin: 8px 0 0 0 !important;
+}
 

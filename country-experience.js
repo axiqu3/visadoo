@@ -431,6 +431,7 @@
         sectionKey=0;
       }else if(section.closest('#requirements')){
         sectionKey=1;
+        if(cSlug === 'denmark' || cSlug === 'spain' || cSlug === 'south-korea' || cSlug === 'switzerland' || cSlug === 'ireland' || cSlug === 'france' || cSlug === 'germany' || cSlug === 'greece' || cSlug === 'azerbaijan') return;
       }else if(section.closest('#visa-process')){
         sectionKey=2;
       }else if(section.closest('#visa-benefits')){
@@ -467,15 +468,18 @@
     }
 
     // 4. Requirements Accordions
-    var reqAccordions=main.querySelectorAll('#requirements .uae-travel-accordion, .uae-fresh-requirement-grid article');
-    reqAccordions.forEach(function(item,index){
-      var values=copy.requirements[index]||PAGE_COPY.en.requirements[index];
-      if(!values) return;
-      var summary=item.querySelector('.uae-travel-accordion-summary span, h3');
-      var body=item.querySelector('.uae-travel-accordion-body p, p');
-      if(summary) summary.textContent=cleanText(values[0]);
-      if(body) body.textContent=cleanText(values[1]);
-    });
+    var hasCustomRequirements = cSlug === 'denmark' || cSlug === 'spain' || cSlug === 'south-korea' || cSlug === 'switzerland' || cSlug === 'ireland' || cSlug === 'france' || cSlug === 'germany' || cSlug === 'greece' || cSlug === 'azerbaijan';
+    if (!hasCustomRequirements) {
+      var reqAccordions=main.querySelectorAll('#requirements .uae-travel-accordion, .uae-fresh-requirement-grid article');
+      reqAccordions.forEach(function(item,index){
+        var values=copy.requirements[index]||PAGE_COPY.en.requirements[index];
+        if(!values) return;
+        var summary=item.querySelector('.uae-travel-accordion-summary span, h3');
+        var body=item.querySelector('.uae-travel-accordion-body p, p');
+        if(summary) summary.textContent=cleanText(values[0]);
+        if(body) body.textContent=cleanText(values[1]);
+      });
+    }
 
     // 5. How It Works / Process Steps
     var stepItems=main.querySelectorAll('.uae-travel-step-item, .uae-fresh-process-grid article');
@@ -921,7 +925,7 @@
     }
 
     function relationshipOptions(){
-      return '<option value="">Select relationship</option>'+relationships.map(function(label){return '<option value="'+label+'">'+label+'</option>';}).join('');
+      return '<option value="" disabled selected hidden>Select relationship</option>'+relationships.map(function(label){return '<option value="'+label+'">'+label+'</option>';}).join('');
     }
 
     function renderTravellerDetails(){
@@ -1073,6 +1077,13 @@
       var card=link.closest('article');
       var title=card&&card.querySelector('h3');
       visaLabel.textContent=title?title.textContent.trim():'';
+      
+      var calendarTitle = picker.querySelector('.modal-calendar-title');
+      if (calendarTitle) {
+        var countryName = window.currentCountryName || 'United Arab Emirates';
+        calendarTitle.textContent = 'Arrival Date to ' + countryName;
+      }
+
       picker.hidden=false;
       document.body.classList.add('traveller-picker-open');
 
@@ -1252,6 +1263,64 @@
       closePicker();
       startApplicationOnSamePage();
     });
+    function bypassPickerAndStartApp(link) {
+      var href = link.getAttribute ? link.getAttribute('href') : link.href;
+      if (!href) return;
+
+      var pagePersonsSelect = document.querySelector('[data-uae-persons-select]');
+      var travellers = pagePersonsSelect ? Math.max(1, parseInt(pagePersonsSelect.value, 10) || 1) : 1;
+      var selectedMode = travellers > 1 ? 'multiple' : 'single';
+      
+      var people = [];
+      if (selectedMode === 'multiple') {
+        for (var index = 0; index < travellers; index++) {
+          people.push({ name: '', relation: index === 0 ? 'Self' : 'Other' });
+        }
+      } else {
+        people.push({ name: '', relation: 'Self' });
+      }
+
+      var destination = new URL(href, window.location.href);
+      var visaId = destination.searchParams.get('visa');
+      if (!visaId) {
+        var form = document.querySelector('[data-uae-visa-selector]');
+        if (form) {
+          var checked = form.querySelector('input[name="visa"]:checked');
+          if (checked) visaId = checked.value;
+          else {
+            var firstInput = form.querySelector('input[name="visa"]');
+            if (firstInput) visaId = firstInput.value;
+          }
+        }
+      }
+      if (!visaId) visaId = '30-days-tourist-visa';
+
+      var defaultDate = new Date();
+      defaultDate.setDate(defaultDate.getDate() + 14); // 2 weeks in future
+      var onwardDateStr = getFormattedDate(defaultDate);
+
+      var newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('visa', visaId);
+      newUrl.searchParams.set('travellers', String(travellers));
+      newUrl.searchParams.set('group', selectedMode);
+      newUrl.searchParams.set('onwardDate', onwardDateStr);
+      newUrl.searchParams.set('arrivalDate', onwardDateStr);
+      window.history.replaceState({}, '', newUrl.pathname + newUrl.search + newUrl.hash);
+
+      try {
+        window.sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify({
+          visa: visaId,
+          mode: selectedMode,
+          count: travellers,
+          onwardDate: onwardDateStr,
+          arrivalDate: onwardDateStr,
+          travellers: people
+        }));
+      } catch (error) {}
+
+      startApplicationOnSamePage();
+    }
+
     document.addEventListener('click',function(event){
       var link=event.target.closest&&event.target.closest('a[href*="app.html?visa="], .uae-picker-submit, [data-uae-visa-selector] button[type="submit"]');
       if(!link||!document.body.classList.contains('uae-country-page')) return;
@@ -1270,7 +1339,11 @@
       
       var targetLink=document.createElement('a');
       targetLink.href='/app.html?visa='+(visaSlug||'30-days-tourist-visa');
-      openPicker(targetLink);
+      if (window.currentCountrySlug === 'denmark' || window.currentCountrySlug === 'spain' || window.currentCountrySlug === 'south-korea' || window.currentCountrySlug === 'switzerland' || window.currentCountrySlug === 'ireland' || window.currentCountrySlug === 'france' || window.currentCountrySlug === 'germany' || window.currentCountrySlug === 'greece' || window.currentCountrySlug === 'azerbaijan') {
+        bypassPickerAndStartApp(targetLink);
+      } else {
+        openPicker(targetLink);
+      }
     });
 
     document.addEventListener('submit',function(event){
@@ -1282,7 +1355,11 @@
       var visaSlug=checked?checked.value:'30-days-tourist-visa';
       var targetLink=document.createElement('a');
       targetLink.href='/app.html?visa='+encodeURIComponent(visaSlug);
-      openPicker(targetLink);
+      if (window.currentCountrySlug === 'denmark' || window.currentCountrySlug === 'spain' || window.currentCountrySlug === 'south-korea' || window.currentCountrySlug === 'switzerland' || window.currentCountrySlug === 'ireland' || window.currentCountrySlug === 'france' || window.currentCountrySlug === 'germany' || window.currentCountrySlug === 'greece' || window.currentCountrySlug === 'azerbaijan') {
+        bypassPickerAndStartApp(targetLink);
+      } else {
+        openPicker(targetLink);
+      }
     });
 
     document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!picker.hidden) closePicker();});

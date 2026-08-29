@@ -24,7 +24,7 @@ function head(title, desc, canonical, ogImage, jsonld, ogAlt, pageClass){
     '<meta property="og:url" content="'+esc(canonical)+'">'+(ogImage?'<meta property="og:image" content="'+esc(ogImage)+'">'+(ogAlt?'<meta property="og:image:alt" content="'+esc(ogAlt)+'">':''):'')+
     '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+esc(title)+'">'+(ogImage?'<meta name="twitter:image" content="'+esc(ogImage)+'">'+(ogAlt?'<meta name="twitter:image:alt" content="'+esc(ogAlt)+'">':''):'')+
     iconTags()+'<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
-    '<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/article-detail.css">'+brandVars(BRAND)+
+    '<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/articles/article-detail.css">'+brandVars(BRAND)+
     '<script src="/branding.js"></scr'+'ipt>'+(jsonld?('<script type="application/ld+json">'+JSON.stringify(jsonld)+'</scr'+'ipt>'):'')+
     '</head><body class="home-page article-page '+esc(pageClass||'')+'" id="top">'+
     (pageClass==='article-detail-page'?'<div class="article-reading-progress" id="readingProgress" aria-hidden="true"><span></span></div>':'')+
@@ -76,7 +76,7 @@ function articlePage(a, defaultImg){
       '<div class="article-meta"><span class="article-author-mark">'+PLANE+'</span><span><small>Written by</small><b>Visa Doo editorial team</b></span><span class="article-meta-divider"></span><span><small>Published</small><b>'+esc(dateStr)+'</b></span><span class="article-meta-divider"></span><span><small>Reading time</small><b>'+minutes+' min read</b></span></div></div>'+
       (a.cover_image?'<div class="container article-hero-media-wrap"><div class="article-cover"><img src="'+esc(a.cover_image)+'" alt="'+esc(coverAlt)+'" fetchpriority="high"><span class="article-cover-corner" aria-hidden="true"></span></div></div>':'')+
     '</header><section class="article-content-section"><div class="container article-layout"><aside class="article-aside"><div class="article-toc-card"><span class="article-side-label">In this guide</span><nav id="articleToc" aria-label="Article contents"></nav></div><div class="article-help-card"><span class="article-help-icon">✓</span><div><b>Expert-checked guidance</b><p>Need help with your route? Our visa team is one message away.</p></div><a href="/#contact">Talk to our team →</a></div><button class="article-copy-link" id="copyArticleLink" type="button"><span>↗</span> Copy article link</button></aside>'+
-      '<div class="article-prose-card"><div class="article-body">'+(a.content||'')+'</div><div class="article-cta"><div><span>YOUR NEXT TRIP STARTS HERE</span><h3>Ready to make the visa part simple?</h3><p>Compare destinations, see the requirements clearly and apply online with live tracking.</p></div><a href="/#destinations" class="btn btn-white btn-lg">Explore destinations <b>→</b></a></div></div></div></section></article></main>'+foot('<script src="/article-page.js"></scr'+'ipt>');
+      '<div class="article-prose-card"><div class="article-body">'+(a.content||'')+'</div><div class="article-cta"><div><span>YOUR NEXT TRIP STARTS HERE</span><h3>Ready to make the visa part simple?</h3><p>Compare destinations, see the requirements clearly and apply online with live tracking.</p></div><a href="/#destinations" class="btn btn-white btn-lg">Explore destinations <b>→</b></a></div></div></div></section></article></main>'+foot('<script src="/articles/article-page.js"></scr'+'ipt>');
 }
 
 function notFound(){
@@ -84,31 +84,36 @@ function notFound(){
 }
 
 export default async (request) => {
-  const url = new URL(request.url);
-  const parts = url.pathname.split("/").filter(Boolean);
-  const headers = { "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" };
-  const settings = await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,brand_color,logo_url,favicon_url,app_icon_url,brand_name");
-  const ss0 = (Array.isArray(settings) && settings[0]) || {};
-  const defaultImg = ss0.default_social_image || "";
-  BRAND = ss0.brand_color || "";
-  LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
+  try {
+    const url = new URL(request.url);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const headers = { "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" };
+    const settings = await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,brand_color,logo_url,favicon_url,app_icon_url,brand_name");
+    const ss0 = (Array.isArray(settings) && settings[0]) || {};
+    const defaultImg = ss0.default_social_image || "";
+    BRAND = ss0.brand_color || "";
+    LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
 
-  if (parts[0] === "articles" || parts[0] === "articles.html") {
-    const rowsRes = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&order=published_at.desc&select=slug,title,excerpt,cover_image,cover_alt,social_image");
+    if (parts[0] === "articles" || parts[0] === "articles.html") {
+      const rowsRes = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&order=published_at.desc&select=slug,title,excerpt,cover_image,cover_alt,social_image");
+      const rows = Array.isArray(rowsRes) ? rowsRes : [];
+      return new Response(listPage(rows, defaultImg), { headers });
+    }
+    const slug = parts[1] ? decodeURIComponent(parts[1]) : "";
+    if (!slug) return notFound();
+    const rowsRes = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&slug=eq."+encodeURIComponent(slug)+"&select=*");
     const rows = Array.isArray(rowsRes) ? rowsRes : [];
-    return new Response(listPage(rows, defaultImg), { headers });
-  }
-  const slug = parts[1] ? decodeURIComponent(parts[1]) : "";
-  if (!slug) return notFound();
-  const rowsRes = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&slug=eq."+encodeURIComponent(slug)+"&select=*");
-  const rows = Array.isArray(rowsRes) ? rowsRes : [];
-  if (!rows.length) {
-    const movedRes = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&past_slugs=cs.%7B"+encodeURIComponent(slug)+"%7D&select=slug&limit=1");
-    const moved = Array.isArray(movedRes) ? movedRes : [];
-    if (moved.length) return Response.redirect(SITE+"/article/"+moved[0].slug, 301);
+    if (!rows.length) {
+      const movedRes = await fetchJson(SUPABASE_URL+"/rest/v1/articles?status=eq.published&past_slugs=cs.%7B"+encodeURIComponent(slug)+"%7D&select=slug&limit=1");
+      const moved = Array.isArray(movedRes) ? movedRes : [];
+      if (moved.length) return Response.redirect(SITE+"/article/"+moved[0].slug, 301);
+      return notFound();
+    }
+    return new Response(articlePage(rows[0], defaultImg), { headers });
+  } catch (err) {
+    console.error("Articles Edge Function Error:", err);
     return notFound();
   }
-  return new Response(articlePage(rows[0], defaultImg), { headers });
 };
 
 export const config = { path: ["/articles", "/articles.html", "/article/:slug"] };

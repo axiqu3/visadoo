@@ -1,1 +1,0 @@
-V9: Reduced large horizontal gaps between Japan form labels and generated values across page 1. Updated Japan reference/template from JAPAN APPLICATION FORM(8).pdf. Photo and signature remain blank as configured.

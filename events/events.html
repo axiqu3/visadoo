@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>International Events — Get Your Visa On Time | Visa Doo</title>
+<meta name="description" content="Discover global music, sports, culture and business events, then plan the right visa before you travel.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232563eb'/><path d='M50 22l24 38H26z' fill='white' transform='rotate(45 50 50)'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="../assets/events-market-original.jpg" type="image/jpeg" fetchpriority="high">
+<link rel="stylesheet" href="../styles.css?v=20260801-header-compact">
+<link rel="stylesheet" href="events.css?v=20260801-mobile-2col">
+<script src="../branding.js"></script>
+</head>
+<body class="home-page events-page events-discover-page" id="top">
+
+<header class="header discover-header">
+  <div class="container nav">
+    <div class="nav-brand-cluster">
+      <a href="../index.html" class="brand">
+        <span class="logo">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>
+        </span>
+        Visa<b>Doo</b>
+      </a>
+    </div>
+    <nav class="nav-links" id="navLinks">
+      <a href="../index.html#destinations">Explore</a>
+      <a href="events.html" class="active">Events</a>
+      <a href="../articles/articles.html">Articles</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="../app.html#track" class="nav-track">Track visa</a>
+      <a href="../app.html#profile" class="nav-profile" aria-label="Profile" title="Profile"></a>
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<section class="events-hero events-hero--discover">
+  <div class="events-wordmark" aria-hidden="true">EVENTS</div>
+  <div class="events-hero-image" aria-hidden="true"></div>
+  <div class="container events-hero-main">
+    <div class="events-hero-copy">
+      <span class="route-kicker"><span></span> Events worth travelling for</span>
+      <h1>Find your next<br><span>reason to travel.</span></h1>
+      <p>Discover global music, sports, culture and business events—and plan the right visa before you go.</p>
+    </div>
+  </div>
+</section>
+
+<main>
+  <section class="events-list-section" id="events-list">
+    <div class="container events-board">
+      <div class="event-search-area">
+        <div class="event-search-dock" aria-label="Event search">
+          <div class="event-search-row">
+            <span class="event-search-icon" aria-hidden="true"></span>
+            <input id="eventSearch" type="text" placeholder="Search events, cities or categories" autocomplete="off" aria-label="Search events, cities or categories" aria-controls="eventSearchResults" aria-expanded="false">
+            <button type="button" id="eventSearchButton" aria-label="Search events" title="Search"><span aria-hidden="true"></span></button>
+          </div>
+          <div class="event-quick-suggestions" id="eventQuickSuggestions" aria-label="Popular event searches" hidden></div>
+          <div class="event-search-results" id="eventSearchResults" role="listbox" aria-label="Matching events" hidden></div>
+        </div>
+      </div>
+
+      <div class="events-board-heading">
+        <div>
+          <span class="board-kicker">Upcoming worldwide</span>
+          <h2>Choose your event</h2>
+        </div>
+        <p><b id="eventCount">—</b> events available.</p>
+      </div>
+
+      <div class="ev-wrap" id="eventsWrap">
+        <div class="events-loading"><span class="country-spinner" aria-hidden="true"></span><p>Finding upcoming events…</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer home-footer">
+  <div class="container">
+    <div class="footer-route-line" aria-hidden="true"><span></span></div>
+    <div class="footer-grid footer-grid--expanded">
+      <div class="footer-intro">
+        <a href="../index.html" class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg></span>Visa<b>Doo</b></a>
+        <p>Tourist &amp; business visas for destinations worldwide — applied for and tracked entirely online. We handle the paperwork so you can plan the trip.</p>
+        <div class="footer-assurances"><span>100% online</span><span>Secure &amp; tracked</span></div>
+      </div>
+      <div>
+        <h5>Explore</h5>
+        <ul>
+          <li><a href="../index.html#destinations">Destinations</a></li>
+          <li><a href="events.html">Events</a></li>
+          <li><a href="../index.html#how">How it works</a></li>
+          <li><a href="../articles/articles.html">Articles</a></li>
+          <li><a href="../app.html#track">Track application</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <ul>
+          <li><a href="../p/about">About Visa Doo</a></li>
+          <li><a href="../p/privacy-policy">Privacy Policy</a></li>
+          <li><a href="../p/terms">Terms &amp; Conditions</a></li>
+          <li><a href="../index.html#contact">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="footer-contact">
+        <h5>Contact</h5>
+             <li><a id="footWa" href="https://wa.me/919895226697?text=Hi%20Visa%20Doo%2C%20I%20have%20a%20question%20about%20a%20visa." target="_blank" rel="noopener"><svg class="icon-wa" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12.042 2C6.5 2 2 6.5 2 12.042c0 2.213.716 4.261 1.934 5.925L2.5 21.5l3.655-1.402A10.003 10.003 0 0 0 12.042 22C17.5 22 22 17.5 22 12.042 22 6.5 17.5 2 12.042 2zm0 18.2c-1.637 0-3.167-.442-4.49-1.213l-.322-.188-2.658 1.02.99-2.585-.205-.337A8.163 8.163 0 0 1 3.842 12.042C3.842 7.518 7.518 3.842 12.042 3.842c4.524 0 8.2 3.676 8.2 8.2 0 4.524-3.676 8.158-8.2 8.158zm4.512-6.143c-.247-.124-1.463-.723-1.69-.805-.226-.082-.39-.124-.555.124-.165.247-.638.805-.783.97-.144.165-.288.185-.535.062-.247-.124-1.043-.385-1.986-1.226-.734-.655-1.23-1.464-1.374-1.711-.144-.247-.015-.38.109-.503.111-.11.247-.288.371-.432.124-.144.165-.247.247-.412.082-.165.041-.309-.021-.432-.062-.124-.556-1.34-.761-1.833-.2-.481-.404-.416-.555-.424h-.474c-.165 0-.432.062-.659.309s-.866.845-.866 2.061c0 1.216.886 2.391 1.01 2.556.124.165 1.745 2.664 4.228 3.737.59.255 1.05.407 1.41.522.593.188 1.133.161 1.56.097.476-.071 1.463-.598 1.669-1.175.206-.577.206-1.072.144-1.175-.062-.103-.226-.165-.473-.288z"/></svg><div><span>WhatsApp</span><small>Chat with our visa team</small></div></a></li><li><a id="footEmail" href="mailto:hello@visadoo.com"><svg class="icon-email" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><div><span>hello@visadoo.com</span><small>Send us your questions</small></div></a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year"></span> Visa Doo. All rights reserved.</span>
+      <span>Plan simply. Travel confidently.</span>
+      <div id="socialLinks" hidden></div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="../config.js"></script>
+<script>
+(function(){
+  var y=document.getElementById('year');
+  if(y) y.textContent=new Date().getFullYear();
+
+  var menuBtn=document.getElementById('menuBtn');
+  var navLinks=document.getElementById('navLinks');
+  if(menuBtn&&navLinks){
+    menuBtn.addEventListener('click',function(){navLinks.classList.toggle('open');});
+    navLinks.querySelectorAll('a').forEach(function(link){
+      link.addEventListener('click',function(){navLinks.classList.remove('open');});
+    });
+  }
+
+  var cfg=window.VISADOO_CONFIG||{};
+  var wrap=document.getElementById('eventsWrap');
+  var searchInput=document.getElementById('eventSearch');
+  var searchButton=document.getElementById('eventSearchButton');
+  var searchResults=document.getElementById('eventSearchResults');
+  var quickSuggestions=document.getElementById('eventQuickSuggestions');
+  var eventCount=document.getElementById('eventCount');
+  var MONTHS=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+
+  function fmtDate(d){
+    if(!d) return '';
+    var p=d.split('-');
+    return parseInt(p[2],10)+' '+MONTHS[parseInt(p[1],10)-1].slice(0,3)+' '+p[0];
+  }
+  function monthKey(d){return d.slice(0,7);}
+  function monthLabel(key){
+    var p=key.split('-');
+    return MONTHS[parseInt(p[1],10)-1]+' '+p[0];
+  }
+  function esc(s){
+    return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function eventHref(e){
+    var local=window.location.protocol==='file:'||window.location.hostname==='127.0.0.1'||window.location.hostname==='localhost';
+    return local?('event.html?slug='+encodeURIComponent(e.slug)):('/event/'+encodeURIComponent(e.slug));
+  }
+  function card(e){
+    var image=e.image_url||'';
+    var photo=image
+      ? '<span class="ev-photo" style="background-image:url(&quot;'+esc(image)+'&quot;)"></span>'
+      : '<span class="ev-photo ev-photo--empty"></span>';
+    var category=e.category||'Event';
+    var place=[e.city,e.country_name||e.country].filter(Boolean).join(', ');
+    var date=e.event_date?fmtDate(e.event_date):'Date coming soon';
+    var searchable=[e.name,category,place,date].filter(Boolean).join(' ').toLowerCase();
+    return '<a class="ev-card" href="'+eventHref(e)+'" data-cat="'+esc(e.category||'')+'" data-search="'+esc(searchable)+'">'+
+      photo+
+      '<span class="ev-date">'+esc(date)+'</span>'+
+      '<div class="ev-card-content">'+
+        '<span class="ev-category">'+esc(category)+'</span>'+
+        '<div class="ev-name">'+esc(e.name||'')+'</div>'+
+        (place?'<div class="ev-meta">'+esc(place)+'</div>':'')+
+        '<span class="ev-card-link">View event <b>→</b></span>'+
+      '</div>'+
+    '</a>';
+  }
+  function showLoadError(){
+    wrap.innerHTML='<div class="empty-state"><p>Events could not be loaded. Please check your connection and try again.</p></div>';
+    if(eventCount) eventCount.textContent='0';
+  }
+
+  if(!cfg.SUPABASE_URL||!window.supabase){
+    showLoadError();
+    return;
+  }
+
+  var sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  sb.from('events').select('*').eq('active',true).order('event_date',{ascending:true}).then(function(res){
+    if(res.error) throw res.error;
+    var events=res.data||[];
+    if(eventCount) eventCount.textContent=events.length;
+    if(!events.length){
+      wrap.innerHTML='<div class="empty-state"><p>New events are coming soon. <a href="index.html#destinations">Browse destinations</a> in the meantime.</p></div>';
+      return;
+    }
+
+    var present={};
+    events.forEach(function(e){if(e.category) present[e.category]=true;});
+    var standard=['Music','Sports','Art & Culture','Business & Science'];
+    var categories=standard.filter(function(c){return present[c];}).concat(Object.keys(present).filter(function(c){return standard.indexOf(c)===-1;}));
+    var tabs='<button type="button" data-tab="all" class="ev-tab active" aria-pressed="true">All events</button>'+
+      categories.map(function(c){return '<button type="button" data-tab="'+esc(c)+'" class="ev-tab" aria-pressed="false">'+esc(c)+'</button>';}).join('');
+
+    var groups={};
+    var order=[];
+    events.forEach(function(e){
+      if(!e.event_date) return;
+      var key=monthKey(e.event_date);
+      if(!groups[key]){groups[key]=[];order.push(key);}
+      groups[key].push(e);
+    });
+    order.sort();
+    var body=order.length?order.map(function(key){
+      return '<section class="ev-month" data-month="'+esc(key)+'"><div class="ev-month-label">'+esc(monthLabel(key))+'</div>'+
+        '<div class="ev-grid">'+groups[key].map(card).join('')+'</div></section>';
+    }).join(''):'<div class="empty-state"><p>New events are coming soon.</p></div>';
+
+    wrap.innerHTML='<div class="ev-tabs">'+tabs+'</div>'+body;
+
+    var tabElements=[].slice.call(wrap.querySelectorAll('.ev-tab'));
+    var activeCategory='all';
+    function searchableEvent(e){
+      return [e.name,e.category,e.city,e.country_name||e.country,e.event_date?fmtDate(e.event_date):''].filter(Boolean).join(' ').toLowerCase();
+    }
+    function hideSearchResults(){
+      if(!searchResults||!searchInput) return;
+      searchResults.hidden=true;
+      searchResults.innerHTML='';
+      searchInput.setAttribute('aria-expanded','false');
+    }
+    function showSearchResults(){
+      if(!searchResults||!searchInput) return;
+      var query=searchInput.value.trim().toLowerCase();
+      if(!query){hideSearchResults();return;}
+      var matches=events.filter(function(e){return searchableEvent(e).indexOf(query)>-1;}).slice(0,6);
+      searchResults.innerHTML=matches.length?matches.map(function(e){
+        var place=[e.city,e.country_name||e.country].filter(Boolean).join(', ');
+        var details=[e.category,place,e.event_date?fmtDate(e.event_date):''].filter(Boolean).join(' · ');
+        return '<a class="event-search-result" role="option" href="'+eventHref(e)+'"><span class="event-result-mark" aria-hidden="true">'+esc((e.category||'Event').charAt(0))+'</span><span><b>'+esc(e.name||'Event')+'</b><small>'+esc(details)+'</small></span><i aria-hidden="true">→</i></a>';
+      }).join(''):'<div class="event-search-no-result"><b>No matching events</b><small>Try another event, city or category.</small></div>';
+      searchResults.hidden=false;
+      searchInput.setAttribute('aria-expanded','true');
+    }
+    function renderQuickSuggestions(){
+      if(!quickSuggestions) return;
+      var suggestions=[],seen={};
+      events.forEach(function(e){
+        var label=(e.name||'').trim();
+        var key=label.toLowerCase();
+        if(label&&!seen[key]&&suggestions.length<4){seen[key]=true;suggestions.push({label:label,value:label});}
+      });
+      categories.forEach(function(category){
+        var key=category.toLowerCase();
+        if(!seen[key]&&suggestions.length<6){seen[key]=true;suggestions.push({label:category,value:category});}
+      });
+      if(!suggestions.length){quickSuggestions.hidden=true;return;}
+      quickSuggestions.innerHTML=suggestions.map(function(item){return '<button type="button" data-suggestion="'+esc(item.value)+'"><i aria-hidden="true">✦</i>'+esc(item.label)+'</button>';}).join('');
+      quickSuggestions.hidden=false;
+      quickSuggestions.querySelectorAll('button').forEach(function(button){
+        button.addEventListener('click',function(){
+          if(!searchInput) return;
+          searchInput.value=button.getAttribute('data-suggestion')||'';
+          activeCategory='all';
+          tabElements.forEach(function(tab){var active=tab.getAttribute('data-tab')==='all';tab.classList.toggle('active',active);tab.setAttribute('aria-pressed',active?'true':'false');});
+          hideSearchResults();
+          applyFilters();
+          searchInput.focus();
+        });
+      });
+    }
+    function applyFilters(){
+      var query=(searchInput?searchInput.value:'').trim().toLowerCase();
+      var visibleTotal=0;
+      [].forEach.call(wrap.querySelectorAll('.ev-card'),function(item){
+        var categoryOk=activeCategory==='all'||item.getAttribute('data-cat')===activeCategory;
+        var searchOk=!query||(item.getAttribute('data-search')||'').indexOf(query)>-1;
+        var visible=categoryOk&&searchOk;
+        item.style.display=visible?'':'none';
+        if(visible) visibleTotal++;
+      });
+      [].forEach.call(wrap.querySelectorAll('.ev-month'),function(month){
+        var visible=0;
+        [].forEach.call(month.querySelectorAll('.ev-card'),function(item){
+          if(item.style.display!=='none') visible++;
+        });
+        month.style.display=visible?'':'none';
+      });
+      if(eventCount) eventCount.textContent=visibleTotal;
+    }
+    tabElements.forEach(function(tab){
+      tab.addEventListener('click',function(){
+        activeCategory=tab.getAttribute('data-tab')||'all';
+        tabElements.forEach(function(item){
+          var active=item===tab;
+          item.classList.toggle('active',active);
+          item.setAttribute('aria-pressed',active?'true':'false');
+        });
+        applyFilters();
+      });
+    });
+    renderQuickSuggestions();
+    if(searchInput){
+      searchInput.addEventListener('input',function(){applyFilters();showSearchResults();});
+      searchInput.addEventListener('focus',showSearchResults);
+      searchInput.addEventListener('keydown',function(event){if(event.key==='Escape')hideSearchResults();});
+    }
+    if(searchButton) searchButton.addEventListener('click',function(){
+      applyFilters();
+      showSearchResults();
+      if(searchInput) searchInput.focus();
+    });
+    document.addEventListener('click',function(event){
+      if(!event.target.closest('.event-search-dock')) hideSearchResults();
+    });
+  }).catch(showLoadError);
+})();
+</script>
+</body>
+</html>

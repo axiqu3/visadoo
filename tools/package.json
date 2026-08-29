@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "docx": "^7.8.2"
+    "docx": "^7.8.2",
+    "pngjs": "^7.0.0"
   }
 }

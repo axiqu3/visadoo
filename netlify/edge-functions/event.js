@@ -57,7 +57,7 @@ function pageHtml(ev, c, visas, brandColor){
     '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'+
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">'+
     '<link rel="stylesheet" href="/styles.css?v=20260801-back-text">'+
-    '<link rel="stylesheet" href="/event-detail.css?v=20260801-event-nav-tight">'+
+    '<link rel="stylesheet" href="/events/event-detail.css?v=20260801-event-nav-tight">'+
     brandVars(brandColor)+
     '<script src="/branding.js"></scr'+'ipt>'+
     '</head><body class="home-page events-page event-page event-detail-page" id="top">'+
@@ -79,7 +79,7 @@ function pageHtml(ev, c, visas, brandColor){
     '</div></footer>'+
     '<script src="/config.js"></scr'+'ipt><script src="/destination-images.js"></scr'+'ipt>'+
     '<script>window.__VISADOO_EVENT_DATA__='+preload+';</scr'+'ipt>'+
-    '<script src="/event-page.js?v=20260801-netlify-new-event"></scr'+'ipt>'+
+    '<script src="/events/event-page.js?v=20260801-netlify-new-event"></scr'+'ipt>'+
     '<script>(function(){var button=document.getElementById("menuBtn"),links=document.getElementById("navLinks");if(!button||!links)return;button.addEventListener("click",function(){var open=links.classList.toggle("open");button.setAttribute("aria-expanded",String(open));});links.querySelectorAll("a").forEach(function(link){link.addEventListener("click",function(){links.classList.remove("open");button.setAttribute("aria-expanded","false");});});})();</scr'+'ipt>'+
     '</body></html>';
 }
@@ -92,25 +92,30 @@ function notFound(){
 }
 
 export default async (request) => {
-  const url=new URL(request.url);
-  const parts=url.pathname.split("/").filter(Boolean); // ["event","<slug>"]
-  const slug=parts[1]?decodeURIComponent(parts[1]):"";
-  if(!slug) return notFound();
+  try {
+    const url=new URL(request.url);
+    const parts=url.pathname.split("/").filter(Boolean); // ["event","<slug>"]
+    const slug=parts[1]?decodeURIComponent(parts[1]):"";
+    if(!slug) return notFound();
 
-  const events=await fetchJson(SUPABASE_URL+"/rest/v1/events?slug=eq."+encodeURIComponent(slug)+"&active=eq.true&select=*");
-  if(!events||!events.length) return notFound();
-  const ev=events[0];
-  const countries=await fetchJson(SUPABASE_URL+"/rest/v1/countries?slug=eq."+encodeURIComponent(ev.country_slug)+"&select=*");
-  const c=(countries&&countries[0])||{ name:"", iso2:"" };
-  const visas=await fetchJson(SUPABASE_URL+"/rest/v1/visa_types?country_slug=eq."+encodeURIComponent(ev.country_slug)+"&active=eq.true&order=sort_order&select=*")||[];
-  const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=brand_color,logo_url,favicon_url,app_icon_url,brand_name");
-  const ss0=(settings&&settings[0])||{};
-  const brandColor=ss0.brand_color||"";
-  LOGO=ss0.logo_url||""; FAVICON=ss0.favicon_url||""; APPICON=ss0.app_icon_url||""; BNAME=ss0.brand_name||"Visa Doo";
+    const events=await fetchJson(SUPABASE_URL+"/rest/v1/events?slug=eq."+encodeURIComponent(slug)+"&active=eq.true&select=*");
+    if(!events||!events.length) return notFound();
+    const ev=events[0];
+    const countries=await fetchJson(SUPABASE_URL+"/rest/v1/countries?slug=eq."+encodeURIComponent(ev.country_slug)+"&select=*");
+    const c=(countries&&countries[0])||{ name:"", iso2:"" };
+    const visas=await fetchJson(SUPABASE_URL+"/rest/v1/visa_types?country_slug=eq."+encodeURIComponent(ev.country_slug)+"&active=eq.true&order=sort_order&select=*")||[];
+    const settings=await fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=brand_color,logo_url,favicon_url,app_icon_url,brand_name");
+    const ss0=(settings&&settings[0])||{};
+    const brandColor=ss0.brand_color||"";
+    LOGO=ss0.logo_url||""; FAVICON=ss0.favicon_url||""; APPICON=ss0.app_icon_url||""; BNAME=ss0.brand_name||"Visa Doo";
 
-  return new Response(pageHtml(ev, c, visas, brandColor), {
-    headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
-  });
+    return new Response(pageHtml(ev, c, visas, brandColor), {
+      headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
+    });
+  } catch (err) {
+    console.error("Event Edge Function Error:", err);
+    return notFound();
+  }
 };
 
 export const config = { path: "/event/:slug" };
