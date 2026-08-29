@@ -728,6 +728,70 @@
     loadDropdownDestinations();
   }
 
+  function initGlobalSmoothScroll() {
+    // Intercept clicks on hash links starting with #
+    document.addEventListener('click', function(e) {
+      var target = e.target.closest('a[href^="#"]');
+      if (!target) return;
+      
+      var hash = target.getAttribute('href');
+      if (hash === '#' || !hash) return; // Ignore empty hashes
+      
+      // If it is #top, scroll to the top of the page smoothly
+      if (hash === '#top') {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.history && window.history.pushState) {
+          window.history.pushState(null, null, ' ');
+        } else {
+          window.location.hash = '';
+        }
+        return;
+      }
+      
+      // Attempt to find target element and scroll smoothly to it
+      try {
+        var el = document.querySelector(hash);
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (window.history && window.history.pushState) {
+            window.history.pushState(null, null, hash);
+          } else {
+            window.location.hash = hash;
+          }
+        }
+      } catch (err) {
+        // Ignore invalid query selectors
+      }
+    });
+
+    // Scroll to the current URL hash smoothly if the target element exists
+    function scrollToCurrentHash() {
+      if (!window.location.hash) return;
+      try {
+        var target = document.querySelector(window.location.hash);
+        if (target) {
+          setTimeout(function() {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 150);
+        }
+      } catch (err) {
+        // Ignore invalid query selectors
+      }
+    }
+
+    // Scroll on load if element is already present
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", scrollToCurrentHash);
+    } else {
+      scrollToCurrentHash();
+    }
+
+    // Listen for custom post-render event on dynamically rendered country pages
+    document.addEventListener('visadoo:country-rendered', scrollToCurrentHash);
+  }
+
   function apply(s) {
     applyColor(s.brand_color);
     setIcon("icon", s.favicon_url);
@@ -752,9 +816,13 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () { initHeaderDropdowns(); });
+    document.addEventListener("DOMContentLoaded", function () {
+      initHeaderDropdowns();
+      initGlobalSmoothScroll();
+    });
   } else {
     initHeaderDropdowns();
+    initGlobalSmoothScroll();
   }
 
   fetch(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=*", { headers: { apikey: ANON, authorization: "Bearer " + ANON } })
