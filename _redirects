@@ -1,5 +1,17 @@
-# Static-upload fallbacks when Netlify Edge Functions are not bundled.
-/events     /events/events.html    200
-/articles   /articles/articles.html  200
-/event/*    /events/event.html     200
-/article/*  /articles/article.html   200
+# Clean URL and static fallbacks when Netlify Edge Functions are bypassed or not bundled
+/country/*      /country.html           200
+/visa/*         /country.html           200
+/app            /app.html               200
+/app/*          /app.html               200
+/track          /app.html#track         302
+/destinations   /index.html#destinations 302
+/destinations/  /index.html#destinations 302
+/visa-types     /visa-types.html        200
+/visa-types/    /visa-types.html        200
+/events         /events/events.html     200
+/events/        /events/events.html     200
+/articles       /articles/articles.html 200
+/articles/      /articles/articles.html 200
+/event/*        /events/event.html      200
+/article/*      /articles/article.html  200
+/p/*            /p/index.html           200

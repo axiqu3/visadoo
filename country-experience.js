@@ -32,22 +32,22 @@
         ['Personal photo','A recent color photograph taken against a plain light/white background. The face must be clearly visible and front-facing.','JPG or PNG']
       ],
       benefitsList:[
-        ['Why you should apply UAE VisaDoo with us'],
+        ['Why you should apply UAE Visa with us'],
         ['10,000+ visas issued','trusted by travellers worldwide'],
         ['Checked by a specialist','a real visa expert reviews every file'],
         ['Secure payment','pay by Visa, Mastercard or Amex'],
         ['Licensed US company','operated by TravelRox, Inc.']
       ],
       process:[
-        ['Apply online','Fill in the short form and upload your passport, photo, ticket and accommodation. Pay securely in USD.'],
+        ['Apply online','Fill in the short form and upload your passport, photo, ticket and accommodation. Pay securely.'],
         ['We verify and submit','A specialist checks your file and the UAE security clearance - WhatsApp ping if anything needs fixing.'],
-        ['Get your VisaDoo','Apply today and get your PDF VisaDoo by {date}.']
+        ['Get your visa','Apply today and get your UAE visa by {date}.']
       ],
       faqIntro:['Frequently asked','UAE visa questions,|answered clearly.','Need a more personal answer? Our AI assistant and visa team are always one tap away.','Ask VisaDoo AI'],
       faqs:[
         ['Which UAE visa should I choose?','Choose based on the duration of your stay (30 days or 60 days) and entry requirements (single or multiple entry). Compare the visa options above or chat with our team.'],
         ['What documents are required for a UAE visa?','You will need a clear copy of your passport bio page (front and back) and a recent color passport-size photograph with a white background.'],
-        ['How long does UAE visa processing take?','The standard processing time is 2 to 3 business days. We recommend applying at least a week before your travel date.'],
+        ['How long does UAE visa processing take?','The standard processing time is 3 to 5 working days. We recommend applying at least a week before your travel date.'],
         ['Can I apply completely online?','Yes, the entire process is 100% online. You can select your visa, upload documents, make the payment, and track the status on your mobile or computer.'],
         ['How will I receive my approved visa?','Once approved, your UAE eVisa will be issued as a PDF document. We will send it to you via email and WhatsApp.'],
         ['Can I get help with my application?','Yes, our support team is available 24/7. You can use our AI assistant or click the WhatsApp button to chat with our visa experts.'],
@@ -286,8 +286,8 @@
     ar:{flag:'https://flagcdn.com/w40/sa.png',alt:'Arabic flag',name:'AR',code:'ar'},
     fr:{flag:'https://flagcdn.com/w40/fr.png',alt:'French flag',name:'FR',code:'fr'},
     es:{flag:'https://flagcdn.com/w40/es.png',alt:'Spanish flag',name:'ES',code:'es'},
-    ml:{flag:'https://flagcdn.com/w40/in.png',alt:'Indian flag',name:'ML',code:'ml'},
-    hi:{flag:'https://flagcdn.com/w40/in.png',alt:'Indian flag',name:'HI',code:'hi'},
+    de:{flag:'https://flagcdn.com/w40/de.png',alt:'German flag',name:'DE',code:'de'},
+    ru:{flag:'https://flagcdn.com/w40/ru.png',alt:'Russian flag',name:'RU',code:'ru'},
     en:{flag:'https://flagcdn.com/w40/gb.png',alt:'UK flag',name:'EN',code:'en'}
   };
 
@@ -321,22 +321,6 @@
   function translateVisaValue(value,language){
     if(language==='en') return value;
     var exact={
-      ml:{
-        'Single Entry':'ഒറ്റ പ്രവേശനം',
-        'Multiple Entry':'ഒന്നിലധികം പ്രവേശനം',
-        'Single / Multiple':'ഒറ്റ / ഒന്നിലധികം പ്രവേശനം',
-        'Single/Multiple':'ഒറ്റ / ഒന്നിലധികം പ്രവേശനം',
-        'Flexible stay':'സൗകര്യപ്രദമായ താമസം',
-        'Confirmed after review':'പരിശോധനയ്ക്ക് ശേഷം സ്ഥിരീകരിക്കും'
-      },
-      hi:{
-        'Single Entry':'सिंगल एंट्री',
-        'Multiple Entry':'मल्टीपल एंट्री',
-        'Single / Multiple':'सिंगल / मल्टीपल एंट्री',
-        'Single/Multiple':'सिंगल / मल्टीपल एंट्री',
-        'Flexible stay':'लचीला ठहराव',
-        'Confirmed after review':'समीक्षा के बाद पुष्टि'
-      },
       ar:{
         'Single Entry':'دخول مفرد',
         'Multiple Entry':'دخول متعدد',
@@ -360,26 +344,42 @@
         'Single/Multiple':'Entrada única / múltiples',
         'Flexible stay':'Estancia flexible',
         'Confirmed after review':'Confirmado tras revisión'
+      },
+      de:{
+        'Single Entry':'Einmalige Einreise',
+        'Multiple Entry':'Mehrfache Einreise',
+        'Single / Multiple':'Einmalig / Mehrfach',
+        'Single/Multiple':'Einmalig / Mehrfach',
+        'Flexible stay':'Flexibler Aufenthalt',
+        'Confirmed after review':'Nach Prüfung bestätigt'
+      },
+      ru:{
+        'Single Entry':'Однократный въезд',
+        'Multiple Entry':'Многократный въезд',
+        'Single / Multiple':'Однократный / Многократный',
+        'Single/Multiple':'Однократный / Многократный',
+        'Flexible stay':'Гибкое пребывание',
+        'Confirmed after review':'Подтверждается после проверки'
       }
     };
     if(exact[language]&&exact[language][value]) return exact[language][value];
     var match=value.match(/^(\d+)\s+(day|days|hour|hours)$/i);
     if(!match) return value;
-    if(language==='ml') return match[1]+' '+(/hour/i.test(match[2])?'മണിക്കൂർ':'ദിവസം');
-    if(language==='hi') return match[1]+' '+(/hour/i.test(match[2])?'घंटे':'दिन');
     if(language==='ar') return match[1]+' '+(/hour/i.test(match[2])?'ساعة':'يوماً');
     if(language==='fr') return match[1]+' '+(/hour/i.test(match[2])?'heures':'jours');
     if(language==='es') return match[1]+' '+(/hour/i.test(match[2])?'horas':'días');
+    if(language==='de') return match[1]+' '+(/hour/i.test(match[2])?'Stunden':'Tage');
+    if(language==='ru') return match[1]+' '+(/hour/i.test(match[2])?'ч.':'дн.');
     return value;
   }
 
   function translateVisaName(value,language){
     if(language==='en') return value;
-    if(language==='ml') return value.replace(/Days?/gi,'ദിവസത്തെ').replace(/Tourist Visa/gi,'ടൂറിസ്റ്റ് വിസ').replace(/UAE Visa/gi,'UAE വിസ');
-    if(language==='hi') return value.replace(/Days?/gi,'दिन का').replace(/Tourist Visa/gi,'टूरिस्ट वीज़ा').replace(/UAE Visa/gi,'UAE वीज़ा');
     if(language==='ar') return value.replace(/Days?/gi,'يوماً').replace(/Tourist Visa/gi,'تأشيرة سياحية').replace(/UAE Visa/gi,'تأشيرة الإمارات');
     if(language==='fr') return value.replace(/Days?/gi,'jours').replace(/Tourist Visa/gi,'Visa touristique').replace(/UAE Visa/gi,'Visa EAU');
     if(language==='es') return value.replace(/Days?/gi,'días').replace(/Tourist Visa/gi,'Visado turístico').replace(/UAE Visa/gi,'Visado EAU');
+    if(language==='de') return value.replace(/Days?/gi,'Tage').replace(/Tourist Visa/gi,'Touristenvisum').replace(/UAE Visa/gi,'VAE Visum');
+    if(language==='ru') return value.replace(/Days?/gi,'дней').replace(/Tourist Visa/gi,'Туристическая виза').replace(/UAE Visa/gi,'Виза в ОАЭ');
     return value;
   }
 
@@ -431,7 +431,7 @@
         sectionKey=0;
       }else if(section.closest('#requirements')){
         sectionKey=1;
-        if(cSlug === 'denmark' || cSlug === 'spain' || cSlug === 'south-korea' || cSlug === 'switzerland' || cSlug === 'ireland' || cSlug === 'france' || cSlug === 'germany' || cSlug === 'greece' || cSlug === 'azerbaijan') return;
+        if(cSlug === 'denmark' || cSlug === 'spain' || cSlug === 'south-korea' || cSlug === 'switzerland' || cSlug === 'ireland' || cSlug === 'france' || cSlug === 'germany' || cSlug === 'greece' || cSlug === 'azerbaijan' || cSlug === 'china' || cSlug === 'thailand' || cSlug === 'bahrain' || cSlug === 'russia' || cSlug === 'indonesia' || cSlug === 'kenya' || cSlug === 'vietnam' || cSlug === 'morocco' || (cSlug === 'srilanka' || cSlug === 'sri-lanka') || cSlug === 'turkey' || cSlug === 'egypt' || cSlug === 'egypt-2' || cSlug === 'philippines' || cSlug === 'oman' || cSlug === 'saudi-arabia' || cSlug === 'saudi' || cSlug === 'uae' || cSlug === 'united-arab-emirates' || cSlug === 'dubai' || cSlug === 'qatar') return;
       }else if(section.closest('#visa-process')){
         sectionKey=2;
       }else if(section.closest('#visa-benefits')){
@@ -461,14 +461,22 @@
     var fastestNode = main.querySelector('[data-translate-key="fastestTime"]');
     var avgNode = main.querySelector('[data-translate-key="avgTime"]');
     if (fastestNode) {
-      fastestNode.textContent = language === 'ml' ? 'അപേക്ഷിക്കാനുള്ള ഏറ്റവും വേഗമേറിയ സമയം' : 'FASTEST TIME TAKEN TO APPLY';
+      fastestNode.textContent = language === 'ar' ? 'أسرع وقت لتقديم الطلب' :
+                               language === 'fr' ? 'DÉLAI DE DEMANDE LE PLUS RAPIDE' :
+                               language === 'es' ? 'TIEMPO MÁS RÁPIDO PARA SOLICITAR' :
+                               language === 'de' ? 'SCHNELLSTE BEARBEITUNGSZEIT' :
+                               language === 'ru' ? 'САМОЕ БЫСТРОЕ ВРЕМЯ ПОДАЧИ' : 'FASTEST TIME TAKEN TO APPLY';
     }
     if (avgNode) {
-      avgNode.textContent = language === 'ml' ? 'അപേക്ഷിക്കാനുള്ള ശരാശരി സമയം' : 'AVG. TIME TAKEN TO APPLY';
+      avgNode.textContent = language === 'ar' ? 'متوسط وقت التقديم' :
+                            language === 'fr' ? 'DÉLAI MOYEN DE DEMANDE' :
+                            language === 'es' ? 'TIEMPO PROMEDIO PARA SOLICITAR' :
+                            language === 'de' ? 'DURCHSCHNITTLICHE DAUER' :
+                            language === 'ru' ? 'СРЕДНЕЕ ВРЕМЯ ПОДАЧИ' : 'AVG. TIME TAKEN TO APPLY';
     }
 
     // 4. Requirements Accordions
-    var hasCustomRequirements = cSlug === 'denmark' || cSlug === 'spain' || cSlug === 'south-korea' || cSlug === 'switzerland' || cSlug === 'ireland' || cSlug === 'france' || cSlug === 'germany' || cSlug === 'greece' || cSlug === 'azerbaijan';
+    var hasCustomRequirements = cSlug === 'denmark' || cSlug === 'spain' || cSlug === 'south-korea' || cSlug === 'switzerland' || cSlug === 'ireland' || cSlug === 'france' || cSlug === 'germany' || cSlug === 'greece' || cSlug === 'italy' || cSlug === 'azerbaijan' || cSlug === 'china' || cSlug === 'thailand' || cSlug === 'bahrain' || cSlug === 'russia' || cSlug === 'indonesia' || cSlug === 'kenya' || cSlug === 'vietnam' || cSlug === 'morocco' || (cSlug === 'srilanka' || cSlug === 'sri-lanka') || cSlug === 'turkey' || cSlug === 'egypt' || cSlug === 'egypt-2' || cSlug === 'philippines' || cSlug === 'oman' || cSlug === 'saudi-arabia' || cSlug === 'saudi' || cSlug === 'uae' || cSlug === 'united-arab-emirates' || cSlug === 'dubai' || cSlug === 'qatar';
     if (!hasCustomRequirements) {
       var reqAccordions=main.querySelectorAll('#requirements .uae-travel-accordion, .uae-fresh-requirement-grid article');
       reqAccordions.forEach(function(item,index){
@@ -536,20 +544,28 @@
     var exploreSection = main.querySelector('#explore-destinations');
     if (exploreSection) {
       var expKicker = exploreSection.querySelector('header span');
-      var expHeading = exploreSection.querySelector('header h2');
+      var expHeading = exploreSection.querySelector('.dest-editorial-title') || exploreSection.querySelector('header h2');
+      var expSeeAll = exploreSection.querySelector('.dest-editorial-see-all span');
       if (expKicker) {
-        expKicker.textContent = language === 'ml' ? 'ലക്ഷ്യസ്ഥാനങ്ങൾ' :
-                               language === 'hi' ? 'गंतव्य' :
-                               language === 'ar' ? 'الوجهات' :
+        expKicker.textContent = language === 'ar' ? 'الوجهات' :
                                language === 'fr' ? 'Destinations' :
-                               language === 'es' ? 'Destinos' : 'Destinations';
+                               language === 'es' ? 'Destinos' :
+                               language === 'de' ? 'Reiseziele' :
+                               language === 'ru' ? 'Направления' : 'Destinations';
       }
       if (expHeading) {
-        expHeading.textContent = language === 'ml' ? 'ഇൻസ്റ്റന്റ് വിസകളും അറൈവൽ കാർഡുകളും പരിശോധിക്കുക' :
-                                language === 'hi' ? 'त्वरित वीज़ा और आगमन कार्ड देखें' :
-                                language === 'ar' ? 'استكشف التأشيرات الفورية وبطاقات الوصول' :
-                                language === 'fr' ? 'Explorez les visas instantanés et cartes d\'arrivée' :
-                                language === 'es' ? 'Explore visados instantáneos y tarjetas de llegada' : 'Explore instant visas & arrival cards';
+        expHeading.textContent = language === 'ar' ? 'الوجهات' :
+                                language === 'fr' ? 'Destinations' :
+                                language === 'es' ? 'Destinos' :
+                                language === 'de' ? 'Reiseziele' :
+                                language === 'ru' ? 'Направления' : 'Destinations';
+      }
+      if (expSeeAll) {
+        expSeeAll.textContent = language === 'ar' ? 'عرض الكل' :
+                               language === 'fr' ? 'Voir tout' :
+                               language === 'es' ? 'Ver todo' :
+                               language === 'de' ? 'Alle anzeigen' :
+                               language === 'ru' ? 'Смотреть все' : 'See all';
       }
     }
   }
@@ -602,80 +618,6 @@
   function initAssistant(countryName){
     var old=document.querySelector('.ai-assistant');
     if(old) old.remove();
-    var copy=UI_COPY[getLanguage()]||UI_COPY.en;
-    var wrapper=document.createElement('div');
-    wrapper.className='ai-assistant';
-    var waNumber=String((window.VISADOO_CONFIG&&window.VISADOO_CONFIG.WHATSAPP)||'919895226697').replace(/[^0-9]/g,'');
-    var waMsg=encodeURIComponent('Hi Visa Doo, I have a question about a '+(countryName||'visa')+'.');
-    var waHref='https://wa.me/'+waNumber+'?text='+waMsg;
-
-    wrapper.innerHTML='<button class="ai-assistant-trigger" type="button" aria-label="Open AI travel assistant" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 18.5H6.5A3.5 3.5 0 0 1 3 15V9a3.5 3.5 0 0 1 3.5-3.5h11A3.5 3.5 0 0 1 21 9v6a3.5 3.5 0 0 1-3.5 3.5H12L8 21v-2.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg><span>'+esc(copy.askAi)+'</span></button>'+
-      '<section class="ai-assistant-panel" aria-label="AI travel assistant" aria-hidden="true"><header><span class="ai-bot-mark" aria-hidden="true">V</span><div><b data-ai-title>'+esc(copy.assistant)+'</b><small><i></i><span data-ai-online>'+esc(copy.online)+'</span></small></div><button type="button" data-ai-close aria-label="Close assistant">&#215;</button></header><div class="ai-conversation" data-ai-conversation><div class="ai-message ai-message-bot">'+esc(copy.hello)+'</div><div class="ai-wa-card"><div class="ai-wa-info"><div class="ai-wa-icon-bg"><svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg></div><div class="ai-wa-details"><h4>'+esc(copy.waTitle)+'</h4><p>'+esc(copy.waDesc)+'</p></div></div><a href="'+waHref+'" class="ai-wa-btn" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg><span>'+esc(copy.waBtn)+'</span></a></div><div class="ai-suggestions"><button type="button" data-ai-question="Which visa should I choose?">Choose a visa</button><button type="button" data-ai-question="Which documents do I need?">Required documents</button><button type="button" data-ai-question="How can I track my visa?">Track application</button></div></div><form class="ai-input-row"><input data-ai-input type="text" autocomplete="off" placeholder="'+esc(copy.placeholder)+'" aria-label="Message"><button data-ai-send type="submit">'+esc(copy.send)+'</button></form><footer>Guided answers · Human support available</footer></section>';
-    document.body.appendChild(wrapper);
-    var trigger=wrapper.querySelector('.ai-assistant-trigger');
-    var panel=wrapper.querySelector('.ai-assistant-panel');
-    var close=wrapper.querySelector('[data-ai-close]');
-    var conversation=wrapper.querySelector('[data-ai-conversation]');
-    var form=wrapper.querySelector('form');
-    var input=wrapper.querySelector('[data-ai-input]');
-    function toggle(force){
-      var open=typeof force==='boolean'?force:!wrapper.classList.contains('open');
-      wrapper.classList.toggle('open',open);
-      panel.setAttribute('aria-hidden',String(!open));
-      trigger.setAttribute('aria-expanded',String(open));
-      if(open) window.setTimeout(function(){input.focus();},100);
-    }
-    function answer(question){
-      var q=String(question||'').toLowerCase();
-      if(/document|passport|photo|രേഖ|दस्तावेज/.test(q)) return 'Keep a clear passport bio page and a recent photo ready. Your selected visa may ask for extra travel or supporting documents.';
-      if(/track|status|ട്രാക്ക്|स्थिति/.test(q)) return 'Open your VisaDoo account and use the Track section to see the latest status, required actions and updates.';
-      if(/price|fee|cost|ഫീസ്|शुल्क/.test(q)) return 'Fees vary by visa type. Compare the live prices in the visa options section above before continuing.';
-      if(/which|choose|type|visa|വിസ|वीज़ा/.test(q)) return 'Choose based on your stay length, number of entries and travel date. Compare the options above, then select the closest match.';
-      return 'I can help with '+countryName+' visa types, documents, fees and tracking. For a personal case, our human visa team is also available on WhatsApp.';
-    }
-    var aiHistory=[];
-    function requestAi(){
-      var payload={messages:aiHistory.slice(-12),country:countryName||''};
-      return fetch('/api/ai-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-        .then(function(r){if(!r.ok) throw new Error('vercel');return r.json();})
-        .catch(function(){
-          return fetch('/.netlify/functions/ai-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-            .then(function(r){if(!r.ok) throw new Error('netlify');return r.json();});
-        });
-    }
-    function submitQuestion(question){
-      var value=String(question||'').trim();
-      if(!value) return;
-      var user=document.createElement('div');
-      user.className='ai-message ai-message-user';
-      user.textContent=value;
-      conversation.appendChild(user);
-      var bot=document.createElement('div');
-      bot.className='ai-message ai-message-bot ai-message-loading';
-      bot.textContent='Thinking…';
-      conversation.appendChild(bot);
-      conversation.scrollTop=conversation.scrollHeight;
-      aiHistory.push({role:'user',content:value});
-      requestAi().then(function(data){
-        var reply=data&&data.reply?String(data.reply):answer(value);
-        aiHistory.push({role:'assistant',content:reply});
-        bot.classList.remove('ai-message-loading');
-        bot.textContent=reply;
-        conversation.scrollTop=conversation.scrollHeight;
-      }).catch(function(){
-        var reply=answer(value);
-        aiHistory.push({role:'assistant',content:reply});
-        bot.classList.remove('ai-message-loading');
-        bot.textContent=reply;
-        conversation.scrollTop=conversation.scrollHeight;
-      });
-    }
-    trigger.addEventListener('click',function(){toggle();});
-    close.addEventListener('click',function(){toggle(false);});
-    wrapper.querySelectorAll('[data-ai-question]').forEach(function(button){button.addEventListener('click',function(){submitQuestion(button.getAttribute('data-ai-question'));});});
-    form.addEventListener('submit',function(event){event.preventDefault();submitQuestion(input.value);input.value='';});
-    document.querySelectorAll('[data-open-ai]').forEach(function(button){button.addEventListener('click',function(){toggle(true);});});
-    document.addEventListener('keydown',function(event){if(event.key==='Escape') toggle(false);});
     applyLanguage(getLanguage());
   }
 
@@ -1161,10 +1103,10 @@
         link.href = '/app.css?v=20260807-clean-document-model';
         document.head.appendChild(link);
       }
-      if (!document.querySelector('link[href*="intl-tel-input"]')) {
+      if (!document.querySelector('link[href*="intlTelInput"]')) {
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = 'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/css/intlTelInput.css';
+        link.href = '/vendor/intlTelInput.css';
         document.head.appendChild(link);
       }
 
@@ -1178,9 +1120,9 @@
         });
       }
 
-      var loadIT = window.intlTelInput ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/intlTelInput.min.js');
-      var loadChart = window.Chart ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js');
-      var loadTess = window.Tesseract ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.min.js');
+      var loadIT = window.intlTelInput ? Promise.resolve() : loadScript('/vendor/intlTelInput.min.js');
+      var loadChart = window.Chart ? Promise.resolve() : loadScript('/vendor/chart.umd.min.js');
+      var loadTess = window.Tesseract ? Promise.resolve() : loadScript('/vendor/tesseract.min.js');
 
       Promise.all([loadIT, loadChart, loadTess]).then(function() {
         if (!document.querySelector('script[src*="application.js"]')) {
@@ -1324,6 +1266,13 @@
     document.addEventListener('click',function(event){
       var link=event.target.closest&&event.target.closest('a[href*="app.html?visa="], .uae-picker-submit, [data-uae-visa-selector] button[type="submit"]');
       if(!link||!document.body.classList.contains('uae-country-page')) return;
+      // Direct redirect destinations (Kenya, Azerbaijan eVisa, Sri Lanka, Vietnam, Indonesia, Morocco, Thailand, Bahrain, etc.)
+      // have dedicated Apply Now -> Photo -> Passport -> Details flow in country-page.js.
+      // Do not intercept their buttons or show calendar modal here.
+      var curSlug = (window.currentCountrySlug || '').toLowerCase();
+      var baseSlug = curSlug.replace(/-\d+$/, '');
+      var isDirectApply = curSlug === 'kenya' || curSlug === 'azerbaijan-2' || curSlug === 'srilanka' || curSlug === 'sri-lanka' || curSlug === 'vietnam' || curSlug === 'indonesia' || curSlug === 'morocco' || curSlug === 'thailand' || curSlug === 'bahrain' || curSlug === 'turkey' || curSlug === 'russia' || curSlug === 'uae' || curSlug === 'united-arab-emirates' || curSlug === 'qatar' || curSlug === 'egypt' || curSlug === 'egypt-2' || curSlug === 'philippines' || curSlug === 'oman' || curSlug === 'saudi-arabia' || curSlug === 'saudi';
+      if (isDirectApply) return;
       event.preventDefault();
       
       var form=document.querySelector('[data-uae-visa-selector]');
@@ -1339,7 +1288,8 @@
       
       var targetLink=document.createElement('a');
       targetLink.href='/app.html?visa='+(visaSlug||'30-days-tourist-visa');
-      if (window.currentCountrySlug === 'denmark' || window.currentCountrySlug === 'spain' || window.currentCountrySlug === 'south-korea' || window.currentCountrySlug === 'switzerland' || window.currentCountrySlug === 'ireland' || window.currentCountrySlug === 'france' || window.currentCountrySlug === 'germany' || window.currentCountrySlug === 'greece' || window.currentCountrySlug === 'azerbaijan') {
+      var bypassList = ['denmark','spain','south-korea','switzerland','ireland','france','germany','greece','azerbaijan','azerbaijan-2','china','thailand','bahrain','russia','indonesia','kenya','vietnam','morocco','srilanka','sri-lanka','turkey','uae','united-arab-emirates','qatar','egypt','egypt-2','philippines','oman','saudi-arabia','saudi'];
+      if (bypassList.indexOf(curSlug) > -1 || bypassList.indexOf(baseSlug) > -1) {
         bypassPickerAndStartApp(targetLink);
       } else {
         openPicker(targetLink);
@@ -1349,13 +1299,18 @@
     document.addEventListener('submit',function(event){
       var form=event.target.closest&&event.target.closest('[data-uae-visa-selector]');
       if(!form||!document.body.classList.contains('uae-country-page')) return;
+      var curSlug = (window.currentCountrySlug || '').toLowerCase();
+      var baseSlug = curSlug.replace(/-\d+$/, '');
+      var isDirectApply = curSlug === 'kenya' || curSlug === 'azerbaijan-2' || curSlug === 'srilanka' || curSlug === 'sri-lanka' || curSlug === 'vietnam' || curSlug === 'indonesia' || curSlug === 'morocco' || curSlug === 'thailand' || curSlug === 'bahrain' || curSlug === 'turkey' || curSlug === 'russia' || curSlug === 'uae' || curSlug === 'united-arab-emirates' || curSlug === 'qatar' || curSlug === 'egypt' || curSlug === 'egypt-2' || curSlug === 'philippines' || curSlug === 'oman' || curSlug === 'saudi-arabia' || curSlug === 'saudi';
+      if (isDirectApply) return;
       event.preventDefault();
 
       var checked=form.querySelector('input[name="visa"]:checked');
       var visaSlug=checked?checked.value:'30-days-tourist-visa';
       var targetLink=document.createElement('a');
       targetLink.href='/app.html?visa='+encodeURIComponent(visaSlug);
-      if (window.currentCountrySlug === 'denmark' || window.currentCountrySlug === 'spain' || window.currentCountrySlug === 'south-korea' || window.currentCountrySlug === 'switzerland' || window.currentCountrySlug === 'ireland' || window.currentCountrySlug === 'france' || window.currentCountrySlug === 'germany' || window.currentCountrySlug === 'greece' || window.currentCountrySlug === 'azerbaijan') {
+      var bypassList = ['denmark','spain','south-korea','switzerland','ireland','france','germany','greece','azerbaijan','azerbaijan-2','china','thailand','bahrain','russia','indonesia','kenya','vietnam','morocco','srilanka','sri-lanka','turkey','uae','united-arab-emirates','qatar','egypt','egypt-2','philippines','oman','saudi-arabia','saudi'];
+      if (bypassList.indexOf(curSlug) > -1 || bypassList.indexOf(baseSlug) > -1) {
         bypassPickerAndStartApp(targetLink);
       } else {
         openPicker(targetLink);
@@ -1402,12 +1357,16 @@
       button.addEventListener('click', function(event) {
         event.stopPropagation();
         var code = button.getAttribute('data-language-option');
-        try { window.localStorage.setItem('visadoo-language', code); } catch(error) {}
-        if (selector) {
-          selector.value = code;
-          selector.dispatchEvent(new Event('change', { bubbles: true }));
+        if (typeof window.visadooSetLanguage === 'function') {
+          window.visadooSetLanguage(code);
+        } else {
+          try { window.localStorage.setItem('visadoo-language', code); } catch(error) {}
+          if (selector) {
+            selector.value = code;
+            selector.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+          applyLanguage(code);
         }
-        applyLanguage(code);
         closeMenu();
       });
     });

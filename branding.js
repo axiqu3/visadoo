@@ -34,15 +34,30 @@
   }
 
   function applyBrand(s) {
-    var logo = "/assets/logo_transparent.png", name = (s.brand_name || "").trim();
-    if (!logo && !name) return;
+    var isSubdir = location.pathname.indexOf('/events/') !== -1 || location.pathname.indexOf('/articles/') !== -1 || location.pathname.indexOf('/p/') !== -1;
+    var defaultLogo = isSubdir ? '../assets/logo_transparent.png' : 'assets/logo_transparent.png';
+    var logo = (s && s.logo_url) || defaultLogo;
+    var name = (s && s.brand_name) ? s.brand_name.trim() : "Visa Doo";
     var brands = document.querySelectorAll(".brand");
     for (var i = 0; i < brands.length; i++) {
       var el = brands[i];
-      if (logo) {
-        el.innerHTML = '<img src="' + logo + '" alt="' + (name || "logo") + '" style="height:42px;width:auto;max-width:200px;display:block">';
+      var img = el.querySelector("img");
+      var isHeader = el.closest(".header, .discover-header");
+      if (img) {
+        img.alt = name || "Visa Doo";
+        if (!img.getAttribute("src")) img.src = logo;
+        if (isHeader) {
+          img.classList.add("brand-logo-img");
+          img.style.removeProperty("height");
+          img.style.removeProperty("width");
+          img.style.removeProperty("max-width");
+        }
       } else {
-        el.innerHTML = '<span class="logo">' + PLANE + '</span>' + name;
+        if (isHeader) {
+          el.innerHTML = '<img src="' + logo + '" alt="' + (name || "Visa Doo") + '" class="brand-logo-img">';
+        } else {
+          el.innerHTML = '<img src="' + logo + '" alt="' + (name || "Visa Doo") + '" style="height:42px;width:auto;max-width:200px;display:block">';
+        }
       }
     }
     if (name) {
@@ -51,6 +66,9 @@
   }
 
   function waLink(num) { return "https://wa.me/" + (num || "").replace(/[^0-9]/g, "") + "?text=" + encodeURIComponent("Hi, I have a question about a visa."); }
+
+  var GMAIL_ICON_SVG = '<svg class="contact-ico ico-email" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="#4285F4" d="M22.5 8.1v11.4c0 .8-.7 1.5-1.5 1.5h-3.5V12l-5.5 4.1L6.5 12V21H3c-.8 0-1.5-.7-1.5-1.5V8.1l5.5 4.1 5-3.8 5 3.8 5.5-4.1z"/><path fill="#34A853" d="M1.5 8.1V5.5C1.5 4.7 2.2 4 3 4h.9l8.1 6.1L20.1 4H21c.8 0 1.5.7 1.5 1.5v2.6l-10.5 7.9L1.5 8.1z"/><path fill="#EA4335" d="M1.5 5.5l10.5 7.9L22.5 5.5V5.5c0-.8-.7-1.5-1.5-1.5h-18c-.8 0-1.5.7-1.5 1.5v0z"/><path fill="#FBBC05" d="M17.5 4L12 8.1 6.5 4h11z"/></svg>';
+  var WA_FOOT_ICON_SVG = '<svg class="contact-ico ico-wa" viewBox="0 0 24 24" width="24" height="24" fill="#25d366" aria-hidden="true"><path d="M12.042 2C6.5 2 2 6.5 2 12.042c0 2.213.716 4.261 1.934 5.925L2.5 21.5l3.655-1.402A10.003 10.003 0 0 0 12.042 22C17.5 22 22 17.5 22 12.042 22 6.5 17.5 2 12.042 2zm0 18.2c-1.637 0-3.167-.442-4.49-1.213l-.322-.188-2.658 1.02.99-2.585-.205-.337A8.163 8.163 0 0 1 3.842 12.042C3.842 7.518 7.518 3.842 12.042 3.842c4.524 0 8.2 3.676 8.2 8.2 0 4.524-3.676 8.158-8.2 8.158zm4.512-6.143c-.247-.124-1.463-.723-1.69-.805-.226-.082-.39-.124-.555.124-.165.247-.638.805-.783.97-.144.165-.288.185-.535.062-.247-.124-1.043-.385-1.986-1.226-.734-.655-1.23-1.464-1.374-1.711-.144-.247-.015-.38.109-.503.111-.11.247-.288.371-.432.124-.144.165-.247.247-.412.082-.165.041-.309-.021-.432-.062-.124-.556-1.34-.761-1.833-.2-.481-.404-.416-.555-.424h-.474c-.165 0-.432.062-.659.309s-.866.845-.866 2.061c0 1.216.886 2.391 1.01 2.556.124.165 1.745 2.664 4.228 3.737.59.255 1.05.407 1.41.522.593.188 1.133.161 1.56.097.476-.071 1.463-.598 1.669-1.175.206-.577.206-1.072.144-1.175-.062-.103-.226-.165-.473-.288z"/></svg>';
 
   function applyContact(s) {
     var cfg = window.VISADOO_CONFIG || {};
@@ -62,7 +80,20 @@
     function setText(id, t) { var e = document.getElementById(id); if (e && t) { var sp = e.querySelector("span") || e; sp.textContent = t; } }
     if (wa) { var w = waLink(wa); setHref("waFloat", w); setHref("cmWhatsapp", w); setHref("footWa", w); }
     if (ph) { setHref("cmPhone", "tel:" + ph.replace(/[^0-9+]/g, "")); setText("phoneText", ph); }
-    if (em) { setHref("cmEmail", "mailto:" + em); setText("emailText", em); setHref("footEmail", "mailto:" + em); var fe = document.getElementById("footEmail"); if (fe) { var sp = fe.querySelector("span"); if (sp) sp.textContent = em; } }
+    if (em) { setHref("cmEmail", "mailto:" + em); setText("emailText", em); setHref("footEmail", "mailto:" + em); }
+    
+    // Ensure contact icons exist in footWa and footEmail
+    var fe = document.getElementById("footEmail");
+    if (fe) {
+      fe.innerHTML = GMAIL_ICON_SVG + '<div class="contact-text-block"><span>Gmail</span><small>Chat with our visa team</small></div>';
+      setHref("footEmail", "mailto:" + (em || "hello@visadoo.com"));
+    }
+    var fw = document.getElementById("footWa");
+    if (fw) {
+      var wUrl = wa ? waLink(wa) : "https://wa.me/919895226697?text=" + encodeURIComponent("Hi Visa Doo, I have a question about a visa.");
+      fw.innerHTML = WA_FOOT_ICON_SVG + '<div class="contact-text-block"><span>WhatsApp</span><small>Chat with our visa team</small></div>';
+      fw.setAttribute("href", wUrl);
+    }
   }
 
   var SOCIAL_ICONS = {
@@ -114,7 +145,7 @@
     a.target = "_blank";
     a.rel = "noopener";
     a.setAttribute("aria-label", "Chat on WhatsApp");
-    a.innerHTML = WA_ICON;
+    a.innerHTML = WA_ICON + '<span class="wa-label">Chat with us</span>';
     document.body.appendChild(a);
   }
 
@@ -133,20 +164,19 @@
     var href = "https://wa.me/" + num + "?text=" + encodeURIComponent(msg);
     for (var j = 0; j < floats.length; j++) {
       var f = floats[j];
+      f.setAttribute("href", href);
       if (f.classList.contains("wa-float")) {
-        f.setAttribute("href", href);
+        var lab = f.querySelector(".wa-label");
+        if (!lab) {
+          lab = document.createElement("span");
+          lab.className = "wa-label";
+          f.appendChild(lab);
+        }
+        lab.textContent = s.whatsapp_label || "Chat with us";
+        f.classList.add("has-label");
       } else {
-        f.setAttribute("href", href);
         var parentCard = f.closest(".ai-wa-card");
         if (parentCard) parentCard.style.display = "flex";
-      }
-      
-      if (f.classList.contains("wa-float") && s.whatsapp_label && !f.querySelector(".wa-label")) {
-        var lab = document.createElement("span");
-        lab.className = "wa-label";
-        lab.textContent = s.whatsapp_label;
-        f.appendChild(lab);
-        f.classList.add("has-label");
       }
     }
   }
@@ -192,37 +222,387 @@
   function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; } return Math.abs(h); }
   function escHtml(s) { return (s == null ? "" : String(s)).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
+  // ===== Global Multi-Language Translation System =====
+  var VISADOO_LANGUAGES = [
+    { code: 'en', name: 'English', flag: 'https://flagcdn.com/w40/gb.png', short: 'EN', dir: 'ltr' },
+    { code: 'ar', name: 'العربية', flag: 'https://flagcdn.com/w40/sa.png', short: 'AR', dir: 'rtl' },
+    { code: 'fr', name: 'Français', flag: 'https://flagcdn.com/w40/fr.png', short: 'FR', dir: 'ltr' },
+    { code: 'es', name: 'Español', flag: 'https://flagcdn.com/w40/es.png', short: 'ES', dir: 'ltr' },
+    { code: 'de', name: 'Deutsch', flag: 'https://flagcdn.com/w40/de.png', short: 'DE', dir: 'ltr' },
+    { code: 'ru', name: 'Русский', flag: 'https://flagcdn.com/w40/ru.png', short: 'RU', dir: 'ltr' }
+  ];
+
+  var UI_DICT = {
+    en: {
+      home: 'Home', explore: 'Explore', visaTypes: 'Visa Types', events: 'Travel Triggers', articles: 'Articles', contact: 'Contact Us', track: 'Track visa',
+      heroTitle: 'Get Your<br>Visa Now!', heroSub: 'Find Visa information for all countries and apply today.', heroBtn: 'Get your Visa now!',
+      whereFrom: 'Where am I From?', whereTo: 'Where am I Going?', whereToPlaceholder: 'Search country or destination', viewMap: 'View Map',
+      popDest: 'Popular destinations', chooseCountry: 'Choose your country',
+      assistant: 'AI travel assistant', online: 'Online now', hello: 'Hi! I am VisaDoo AI. How can I help with your visa options, documents, processing times, or application tracking today?',
+      placeholder: 'Ask about your visa…', send: 'Send', askAi: 'Ask AI',
+      waTitle: 'Need human support?', waDesc: 'Chat with a visa specialist on WhatsApp.', waBtn: 'Chat with us'
+    },
+    ar: {
+      home: 'الرئيسية', explore: 'استكشف', visaTypes: 'أنواع التأشيرات', events: 'الفعاليات', articles: 'المقالات', contact: 'اتصل بنا', track: 'تتبع التأشيرة',
+      heroTitle: 'احصل على<br>تأشيرتك الآن!', heroSub: 'ابحث عن معلومات التأشيرة لجميع الدول وقدم طلبك اليوم.', heroBtn: 'احصل على تأشيرتك الآن!',
+      whereFrom: 'من أين أنا؟', whereTo: 'إلى أين أنا ذاهب؟', whereToPlaceholder: 'إلى أين أنت ذاهب؟', viewMap: 'عرض الخريطة',
+      popDest: 'الوجهات الشهيرة', chooseCountry: 'اختر بلدك',
+      assistant: 'مساعد السفر الذكي', online: 'متصل الآن', hello: 'مرحباً! يمكنني المساعدة في خيارات التأشيرة والمستندات والرسوم والتتبع.',
+      placeholder: 'اسأل عن تأشيرتك…', send: 'إرسال', askAi: 'اسأل الذكاء',
+      waTitle: 'هل تحتاج إلى مساعدة؟', waDesc: 'تحدث مع خبير التأشيرات عبر واتساب.', waBtn: 'تواصل معنا'
+    },
+    fr: {
+      home: 'Accueil', explore: 'Explorer', visaTypes: 'Types de visa', events: 'Événements', articles: 'Articles', contact: 'Contactez-nous', track: 'Suivi visa',
+      heroTitle: 'Obtenez votre<br>visa maintenant !', heroSub: 'Trouvez les informations de visa pour tous les pays et postulez dès aujourd’hui.', heroBtn: 'Obtenez votre visa maintenant !',
+      whereFrom: 'D\'où venez-vous ?', whereTo: 'Où allez-vous ?', whereToPlaceholder: 'Où allez-vous ?', viewMap: 'Voir la carte',
+      popDest: 'Destinations populaires', chooseCountry: 'Choisissez votre pays',
+      assistant: 'Assistant IA', online: 'En ligne', hello: 'Bonjour ! Je peux vous aider avec les visas, documents et suivi.',
+      placeholder: 'Posez votre question…', send: 'Envoyer', askAi: 'Demander',
+      waTitle: 'Besoin d\'aide humaine ?', waDesc: 'Discutez avec un expert sur WhatsApp.', waBtn: 'Discuter'
+    },
+    es: {
+      home: 'Inicio', explore: 'Explorar', visaTypes: 'Tipos de visado', events: 'Eventos', articles: 'Artículos', contact: 'Contacto', track: 'Seguimiento',
+      heroTitle: '¡Obtén tu<br>visado ahora!', heroSub: 'Encuentra información de visados para todos los países и solicita hoy.', heroBtn: '¡Obtén tu visado ahora!',
+      whereFrom: '¿De dónde soy?', whereTo: '¿A dónde vas?', whereToPlaceholder: '¿A dónde vas?', viewMap: 'Ver mapa',
+      popDest: 'Destinos populares', chooseCountry: 'Elige tu país',
+      assistant: 'Asistente IA', online: 'En línea', hello: '¡Hola! Puedo ayudarte con visados, documentos y seguimiento.',
+      placeholder: 'Haz una pregunta…', send: 'Enviar', askAi: 'Preguntar',
+      waTitle: '¿Necesitas ayuda?', waDesc: 'Chatea con un experto en WhatsApp.', waBtn: 'Chatear'
+    },
+    de: {
+      home: 'Startseite', explore: 'Entdecken', visaTypes: 'Visa-Arten', events: 'Veranstaltungen', articles: 'Artikel', contact: 'Kontakt', track: 'Visum verfolgen',
+      heroTitle: 'Holen Sie sich Ihr<br>Visum jetzt!', heroSub: 'Finden Sie Visainformationen für alle Länder und beantragen Sie noch heute.', heroBtn: 'Jetzt Visum holen!',
+      whereFrom: 'Woher komme ich?', whereTo: 'Wohin reise ich?', whereToPlaceholder: 'Wohin reisen Sie?', viewMap: 'Karte anzeigen',
+      popDest: 'Beliebte Reiseziele', chooseCountry: 'Wählen Sie Ihr Land',
+      assistant: 'KI-Reiseassistent', online: 'Jetzt online', hello: 'Hallo! Ich bin VisaDoo KI. Wie kann ich Ihnen heute bei Visa, Dokumenten oder Status helfen?',
+      placeholder: 'Fragen Sie nach Ihrem Visum…', send: 'Senden', askAi: 'KI fragen',
+      waTitle: 'Brauchen Sie Hilfe?', waDesc: 'Chatten Sie mit einem Visa-Spezialisten auf WhatsApp.', waBtn: 'Mit uns chatten'
+    },
+    ru: {
+      home: 'Главная', explore: 'Обзор', visaTypes: 'Типы виз', events: 'События', articles: 'Статьи', contact: 'Контакты', track: 'Статус визы',
+      heroTitle: 'Получите визу<br>прямо сейчас!', heroSub: 'Информация о визах во все страны мира. Подайте заявку сегодня.', heroBtn: 'Получить визу прямо сейчас!',
+      whereFrom: 'Откуда я?', whereTo: 'Куда я еду?', whereToPlaceholder: 'Куда вы направляетесь?', viewMap: 'Показать карту',
+      popDest: 'Популярные направления', chooseCountry: 'Выберите страну',
+      assistant: 'ИИ-ассистент', online: 'В сети', hello: 'Здравствуйте! Я VisaDoo ИИ. Чем я могу помочь по визам, документам или статусу заявки?',
+      placeholder: 'Задайте вопрос о визе…', send: 'Отправить', askAi: 'Спросить ИИ',
+      waTitle: 'Нужна помощь?', waDesc: 'Напишите визовому эксперту в WhatsApp.', waBtn: 'Написать нам'
+    }
+  };
+
+  function clearAllGoogleTranslateCookies() {
+    var host = window.location.hostname;
+    var parts = host.split('.');
+    var domains = ['', host, '.' + host];
+    if (parts.length > 1) {
+      domains.push('.' + parts.slice(-2).join('.'));
+      domains.push(parts.slice(-2).join('.'));
+    }
+    var paths = ['/', window.location.pathname, ''];
+    domains.forEach(function(d) {
+      paths.forEach(function(p) {
+        var dStr = d ? '; domain=' + d : '';
+        var pStr = p ? '; path=' + p : '';
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC' + dStr + pStr;
+        document.cookie = 'googtrans=/en/en; expires=Thu, 01 Jan 1970 00:00:00 UTC' + dStr + pStr;
+      });
+    });
+  }
+
+  // Early cleanup if user saved English
+  try {
+    var earlyLang = localStorage.getItem('visadoo-language') || 'en';
+    if (earlyLang === 'en') {
+      clearAllGoogleTranslateCookies();
+      document.documentElement.setAttribute('dir', 'ltr');
+      document.documentElement.setAttribute('lang', 'en');
+      document.documentElement.classList.remove('visadoo-rtl', 'translated-rtl');
+    }
+  } catch(e){}
+
+  function ensureGoogleTranslateEngine() {
+    var saved = 'en';
+    try { saved = localStorage.getItem('visadoo-language') || 'en'; } catch(e){}
+
+    if (!document.getElementById('google_translate_element')) {
+      var gtDiv = document.createElement('div');
+      gtDiv.id = 'google_translate_element';
+      gtDiv.style.display = 'none';
+      gtDiv.setAttribute('aria-hidden', 'true');
+      gtDiv.className = 'notranslate';
+      gtDiv.setAttribute('translate', 'no');
+      (document.body || document.documentElement).appendChild(gtDiv);
+    }
+    if (!window.googleTranslateElementInit) {
+      window.googleTranslateElementInit = function() {
+        try {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,ar,fr,es,de,ru',
+            autoDisplay: false
+          }, 'google_translate_element');
+
+          var cur = 'en';
+          try { cur = localStorage.getItem('visadoo-language') || 'en'; } catch(e){}
+          if (cur && cur !== 'en' && UI_DICT[cur]) {
+            setTimeout(function() { triggerGoogleTranslate(cur); }, 150);
+          } else {
+            clearAllGoogleTranslateCookies();
+          }
+        } catch(err) {}
+      };
+    }
+    if (!document.getElementById('visadoo-gt-script')) {
+      var sc = document.createElement('script');
+      sc.id = 'visadoo-gt-script';
+      sc.type = 'text/javascript';
+      sc.async = true;
+      sc.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+      document.head.appendChild(sc);
+    }
+  }
+
+  function setGoogleTranslateCookie(lang) {
+    if (lang === 'en' || !lang) {
+      clearAllGoogleTranslateCookies();
+      return;
+    }
+    var host = window.location.hostname;
+    var parts = host.split('.');
+    var rootDomain = parts.length > 1 ? parts.slice(-2).join('.') : host;
+    var val = '/en/' + lang;
+    document.cookie = 'googtrans=' + val + '; path=/;';
+    document.cookie = 'googtrans=' + val + '; domain=' + host + '; path=/;';
+    if (rootDomain && rootDomain !== host) {
+      document.cookie = 'googtrans=' + val + '; domain=.' + rootDomain + '; path=/;';
+    }
+  }
+
+  function triggerGoogleTranslate(lang) {
+    if (lang === 'en') {
+      clearAllGoogleTranslateCookies();
+      return;
+    }
+    setGoogleTranslateCookie(lang);
+    var attempts = 0;
+    function tryApply() {
+      var combo = document.querySelector('.goog-te-combo');
+      if (combo) {
+        if (combo.value !== lang) {
+          combo.value = lang;
+          combo.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
+      attempts++;
+      if (attempts < 25) {
+        setTimeout(tryApply, 120);
+      }
+    }
+    tryApply();
+  }
+
+  function setDocumentLanguageAndDir(lang) {
+    var isRtl = (lang === 'ar');
+    document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
+    if (isRtl) {
+      document.documentElement.classList.add('visadoo-rtl');
+    } else {
+      document.documentElement.classList.remove('visadoo-rtl', 'translated-rtl');
+      if (document.body) {
+        document.body.style.top = '0px';
+      }
+    }
+  }
+
+  function applyFastTranslations(lang) {
+    var copy = UI_DICT[lang] || UI_DICT.en;
+
+    var homeLink = document.querySelector('.nav-links a[href*="index"], .nav-links a[href="/"], .nav-links a[href="#top"], .nav-links a[href="#destinations"]');
+    if (homeLink) homeLink.textContent = copy.home || 'Home';
+
+    var vtLink = document.querySelector('.nav-links a[href*="visa-types"]');
+    if (vtLink) vtLink.textContent = copy.visaTypes || 'Visa Types';
+
+    var evsLink = document.querySelector('.nav-links a[href*="events"]');
+    if (evsLink) evsLink.textContent = copy.events || 'Travel Triggers';
+
+    var artLink = document.querySelector('.nav-links a[href*="articles"]');
+    if (artLink) artLink.textContent = copy.articles;
+
+    var cntLink = document.querySelector('.nav-links a[href*="contact"]');
+    if (cntLink) cntLink.textContent = copy.contact || 'Contact Us';
+
+    var trkLink = document.querySelector('.nav-track, .nav-actions a[href*="track"]');
+    if (trkLink) {
+      var span = trkLink.querySelector('span') || trkLink;
+      if (span.childNodes.length === 1) {
+        span.textContent = copy.track;
+      }
+    }
+
+    var heroTitle = document.querySelector('.hero-curved-title');
+    if (heroTitle) heroTitle.innerHTML = copy.heroTitle;
+
+    var heroSub = document.querySelector('.hero-curved-sub');
+    if (heroSub) heroSub.textContent = copy.heroSub;
+
+    var heroBtn = document.querySelector('.hero-pill-btn span');
+    if (heroBtn) heroBtn.textContent = copy.heroBtn;
+
+    var fromLabel = document.querySelector('#heroFromTrigger .dock-field-label');
+    if (fromLabel) fromLabel.textContent = copy.whereFrom;
+
+    var toLabel = document.querySelector('#heroToField .dock-field-label');
+    if (toLabel) toLabel.textContent = copy.whereTo;
+
+    var toInput = document.querySelector('#destSearch');
+    if (toInput) {
+      toInput.placeholder = copy.whereToPlaceholder;
+      toInput.setAttribute('aria-label', copy.whereToPlaceholder);
+    }
+
+    var mapBtnSpan = document.querySelector('#mapToggle span');
+    if (mapBtnSpan) mapBtnSpan.textContent = copy.viewMap;
+
+    var kicker = document.querySelector('.board-kicker');
+    if (kicker) kicker.textContent = copy.popDest;
+
+    var boardHeading = document.querySelector('.board-heading h2');
+    if (boardHeading) boardHeading.textContent = copy.chooseCountry;
+
+    var aiTriggerSpan = document.querySelector('.ai-assistant-trigger span');
+    if (aiTriggerSpan) aiTriggerSpan.textContent = copy.askAi || 'Ask AI';
+
+    var aiPanelTitle = document.querySelector('.ai-assistant-panel header b');
+    if (aiPanelTitle) aiPanelTitle.textContent = copy.assistant;
+
+    var aiOnlineSpan = document.querySelector('.ai-assistant-panel header small span');
+    if (aiOnlineSpan) aiOnlineSpan.textContent = copy.online;
+
+    var firstMsg = document.querySelector('.ai-conversation .ai-message-bot');
+    if (firstMsg) {
+      firstMsg.textContent = copy.hello;
+    }
+
+    var aiWaTitle = document.querySelector('.ai-wa-details h4');
+    if (aiWaTitle) aiWaTitle.textContent = copy.waTitle;
+
+    var aiWaDesc = document.querySelector('.ai-wa-details p');
+    if (aiWaDesc) aiWaDesc.textContent = copy.waDesc;
+
+    var aiWaBtnSpan = document.querySelector('.ai-wa-btn span');
+    if (aiWaBtnSpan) aiWaBtnSpan.textContent = copy.waBtn;
+
+    var aiInput = document.querySelector('.ai-input-row [data-ai-input]');
+    if (aiInput) aiInput.placeholder = copy.placeholder;
+
+    var aiSendBtn = document.querySelector('.ai-input-row [data-ai-send]');
+    if (aiSendBtn) aiSendBtn.textContent = copy.send;
+  }
+
+  function buildLanguageOptionsHTML() {
+    return VISADOO_LANGUAGES.map(function(l) {
+      return '<button type="button" role="option" data-language-option="' + l.code + '" class="notranslate" translate="no">' +
+        '<img src="' + l.flag + '" alt="' + l.name + ' flag" class="flag-icon notranslate" translate="no">' +
+        '<span class="notranslate" translate="no">' + l.name + '</span>' +
+        '<i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i>' +
+      '</button>';
+    }).join('');
+  }
+
+  window.visadooSetLanguage = function(code, isInitialLoad) {
+    if (!UI_DICT[code]) code = 'en';
+    var prev = 'en';
+    try { prev = localStorage.getItem('visadoo-language') || 'en'; } catch(err) {}
+    try { localStorage.setItem('visadoo-language', code); } catch(err) {}
+    
+    if (code === 'en') {
+      clearAllGoogleTranslateCookies();
+      setDocumentLanguageAndDir('en');
+      applyFastTranslations('en');
+
+      var isTranslated = prev !== 'en' ||
+        document.documentElement.classList.contains('translated-rtl') ||
+        document.documentElement.classList.contains('translated-ltr') ||
+        (document.body && document.body.style.top && document.body.style.top !== '0px') ||
+        (document.querySelector('.goog-te-combo') && document.querySelector('.goog-te-combo').value && document.querySelector('.goog-te-combo').value !== 'en');
+
+      if (!isInitialLoad && isTranslated) {
+        window.location.reload();
+        return;
+      }
+    } else {
+      setDocumentLanguageAndDir(code);
+      applyFastTranslations(code);
+      triggerGoogleTranslate(code);
+    }
+
+    var langObj = VISADOO_LANGUAGES.find(function(l) { return l.code === code; }) || VISADOO_LANGUAGES[0];
+
+    document.querySelectorAll('[data-language-header-name]').forEach(function(el) {
+      el.textContent = langObj.short;
+    });
+
+    document.querySelectorAll('[data-language-option]').forEach(function(btn) {
+      var optCode = btn.getAttribute('data-language-option');
+      var isSelected = (optCode === code);
+      btn.setAttribute('aria-selected', String(isSelected));
+      var tick = btn.querySelector('i');
+      if (tick) tick.style.display = isSelected ? 'inline-block' : 'none';
+    });
+
+    var nativeSelector = document.getElementById('siteLanguage');
+    if (nativeSelector && nativeSelector.value !== code) {
+      nativeSelector.value = code;
+      nativeSelector.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    document.dispatchEvent(new CustomEvent('languagechanged', { detail: code }));
+    if (typeof window.applyLanguage === 'function') {
+      window.applyLanguage(code);
+    }
+  };
+
   window.initLanguageSelectorIn = function(actions) {
-    if (window.location.pathname.indexOf('app.html') !== -1) return;
-    if (!actions || actions.querySelector('.site-language-header-selector')) return;
-    
-    var container = document.createElement('div');
-    container.className = 'site-language-header-selector';
-    container.innerHTML =
-      '<button class="site-language-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">'+
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" class="globe-icon" style="margin-right: 4px; display: inline-block; vertical-align: middle;">'+
-          '<circle cx="12" cy="12" r="10"/>'+
-          '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'+
-          '<path d="M2 12h20"/>'+
-        '</svg>'+
-        '<b data-language-header-name>EN</b>'+
-      '</button>'+
-      '<div class="site-language-menu header-menu" role="listbox" aria-label="Languages" style="display: none;">'+
-        '<button type="button" role="option" data-language-option="en"><img src="https://flagcdn.com/w40/gb.png" alt="UK flag"><span>English</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>'+
-        '<button type="button" role="option" data-language-option="ml"><img src="https://flagcdn.com/w40/in.png" alt="Indian flag"><span>Malayalam</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>'+
-        '<button type="button" role="option" data-language-option="hi"><img src="https://flagcdn.com/w40/in.png" alt="Indian flag"><span>Hindi</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>'+
-        '<button type="button" role="option" data-language-option="ar"><img src="https://flagcdn.com/w40/sa.png" alt="Arabic flag"><span>Arabic</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>'+
-        '<button type="button" role="option" data-language-option="fr"><img src="https://flagcdn.com/w40/fr.png" alt="French flag"><span>French</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>'+
-        '<button type="button" role="option" data-language-option="es"><img src="https://flagcdn.com/w40/es.png" alt="Spanish flag"><span>Spanish</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>'+
-      '</div>';
-      
-    actions.insertBefore(container, actions.firstChild);
-    
+    ensureGoogleTranslateEngine();
+
+    var container = actions ? actions.querySelector('.site-language-header-selector') : document.querySelector('.site-language-header-selector');
+
+    if (!container && actions) {
+      container = document.createElement('div');
+      container.className = 'site-language-header-selector notranslate';
+      container.setAttribute('translate', 'no');
+      container.innerHTML =
+        '<button class="site-language-trigger notranslate" translate="no" type="button" aria-haspopup="listbox" aria-expanded="false">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" class="globe-icon notranslate" style="margin-right: 4px; display: inline-block; vertical-align: middle;">' +
+            '<circle cx="12" cy="12" r="10"/>' +
+            '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' +
+            '<path d="M2 12h20"/>' +
+          '</svg>' +
+          '<b data-language-header-name class="notranslate" translate="no">EN</b>' +
+        '</button>' +
+        '<div class="site-language-menu header-menu notranslate" translate="no" role="listbox" aria-label="Languages" style="display: none;">' +
+          buildLanguageOptionsHTML() +
+        '</div>';
+      actions.insertBefore(container, actions.firstChild);
+    } else if (container) {
+      container.classList.add('notranslate');
+      container.setAttribute('translate', 'no');
+      var menu = container.querySelector('.site-language-menu');
+      if (menu) {
+        menu.classList.add('notranslate');
+        menu.setAttribute('translate', 'no');
+        menu.innerHTML = buildLanguageOptionsHTML();
+      }
+    }
+
+    if (!container) return;
+
     var trigger = container.querySelector('.site-language-trigger');
     var menu = container.querySelector('.site-language-menu');
-    var nameLabel = container.querySelector('[data-language-header-name]');
     if (!trigger || !menu) return;
-    
+
     function openMenu() {
       menu.style.display = 'flex';
       trigger.setAttribute('aria-expanded', 'true');
@@ -231,154 +611,213 @@
       menu.style.display = 'none';
       trigger.setAttribute('aria-expanded', 'false');
     }
-    
+
     trigger.onclick = function(e) {
       e.stopPropagation();
       var isOpen = menu.style.display === 'flex';
       if (isOpen) closeMenu();
       else openMenu();
     };
-    
+
     document.addEventListener('click', function() {
       closeMenu();
     });
-    
+
     menu.onclick = function(e) {
       e.stopPropagation();
     };
-    
-    var options = container.querySelectorAll('[data-language-option]');
-    
-    function applyGlobalTranslations(lang) {
-      var dict = {
-        en: {
-          explore: 'Explore', events: 'Events', articles: 'Articles', track: 'Track visa',
-          assistant: 'AI travel assistant', online: 'Online now', hello: 'Hi! I am VisaDoo AI. How can I help with your visa options, documents, processing times, or application tracking today?',
-          placeholder: 'Ask about your visa…', send: 'Send', askAi: 'Ask AI',
-          waTitle: 'Need human support?', waDesc: 'Chat with a visa specialist on WhatsApp.', waBtn: 'Chat with us'
-        },
-        ml: {
-          explore: 'തിരയുക', events: 'ഇവന്റുകൾ', articles: 'ലേഖനങ്ങൾ', track: 'വിസ ട്രാക്ക്',
-          assistant: 'AI യാത്രാ സഹായി', online: 'ഇപ്പോൾ ഓൺലൈൻ', hello: 'ഹായ്! വിസ ഓപ്ഷനുകൾ, രേഖകൾ, ഫീസ്, ട്രാക്കിംഗ് എന്നിവയിൽ ഞാൻ സഹായിക്കാം.',
-          placeholder: 'വിസയെക്കുറിച്ച് ചോദിക്കൂ…', send: 'അയക്കുക', askAi: 'ചോദിക്കൂ',
-          waTitle: 'സഹായം ആവശ്യമുണ്ടോ?', waDesc: 'WhatsApp-ൽ ഞങ്ങളോട് സംസാരിക്കൂ.', waBtn: 'ചാറ്റ് ചെയ്യുക'
-        },
-        hi: {
-          explore: 'एक्सप्लोर', events: 'इवेंट्स', articles: 'लेख', track: 'वीज़ा ट्रैक करें',
-          assistant: 'AI यात्रा सहायक', online: 'अभी ऑनलाइन', hello: 'नमस्ते! मैं वीज़ा विकल्प, दस्तावेज़, शुल्क और ट्रैकिंग में मदद कर सकता हूँ।',
-          placeholder: 'वीज़ा के बारे में पूछें…', send: 'भेजें', askAi: 'पूछें',
-          waTitle: 'मानवीय सहायता चाहिए?', waDesc: 'WhatsApp पर वीज़ा विशेषज्ञ से चैट करें।', waBtn: 'हमसे चैट करें'
-        },
-        ar: {
-          explore: 'استكشف', events: 'الفعاليات', articles: 'المقالات', track: 'تتبع التأشيرة',
-          assistant: 'مساعد السفر الذكي', online: 'متصل الآن', hello: 'مرحباً! يمكنني المساعدة في خيارات التأشيرة والمستندات والرسوم والتتبع.',
-          placeholder: 'اسأل عن تأشيرتك…', send: 'إرسال', askAi: 'اسأل الذكاء',
-          waTitle: 'هل تحتاج إلى مساعدة؟', waDesc: 'تحدث مع خبير التأشيرات عبر واتساب.', waBtn: 'تواصل معنا'
-        },
-        fr: {
-          explore: 'Explorer', events: 'Événements', articles: 'Articles', track: 'Suivi visa',
-          assistant: 'Assistant IA', online: 'En ligne', hello: 'Bonjour ! Je peux vous aider avec les visas, documents et suivi.',
-          placeholder: 'Posez votre question…', send: 'Envoyer', askAi: 'Demander',
-          waTitle: 'Besoin d\'aide humaine ?', waDesc: 'Discutez avec un expert sur WhatsApp.', waBtn: 'Discuter'
-        },
-        es: {
-          explore: 'Explorar', events: 'Eventos', articles: 'Artículos', track: 'Seguimiento',
-          assistant: 'Asistente IA', online: 'En línea', hello: '¡Hola! Puedo ayudarte con visados, documentos y seguimiento.',
-          placeholder: 'Haz una pregunta…', send: 'Enviar', askAi: 'Preguntar',
-          waTitle: '¿Necesitas ayuda?', waDesc: 'Chatea con un experto en WhatsApp.', waBtn: 'Chatear'
-        }
-      };
-      var copy = dict[lang] || dict.en;
-      
-      var expLink = document.querySelector('.nav-links a[href*="destinations"]');
-      if (expLink) expLink.textContent = copy.explore;
-      
-      var evsLink = document.querySelector('.nav-links a[href*="events"]');
-      if (evsLink) evsLink.textContent = copy.events;
-      
-      var artLink = document.querySelector('.nav-links a[href*="articles"]');
-      if (artLink) artLink.textContent = copy.articles;
-      
-      var trkLink = document.querySelector('.nav-track, .nav-actions a[href*="track"]');
-      if (trkLink) {
-        var span = trkLink.querySelector('span') || trkLink;
-        if (span.childNodes.length === 1) {
-          span.textContent = copy.track;
-        }
-      }
-      
-      var aiTriggerSpan = document.querySelector('.ai-assistant-trigger span');
-      if (aiTriggerSpan) aiTriggerSpan.textContent = copy.askAi || 'Ask AI';
-      
-      var aiPanelTitle = document.querySelector('.ai-assistant-panel header b');
-      if (aiPanelTitle) aiPanelTitle.textContent = copy.assistant;
-      
-      var aiOnlineSpan = document.querySelector('.ai-assistant-panel header small span');
-      if (aiOnlineSpan) aiOnlineSpan.textContent = copy.online;
-      
-      var firstMsg = document.querySelector('.ai-conversation .ai-message-bot');
-      if (firstMsg) {
-        var txt = firstMsg.textContent;
-        if (txt.indexOf('Hi!') === 0 || txt.indexOf('ഹായ്!') === 0 || txt.indexOf('नमस्ते!') === 0 || txt.indexOf('مرحباً!') === 0 || txt.indexOf('Bonjour !') === 0 || txt.indexOf('¡Hola!') === 0 || txt.indexOf('Hello!') === 0) {
-          firstMsg.textContent = copy.hello;
-        }
-      }
-      
-      var aiWaTitle = document.querySelector('.ai-wa-details h4');
-      if (aiWaTitle) aiWaTitle.textContent = copy.waTitle;
-      
-      var aiWaDesc = document.querySelector('.ai-wa-details p');
-      if (aiWaDesc) aiWaDesc.textContent = copy.waDesc;
-      
-      var aiWaBtnSpan = document.querySelector('.ai-wa-btn span');
-      if (aiWaBtnSpan) aiWaBtnSpan.textContent = copy.waBtn;
-      
-      var aiInput = document.querySelector('.ai-input-row [data-ai-input]');
-      if (aiInput) aiInput.placeholder = copy.placeholder;
-      
-      var aiSendBtn = document.querySelector('.ai-input-row [data-ai-send]');
-      if (aiSendBtn) aiSendBtn.textContent = copy.send;
-    }
 
-    function updateActiveLanguage(lang) {
-      if (nameLabel) nameLabel.textContent = lang.toUpperCase();
-      options.forEach(function(btn) {
-        var optCode = btn.getAttribute('data-language-option');
-        var tick = btn.querySelector('i');
-        if (tick) tick.style.display = (optCode === lang) ? 'inline-block' : 'none';
-      });
-      var nativeSelector = document.getElementById('siteLanguage');
-      if (nativeSelector && nativeSelector.value !== lang) {
-        nativeSelector.value = lang;
-        nativeSelector.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      applyGlobalTranslations(lang);
-    }
-    
-    options.forEach(function(btn) {
+    container.querySelectorAll('[data-language-option]').forEach(function(btn) {
       btn.onclick = function(e) {
         e.stopPropagation();
         var code = btn.getAttribute('data-language-option');
-        try { localStorage.setItem('visadoo-language', code); } catch(err) {}
-        updateActiveLanguage(code);
+        window.visadooSetLanguage(code, false);
         closeMenu();
-        document.dispatchEvent(new CustomEvent('languagechanged', { detail: code }));
-        if (typeof window.applyLanguage === 'function') {
-          window.applyLanguage(code);
-        }
       };
     });
-    
+
     var saved = 'en';
     try { saved = localStorage.getItem('visadoo-language') || 'en'; } catch(err) {}
-    updateActiveLanguage(saved);
+    if (!UI_DICT[saved]) saved = 'en';
+    window.visadooSetLanguage(saved, true);
+  };
+
+  window.visadooHasActiveDraft = function() {
+    try {
+      var travDraft = sessionStorage.getItem('visadoo-traveller-draft') || localStorage.getItem('visadoo-traveller-draft');
+      if (travDraft && travDraft.trim().length > 15 && travDraft !== '{}' && travDraft !== 'null') {
+        try {
+          var parsed = JSON.parse(travDraft);
+          if (parsed && parsed.travellers && parsed.travellers.length > 0) {
+            var hasUnsubmitted = parsed.travellers.some(function(t) { return !t.submitted; });
+            if (hasUnsubmitted) {
+              return true;
+            }
+          }
+        } catch (_e) {}
+      }
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('visadoo-draft-') === 0 && k !== 'visadoo-draft-data') {
+          var val = localStorage.getItem(k);
+          if (val && typeof val === 'string' && val.trim().length > 15 && val !== '{}' && val !== 'null') {
+            return true;
+          }
+        }
+      }
+    } catch (_e) {}
+    return false;
+  };
+
+  window.updateDraftResumeButtonVisibility = function() {
+    var hasDraft = window.visadooHasActiveDraft();
+    var btns = document.querySelectorAll('.site-draft-resume-btn');
+    btns.forEach(function(btn) {
+      if (hasDraft) {
+        btn.classList.add('is-active');
+        btn.setAttribute('data-has-draft', 'true');
+        btn.removeAttribute('hidden');
+        btn.style.setProperty('display', 'inline-flex', 'important');
+      } else {
+        btn.classList.remove('is-active');
+        btn.removeAttribute('data-has-draft');
+        btn.setAttribute('hidden', '');
+        btn.style.setProperty('display', 'none', 'important');
+      }
+    });
+  };
+
+  window.initDraftResumeButton = function(actions) {
+    var parent = actions || document.querySelector('.header .nav-actions') || document.querySelector('.nav-actions');
+    if (!parent) return null;
+
+    var btn = parent.querySelector('.site-draft-resume-btn');
+    if (!btn) {
+      btn = document.createElement('a');
+      btn.className = 'site-draft-resume-btn notranslate';
+      btn.setAttribute('translate', 'no');
+      btn.setAttribute('title', 'Resume Last Visa Application');
+      btn.setAttribute('aria-label', 'Resume Last Visa Application');
+      btn.href = 'javascript:void(0)';
+      btn.innerHTML =
+        '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>' +
+          '<polyline points="14 2 14 8 20 8"></polyline>' +
+          '<line x1="16" y1="13" x2="8" y2="13"></line>' +
+          '<line x1="16" y1="17" x2="8" y2="17"></line>' +
+          '<line x1="10" y1="9" x2="8" y2="9"></line>' +
+        '</svg>' +
+        '<span>Continue</span>';
+
+      btn.onclick = function(e) {
+        e.preventDefault();
+        var targetUrl = null;
+        try {
+          var tDraft = null;
+          try {
+            var sVal = sessionStorage.getItem('visadoo-traveller-draft');
+            if (sVal) tDraft = JSON.parse(sVal);
+          } catch(_e) {}
+          if (!tDraft) {
+            try {
+              var lVal = localStorage.getItem('visadoo-traveller-draft');
+              if (lVal) tDraft = JSON.parse(lVal);
+            } catch(_e) {}
+          }
+          if (tDraft && tDraft.travellers && tDraft.travellers.length > 1) {
+            var hasUnsubmitted = tDraft.travellers.some(function(t) { return !t.submitted; });
+            if (hasUnsubmitted) {
+              var vType = tDraft.visa || 'uae-tourist-visa-30-days';
+              targetUrl = 'app.html?visa=' + encodeURIComponent(vType) + '&travellers=' + tDraft.travellers.length + '&view=travellers';
+            }
+          }
+          if (!targetUrl) {
+            for (var i = 0; i < localStorage.length; i++) {
+              var k = localStorage.key(i);
+              if (k && k.indexOf('visadoo-draft-') === 0 && k !== 'visadoo-draft-data') {
+                var val = localStorage.getItem(k);
+                if (val && typeof val === 'string' && val.trim().length > 15 && val !== '{}' && val !== 'null') {
+                  var vId = k.replace('visadoo-draft-', '').replace(/-\d+$/, '');
+                  if (vId) {
+                    targetUrl = 'app.html?visa=' + encodeURIComponent(vId);
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          if (!targetUrl) {
+            var lastSavedUrl = localStorage.getItem('visadoo-last-draft-url');
+            if (lastSavedUrl) targetUrl = lastSavedUrl;
+          }
+        } catch (_e) {}
+
+        if (targetUrl) {
+          window.location.href = targetUrl;
+        } else {
+          window.location.href = 'app.html';
+        }
+      };
+
+      var langSelector = parent.querySelector('.site-language-header-selector');
+      if (langSelector && langSelector.nextSibling) {
+        parent.insertBefore(btn, langSelector.nextSibling);
+      } else {
+        parent.appendChild(btn);
+      }
+    }
+
+    window.updateDraftResumeButtonVisibility();
+    return btn;
+  };
+
+  window.addEventListener('storage', function(e) {
+    if (e && e.key && (e.key.indexOf('visadoo-draft') === 0 || e.key === 'visadoo-last-draft-url' || e.key === 'visadoo_has_submitted_app')) {
+      window.updateDraftResumeButtonVisibility();
+      if (typeof window.updateNewVisaButtonVisibility === 'function') window.updateNewVisaButtonVisibility();
+    }
+  });
+  document.addEventListener('visadoo:draft-updated', function() {
+    window.updateDraftResumeButtonVisibility();
+    if (typeof window.updateNewVisaButtonVisibility === 'function') window.updateNewVisaButtonVisibility();
+  });
+  document.addEventListener('visadoo:app-submitted', function() {
+    window.updateDraftResumeButtonVisibility();
+    if (typeof window.updateNewVisaButtonVisibility === 'function') window.updateNewVisaButtonVisibility();
+  });
+
+  window.visadooHasSubmittedApp = function() {
+    try {
+      if (localStorage.getItem('visadoo_has_submitted_app') === 'true') return true;
+    } catch (_e) {}
+    return false;
+  };
+
+  window.updateNewVisaButtonVisibility = function() {
+    var btns = document.querySelectorAll('.site-new-visa-btn');
+    btns.forEach(function(btn) {
+      if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
+    });
+  };
+
+  window.initNewVisaButton = function(actions) {
+    var parent = actions || document.querySelector('.header .nav-actions') || document.querySelector('.nav-actions');
+    if (parent) {
+      var btns = parent.querySelectorAll('.site-new-visa-btn');
+      btns.forEach(function(btn) {
+        if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
+      });
+    }
+    return null;
   };
 
   var dropdownsInitialized = false;
   var showAllInDropdown = false;
   var dropdownSearchQuery = '';
   var dbCountries = [];
-  var eligibleSlugs = ['spain', 'denmark', 'south-korea', 'germany', 'france', 'switzerland', 'ireland', 'japan'];
+  var dbNationalities = [];
+  var nationalityDestinationMap = {};
+  var eligibleSlugs = ['spain', 'denmark', 'south-korea', 'germany', 'france', 'switzerland', 'ireland', 'japan', 'thailand', 'bahrain', 'russia', 'indonesia', 'kenya', 'vietnam', 'morocco', 'srilanka', 'sri-lanka', 'turkey', 'united-arab-emirates', 'uae', 'qatar', 'china', 'greece', 'italy', 'egypt', 'egypt-2', 'philippines', 'oman', 'saudi-arabia', 'saudi'];
   var natDropdown = null;
   var destDropdown = null;
 
@@ -393,10 +832,12 @@
 
   function getPageSlug() {
     var params = new URLSearchParams(window.location.search);
-    if (params.has('slug')) return params.get('slug');
+    if (params.has('slug')) {
+      return String(params.get('slug') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    }
     var path = window.location.pathname;
     if (path.indexOf('/country/') > -1) {
-      return path.split('/country/')[1].replace(/\/$/, '');
+      return String(path.split('/country/')[1].replace(/\/$/, '')).toLowerCase().replace(/[^a-z0-9-]/g, '');
     }
     return '';
   }
@@ -413,20 +854,44 @@
     if(!visas||!visas.length) return null;
     var best=null, bestHrs=999999;
     visas.forEach(function(v){
-      var val=parseInt(v.processing_time_value,10); if(isNaN(val)) return;
-      var unit=(v.processing_time_unit||'').toLowerCase();
-      var hrs=val;
-      if(unit.indexOf('day')>-1) hrs=val*24;
-      else if(unit.indexOf('week')>-1) hrs=val*24*7;
-      else if(unit.indexOf('month')>-1) hrs=val*24*30;
-      if(hrs<bestHrs){ bestHrs=hrs; best={value:val, unit:v.processing_time_unit, hours:hrs}; }
+      var slug = ((v.slug || '') + ' ' + (v.country_slug || '')).toLowerCase();
+      var val = v.processing_time_value;
+      var unit = (v.processing_time_unit||'').toLowerCase();
+      if (!val || !unit) {
+        if (slug.indexOf('super-express') > -1) { val = 12; unit = 'hours'; }
+        else if (slug.indexOf('express') > -1) { val = slug.indexOf('uae') > -1 ? 48 : 24; unit = 'hours'; }
+        else if (slug.indexOf('united-arab-emirates') > -1 || slug.indexOf('uae') > -1 || slug.indexOf('dubai') > -1) { val='3-5'; unit='working days'; }
+        else if (slug.indexOf('vietnam') > -1) { val='3-5'; unit='working days'; }
+        else if (slug.indexOf('thailand') > -1) { val=24; unit='hours'; }
+        else if (slug.indexOf('morocco') > -1) { val='3-5'; unit='working days'; }
+        else if (slug.indexOf('qatar') > -1) { val='5-6'; unit='working days'; }
+        else if (slug.indexOf('srilanka') > -1 || slug.indexOf('sri-lanka') > -1) { val='24-48'; unit='hours'; }
+        else if (slug.indexOf('kenya') > -1) { val=2; unit='days'; }
+        else if (slug.indexOf('russia') > -1) { val='10-12'; unit='days'; }
+        else if (slug.indexOf('indonesia') > -1) { val='5-7'; unit='working days'; }
+        else if (slug.indexOf('azerbaijan') > -1) { val=3; unit='days'; }
+        else if (slug.indexOf('bahrain') > -1) { val='3-5'; unit='working days'; }
+        else if (slug.indexOf('egypt') > -1) { val='10-15'; unit='days'; }
+        else if (slug.indexOf('philippines') > -1) { val='8-10'; unit='days'; }
+        else if (slug.indexOf('saudi') > -1) { val='5'; unit='working days'; }
+        else if (slug.indexOf('oman') > -1) { val='5-6'; unit='days'; }
+      }
+
+      var numVal = parseInt(String(val).split('-')[0], 10);
+      if(isNaN(numVal)) return;
+      var hrs=numVal;
+      if(unit.indexOf('day')>-1) hrs=numVal*24;
+      else if(unit.indexOf('week')>-1) hrs=numVal*24*7;
+      else if(unit.indexOf('month')>-1) hrs=numVal*24*30;
+      if(hrs<bestHrs){ bestHrs=hrs; best={value:val, unit:unit, hours:hrs}; }
     });
     return best;
   }
   
   function etaLabel(eta){
     if(!eta) return '';
-    var unit=eta.unit.toLowerCase();
+    var unit=String(eta.unit||'').toLowerCase();
+    if(unit.indexOf('working')>-1 || unit.indexOf('business')>-1) return eta.value + ' working days';
     if(unit.indexOf('hour')>-1) return eta.value + (eta.value===1?' hr':' hrs');
     if(unit.indexOf('day')>-1) return eta.value + (eta.value===1?' day':' days');
     return eta.value + ' ' + eta.unit;
@@ -436,66 +901,31 @@
     var url = SUPABASE_URL + "/rest/v1/countries?select=*&order=sort_order";
     var visaUrl = SUPABASE_URL + "/rest/v1/visa_types?active=eq.true&select=slug,country_slug,processing_time_value,processing_time_unit";
     
+    var natUrl = SUPABASE_URL + "/rest/v1/pages?slug=eq.system-nationality-destinations&status=eq.published&select=content&limit=1";
     Promise.all([
       fetch(url, { headers: { apikey: ANON, authorization: "Bearer " + ANON } }).then(function(r){return r.json();}),
-      fetch(visaUrl, { headers: { apikey: ANON, authorization: "Bearer " + ANON } }).then(function(r){return r.json();})
+      fetch(visaUrl, { headers: { apikey: ANON, authorization: "Bearer " + ANON } }).then(function(r){return r.json();}),
+      fetch(natUrl, { headers: { apikey: ANON, authorization: "Bearer " + ANON } }).then(function(r){return r.ok?r.json():[];})
     ]).then(function(res) {
-      var allowedSlugs = [
-        'japan', 'spain', 'denmark', 'france', 'germany', 'switzerland', 
-        'china', 'greece', 'azerbaijan', 'south-korea', 'ireland',
-        'thailand', 'turkey', 'indonesia', 'russia', 'vietnam', 'india', 
-        'sri-lanka', 'kenya', 'morocco'
-      ];
-      
       var allDbCountries = res[0] || [];
-      var dbSlugs = allDbCountries.map(function(c) { return c.slug.toLowerCase(); });
-
       var countries = allDbCountries.filter(function(c) {
         return c.active;
       });
       
-      var missingSlugs = allowedSlugs.filter(function(slug) {
-        return dbSlugs.indexOf(slug) === -1;
-      });
-      
-      var countryMetadata = {
-        'japan': { name: 'Japan', iso2: 'JP' },
-        'spain': { name: 'Spain', iso2: 'ES' },
-        'denmark': { name: 'Denmark', iso2: 'DK' },
-        'france': { name: 'France', iso2: 'FR' },
-        'germany': { name: 'Germany', iso2: 'DE' },
-        'switzerland': { name: 'Switzerland', iso2: 'CH' },
-        'china': { name: 'China', iso2: 'CN' },
-        'greece': { name: 'Greece', iso2: 'GR' },
-        'azerbaijan': { name: 'Azerbaijan', iso2: 'AZ' },
-        'south-korea': { name: 'South Korea', iso2: 'KR' },
-        'ireland': { name: 'Ireland', iso2: 'IE' },
-        'thailand': { name: 'Thailand', iso2: 'TH' },
-        'turkey': { name: 'Türkiye', iso2: 'TR' },
-        'indonesia': { name: 'Indonesia', iso2: 'ID' },
-        'russia': { name: 'Russia', iso2: 'RU' },
-        'vietnam': { name: 'Vietnam', iso2: 'VN' },
-        'india': { name: 'India', iso2: 'IN' },
-        'sri-lanka': { name: 'Sri Lanka', iso2: 'LK' },
-        'kenya': { name: 'Kenya', iso2: 'KE' },
-        'morocco': { name: 'Morocco', iso2: 'MA' }
-      };
-
-      missingSlugs.forEach(function(slug) {
-        var meta = countryMetadata[slug];
-        if (meta) {
-          countries.push({
-            id: 'mock-' + slug,
-            name: meta.name,
-            slug: slug,
-            iso2: meta.iso2,
-            active: true,
-            eta: null
-          });
-        }
-      });
-      
       var visas = res[1] || [];
+      var cfgRows=Array.isArray(res[2])?res[2]:[]; var parsed=[];
+      try{ parsed=JSON.parse((cfgRows[0]&&cfgRows[0].content)||'[]'); }catch(e){ parsed=[]; }
+      dbNationalities=(Array.isArray(parsed)?parsed:[]).filter(function(n){return n.active!==false;}).sort(function(a,b){return (a.sort_order||0)-(b.sort_order||0);});
+      nationalityDestinationMap = {};
+      dbNationalities.forEach(function(n){ nationalityDestinationMap[n.id]=Array.isArray(n.destinations)?n.destinations:[]; });
+      window.visadooDbNationalities = dbNationalities;
+      window.visadooNationalityDestinationMap = nationalityDestinationMap;
+      window.getVisadooAllowedDestinations = function(name) {
+        var nName = name || localStorage.getItem('visadoo_nationality') || 'India';
+        var nat = dbNationalities.filter(function(n){ return n.name === nName; })[0];
+        return nat && Array.isArray(nat.destinations) ? nat.destinations : null;
+      };
+      renderNationalityOptions();
       
       countries.forEach(function(c) {
         var cv = visas.filter(function(v){ return v.country_slug === c.slug; });
@@ -503,6 +933,7 @@
       });
       
       dbCountries = countries;
+      window.visadooDbCountries = dbCountries;
       renderDropdownGrid();
     }).catch(function(err){ console.error(err); });
   }
@@ -512,7 +943,12 @@
     if (!grid) return;
 
     var filtered = dbCountries;
-    if (!showAllInDropdown) {
+    var selectedNatName = localStorage.getItem('visadoo_nationality') || 'India';
+    var selectedNat = dbNationalities.filter(function(n){ return n.name===selectedNatName; })[0];
+    var mappedSlugs = selectedNat ? (nationalityDestinationMap[selectedNat.id] || []) : null;
+    if (mappedSlugs) {
+      filtered = dbCountries.filter(function(c){ return mappedSlugs.indexOf(c.slug) > -1; });
+    } else if (!showAllInDropdown) {
       filtered = dbCountries.filter(function(c) {
         return eligibleSlugs.indexOf(c.slug) > -1;
       });
@@ -574,11 +1010,303 @@
     }
   }
 
-  function closeAllDropdowns() {
-    if (natDropdown && destDropdown) {
-      natDropdown.classList.remove('open');
-      destDropdown.classList.remove('open');
+  var BUILTIN_COUNTRY_PHOTOS = {
+    'india': 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=600&q=80',
+    'in': 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=600&q=80',
+    'qatar': 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=600&q=80',
+    'qa': 'https://images.unsplash.com/photo-1543783207-ec64e4d95325?auto=format&fit=crop&w=600&q=80',
+    'united-arab-emirates': 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=600&q=80',
+    'uae': 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=600&q=80',
+    'ae': 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=600&q=80',
+    'dubai': 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=600&q=80',
+    'saudi-arabia': 'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=600&q=80',
+    'sa': 'https://images.unsplash.com/photo-1586724237569-f3d0c1dee8c6?auto=format&fit=crop&w=600&q=80',
+    'oman': 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=600&q=80',
+    'om': 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=600&q=80',
+    'bahrain': 'https://images.unsplash.com/photo-1584646098378-0874589d76b1?auto=format&fit=crop&w=600&q=80',
+    'bh': 'https://images.unsplash.com/photo-1584646098378-0874589d76b1?auto=format&fit=crop&w=600&q=80',
+    'kuwait': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
+    'kw': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80',
+    'egypt': 'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=600&q=80',
+    'eg': 'https://images.unsplash.com/photo-1539650116574-8efeb43e2750?auto=format&fit=crop&w=600&q=80',
+    'pakistan': 'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=600&q=80',
+    'pk': 'https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?auto=format&fit=crop&w=600&q=80',
+    'bangladesh': 'https://images.unsplash.com/photo-1608958435020-e8a7109ba809?auto=format&fit=crop&w=600&q=80',
+    'bd': 'https://images.unsplash.com/photo-1608958435020-e8a7109ba809?auto=format&fit=crop&w=600&q=80',
+    'sri-lanka': 'https://images.unsplash.com/photo-1612862862126-865765df2ded?auto=format&fit=crop&w=600&q=80',
+    'srilanka': 'https://images.unsplash.com/photo-1612862862126-865765df2ded?auto=format&fit=crop&w=600&q=80',
+    'lk': 'https://images.unsplash.com/photo-1612862862126-865765df2ded?auto=format&fit=crop&w=600&q=80',
+    'nepal': 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80',
+    'np': 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80',
+    'united-kingdom': 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80',
+    'uk': 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80',
+    'gb': 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=600&q=80',
+    'united-states': 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=600&q=80',
+    'usa': 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=600&q=80',
+    'us': 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=600&q=80',
+    'canada': 'https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=600&q=80',
+    'ca': 'https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=600&q=80',
+    'france': 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80',
+    'fr': 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80',
+    'germany': 'https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&w=600&q=80',
+    'de': 'https://images.unsplash.com/photo-1560969184-10fe8719e047?auto=format&fit=crop&w=600&q=80',
+    'italy': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80',
+    'it': 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=600&q=80',
+    'spain': 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=600&q=80',
+    'es': 'https://images.unsplash.com/photo-1539037116277-4db20889f2d4?auto=format&fit=crop&w=600&q=80',
+    'turkey': 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=600&q=80',
+    'turkiye': 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=600&q=80',
+    'tr': 'https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=600&q=80',
+    'morocco': 'https://images.unsplash.com/photo-1577717903315-1691ae25ab3f?auto=format&fit=crop&w=600&q=80',
+    'ma': 'https://images.unsplash.com/photo-1577717903315-1691ae25ab3f?auto=format&fit=crop&w=600&q=80',
+    'thailand': 'https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=600&q=80',
+    'th': 'https://images.unsplash.com/photo-1528181304800-259b08848526?auto=format&fit=crop&w=600&q=80',
+    'singapore': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80',
+    'sg': 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=600&q=80',
+    'malaysia': 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=600&q=80',
+    'my': 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=600&q=80',
+    'indonesia': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80',
+    'id': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80',
+    'philippines': 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=600&q=80',
+    'ph': 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=600&q=80',
+    'vietnam': 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=600&q=80',
+    'vn': 'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=600&q=80',
+    'japan': 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80',
+    'jp': 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=600&q=80',
+    'china': 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=600&q=80',
+    'cn': 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=600&q=80',
+    'south-korea': 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=600&q=80',
+    'korea': 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=600&q=80',
+    'kr': 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=600&q=80',
+    'australia': 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=600&q=80',
+    'au': 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=600&q=80',
+    'new-zealand': 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80',
+    'nz': 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=600&q=80',
+    'jordan': 'https://images.unsplash.com/photo-1579606032834-d92237887e45?auto=format&fit=crop&w=600&q=80',
+    'jo': 'https://images.unsplash.com/photo-1579606032834-d92237887e45?auto=format&fit=crop&w=600&q=80',
+    'lebanon': 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80',
+    'lb': 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=600&q=80',
+    'kenya': 'https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=600&q=80',
+    'ke': 'https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=600&q=80',
+    'south-africa': 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=600&q=80',
+    'za': 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?auto=format&fit=crop&w=600&q=80',
+    'brazil': 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=600&q=80',
+    'br': 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=600&q=80',
+    'russia': 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?auto=format&fit=crop&w=600&q=80',
+    'ru': 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?auto=format&fit=crop&w=600&q=80',
+    'georgia': 'https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=600&q=80',
+    'ge': 'https://images.unsplash.com/photo-1565008447742-97f6f38c985c?auto=format&fit=crop&w=600&q=80',
+    'azerbaijan': 'https://images.unsplash.com/photo-1580837119756-563d608dd119?auto=format&fit=crop&w=600&q=80',
+    'az': 'https://images.unsplash.com/photo-1580837119756-563d608dd119?auto=format&fit=crop&w=600&q=80',
+    'uzbekistan': 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=600&q=80',
+    'uz': 'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=600&q=80',
+    'armenia': 'https://images.unsplash.com/photo-1577702312706-e23ff063064f?auto=format&fit=crop&w=600&q=80',
+    'am': 'https://images.unsplash.com/photo-1577702312706-e23ff063064f?auto=format&fit=crop&w=600&q=80',
+    'cambodia': 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80',
+    'kh': 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80',
+    'tanzania': 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=600&q=80',
+    'tz': 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=600&q=80',
+    'tajikistan': 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80',
+    'tj': 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=80',
+    'maldives': 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=600&q=80',
+    'mv': 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=600&q=80',
+    'switzerland': 'https://images.unsplash.com/photo-1527668752968-14dc70a27c95?auto=format&fit=crop&w=600&q=80',
+    'ch': 'https://images.unsplash.com/photo-1527668752968-14dc70a27c95?auto=format&fit=crop&w=600&q=80',
+    'netherlands': 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?auto=format&fit=crop&w=600&q=80',
+    'nl': 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?auto=format&fit=crop&w=600&q=80',
+    'greece': 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80',
+    'gr': 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80',
+    'portugal': 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=600&q=80',
+    'pt': 'https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&w=600&q=80',
+    'sweden': 'https://images.unsplash.com/photo-1509356843151-3e7d96241e11?auto=format&fit=crop&w=600&q=80',
+    'se': 'https://images.unsplash.com/photo-1509356843151-3e7d96241e11?auto=format&fit=crop&w=600&q=80',
+    'norway': 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=600&q=80',
+    'no': 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=600&q=80',
+    'denmark': 'https://images.unsplash.com/photo-1513622470522-26c3c8a854bc?auto=format&fit=crop&w=600&q=80',
+    'dk': 'https://images.unsplash.com/photo-1513622470522-26c3c8a854bc?auto=format&fit=crop&w=600&q=80',
+    'finland': 'https://images.unsplash.com/photo-1538332576228-eb5b4c4de6f5?auto=format&fit=crop&w=600&q=80',
+    'fi': 'https://images.unsplash.com/photo-1538332576228-eb5b4c4de6f5?auto=format&fit=crop&w=600&q=80',
+    'poland': 'https://images.unsplash.com/photo-1519197924294-4ba991a11128?auto=format&fit=crop&w=600&q=80',
+    'pl': 'https://images.unsplash.com/photo-1519197924294-4ba991a11128?auto=format&fit=crop&w=600&q=80',
+    'austria': 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=600&q=80',
+    'at': 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=600&q=80',
+    'belgium': 'https://images.unsplash.com/photo-1491557345352-5929e343eb89?auto=format&fit=crop&w=600&q=80',
+    'be': 'https://images.unsplash.com/photo-1491557345352-5929e343eb89?auto=format&fit=crop&w=600&q=80',
+    'croatia': 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=600&q=80',
+    'hr': 'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=600&q=80',
+    'czech-republic': 'https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=600&q=80',
+    'czechia': 'https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=600&q=80',
+    'cz': 'https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=600&q=80',
+    'hungary': 'https://images.unsplash.com/photo-1565426873118-a17ed65d74b9?auto=format&fit=crop&w=600&q=80',
+    'hu': 'https://images.unsplash.com/photo-1565426873118-a17ed65d74b9?auto=format&fit=crop&w=600&q=80',
+    'iceland': 'https://images.unsplash.com/photo-1504829857797-ddff29c27927?auto=format&fit=crop&w=600&q=80',
+    'is': 'https://images.unsplash.com/photo-1504829857797-ddff29c27927?auto=format&fit=crop&w=600&q=80',
+    'ireland': 'https://images.unsplash.com/photo-1590089415225-401ed6f9db8e?auto=format&fit=crop&w=600&q=80',
+    'ie': 'https://images.unsplash.com/photo-1590089415225-401ed6f9db8e?auto=format&fit=crop&w=600&q=80',
+    'luxembourg': 'https://images.unsplash.com/photo-1569429593410-b498b3fb3387?auto=format&fit=crop&w=600&q=80',
+    'lu': 'https://images.unsplash.com/photo-1569429593410-b498b3fb3387?auto=format&fit=crop&w=600&q=80',
+    'malta': 'https://images.unsplash.com/photo-1528728329032-2972f65dfb3f?auto=format&fit=crop&w=600&q=80',
+    'mt': 'https://images.unsplash.com/photo-1528728329032-2972f65dfb3f?auto=format&fit=crop&w=600&q=80'
+  };
+
+  function getCountryPhoto(name, iso) {
+    var rawName = (name || '').toLowerCase().trim();
+    var slug = rawName.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    var isoCode = (iso || '').toLowerCase().trim();
+    var photos = window.VISADOO_DESTINATION_PHOTOS || {};
+
+    if (photos[slug]) return photos[slug];
+    if (photos[slug + '-card']) return photos[slug + '-card'];
+    if (photos[slug + '-banner']) return photos[slug + '-banner'];
+    if (isoCode && photos[isoCode]) return photos[isoCode];
+
+    if (BUILTIN_COUNTRY_PHOTOS[slug]) return BUILTIN_COUNTRY_PHOTOS[slug];
+    if (BUILTIN_COUNTRY_PHOTOS[slug + '-card']) return BUILTIN_COUNTRY_PHOTOS[slug + '-card'];
+    if (BUILTIN_COUNTRY_PHOTOS[slug + '-banner']) return BUILTIN_COUNTRY_PHOTOS[slug + '-banner'];
+    if (isoCode && BUILTIN_COUNTRY_PHOTOS[isoCode]) return BUILTIN_COUNTRY_PHOTOS[isoCode];
+
+    // Substring lookup against known photos
+    var allKeys = Object.keys(BUILTIN_COUNTRY_PHOTOS);
+    for (var i = 0; i < allKeys.length; i++) {
+      var k = allKeys[i];
+      if (k.length > 3 && (slug.indexOf(k) > -1 || k.indexOf(slug) > -1)) {
+        return BUILTIN_COUNTRY_PHOTOS[k];
+      }
     }
+
+    return 'https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=600&q=80';
+  }
+
+  var DESTINATION_OPTIONS = [
+    { name: 'India', iso: 'in', count: '18+ destinations available' },
+    { name: 'Qatar', iso: 'qa', count: '11+ destinations available' }
+  ];
+
+  function renderNationalityOptions(){
+    if(!natDropdown) return;
+    var list=natDropdown.querySelector('.dropdown-options-list');
+    if(!list) return;
+    var rawSelected = localStorage.getItem('visadoo_nationality') || 'India';
+    var selected = rawSelected.toLowerCase().trim();
+    if (selected !== 'india' && selected !== 'qatar') {
+      selected = 'india';
+      localStorage.setItem('visadoo_nationality', 'India');
+    }
+
+    var items = [
+      { name: 'India', iso: 'in', count: '18+ destinations available' },
+      { name: 'Qatar', iso: 'qa', count: '11+ destinations available' }
+    ];
+
+    if (dbNationalities && dbNationalities.length) {
+      items = items.map(function(item) {
+        var dbNat = dbNationalities.filter(function(n) {
+          return (n.name || '').toLowerCase() === item.name.toLowerCase();
+        })[0];
+        if (dbNat && Array.isArray(dbNat.destinations) && dbNat.destinations.length) {
+          return {
+            name: item.name,
+            iso: item.iso,
+            count: dbNat.destinations.length + '+ destinations available'
+          };
+        }
+        return item;
+      });
+    }
+
+    list.innerHTML = items.map(function(d){
+      var iso = (d.iso || '').toLowerCase();
+      var flagUrl = 'https://flagcdn.com/w160/' + iso + '.png';
+      var isSelected = (d.name.toLowerCase() === selected);
+
+      return '<div class="nat-dest-item' + (isSelected ? ' active' : '') + '" data-value="' + escHtml(d.name) + '" data-iso="' + escHtml(iso) + '" role="option" aria-selected="' + (isSelected ? 'true' : 'false') + '">' +
+        '<div class="nat-dest-media">' +
+          '<img src="' + flagUrl + '" alt="' + escHtml(d.name) + ' flag" class="nat-dest-img nat-dest-flag" loading="lazy" decoding="async">' +
+        '</div>' +
+        '<div class="nat-dest-info">' +
+          '<strong class="nat-dest-name">' + escHtml(d.name) + '</strong>' +
+          '<span class="nat-dest-desc">' + escHtml(d.count) + '</span>' +
+        '</div>' +
+        '<div class="nat-dest-radio" aria-hidden="true">' +
+          '<div class="nat-dest-radio-circle">' +
+            '<svg class="nat-dest-check-icon" viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M3.5 8.5L6.5 11.5L12.5 4.5"></path>' +
+            '</svg>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    wireNationalityOptionClicks();
+    var selectedVal = localStorage.getItem('visadoo_nationality') || 'India';
+    updateNationalityUI(selectedVal);
+    renderDropdownGrid();
+  }
+
+  function wireNationalityOptionClicks(){
+    if(!natDropdown) return;
+    var items = natDropdown.querySelectorAll('.nat-dest-item, .nat-feed-card, .dropdown-options-list button[data-value]');
+    for(var i=0; i<items.length; i++){
+      (function(item){
+        item.onclick = function(e){
+          e.stopPropagation();
+          var val = item.getAttribute('data-value');
+          var iso = item.getAttribute('data-iso') || '';
+          localStorage.setItem('visadoo_nationality', val);
+
+          // Dynamically toggle radio checks and active states without full redraw
+          for(var j=0; j<items.length; j++){
+            var isCurr = (items[j] === item);
+            items[j].classList.toggle('active', isCurr);
+            items[j].setAttribute('aria-selected', isCurr ? 'true' : 'false');
+          }
+
+          updateNationalityUI(val, iso);
+          setTimeout(function(){
+            closeAllDropdowns();
+          }, 150);
+          renderDropdownGrid();
+          document.dispatchEvent(new CustomEvent('nationalitychanged', { detail: val }));
+          checkAndRedirect();
+        };
+      })(items[i]);
+    }
+  }
+
+  function updateNationalityUI(val, iso){
+    var cleanVal = (val || 'India').trim();
+    if (!iso) {
+      var match = DESTINATION_OPTIONS.filter(function(d){ return d.name.toLowerCase() === cleanVal.toLowerCase(); })[0];
+      if (match) {
+        iso = match.iso;
+      } else {
+        var n = dbNationalities.filter(function(x){ return x.name.toLowerCase() === cleanVal.toLowerCase(); })[0];
+        iso = n && n.iso2 ? n.iso2.toLowerCase() : (cleanVal==='Qatar'?'qa':(cleanVal==='Dubai'?'ae':'in'));
+      }
+    }
+    iso = (iso || 'in').toLowerCase();
+    var flagUrl = 'https://flagcdn.com/w40/' + iso + '.png';
+
+    var flagImg = document.getElementById('selectedNationalityFlag');
+    if (flagImg) flagImg.src = flagUrl;
+    var mobileFlag = document.getElementById('mobileSelectedNatFlag');
+    if (mobileFlag) mobileFlag.src = flagUrl;
+    var heroFlag = document.getElementById('heroSelectedFlag');
+    if (heroFlag) heroFlag.src = flagUrl;
+
+    var textSpan = document.getElementById('selectedNationalityText');
+    if (textSpan) textSpan.textContent = cleanVal;
+    var mobileText = document.getElementById('mobileSelectedNatText');
+    if (mobileText) mobileText.textContent = cleanVal;
+    var heroText = document.getElementById('heroSelectedNationality');
+    if (heroText) heroText.textContent = cleanVal;
+    var dockOrigin = document.getElementById('dockOriginDisplay');
+    if (dockOrigin) dockOrigin.textContent = cleanVal;
+  }
+
+  function closeAllDropdowns() {
+    if (natDropdown) natDropdown.classList.remove('open');
+    if (destDropdown) destDropdown.classList.remove('open');
   }
 
   function checkAndRedirect() {
@@ -607,14 +1335,21 @@
     if (dropdownsInitialized) return;
     natDropdown = document.getElementById('nationalityDropdown');
     destDropdown = document.getElementById('destinationDropdown');
-    if (!natDropdown || !destDropdown) return;
     dropdownsInitialized = true;
 
-    var natTrigger = natDropdown.querySelector('.header-dropdown-trigger');
-    var destTrigger = destDropdown.querySelector('.header-dropdown-trigger');
+    var natTrigger = natDropdown ? natDropdown.querySelector('.header-dropdown-trigger') : null;
+    var destTrigger = destDropdown ? destDropdown.querySelector('.header-dropdown-trigger') : null;
 
     var natSearch = document.getElementById('nationalitySearchInput');
     var destSearch = document.getElementById('destinationSearchInput');
+
+    var natClose = document.getElementById('natModalClose');
+    if (natClose) {
+      natClose.onclick = function(e) {
+        e.stopPropagation();
+        closeAllDropdowns();
+      };
+    }
 
     // Click handler for Nationality trigger
     if (natTrigger) {
@@ -682,53 +1417,156 @@
     }
 
     function filterOptions(dropdown, query) {
+      if (!dropdown) return;
       var q = query.toLowerCase().trim();
-      var options = dropdown.querySelectorAll('.dropdown-options-list button');
-      for (var i = 0; i < options.length; i++) {
-        var val = options[i].getAttribute('data-value').toLowerCase();
-        if (val.indexOf(q) > -1) {
-          options[i].style.display = 'flex';
-        } else {
-          options[i].style.display = 'none';
+      var natItems = dropdown.querySelectorAll('.nat-dest-item, .nat-feed-card');
+      var list = dropdown.querySelector('.dropdown-options-list');
+      var noResults = dropdown.querySelector('.nat-no-results');
+
+      if (natItems.length) {
+        var matchCount = 0;
+        for (var i = 0; i < natItems.length; i++) {
+          var val = (natItems[i].getAttribute('data-value') || '').toLowerCase();
+          var matches = (!q || val.indexOf(q) > -1);
+          natItems[i].style.display = matches ? 'flex' : 'none';
+          if (matches) matchCount++;
         }
+        if (matchCount === 0) {
+          if (!noResults && list) {
+            noResults = document.createElement('div');
+            noResults.className = 'nat-no-results';
+            noResults.textContent = 'No destination found';
+            list.appendChild(noResults);
+          } else if (noResults) {
+            noResults.style.display = 'block';
+          }
+        } else if (noResults) {
+          noResults.style.display = 'none';
+        }
+        return;
+      }
+      var options = dropdown.querySelectorAll('.dropdown-options-list button');
+      for (var j = 0; j < options.length; j++) {
+        var btnVal = (options[j].getAttribute('data-value') || '').toLowerCase();
+        options[j].style.display = (!q || btnVal.indexOf(q) > -1) ? 'flex' : 'none';
       }
     }
 
-    // Setup options clicks
+    // Setup nationality. Static fallback options stay offline; database options replace them when available.
     var selectedNat = localStorage.getItem('visadoo_nationality');
     if (!selectedNat) {
       selectedNat = 'India';
       localStorage.setItem('visadoo_nationality', 'India');
     }
     updateNationalityUI(selectedNat);
-
-    var natOptions = natDropdown.querySelectorAll('.dropdown-options-list button[data-value]');
-    for (var i = 0; i < natOptions.length; i++) {
-      (function(btn) {
-        btn.onclick = function(e) {
-          e.stopPropagation();
-          var val = btn.getAttribute('data-value');
-          localStorage.setItem('visadoo_nationality', val);
-          updateNationalityUI(val);
-          closeAllDropdowns();
-          document.dispatchEvent(new CustomEvent('nationalitychanged', { detail: val }));
-          checkAndRedirect();
-        };
-      })(natOptions[i]);
-    }
-
-    function updateNationalityUI(val) {
-      var flagUrl = val === 'India' ? 'https://flagcdn.com/w40/in.png' : 'https://flagcdn.com/w40/qa.png';
-      var flagImg = document.getElementById('selectedNationalityFlag');
-      if (flagImg) flagImg.src = flagUrl;
-      var textSpan = document.getElementById('selectedNationalityText');
-      if (textSpan) textSpan.textContent = val;
-    }
+    renderNationalityOptions();
 
     loadDropdownDestinations();
   }
 
   function initGlobalSmoothScroll() {
+    function bootLenis() {
+      if (window.__lenisInitialized || typeof window.Lenis === 'undefined') return;
+      if (document.body && document.body.classList.contains('has-admin-side')) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      try {
+        var lenis = new window.Lenis({
+          wrapper: window,
+          content: document.documentElement,
+          lerp: 0.1, // Matches visadoo.com / uicore smooth momentum
+          duration: 1.2,
+          easing: function(t) { return Math.min(1, 1.001 - Math.pow(2, -10 * t)); },
+          orientation: 'vertical',
+          gestureOrientation: 'vertical',
+          smoothWheel: true,
+          syncTouch: false, // Keep native 120Hz touch scrolling on mobile
+          wheelMultiplier: 1.0,
+          touchMultiplier: 1.0,
+          autoResize: true,
+          prevent: function(node) {
+            return !!(
+              node && node.closest && (
+                node.closest('[data-lenis-prevent]') ||
+                node.closest('.lenis-prevent') ||
+                node.closest('.header-dropdown-menu') ||
+                node.closest('.nat-luxury-modal') ||
+                node.closest('.dropdown-options-list') ||
+                node.closest('.why-rec-modal') ||
+                node.closest('.modal-dialog') ||
+                node.closest('.drawer') ||
+                node.closest('.tray-scroll') ||
+                node.closest('.dialog')
+              )
+            );
+          }
+        });
+
+        window.lenis = lenis;
+        window.ui_animate_lenis = lenis; // Matches visadoo.com reference
+
+        function raf(time) {
+          lenis.raf(time);
+          requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+        window.__lenisInitialized = true;
+
+        if (!document.getElementById('lenis-styles')) {
+          var style = document.createElement('style');
+          style.id = 'lenis-styles';
+          style.textContent = [
+            'html.lenis, html.lenis body { height: auto; }',
+            'html.lenis, html.lenis body, .lenis.lenis-smooth { scroll-behavior: auto !important; }',
+            '.lenis.lenis-smooth [data-lenis-prevent], .lenis-prevent { overscroll-behavior: contain; }',
+            '.lenis.lenis-stopped { overflow: hidden; }',
+            '.lenis.lenis-scrolling iframe { pointer-events: none; }'
+          ].join('\n');
+          document.head.appendChild(style);
+        }
+
+        window.addEventListener('resize', function() { lenis.resize(); });
+        document.addEventListener('visadoo:country-rendered', function() {
+          setTimeout(function() { lenis.resize(); }, 120);
+        });
+      } catch (err) {
+        console.warn('Lenis init failed', err);
+      }
+    }
+
+    // Expose global smooth scroll helper
+    window.smoothScrollTo = function(target, offset) {
+      var off = typeof offset === 'number' ? offset : -70;
+      if (window.lenis) {
+        window.lenis.scrollTo(target, { offset: off, duration: 1.2 });
+      } else if (typeof target === 'number') {
+        window.scrollTo({ top: target, behavior: 'smooth' });
+      } else if (target && target.scrollIntoView) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+
+    // Load or boot Lenis
+    if (typeof window.Lenis === 'undefined') {
+      var script = document.createElement('script');
+      script.src = '/vendor/lenis.min.js';
+      script.async = true;
+      script.onload = function() {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', bootLenis);
+        } else {
+          bootLenis();
+        }
+      };
+      document.head.appendChild(script);
+    } else {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootLenis);
+      } else {
+        bootLenis();
+      }
+    }
+
     // Intercept clicks on hash links starting with #
     document.addEventListener('click', function(e) {
       var target = e.target.closest('a[href^="#"]');
@@ -740,7 +1578,11 @@
       // If it is #top, scroll to the top of the page smoothly
       if (hash === '#top') {
         e.preventDefault();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (window.lenis) {
+          window.lenis.scrollTo(0, { duration: 1.2 });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         if (window.history && window.history.pushState) {
           window.history.pushState(null, null, ' ');
         } else {
@@ -754,7 +1596,11 @@
         var el = document.querySelector(hash);
         if (el) {
           e.preventDefault();
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (window.lenis) {
+            window.lenis.scrollTo(el, { offset: -70, duration: 1.2 });
+          } else {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
           if (window.history && window.history.pushState) {
             window.history.pushState(null, null, hash);
           } else {
@@ -768,13 +1614,16 @@
 
     // Scroll to the current URL hash smoothly if the target element exists
     function scrollToCurrentHash() {
-      if (!window.location.hash) return;
+      var h = window.location.hash;
+      if (!h || h === '#top' || h === '#') return;
       try {
-        var target = document.querySelector(window.location.hash);
+        var target = document.querySelector(h);
         if (target) {
-          setTimeout(function() {
+          if (window.lenis) {
+            window.lenis.scrollTo(target, { offset: -70, duration: 1.2 });
+          } else {
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 150);
+          }
         }
       } catch (err) {
         // Ignore invalid query selectors
@@ -805,8 +1654,9 @@
     analytics(s);
     
     var actions = document.querySelector('.header .nav-actions');
-    if (actions) {
-      window.initLanguageSelectorIn(actions);
+    window.initLanguageSelectorIn(actions);
+    if (typeof window.initDraftResumeButton === 'function') {
+      window.initDraftResumeButton(actions);
     }
     
     initHeaderDropdowns();
@@ -815,14 +1665,83 @@
     document.dispatchEvent(new Event("brandloaded"));
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      initHeaderDropdowns();
-      initGlobalSmoothScroll();
+  function ensureMobileMenuNationality() {
+    var navLinks = document.getElementById('navLinks');
+    var natDropdown = document.getElementById('nationalityDropdown');
+    if (!navLinks || !natDropdown) return;
+    var existingBtn = navLinks.querySelector('.mobile-menu-nat-btn');
+    if (!existingBtn) {
+      var selectedNat = localStorage.getItem('visadoo_nationality') || 'India';
+      var flagImg = document.getElementById('selectedNationalityFlag');
+      var flagSrc = (flagImg && flagImg.src) ? flagImg.src : 'https://flagcdn.com/w40/in.png';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mobile-menu-nat-btn notranslate';
+      btn.setAttribute('translate', 'no');
+      btn.innerHTML = '<span class="mobile-nat-left"><img src="' + flagSrc + '" class="dropdown-flag mobile-nat-flag" id="mobileSelectedNatFlag" alt=""><span class="mobile-nat-label">Nationality</span></span><span class="mobile-nat-val" id="mobileSelectedNatText">' + selectedNat + '</span><span class="dropdown-chevron"></span>';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        navLinks.classList.remove('open');
+        var menuBtn = document.getElementById('menuBtn');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        var natTrigger = natDropdown.querySelector('.header-dropdown-trigger');
+        if (natTrigger) {
+          natTrigger.click();
+        } else {
+          natDropdown.classList.add('open');
+        }
+      });
+      navLinks.insertBefore(btn, navLinks.firstChild);
+    }
+  }
+
+  function initMobileMenu() {
+    var menuBtn = document.getElementById('menuBtn');
+    var navLinks = document.getElementById('navLinks');
+    ensureMobileMenuNationality();
+    if (!menuBtn || !navLinks || menuBtn.getAttribute('data-menu-wired') === 'true') return;
+    menuBtn.setAttribute('data-menu-wired', 'true');
+    menuBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      ensureMobileMenuNationality();
+      var open = navLinks.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded', String(open));
     });
-  } else {
+    navLinks.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        navLinks.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      });
+    });
+    document.addEventListener('click', function(e) {
+      if (!navLinks.contains(e.target) && e.target !== menuBtn && !menuBtn.contains(e.target)) {
+        navLinks.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  window.initHeaderDropdowns = initHeaderDropdowns;
+  window.initMobileMenu = initMobileMenu;
+  window.getCountryPhoto = getCountryPhoto;
+  window.BUILTIN_COUNTRY_PHOTOS = BUILTIN_COUNTRY_PHOTOS;
+
+  function initImmediate() {
+    applyBrand({ brand_name: "Visa Doo" });
+    var actions = document.querySelector('.header .nav-actions');
+    window.initLanguageSelectorIn(actions);
+    if (typeof window.initDraftResumeButton === 'function') {
+      window.initDraftResumeButton(actions);
+    }
     initHeaderDropdowns();
     initGlobalSmoothScroll();
+    initMobileMenu();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initImmediate);
+  } else {
+    initImmediate();
   }
 
   fetch(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=*", { headers: { apikey: ANON, authorization: "Bearer " + ANON } })

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visa Doo</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/branding.js"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="container nav">
+      <a href="/" class="brand"><img src="/assets/logo_transparent.png" alt="Visa Doo" style="height:42px;width:auto;max-width:200px;display:block"></a>
+      <div class="nav-actions">
+        <a href="/app.html#track" class="btn btn-ghost">Track application</a>
+        <a href="/app.html" class="btn btn-primary">Sign in</a>
+      </div>
+    </div>
+  </header>
+  <main>
+    <article class="article-wrap" style="padding: 48px 0; min-height: 50vh;">
+      <div class="container article-inner" id="pageContainer">
+        <h1 class="article-title" id="pageTitle" style="font-size: 32px; font-weight: 800; color: #0f172a; margin-bottom: 20px;">Loading…</h1>
+        <div class="article-body" id="pageBody" style="line-height: 1.75; color: #334155; font-size: 16px;"></div>
+      </div>
+    </article>
+  </main>
+  <footer class="footer">
+    <div class="container footer-bottom">
+      © <span id="year">2026</span> Visa Doo. All rights reserved. · <a href="/">Home</a> · <a href="/articles">Articles</a>
+    </div>
+  </footer>
+  <script>
+    (function(){
+      var y = document.getElementById('year');
+      if (y) y.textContent = new Date().getFullYear();
+      var path = window.location.pathname.split('/').filter(Boolean);
+      var slug = path[path.indexOf('p') + 1] || new URLSearchParams(window.location.search).get('page') || 'about';
+      slug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
+      
+      var fallbackPages = {
+        'about': {
+          title: 'About Us',
+          content: '<p>Visa Doo is a leading visa concierge and travel documentation service provider. We simplify international travel visas, e-visas, and entry requirements for travellers worldwide.</p><p>Our dedicated team of visa specialists inspects every application to ensure seamless approval and stress-free international travel.</p>'
+        },
+        'privacy-policy': {
+          title: 'Privacy Policy',
+          content: '<p>Your privacy is important to us. Visa Doo collects only the personal information and travel documents necessary to process your visa application with official immigration authorities.</p><p>All uploaded documents and personal information are transmitted securely and encrypted in transit.</p>'
+        },
+        'terms': {
+          title: 'Terms of Service',
+          content: '<p>By using Visa Doo, you agree to comply with all applicable terms and conditions. Visa Doo acts as an authorized documentation assistance service provider.</p><p>Final visa issuance decisions remain at the sole discretion of the respective sovereign government and immigration authorities.</p>'
+        }
+      };
+
+      var titleEl = document.getElementById('pageTitle');
+      var bodyEl = document.getElementById('pageBody');
+      var data = fallbackPages[slug] || fallbackPages['about'];
+      if (data) {
+        document.title = data.title + ' | Visa Doo';
+        if (titleEl) titleEl.textContent = data.title;
+        if (bodyEl) bodyEl.innerHTML = data.content;
+      }
+    })();
+  </script>
+</body>
+</html>

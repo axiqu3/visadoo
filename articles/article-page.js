@@ -103,12 +103,19 @@
 
     var progress=document.querySelector('#readingProgress span');
     if(progress){
+      var progressTicking = false;
       var paintProgress=function(){
-        var page=document.documentElement;
-        var distance=Math.max(1,page.scrollHeight-window.innerHeight);
-        progress.style.width=Math.min(100,Math.max(0,(window.scrollY/distance)*100))+'%';
+        if(!progressTicking){
+          window.requestAnimationFrame(function(){
+            var page=document.documentElement;
+            var distance=Math.max(1,page.scrollHeight-window.innerHeight);
+            progress.style.width=Math.min(100,Math.max(0,(window.scrollY/distance)*100))+'%';
+            progressTicking = false;
+          });
+          progressTicking = true;
+        }
       };
-      paintProgress(); window.addEventListener('scroll',paintProgress,{passive:true}); window.addEventListener('resize',paintProgress);
+      paintProgress(); window.addEventListener('scroll',paintProgress,{passive:true}); window.addEventListener('resize',paintProgress,{passive:true});
     }
 
     if('IntersectionObserver' in window&&toc&&headings.length){

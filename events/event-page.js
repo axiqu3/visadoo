@@ -8,6 +8,11 @@
   if(year) year.textContent=new Date().getFullYear();
   function flag(iso2){ return iso2?'https://flagcdn.com/w160/'+String(iso2).toLowerCase()+'.png':''; }
 
+  function isFlagImage(url){
+    if(!url) return false;
+    return /flagcdn\.com|flagsapi\.com|\/flags?\/|flag|\.svg$/i.test(url) || /\/assets\/flags\//i.test(url);
+  }
+
   function esc(value){
     return (value==null?'':String(value)).replace(/[&<>"']/g,function(ch){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
@@ -37,6 +42,7 @@
     if(value==null||value===''||!unit) return '';
     return 'About '+value+' '+(unit==='hours'?('hour'+(Number(value)===1?'':'s')):('day'+(Number(value)===1?'':'s')));
   }
+
   function formatDate(value){
     if(!value) return '';
     var parts=value.split('-');
@@ -90,7 +96,6 @@
     return '<article class="vcard">'+
       (processingText(visa)?'<div class="eta-pill">⚡ Get your visa in '+esc(processingText(visa).toLowerCase())+'</div>':'')+
       '<h3>'+esc(visa.name||'Visa option')+'</h3>'+
-      (visa.category?'<div class="vsub">'+esc(visa.category)+'</div>':'')+
       '<div class="price">'+esc(money(priceNumber(visa)))+' <small>/ visa</small></div>'+
       (visa.blurb?'<p class="blurb">'+esc(visa.blurb)+'</p>':'')+
       '<ul>'+features.map(function(feature){return '<li>'+CHECK+esc(feature)+'</li>';}).join('')+'</ul>'+
@@ -102,7 +107,15 @@
   }
   function render(event,country,visas){
     var countryName=country.name||'this destination';
-    var image=event.image_url||photos[event.country_slug+'-banner']||photos[event.country_slug]||country.image_url||'';
+    var baseSlug = (event.country_slug || '').toLowerCase().replace(/-\d+$/, '');
+    var image = event.image_url || photos[event.country_slug+'-banner'] || photos[baseSlug+'-banner'] || photos[event.country_slug] || photos[baseSlug] || '';
+    if (!image || isFlagImage(image)) {
+      if (country.image_url && !isFlagImage(country.image_url)) {
+        image = country.image_url;
+      } else {
+        image = 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=2400&q=95';
+      }
+    }
     var when=dateRange(event.event_date,event.end_date);
     var heroDateStats=dateStats(event.event_date,event.end_date);
     var lead=leadDays(event,visas);
@@ -184,20 +197,38 @@
     return;
   }
   if(!eventSlug){ renderError('Event not selected','Choose an event from the events page to see its details.'); return; }
-  if(!cfg.SUPABASE_URL||!cfg.SUPABASE_ANON_KEY){ renderError('Connection unavailable','The event service is not configured yet.'); return; }
+  var SEED_MAP = {
+    'itb-asia-2026': { slug: 'itb-asia-2026', name: 'ITB Asia 2026', country_slug: 'singapore', category: 'Travel Expo', event_date: '2026-09-20', end_date: '2026-09-22', city: 'Singapore', image_url: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80', blurb: "Asia's leading travel trade show connecting the global travel industry." },
+    'formula-1-azerbaijan-grand-prix-2026': { slug: 'formula-1-azerbaijan-grand-prix-2026', name: 'F1 Azerbaijan Grand Prix 2026', country_slug: 'azerbaijan', category: 'Sports', event_date: '2026-09-24', end_date: '2026-09-27', city: 'Baku, Azerbaijan', image_url: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1200&q=80', blurb: "Experience high-speed action and explore Azerbaijan's rich culture." },
+    'dubai-airshow-2026': { slug: 'dubai-airshow-2026', name: 'Dubai Airshow 2026', country_slug: 'united-arab-emirates', category: 'Business', event_date: '2026-09-26', end_date: '2026-09-28', city: 'Dubai, UAE', image_url: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80', blurb: "The world's largest aerospace event showcasing the future of aviation." },
+    'ultra-worldwide-music-festival-2026': { slug: 'ultra-worldwide-music-festival-2026', name: 'Ultra Worldwide Music Festival 2026', country_slug: 'indonesia', category: 'Music', event_date: '2026-09-28', end_date: '2026-09-30', city: 'Bali, Indonesia', image_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80', blurb: 'Electrifying electronic music festival featuring world-class international headliners and stage production.' },
+    'seoul-mid-autumn-lantern-festival-2026': { slug: 'seoul-mid-autumn-lantern-festival-2026', name: 'Seoul Lantern Festival 2026', country_slug: 'south-korea', category: 'Art & Culture', event_date: '2026-09-15', end_date: '2026-09-18', city: 'Seoul, South Korea', image_url: 'https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=1200&q=80', blurb: 'Hundreds of handcrafted luminous Hanji paper lanterns illuminating ancient palaces and waterways.' },
+    'gitex-global-2026': { slug: 'gitex-global-2026', name: 'GITEX Global 2026', country_slug: 'united-arab-emirates', category: 'Business', event_date: '2026-09-10', end_date: '2026-09-12', city: 'Dubai, UAE', image_url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80', blurb: 'Global tech founders and innovators gathering to discover cutting-edge artificial intelligence and computing.' },
+    'oktoberfest-munich-2026': { slug: 'oktoberfest-munich-2026', name: 'Oktoberfest Munich 2026', country_slug: 'germany', category: 'Art & Culture', event_date: '2026-09-19', end_date: '2026-10-04', city: 'Munich, Germany', image_url: 'https://images.unsplash.com/photo-1571863533956-01c88e79957e?auto=format&fit=crop&w=1200&q=80', blurb: "The world's biggest Bavarian folk and cultural festival celebrating traditional music, cuisine and camaraderie." },
+    'tokyo-game-show-2026': { slug: 'tokyo-game-show-2026', name: 'Tokyo Game Show 2026', country_slug: 'japan', category: 'Business', event_date: '2026-09-24', end_date: '2026-09-27', city: 'Tokyo, Japan', image_url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80', blurb: "Asia's premier video game exhibition showcasing the next generation of games, hardware and esports." },
+    'paris-fashion-week-ss27': { slug: 'paris-fashion-week-ss27', name: 'Paris Fashion Week SS27', country_slug: 'france', category: 'Art & Culture', event_date: '2026-09-28', end_date: '2026-10-06', city: 'Paris, France', image_url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80', blurb: 'The pinnacle of international haute couture runways across legendary Parisian landmarks and grand halls.' },
+    'singapore-grand-prix-2026': { slug: 'singapore-grand-prix-2026', name: 'Singapore Grand Prix 2026', country_slug: 'singapore', category: 'Sports', event_date: '2026-09-18', end_date: '2026-09-20', city: 'Singapore', image_url: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80', blurb: 'The spectacular night race around Marina Bay Circuit paired with star-studded concerts and entertainment.' },
+    'monaco-yacht-show-2026': { slug: 'monaco-yacht-show-2026', name: 'Monaco Yacht Show 2026', country_slug: 'france', category: 'Business', event_date: '2026-09-23', end_date: '2026-09-26', city: 'Port Hercule, Monaco', image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80', blurb: 'The ultimate superyacht luxury showcase attracting yacht builders, owners and nautical enthusiasts globally.' },
+    'venice-film-festival-2026': { slug: 'venice-film-festival-2026', name: 'Venice International Film Festival 2026', country_slug: 'italy', category: 'Art & Culture', event_date: '2026-09-02', end_date: '2026-09-12', city: 'Venice, Italy', image_url: 'https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=1200&q=80', blurb: "The world's oldest film festival celebrating cinematic brilliance on the glamorous island of Lido di Venezia." }
+  };
 
   fetchJson('/rest/v1/events?slug=eq.'+encodeURIComponent(eventSlug)+'&active=eq.true&select=*').then(function(events){
-    if(!events.length){ renderError('Event not found','This event is not available right now.'); return null; }
-    var event=events[0];
+    var event = events && events.length ? events[0] : SEED_MAP[eventSlug];
+    if(!event){ renderError('Event not found','This event is not available right now.'); return null; }
     return Promise.all([
       Promise.resolve(event),
-      fetchJson('/rest/v1/countries?slug=eq.'+encodeURIComponent(event.country_slug)+'&select=*'),
-      fetchJson('/rest/v1/visa_types?country_slug=eq.'+encodeURIComponent(event.country_slug)+'&active=eq.true&order=sort_order&select=*')
+      fetchJson('/rest/v1/countries?slug=eq.'+encodeURIComponent(event.country_slug)+'&select=*').catch(function(){ return [{ name: event.country_slug }]; }),
+      fetchJson('/rest/v1/visa_types?country_slug=eq.'+encodeURIComponent(event.country_slug)+'&active=eq.true&order=sort_order&select=*').catch(function(){ return []; })
     ]);
   }).then(function(data){
     if(!data) return;
     render(data[0],data[1][0]||{name:data[0].country_slug},data[2]||[]);
   }).catch(function(){
-    renderError('Could not load this event','Please check your connection and try again.');
+    var fallback = SEED_MAP[eventSlug];
+    if(fallback){
+      render(fallback, { name: fallback.country_slug }, []);
+    } else {
+      renderError('Could not load this event','Please check your connection and try again.');
+    }
   });
 })();

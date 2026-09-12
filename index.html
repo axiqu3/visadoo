@@ -15,11 +15,11 @@
 <meta name="twitter:image" content="https://visadoo-uae.netlify.app/assets/og-visadoo-simple.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232563eb'/><path d='M50 22l24 38H26z' fill='white' transform='rotate(45 50 50)'/></svg>">
-<link rel="preload" as="image" href="assets/hero-world-travel.png" type="image/png" fetchpriority="high">
-<link rel="stylesheet" href="styles.css?v=20260801-home-mobile-compact">
+<link rel="preload" as="image" href="assets/hero-world-landmarks.png?v=20260910-world-hd-v1" type="image/png" fetchpriority="high">
+<link rel="stylesheet" href="styles.css?v=20260911-from-nat-simple-v1">
 <script>
   // Supabase can fall back to the Site URL when /app.html is not allowlisted.
   // Forward OAuth callbacks to the application so the marketing homepage never
@@ -61,70 +61,77 @@
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   if (!location.hash || location.hash === '#top') scrollTo(0, 0);
 </script>
-<script src="branding.js"></script>
+<script src="/vendor/lenis.min.js"></script>
+<script src="branding.js?v=20260912-lenis-smooth-v1"></script>
 </head>
 <body class="home-page" id="top">
 
-<!-- HEADER -->
-<header class="header discover-header">
+<!-- HEADER (Matching Northpeak clean transparent aesthetic) -->
+<header class="header discover-header" id="mainHeader">
   <div class="container nav">
     <div class="nav-brand-cluster">
-      <a href="#top" class="brand">
-        <span class="logo">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>
-        </span>
-        Visa<b>Doo</b>
+      <a href="#top" class="brand notranslate" translate="no">
+        <img src="assets/logo_transparent.png" alt="Visa Doo" class="brand-logo-img">
       </a>
     </div>
     <nav class="nav-links" id="navLinks">
+      <a href="index.html" class="nav-link active">Home</a>
+      <a href="events/events.html" class="nav-link">Travel Triggers</a>
+    </nav>
+    <div class="nav-actions">
       <!-- Nationality Dropdown -->
-      <div class="header-dropdown" id="nationalityDropdown">
-        <button class="header-dropdown-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-          <img src="https://flagcdn.com/w40/in.png" class="dropdown-flag" id="selectedNationalityFlag" alt="">
-          <span id="selectedNationalityText">Nationalities</span>
+      <div class="header-dropdown notranslate" translate="no" id="nationalityDropdown">
+        <button class="header-dropdown-trigger notranslate" translate="no" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <img src="https://flagcdn.com/w40/in.png" class="dropdown-flag notranslate" id="selectedNationalityFlag" alt="">
+          <span id="selectedNationalityText" class="notranslate" translate="no">India</span>
           <span class="dropdown-chevron"></span>
         </button>
-        <div class="header-dropdown-menu" role="listbox">
-          <div class="header-dropdown-search">
-            <input type="text" placeholder="Search nationality..." class="dropdown-search-input" id="nationalitySearchInput" autocomplete="off">
-          </div>
-          <div class="dropdown-options-list">
-            <button type="button" role="option" data-value="India" data-flag="https://flagcdn.com/w40/in.png">
-              <img src="https://flagcdn.com/w40/in.png" alt=""> <span>India</span>
-            </button>
-            <button type="button" role="option" data-value="Qatar" data-flag="https://flagcdn.com/w40/qa.png">
-              <img src="https://flagcdn.com/w40/qa.png" alt=""> <span>Qatar</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Destination Dropdown -->
-      <div class="header-dropdown" id="destinationDropdown">
-        <button class="header-dropdown-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
-          <span id="selectedDestinationText">Destinations</span>
-          <span class="dropdown-chevron"></span>
-        </button>
-        <div class="header-dropdown-menu" role="listbox">
-          <div class="dest-dropdown-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f3f4f6; gap: 12px;">
-            <div class="header-dropdown-search" style="flex: 1; border: none; padding: 0; margin: 0;">
-              <input type="text" placeholder="Search destination..." class="dropdown-search-input" id="destinationSearchInput" autocomplete="off" style="width: 100%;">
+        <div class="header-dropdown-menu nat-luxury-modal" role="listbox">
+          <div class="nat-modal-top-bar">
+            <div class="nat-modal-header-text">
+              <h3 class="nat-modal-title">I’m from</h3>
+              <p class="nat-modal-sub">Choose a destination to see available visas.</p>
             </div>
-            <button type="button" id="destToggleAllBtn" style="font-size: 13.5px; font-weight: 600; padding: 8px 16px; border-radius: 99px; background: #f1f5f9; color: #1e293b; border: none; cursor: pointer; white-space: nowrap; transition: all 0.15s;">All Countries</button>
+            <button type="button" class="nat-modal-close" id="natModalClose" aria-label="Close">✕</button>
           </div>
-          <div class="dest-dropdown-grid" id="destDropdownGrid">
-            <div style="padding: 20px; text-align: center; color: #64748b; font-size: 14px; grid-column: span 3;">Loading destinations…</div>
+          <div class="header-dropdown-search">
+            <input type="text" placeholder="Search destination..." class="dropdown-search-input nat-dest-search-input" id="nationalitySearchInput" autocomplete="off">
+          </div>
+          <div class="dropdown-options-list nat-feed-list nat-dest-list">
+            <!-- Destination items populated dynamically by branding.js -->
           </div>
         </div>
       </div>
 
-      <a href="#destinations" class="active">Explore</a>
-      <a href="events/events.html">Events</a>
-      <a href="articles/articles.html">Articles</a>
-    </nav>
-    <div class="nav-actions">
-      <a href="app.html#track" class="nav-track">Track visa</a>
-      <a href="app.html#profile" class="nav-profile" aria-label="Profile" title="Profile"></a>
+      <!-- Language Selector -->
+      <div class="site-language-header-selector">
+        <button class="site-language-trigger notranslate" translate="no" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" class="globe-icon notranslate" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <path d="M2 12h20"/>
+          </svg>
+          <b data-language-header-name class="notranslate" translate="no">EN</b>
+        </button>
+        <div class="site-language-menu header-menu notranslate" translate="no" role="listbox" aria-label="Languages" style="display: none;">
+          <button type="button" role="option" data-language-option="en"><img src="https://flagcdn.com/w40/gb.png" alt="English flag" class="flag-icon"><span>English</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="ar"><img src="https://flagcdn.com/w40/sa.png" alt="Arabic flag" class="flag-icon"><span>العربية</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="fr"><img src="https://flagcdn.com/w40/fr.png" alt="French flag" class="flag-icon"><span>Français</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="es"><img src="https://flagcdn.com/w40/es.png" alt="Spanish flag" class="flag-icon"><span>Español</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="de"><img src="https://flagcdn.com/w40/de.png" alt="German flag" class="flag-icon"><span>Deutsch</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="ru"><img src="https://flagcdn.com/w40/ru.png" alt="Russian flag" class="flag-icon"><span>Русский</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+        </div>
+      </div>
+
+      <!-- Profile Icon Button -->
+      <a href="app.html#profile" class="nav-profile" aria-label="Profile" title="Profile">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </a>
+
+      <!-- Mobile Menu Button -->
       <button class="menu-btn" id="menuBtn" aria-label="Menu">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
       </button>
@@ -132,170 +139,829 @@
   </div>
 </header>
 
-<!-- HERO -->
-<section class="hero home-hero home-hero--simple">
-  <div class="hero-wordmark" aria-hidden="true">VISADOO</div>
-  <div class="home-hero-image" aria-hidden="true">
-    <div class="home-hero-image__wash"></div>
-  </div>
-  <div class="container home-hero-layout">
-    <div class="home-hero-copy-v2">
-      <span class="route-kicker"><span></span> Global visa discovery</span>
-      <h1>Search. Select.<br><span class="hl">Travel.</span></h1>
-      <p class="hero-sub">Choose your destination and find the right visa in seconds.</p>
+<!-- HERO: Your Journey Starts with VisaDoo (Viator style centered design) -->
+<section class="viator-hero-section">
+  <div class="viator-hero-bg"></div>
+  <div class="viator-hero-overlay"></div>
+  
+  <div class="viator-hero-container">
+    <div class="viator-hero-content">
+      <h1 class="viator-hero-title">Travel More With VisaDoo</h1>
+      <p class="viator-hero-sub">Explore destinations. Choose your visa. Start your journey.</p>
+
+      <!-- Center Search Dock Pill with "I'M FROM", "WHERE ARE YOU TRAVELLING?", "VISA TYPE", and Search Button -->
+      <div class="viator-search-dock" id="heroSearchDock">
+        <!-- Field 1: I'M FROM -->
+        <div class="viator-dock-field viator-dock-from" id="heroNationalityTrigger" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false" aria-label="Select Nationality">
+          <span class="viator-field-label">I'M FROM</span>
+          <div class="viator-field-val-row">
+            <img src="https://flagcdn.com/w40/in.png" class="viator-flag-icon" id="heroSelectedFlag" alt="India flag">
+            <span class="viator-field-val" id="heroSelectedNationality">India</span>
+            <span class="viator-field-caret">▾</span>
+          </div>
+
+          <!-- Nationality Dropdown Menu right underneath I'M FROM -->
+          <div class="viator-nat-dropdown" id="heroNationalityDropdown" role="listbox" aria-label="Select Nationality">
+            <button type="button" class="viator-nat-opt active" data-name="India" data-iso="in" role="option" aria-selected="true">
+              <span class="nat-opt-flag-wrap" aria-hidden="true">
+                <img src="https://flagcdn.com/w40/in.png" class="viator-nat-flag" alt="India flag" loading="lazy">
+              </span>
+              <strong class="viator-nat-name">India</strong>
+              <svg class="viator-nat-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+            <button type="button" class="viator-nat-opt" data-name="Qatar" data-iso="qa" role="option" aria-selected="false">
+              <span class="nat-opt-flag-wrap" aria-hidden="true">
+                <img src="https://flagcdn.com/w40/qa.png" class="viator-nat-flag" alt="Qatar flag" loading="lazy">
+              </span>
+              <strong class="viator-nat-name">Qatar</strong>
+              <svg class="viator-nat-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="viator-dock-divider"></div>
+
+        <!-- Field 2: WHERE ARE YOU TRAVELLING? -->
+        <div class="viator-dock-field viator-dock-to">
+          <label for="destSearch" class="viator-field-label">WHERE ARE YOU TRAVELLING?</label>
+          <div class="viator-input-with-icon">
+            <svg class="viator-field-icon viator-pin-icon" viewBox="0 0 24 24" width="16" height="16" fill="#006ce4" aria-hidden="true">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+            </svg>
+            <input type="text" id="destSearch" class="viator-input northpeak-input" placeholder="Search country or destination" autocomplete="off" aria-label="Search country or destination">
+          </div>
+          <div class="dest-results viator-dest-results" id="destResults"></div>
+        </div>
+
+        <div class="viator-dock-divider"></div>
+
+        <!-- Field 3: VISA TYPE -->
+        <div class="viator-dock-field viator-dock-type" id="heroVisaTypeTrigger" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false" aria-label="Select Visa Type">
+          <span class="viator-field-label">VISA TYPE</span>
+          <div class="viator-field-val-row">
+            <span class="viator-type-icon-badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#006ce4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="16" rx="3" fill="#e0edff"/>
+                <circle cx="8.5" cy="10" r="2" fill="#006ce4"/>
+                <line x1="14" y1="9" x2="17.5" y2="9"/>
+                <line x1="14" y1="13" x2="17.5" y2="13"/>
+                <line x1="6.5" y1="16" x2="17.5" y2="16"/>
+              </svg>
+            </span>
+            <span class="viator-field-val" id="heroSelectedVisaType" data-value="all">All Visa Types</span>
+            <span class="viator-field-caret">▾</span>
+          </div>
+
+          <!-- Visa Type Dropdown Menu -->
+          <div class="viator-type-dropdown" id="heroVisaTypeDropdown" role="listbox" aria-label="Visa Types">
+            <button type="button" class="viator-type-opt active" data-type="all" role="option" aria-selected="true">
+              <span class="type-opt-icon all" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </span>
+              <strong class="type-opt-name">All Visa Types</strong>
+              <svg class="type-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+            <button type="button" class="viator-type-opt" data-type="evisa" role="option" aria-selected="false">
+              <span class="type-opt-icon evisa" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+              </span>
+              <strong class="type-opt-name">e-Visa</strong>
+              <svg class="type-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+            <button type="button" class="viator-type-opt" data-type="schengen" role="option" aria-selected="false">
+              <span class="type-opt-icon schengen" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/>
+                </svg>
+              </span>
+              <strong class="type-opt-name">Schengen Visa</strong>
+              <svg class="type-opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Button (Blue round button) -->
+        <button type="button" class="viator-search-btn" id="destSearchButton" aria-label="Search Visas">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- DESTINATIONS -->
-<section class="section section-compact destination-board" id="destinations">
+<!-- 20,000+ PEOPLE TRUST & STATS BANNER -->
+<section class="trust-stats-section" id="trust-stats">
+  <!-- Subtle Dotted World Map Pattern -->
+  <div class="trust-bg-map-pattern" aria-hidden="true"></div>
+
   <div class="container">
-    <div class="board-heading">
-      <div>
-        <span class="board-kicker">Popular destinations</span>
-        <h2>Choose your country</h2>
-      </div>
-      <p><b id="countryCount">190+</b> destinations available.</p>
+    <!-- Top Trust Badge -->
+    <div class="trust-top-badge scroll-reveal" data-reveal="fade">
+      <span class="trust-top-badge-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </span>
+      <span>TRUSTED BY TRAVELLERS WORLDWIDE</span>
     </div>
 
-    <div class="visa-filter-dock visa-search-only" aria-label="Destination search">
-      <div class="dest-search hero-search hero-search--center">
-        <span class="search-icon" aria-hidden="true"></span>
-        <input id="destSearch" type="text" placeholder="Where do you want to go?" autocomplete="off" aria-label="Search for a destination">
-        <button type="button" class="search-action" id="destSearchButton" aria-label="Search countries" title="Search">
-          <span class="button-search-icon" aria-hidden="true"></span>
-        </button>
-        <button type="button" class="map-toggle" id="mapToggle" aria-label="Choose country on map" title="Map" aria-expanded="false" aria-controls="countryMapPanel">
-          <span class="map-globe-icon" aria-hidden="true"></span>
-        </button>
-        <div class="dest-results" id="destResults"></div>
+    <!-- Main Heading & Subtitle -->
+    <div class="trust-stats-header scroll-reveal" data-reveal="wipe">
+      <h2 class="trust-stats-title">
+        <span class="trust-stat-orange">20,000+</span> people around the world use<br>Visa Doo
+      </h2>
+      <p class="trust-stats-sub">Making visa applications simple, secure and stress-free for travellers everywhere.</p>
+    </div>
+
+    <!-- Feature Pill Badges Row -->
+    <div class="trust-pill-badges-row stagger-group">
+      <div class="trust-pill-badge scroll-reveal" data-reveal="wipe-up">
+        <span class="trust-pill-check-icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><circle cx="10" cy="10" r="10" fill="#0f172a"/><path d="M6 10 L8.5 12.5 L14 7" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>Fast &amp; Flexible</span>
       </div>
-      <div class="search-suggestions" id="popularChips" aria-label="Suggested destinations"></div>
-      <div class="country-map-panel" id="countryMapPanel" hidden>
-        <div class="country-map-heading">
-          <div>
-            <b>Select a country on the map</b>
-            <small>Tap a marker to view its visa options</small>
+      <div class="trust-pill-badge scroll-reveal" data-reveal="wipe-up">
+        <span class="trust-pill-check-icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><circle cx="10" cy="10" r="10" fill="#0f172a"/><path d="M6 10 L8.5 12.5 L14 7" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>Secure</span>
+      </div>
+      <div class="trust-pill-badge scroll-reveal" data-reveal="wipe-up">
+        <span class="trust-pill-check-icon" aria-hidden="true">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><circle cx="10" cy="10" r="10" fill="#0f172a"/><path d="M6 10 L8.5 12.5 L14 7" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>No hidden costs</span>
+      </div>
+    </div>
+
+    <!-- Flanked Showcase: Left Decoration, 4 Statistics, Right Decoration -->
+    <div class="trust-showcase-wrapper">
+      <!-- Left Flank: Authentic Isometric Passport Art (Matching Image 3) -->
+      <div class="trust-flank-decor trust-flank-left" aria-hidden="true">
+        <div class="trust-handwritten-note-v2">
+          <span class="trust-note-text">Visas for a Brighter</span>
+          <span class="trust-note-highlight">Tomorrow
+            <svg class="trust-swoosh-svg" viewBox="0 0 95 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M 3 7 C 28 2.5, 65 3.5, 92 8" stroke="#ea580c" stroke-width="3.2" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </div>
+        <svg class="trust-passport-art-svg" viewBox="0 0 170 215" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="trustStipplePattern" width="5" height="5" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="0.75" fill="#5885c2" opacity="0.38" />
+              <circle cx="4.5" cy="4.5" r="0.75" fill="#5885c2" opacity="0.38" />
+            </pattern>
+          </defs>
+          <!-- Stipple dot under-flap / shadow matching Image 3 -->
+          <polygon points="10,65 38,12 55,20 28,198 4,178" fill="url(#trustStipplePattern)" />
+          <polyline points="38,12 10,65 4,178 28,198" stroke="#6893cb" stroke-width="1.2" opacity="0.6" stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- Isometric Passport Booklet tilted ~11deg -->
+          <g transform="translate(18, 6) rotate(11 75 100)">
+            <!-- 3D thickness edge -->
+            <rect x="27" y="6" width="98" height="154" rx="7" fill="none" stroke="#719ad0" stroke-width="1.2" opacity="0.5" />
+            
+            <!-- Passport Front Cover -->
+            <rect x="25" y="4" width="98" height="154" rx="7" fill="rgba(240, 247, 255, 0.75)" stroke="#5885c2" stroke-width="2.2" />
+
+            <!-- Stitched spine -->
+            <line x1="33" y1="8" x2="33" y2="154" stroke="#5885c2" stroke-width="1.3" stroke-dasharray="3.5 2.5" opacity="0.75" />
+
+            <!-- Spine ribbon mark -->
+            <path d="M 28 12 L 36 15 L 28 18" stroke="#5885c2" stroke-width="1.1" fill="none" opacity="0.6" />
+
+            <!-- Globe emblem -->
+            <g transform="translate(74, 52)">
+              <circle cx="0" cy="0" r="23" stroke="#5885c2" stroke-width="2" fill="none" />
+              <line x1="-23" y1="0" x2="23" y2="0" stroke="#5885c2" stroke-width="1.6" />
+              <path d="M -19 -11 Q 0 -5 19 -11" stroke="#5885c2" stroke-width="1.4" fill="none" />
+              <path d="M -19 11 Q 0 5 19 11" stroke="#5885c2" stroke-width="1.4" fill="none" />
+              <ellipse cx="0" cy="0" rx="12" ry="23" stroke="#5885c2" stroke-width="1.6" fill="none" />
+              <line x1="0" y1="-23" x2="0" y2="23" stroke="#5885c2" stroke-width="1.6" />
+              <rect x="-1.5" y="-3.5" width="3" height="7" fill="#5885c2" />
+            </g>
+
+            <!-- VISA Box -->
+            <rect x="48" y="88" width="52" height="21" rx="4.5" stroke="#5885c2" stroke-width="1.8" fill="none" />
+            <text x="74" y="103" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="12" font-weight="850" fill="#4b78b5" text-anchor="middle" letter-spacing="1.2">VISA</text>
+
+            <!-- APPROVED Box -->
+            <rect x="42" y="115" width="64" height="21" rx="4.5" stroke="#5885c2" stroke-width="1.8" fill="none" />
+            <text x="74" y="129.5" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="9" font-weight="850" fill="#4b78b5" text-anchor="middle" letter-spacing="1">APPROVED</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Center 4 Statistics -->
+      <div class="trust-metrics-grid stagger-group" id="trustMetricsGrid">
+        <!-- Stat 1: 30K Visa completed (Passport / visa document icon) -->
+        <div class="trust-metric-col scroll-reveal" data-reveal="wipe-up">
+          <div class="trust-metric-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              <line x1="9" y1="7" x2="15" y2="7"/>
+              <line x1="9" y1="11" x2="13" y2="11"/>
+            </svg>
           </div>
-          <button type="button" class="country-map-close" id="countryMapClose" aria-label="Close country map">×</button>
+          <div class="trust-metric-number" data-count="30"><span class="trust-metric-value">30</span><span class="trust-metric-k">K</span></div>
+          <div class="trust-metric-label">Visa completed</div>
         </div>
-        <div class="country-map-wrap">
-          <div class="country-map" id="countryMap" role="region" aria-label="Interactive country map"></div>
-          <div class="country-map-status" id="countryMapStatus">Loading destinations…</div>
-          <div class="map-country-fallback" id="mapCountryFallback" hidden></div>
+
+        <!-- Stat 2: 15+ Countries (Globe icon) -->
+        <div class="trust-metric-col scroll-reveal" data-reveal="wipe-up">
+          <div class="trust-metric-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </div>
+          <div class="trust-metric-number" data-count="15"><span class="trust-metric-value">15</span><span class="trust-metric-plus">+</span></div>
+          <div class="trust-metric-label">Countries</div>
         </div>
+
+        <!-- Stat 3: 10+ Years experience (Professional / team / badge icon) -->
+        <div class="trust-metric-col scroll-reveal" data-reveal="wipe-up">
+          <div class="trust-metric-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div class="trust-metric-number" data-count="10"><span class="trust-metric-value">10</span><span class="trust-metric-plus">+</span></div>
+          <div class="trust-metric-label">Years experience</div>
+        </div>
+
+        <!-- Stat 4: 99% Customer satisfaction (Star / check icon) -->
+        <div class="trust-metric-col scroll-reveal" data-reveal="wipe-up">
+          <div class="trust-metric-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="trust-metric-number" data-count="99"><span class="trust-metric-value">99</span><span class="trust-metric-pct">%</span></div>
+          <div class="trust-metric-label">Customer satisfaction</div>
+        </div>
+      </div>
+
+      <!-- Right Flank: Authentic Immigration Stamp & Stacked Words (Matching Image 4) -->
+      <div class="trust-flank-decor trust-flank-right" aria-hidden="true">
+        <svg class="trust-stamp-art-svg" viewBox="0 0 170 215" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Rotated Stamp Group (-14deg) -->
+          <g transform="translate(16, 24) rotate(-14 70 50)">
+            <!-- Outer Rounded Stamp Border -->
+            <rect x="6" y="6" width="130" height="78" rx="14" stroke="#5885c2" stroke-width="2.4" fill="rgba(240, 247, 255, 0.45)" />
+            
+            <!-- Inner Border with corner notches -->
+            <rect x="11" y="11" width="120" height="68" rx="10" stroke="#5885c2" stroke-width="1.3" opacity="0.75" fill="none" />
+            <line x1="16" y1="16" x2="20" y2="20" stroke="#5885c2" stroke-width="1" opacity="0.6" />
+            <line x1="126" y1="16" x2="122" y2="20" stroke="#5885c2" stroke-width="1" opacity="0.6" />
+            <line x1="16" y1="74" x2="20" y2="70" stroke="#5885c2" stroke-width="1" opacity="0.6" />
+            <line x1="126" y1="74" x2="122" y2="70" stroke="#5885c2" stroke-width="1" opacity="0.6" />
+
+            <!-- IMMIGRATION Header Text -->
+            <text x="21" y="32" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="10.5" font-weight="850" fill="#4d7bb9" letter-spacing="1.2">IMMIGRATION</text>
+
+            <!-- VISA Large Text -->
+            <text x="20" y="58" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-size="21" font-weight="900" fill="#4d7bb9" letter-spacing="1.5">VISA</text>
+
+            <!-- Globe Icon Inside Stamp -->
+            <g transform="translate(100, 45)">
+              <circle cx="0" cy="0" r="16.5" stroke="#5885c2" stroke-width="1.8" fill="none" />
+              <line x1="-16.5" y1="0" x2="16.5" y2="0" stroke="#5885c2" stroke-width="1.4" />
+              <ellipse cx="0" cy="0" rx="8.5" ry="16.5" stroke="#5885c2" stroke-width="1.4" fill="none" />
+              <line x1="0" y1="-16.5" x2="0" y2="16.5" stroke="#5885c2" stroke-width="1.4" />
+              <rect x="-1" y="-2.5" width="2" height="5" fill="#5885c2" />
+            </g>
+          </g>
+
+          <!-- Stacked Words Below Stamp: TRAVEL / WORK / STUDY / EXPLORE (tilted at same -14deg angle) -->
+          <g transform="translate(16, 24) rotate(-14 70 50)">
+            <g transform="translate(71, 115)" text-anchor="middle" font-family="'Plus Jakarta Sans', system-ui, sans-serif" font-weight="800" font-size="11.5" fill="#628bc2" letter-spacing="2.8">
+              <text y="0">TRAVEL</text>
+              <text y="18">WORK</text>
+              <text y="36">STUDY</text>
+              <text y="54">EXPLORE</text>
+            </g>
+          </g>
+        </svg>
       </div>
     </div>
 
-    <div class="search-benefits" aria-label="VisaDoo benefits">
-      <div class="search-benefit-item">
-        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.3V6.7C4 5.76 4.76 5 5.7 5h5.6c.45 0 .88.18 1.2.5l6 6a1.7 1.7 0 0 1 0 2.4l-4.6 4.6a1.7 1.7 0 0 1-2.4 0l-6-6a1.7 1.7 0 0 1-.5-1.2Z"/><circle cx="8.1" cy="9.1" r="1.2"/><path d="m10.2 14.1 4-4m-3.5.4h.01m3 3.2h.01"/></svg></span>
-        <span><b>Clear pricing</b><small>See the full cost before you apply.</small></span>
+    <!-- Social Proof -->
+    <div class="trust-social-proof scroll-reveal" data-reveal="fade-up">
+      <div class="trust-avatars-cluster">
+        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80" alt="Traveller" class="trust-avatar-img" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&h=80&q=80" alt="Traveller" class="trust-avatar-img" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&h=80&q=80" alt="Traveller" class="trust-avatar-img" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&h=80&q=80" alt="Traveller" class="trust-avatar-img" loading="lazy">
+        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&h=80&q=80" alt="Traveller" class="trust-avatar-img" loading="lazy">
       </div>
-      <div class="search-benefit-item">
-        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4.5 13v-2a7.5 7.5 0 0 1 15 0v2"/><path d="M4.5 12.5h2.2v5H5.9a2 2 0 0 1-2-2v-1.6a1.4 1.4 0 0 1 .6-1.4Zm15 0h-2.2v5h.8a2 2 0 0 0 2-2v-1.6a1.4 1.4 0 0 0-.6-1.4Z"/><path d="M17.3 17.5c-.7 1.4-2 2.1-3.8 2.1"/></svg></span>
-        <span><b>Real visa support</b><small>Helpful answers whenever you need them.</small></span>
-      </div>
-      <div class="search-benefit-item">
-        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5 19 6v5.2c0 4.2-2.7 7.7-7 9.3-4.3-1.6-7-5.1-7-9.3V6l7-2.5Z"/><path d="m8.8 12 2 2 4.5-4.6"/></svg></span>
-        <span><b>Secure applications</b><small>Your details and documents stay protected.</small></span>
-      </div>
-      <div class="search-benefit-item">
-        <span class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="5.5"/><path d="m12 6.8 1 2 2.2.3-1.6 1.6.4 2.2-2-1-2 1 .4-2.2-1.6-1.6 2.2-.3 1-2Z"/><path d="m8.8 15-1 5 4.2-2 4.2 2-1-5"/></svg></span>
-        <span><b>Expert-checked guidance</b><small>Clear requirements for every trip.</small></span>
+      <div class="trust-social-headline">Trusted by thousands of happy travellers</div>
+      <div class="trust-social-rating">
+        <span class="trust-stars-row" aria-label="5 stars">★★★★★</span>
+        <span class="trust-rating-text"><b>4.9/5</b> from 2,000+ reviews</span>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="dest-grid dest-grid--simple" id="destGrid"><!-- filled by home.js --></div>
-    <div class="destination-empty" id="destinationEmpty" hidden>No destinations found.</div>
-    <div class="destination-more-wrap" id="destinationMoreWrap" hidden>
-      <button type="button" class="destination-more" id="destinationMore" aria-expanded="false" aria-controls="destGrid">
-        <span>Show more countries</span>
-        <span class="destination-more-icon" aria-hidden="true">&#8595;</span>
+<!-- TOP DESTINATIONS & EVISAS -->
+<section class="section destination-board" id="destinations">
+  <div class="container">
+    <!-- Top Destinations Section (Top 5) -->
+    <div class="popular-section-block" id="popularSectionBlock">
+      <div class="board-heading-row">
+        <div class="board-heading-copy">
+          <h2 class="board-main-title">Top Destinations</h2>
+        </div>
+      </div>
+      <!-- 5 Cards Grid -->
+      <div class="dest-grid dest-grid-popular" id="destPopularGrid"><!-- filled by home.js (5 cards) --></div>
+    </div>
+
+    <!-- E-Visas Section -->
+    <div class="evisa-section-block" id="evisaSectionBlock">
+      <div class="board-heading-row">
+        <div class="board-heading-copy">
+          <h2 class="board-main-title">E-Visas</h2>
+        </div>
+      </div>
+      <!-- E-Visa Cards Grid -->
+      <div class="dest-grid dest-grid-evisa" id="destEvisaGrid"><!-- filled by home.js --></div>
+    </div>
+
+    <!-- Schengen Visas Section -->
+    <div class="schengen-section-block" id="schengenSectionBlock">
+      <div class="board-heading-row">
+        <div class="board-heading-copy">
+          <h2 class="board-main-title">Schengen Visas</h2>
+        </div>
+      </div>
+      <!-- Schengen Cards Grid -->
+      <div class="dest-grid dest-grid-schengen" id="destSchengenGrid"><!-- filled by home.js --></div>
+    </div>
+
+    <!-- View All Button under the Cards Grid (Centered) -->
+    <div class="board-bottom-action">
+      <button type="button" class="view-all-countries-pill" id="viewAllCountriesBtn">
+        <span>View all destinations</span>
+        <span class="arrow-ico">→</span>
       </button>
     </div>
+
+    <!-- Hidden Interactive Map Panel (accessible if needed) -->
+    <div class="country-map-panel" id="countryMapPanel" hidden>
+      <div class="country-map-heading">
+        <div>
+          <b>Select a country on the map</b>
+          <small>Tap a marker to view its visa options</small>
+        </div>
+        <button type="button" class="country-map-close" id="countryMapClose" aria-label="Close country map">×</button>
+      </div>
+      <div class="country-map-wrap">
+        <div class="country-map" id="countryMap" role="region" aria-label="Interactive country map"></div>
+        <div class="country-map-status" id="countryMapStatus">Loading destinations…</div>
+        <div class="map-country-fallback" id="mapCountryFallback" hidden></div>
+      </div>
+    </div>
+
+    <div class="destination-empty" id="destinationEmpty" hidden>No destinations found matching your criteria.</div>
     <div class="visa-groups-area" id="groupsArea"></div>
   </div>
 </section>
 
-<!-- REVIEWS -->
-<section class="section" id="reviews" style="display:none">
+<!-- KEEP THINGS FLEXIBLE BANNER (Matches media_1788958326201.png) -->
+<section class="flexible-travel-banner-section" id="flexible-travel">
   <div class="container">
-    <div class="center">
-      <span class="eyebrow">Loved by travellers</span>
-      <h2>What our customers say</h2>
+    <div class="flexible-travel-content scroll-reveal" data-reveal="wipe-up">
+      <h2 class="flexible-travel-title">Keep things flexible</h2>
+      <p class="flexible-travel-desc">Explore visa requirements, save your application drafts, and apply whenever you're ready with transparent pricing and live status tracking.</p>
     </div>
-    <div class="review-grid" id="reviewGrid"></div>
   </div>
 </section>
 
-<!-- FAQ -->
-<section class="section sky" id="faq" style="display:none">
-  <div class="container" style="max-width:780px">
-    <div class="center">
-      <span class="eyebrow">Good to know</span>
-      <h2>Frequently asked questions</h2>
+<!-- HOW VISADOO WORKS (4 Simple Steps) -->
+<section class="section how-evisas-works-section" id="how-it-works">
+  <div class="container">
+    <div class="how-evisas-header scroll-reveal" data-reveal="wipe">
+      <h2 class="how-evisas-title">How <span class="how-visadoo-brand">VisaDoo</span> Works</h2>
+      <p class="how-evisas-sub">From choosing your visa to starting your journey —<br>we make it simple.</p>
     </div>
-    <div class="faq-list" id="faqList" style="margin-top:34px"></div>
-  </div>
-</section>
 
-<!-- CONTACT -->
-<section class="section contact-section contact-section--simple" id="contact">
-  <div class="container contact-shell contact-shell--simple">
-    <div class="contact-copy">
-      <h2>Need help?</h2>
-      <p>Not sure which visa you need? Talk to our team for clear, practical guidance.</p>
-      <div class="contact-methods">
-        <a class="cm" id="cmWhatsapp" target="_blank" rel="noopener">
-          <span class="ic wa"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.7 4.8-1.3A10 10 0 1 0 12 2zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-2.8.7.7-2.8-.2-.3A8 8 0 1 1 12 20zm4.4-6c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.5 6.5 0 0 1-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 0 0-.7.3A2.8 2.8 0 0 0 6 9.5c0 1.6 1.2 3.2 1.3 3.4.2.2 2.3 3.6 5.7 4.9 2.8 1.1 2.8.7 3.3.7.5 0 1.6-.6 1.8-1.3.2-.6.2-1.2.2-1.3-.1-.1-.3-.2-.5-.3z"/></svg></span>
-          <div><small>Quickest response</small><b id="waText">Chat on WhatsApp</b></div>
-          <span class="cm-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="cm" id="cmPhone">
-          <span class="ic ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg></span>
-          <div><small>Speak to our team</small><b id="phoneText">Call us</b></div>
-          <span class="cm-arrow" aria-hidden="true">→</span>
-        </a>
-        <a class="cm" id="cmEmail">
-          <span class="ic em"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 6l-10 7L2 6"/><rect x="2" y="6" width="20" height="13" rx="2"/></svg></span>
-          <div><small>Send your questions</small><b id="emailText">Email us</b></div>
-          <span class="cm-arrow" aria-hidden="true">→</span>
-        </a>
+    <!-- Stepper Line with 4 Numbers -->
+    <div class="how-stepper-track-wrap scroll-reveal" data-reveal="fade">
+      <div class="how-stepper-connector-line" aria-hidden="true"></div>
+      <div class="how-stepper-badges-row">
+        <div class="how-step-num-badge">1</div>
+        <div class="how-step-num-badge">2</div>
+        <div class="how-step-num-badge">3</div>
+        <div class="how-step-num-badge">4</div>
       </div>
-      <div class="contact-proof"><span>✓ Real people</span><span>✓ Clear answers</span><span>✓ Secure details</span></div>
     </div>
 
-    <form class="form contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="contactForm">
-        <div class="contact-form-heading">
-          <span>Send an enquiry</span>
-          <h3>Tell us about your trip</h3>
-          <p>Share your destination or question and our team will guide the next step.</p>
+    <!-- 4 Steps Columns -->
+    <div class="how-evisas-grid stagger-group">
+      <!-- Step 1 -->
+      <div class="how-evisas-col scroll-reveal" data-reveal="wipe-up">
+        <div class="how-evisas-icon-box">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="10" cy="14" r="7"/>
+            <path d="M3.5 14h13"/>
+            <ellipse cx="10" cy="14" rx="3.2" ry="7"/>
+            <path d="M17 3a3 3 0 0 0-3 3c0 2.2 3 5.5 3 5.5s3-3.3 3-5.5a3 3 0 0 0-3-3z"/>
+            <circle cx="17" cy="6" r="1"/>
+          </svg>
         </div>
-        <input type="hidden" name="form-name" value="contact">
-        <p class="hidden" style="display:none"><label>Don't fill this: <input name="bot-field"></label></p>
-        <div class="form-ok" id="formOk">✓ Thanks! Your message has been sent. We'll get back to you shortly.</div>
-        <div class="contact-field-row">
-          <div class="field"><label for="cName">Your name</label><input id="cName" name="name" type="text" placeholder="Full name" required></div>
-          <div class="field"><label for="cEmail">Email address</label><input id="cEmail" name="email" type="email" placeholder="you@email.com" required></div>
+        <h3 class="how-step-heading">Choose Your Destination</h3>
+        <p class="how-step-desc">Select your destination and visa type.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="how-evisas-col scroll-reveal" data-reveal="wipe-up">
+        <div class="how-evisas-icon-box">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M8 12l1.5 1.5 3-3"/>
+            <path d="M8 17l1.5 1.5 3-3"/>
+            <line x1="14" y1="12" x2="16.5" y2="12"/>
+            <line x1="14" y1="17" x2="16.5" y2="17"/>
+          </svg>
         </div>
-        <div class="field"><label for="cMsg">How can we help?</label><textarea id="cMsg" name="message" placeholder="Tell us where you're going or ask a question…" required></textarea></div>
-        <label class="contact-consent">
-          <input id="cConsent" name="consent" type="checkbox" checked>
-          <span>Keep me updated with visa offers, tips and news by email and WhatsApp (optional — you can unsubscribe anytime).</span>
-        </label>
-        <button type="submit" class="btn btn-primary btn-block btn-lg">Send my enquiry <span aria-hidden="true">→</span></button>
-        <p class="contact-privacy">Your details are only used to answer your enquiry.</p>
-    </form>
+        <h3 class="how-step-heading">Check Visa Requirements</h3>
+        <p class="how-step-desc">See documents & eligibility.</p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="how-evisas-col scroll-reveal" data-reveal="wipe-up">
+        <div class="how-evisas-icon-box">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="8" y1="12" x2="11" y2="12"/>
+            <path d="M12 18.5V13"/>
+            <path d="M9.5 15.5L12 13l2.5 2.5"/>
+          </svg>
+        </div>
+        <h3 class="how-step-heading">Apply & Submit</h3>
+        <p class="how-step-desc">Complete your application securely.</p>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="how-evisas-col scroll-reveal" data-reveal="wipe-up">
+        <div class="how-evisas-icon-box">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#006ce4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+          </svg>
+        </div>
+        <h3 class="how-step-heading">Get Your Visa</h3>
+        <p class="how-step-desc">Track your application & get your visa.</p>
+      </div>
+    </div>
+
+    <!-- Bottom Action Button & Trust Badges -->
+    <div class="how-evisas-bottom scroll-reveal" data-reveal="fade-up">
+      <a href="#destinations" class="how-evisas-cta-btn">Start Your Application &rarr;</a>
+      <div class="how-evisas-trust-row">
+        <span class="how-trust-item">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          Secure & Private
+        </span>
+        <span class="how-trust-dot" aria-hidden="true">•</span>
+        <span class="how-trust-item">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#0f172a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          Clear Requirements
+        </span>
+      </div>
+    </div>
   </div>
 </section>
+
+<!-- POPULAR REVIEWS -->
+<section class="section reviews-showcase-section" id="reviews">
+  <div class="container">
+    <div class="reviews-outer-shell">
+      <div class="reviews-top-row scroll-reveal" data-reveal="wipe">
+        <div>
+          <h2 class="reviews-showcase-title">What travellers say about Visa Doo</h2>
+        </div>
+        <div class="reviews-meta-block">
+          <div class="reviews-rating-tag">
+            <div class="reviews-score-line">
+              <strong class="score-bold">4.8</strong><span class="score-scale">/5</span>
+              <span class="score-stars">★★★★★</span>
+            </div>
+            <span class="score-based-text">Based on 2,500+ reviews</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reviews Carousel -->
+      <div class="reviews-carousel-container">
+        <button type="button" class="rev-arrow-btn rev-prev-btn" id="revPrevBtn" aria-label="Previous review">‹</button>
+        <div class="reviews-cards-row" id="reviewsTrack">
+          <!-- Card 1 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=120&h=120&q=80" alt="Aisha R." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Aisha Rahman</strong>
+                <span class="rev-user-country">Dubai, UAE • UAE Tourist Visa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"So easy! I applied for my UAE visa in minutes and got it in 48 hours. The live tracking kept me updated the whole time."</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&h=120&q=80" alt="James P." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">James Parker</strong>
+                <span class="rev-user-country">London, UK • Schengen Visa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Used Visa Doo for a Schengen visa via France. Clear guidance on documents and brilliant support on WhatsApp throughout."</p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80" alt="Priya S." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Priya Sharma</strong>
+                <span class="rev-user-country">Mumbai, India • US Visa Assistance</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Applied for a US visa — the team helped me with everything and double-checked my documents. Highly recommend for a stress-free process."</p>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&h=120&q=80" alt="Mohammed A." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Mohammed Al-Kuwari</strong>
+                <span class="rev-user-country">Doha, Qatar • Thailand eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Fastest eVisa approval I have ever received! Applied on Monday night and the visa arrived by email Wednesday afternoon."</p>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&h=120&q=80" alt="Elena R." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Elena Rostova</strong>
+                <span class="rev-user-country">Munich, Germany • Vietnam eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Seamless mobile application experience. Simple photo upload from my smartphone, transparent pricing, and instant customer service."</p>
+          </div>
+
+          <!-- Card 6 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&h=120&q=80" alt="Tariq M." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Tariq Mansoor</strong>
+                <span class="rev-user-country">Riyadh, Saudi Arabia • Azerbaijan eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Applied for Azerbaijan visas for my entire family in one go. Clear checklist, secure payment, and 100% verified approval."</p>
+          </div>
+
+          <!-- Card 7 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&h=120&q=80" alt="Sarah C." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Sarah Chen</strong>
+                <span class="rev-user-country">Singapore • Morocco eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Superb customer support! They promptly helped me rectify a typo on my passport number draft before submission. Life saver!"</p>
+          </div>
+
+          <!-- Card 8 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=120&h=120&q=80" alt="Arjun N." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Arjun Nair</strong>
+                <span class="rev-user-country">Kochi, India • Oman eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Got my Oman express eVisa in just 1 day! No embassy visits, no stressful paperwork queues. Best visa booking portal."</p>
+          </div>
+
+          <!-- Card 9 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&h=120&q=80" alt="Fatima A." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Fatima Al-Zahra</strong>
+                <span class="rev-user-country">Manama, Bahrain • Sri Lanka eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Traveling with peace of mind. Everything was handled professionally from verification to the final approved travel authorization."</p>
+          </div>
+
+          <!-- Card 10 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=120&h=120&q=80" alt="David M." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">David Miller</strong>
+                <span class="rev-user-country">Sydney, Australia • Egypt eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"The easiest visa application I have done in years. The dashboard tracks every single phase until your PDF visa is ready."</p>
+          </div>
+
+          <!-- Card 11 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=120&h=120&q=80" alt="Ananya J." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Ananya Joshi</strong>
+                <span class="rev-user-country">Bangalore, India • Indonesia Visa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Booking visas for our group vacation to Bali was effortless. Helpful team, clear requirements, and super fast processing!"</p>
+          </div>
+
+          <!-- Card 12 -->
+          <div class="review-card-item">
+            <div class="rev-user-profile">
+              <img src="https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&h=120&q=80" alt="Omar F." class="rev-avatar">
+              <div class="rev-user-meta">
+                <strong class="rev-user-name">Omar Farooq</strong>
+                <span class="rev-user-country">Abu Dhabi, UAE • Russia eVisa</span>
+              </div>
+            </div>
+            <div class="rev-stars-gold">★★★★★</div>
+            <p class="rev-feedback-quote">"Exceptional service. Got my e-visa on time without any hassle. Reliable and very responsive WhatsApp support team."</p>
+          </div>
+        </div>
+        <button type="button" class="rev-arrow-btn rev-next-btn" id="revNextBtn" aria-label="Next review">›</button>
+      </div>
+
+      <!-- Carousel Dots -->
+      <div class="rev-dots-nav" id="revDots">
+        <button type="button" class="rev-dot active" aria-label="Page 1"></button>
+        <button type="button" class="rev-dot" aria-label="Page 2"></button>
+        <button type="button" class="rev-dot" aria-label="Page 3"></button>
+        <button type="button" class="rev-dot" aria-label="Page 4"></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FREQUENTLY ASKED QUESTIONS SECTION -->
+<section class="section home-faq-section" id="faq">
+  <div class="container">
+    <div class="faq-header-block scroll-reveal" data-reveal="wipe">
+      <h2 class="faq-main-title">Frequently Asked Questions</h2>
+      <p class="faq-main-sub">We receive a lot of questions from our customers. You might also find answers to your questions here.</p>
+    </div>
+
+    <div class="faq-accordion-list stagger-group">
+      <!-- FAQ Item 1 (Open by default as in reference design) -->
+      <div class="faq-card-item scroll-reveal active" data-reveal="fade-up">
+        <button type="button" class="faq-question-btn" aria-expanded="true">
+          <span class="faq-q-text">What documents do I need to apply for a visa?</span>
+          <span class="faq-chevron-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </span>
+        </button>
+        <div class="faq-answer-collapse">
+          <p class="faq-a-text">Documentation requirements vary depending on the country and visa type. Our experts will share a customized checklist once you choose your destination.</p>
+        </div>
+      </div>
+
+      <!-- FAQ Item 2 -->
+      <div class="faq-card-item scroll-reveal" data-reveal="fade-up">
+        <button type="button" class="faq-question-btn" aria-expanded="false">
+          <span class="faq-q-text">How long does the visa process take?</span>
+          <span class="faq-chevron-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </span>
+        </button>
+        <div class="faq-answer-collapse">
+          <p class="faq-a-text">Processing times vary depending on the destination country, visa category, and embassy workload. eVisas typically take 24 to 72 hours, while standard tourist or sticker visas may take 5 to 15 business days.</p>
+        </div>
+      </div>
+
+      <!-- FAQ Item 3 -->
+      <div class="faq-card-item scroll-reveal" data-reveal="fade-up">
+        <button type="button" class="faq-question-btn" aria-expanded="false">
+          <span class="faq-q-text">Do you guarantee visa approval?</span>
+          <span class="faq-chevron-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </span>
+        </button>
+        <div class="faq-answer-collapse">
+          <p class="faq-a-text">While the final decision always rests with the respective government immigration authority or embassy, our visa specialists thoroughly review your application and documents to ensure 99%+ compliance and maximum chance of approval.</p>
+        </div>
+      </div>
+
+      <!-- FAQ Item 4 -->
+      <div class="faq-card-item scroll-reveal" data-reveal="fade-up">
+        <button type="button" class="faq-question-btn" aria-expanded="false">
+          <span class="faq-q-text">Can I apply for multiple visas through your service?</span>
+          <span class="faq-chevron-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </span>
+        </button>
+        <div class="faq-answer-collapse">
+          <p class="faq-a-text">Yes, you can easily apply for multiple destinations or add family members/group applications under one dashboard with VisaDoo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- VISA, WITHOUT THE CONFUSION CTA BANNER (Matching Image 2 with Real Text & Tappable Button) -->
+<section class="section cta-banner-section" id="cta-banner">
+  <div class="container">
+    <div class="cta-confusion-card scroll-reveal" data-reveal="scale">
+      <!-- Background Artwork Layer: 3D Passport, Approved Visa Document, Luxury Pen & Foliage -->
+      <div class="cta-confusion-art-bg" aria-hidden="true"></div>
+
+      <!-- Real HTML Typography & Interactive Button -->
+      <div class="cta-confusion-content">
+        <div class="cta-confusion-tag">
+          <span class="cta-tag-dash" aria-hidden="true"></span>
+          <span class="cta-tag-text">VISA DOO</span>
+        </div>
+
+        <h2 class="cta-confusion-title">
+          Visa,<br>without the <span class="cta-confusion-highlight">confusion.</span>
+        </h2>
+
+        <p class="cta-confusion-sub">
+          From choosing the right visa to preparing your documents,<br class="cta-br-desktop">we make every step simple.
+        </p>
+
+        <div class="cta-confusion-actions">
+          <a href="#destinations" class="cta-confusion-pill-btn" id="ctaCheckVisaBtn" aria-label="Check Visa Requirements">
+            <span>Check Visa Requirements</span>
+            <span class="cta-btn-arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 <!-- FOOTER -->
 <footer class="footer home-footer">
   <div class="container">
     <div class="footer-grid footer-grid--expanded">
       <div class="footer-intro">
-      <a href="#top" class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg></span>Visa<b>Doo</b></a>
+      <a href="#top" class="brand notranslate" translate="no"><img src="/assets/logo_transparent.png" alt="Visa Doo" style="height:42px;width:auto;max-width:200px;display:block"></a>
       <p>Tourist &amp; business visas for destinations worldwide — applied for and tracked entirely online. We handle the paperwork so you can plan the trip.</p>
         <div class="footer-social-links" id="socialLinks" aria-label="Social media links"></div>
         <div class="footer-assurances">
@@ -306,9 +972,8 @@
       <div>
         <h5>Explore</h5>
         <ul>
-          <li><a href="#destinations">Destinations</a></li>
-          <li><a href="events/events.html">Events</a></li>
-          <li><a href="articles/articles.html">Articles</a></li>
+          <li><a href="#top">Home</a></li>
+          <li><a href="events/events.html">Travel Triggers</a></li>
           <li><a href="app.html#track">Track application</a></li>
         </ul>
       </div>
@@ -318,7 +983,7 @@
           <li><a href="p/about">About Visa Doo</a></li>
           <li><a href="p/privacy-policy">Privacy Policy</a></li>
           <li><a href="p/terms">Terms &amp; Conditions</a></li>
-          <li><a href="#contact">Contact us</a></li>
+          <li><a href="contact.html">Contact Us</a></li>
         </ul>
       </div>
       <div class="footer-contact">
@@ -335,10 +1000,10 @@
           </li>
           <li>
             <a id="footEmail" href="mailto:hello@visadoo.com">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" class="contact-ico ico-email"><rect x="2.5" y="4.5" width="19" height="15" rx="3.5" fill="#eff6ff" stroke="#2563eb" stroke-width="1.8"/><path d="M3 7l9 6 9-6" stroke="#ea4335" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="contact-ico ico-email" viewBox="0 0 24 24" width="22" height="22"><path fill="#4285F4" d="M22.5 8.1v11.4c0 .8-.7 1.5-1.5 1.5h-3.5V12l-5.5 4.1L6.5 12V21H3c-.8 0-1.5-.7-1.5-1.5V8.1l5.5 4.1 5-3.8 5 3.8 5.5-4.1z"/><path fill="#34A853" d="M1.5 8.1V5.5C1.5 4.7 2.2 4 3 4h.9l8.1 6.1L20.1 4H21c.8 0 1.5.7 1.5 1.5v2.6l-10.5 7.9L1.5 8.1z"/><path fill="#EA4335" d="M1.5 5.5l10.5 7.9L22.5 5.5V5.5c0-.8-.7-1.5-1.5-1.5h-18c-.8 0-1.5.7-1.5 1.5v0z"/><path fill="#FBBC05" d="M17.5 4L12 8.1 6.5 4h11z"/></svg>
               <div class="contact-text-block">
-                <span>hello@visadoo.com</span>
-                <small>Send us your questions</small>
+                <span>Gmail</span>
+                <small>Chat with our visa team</small>
               </div>
             </a>
           </li>
@@ -354,12 +1019,32 @@
 
 <a class="wa-float" id="waFloat" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
   <svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg>
+  <span class="wa-label">Chat with us</span>
 </a>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<!-- Why Recommendations Modal -->
+<div class="why-rec-modal" id="whyRecModal" aria-hidden="true" role="dialog" aria-labelledby="whyRecTitle">
+  <div class="why-rec-modal-card">
+    <div class="why-rec-modal-header">
+      <h3 class="why-rec-modal-title" id="whyRecTitle">Why you are seeing these recommendations</h3>
+      <button type="button" class="why-rec-modal-close" id="whyRecClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="why-rec-modal-body">
+      <p>We personalize our visa recommendations based on several factors to provide the most relevant travel options for your journey:</p>
+      <ul>
+        <li><strong>Selected Nationality:</strong> Fast-track eligible countries and visa-free or eVisa accessible destinations.</li>
+        <li><strong>Popular Travel Routes:</strong> High-demand destinations with proven expedited approval rates.</li>
+        <li><strong>Speed & Reliability:</strong> Visas with the fastest verified processing times and digital submission workflows.</li>
+      </ul>
+      <p style="margin-bottom:0;">You can use the search bar above or explore all countries below to find any specific visa.</p>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/supabase.min.js"></script>
 <script src="config.js"></script>
-<script src="destination-images.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="home.js"></script>
+<script src="destination-images.js?v=20260909-morocco-fix-v4"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
+<script src="home.js?v=20260911-from-nat-simple-v1"></script>
 </body>
 </html>

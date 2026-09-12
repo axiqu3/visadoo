@@ -1,22 +1,29 @@
 // ===== Visa Doo homepage — global destinations =====
 (function () {
-  // Always enter the homepage at its true top, while preserving section links.
+  // Initial scroll handling on direct page enter
   function resetInitialScroll(){
     if(window.location.hash && window.location.hash!=='#top') return;
-    function jumpToTop(){
-      var root=document.documentElement;
-      var previous=root.style.scrollBehavior;
-      root.style.scrollBehavior='auto';
-      window.scrollTo(0,0);
-      root.style.scrollBehavior=previous;
+    if(window.scrollY === 0) {
+      try {
+        var root=document.documentElement;
+        var previous=root.style.scrollBehavior;
+        root.style.scrollBehavior='auto';
+        window.scrollTo(0,0);
+        root.style.scrollBehavior=previous;
+      } catch(_e) {}
     }
-    jumpToTop();
-    window.addEventListener('load',jumpToTop,{once:true});
   }
   resetInitialScroll();
 
-  var cfg = window.VISADOO_CONFIG;
-  function flag(iso2){ return iso2 ? ('https://flagcdn.com/w160/'+iso2.toLowerCase()+'.png') : ''; }
+  var cfg = window.VISADOO_CONFIG || {
+    WHATSAPP: '919895226697',
+    PHONE_DISPLAY: '+91 98952 26697',
+    PHONE_TEL: '+919895226697',
+    EMAIL: 'hello@visadoo.com',
+    SUPABASE_URL: 'https://rfueqawvadcvhpmleeoi.supabase.co',
+    SUPABASE_ANON_KEY: 'sb_publishable_LyaaSuHTI2x6rCc_HmD-iA_bR9gLx7i'
+  };
+  function flag(iso2){ return iso2 ? ('https://flagcdn.com/w80/'+iso2.toLowerCase()+'.png') : ''; }
 
   // ---- currency: INR only (₹, Indian grouping) ----
   function money(n){ if(n==null||n===''||isNaN(Number(n))) return ''; return '₹'+Number(n).toLocaleString('en-IN'); }
@@ -34,6 +41,47 @@
     return (p==null || p==='' || isNaN(Number(p)) || Number(p)<=0) ? null : Number(p);
   }
 
+  // Curated starting prices matching the UI mockup
+  var DEFAULT_PRICES = {
+    'united-arab-emirates': 3499, 'uae': 3499, 'dubai': 3499,
+    'bahrain': 4500,
+    'vietnam': 2999,
+    'morocco': 4149,
+    'qatar': 8999,
+    'sri-lanka': 999, 'srilanka': 999,
+    'egypt': 5999,
+    'thailand': 499,
+    'philippines': 8499,
+    'russia': 4999,
+    'saudi-arabia': 5500, 'saudi': 5500,
+    'oman': 4499,
+    'indonesia': 8999,
+    'azerbaijan': 2899,
+    'georgia': 2800,
+    'singapore': 2500,
+    'malaysia': 2200,
+    'japan': 4200,
+    'turkey': 4500,
+    'kenya': 5999,
+    'united-kingdom': 14500, 'uk': 14500,
+    'united-states': 16500, 'usa': 16500, 'us': 16500,
+    'france': 8500, 'germany': 8500, 'italy': 8500, 'spain': 8500, 'switzerland': 8900
+  };
+
+  // Top featured countries order matching the reference design
+  var TOP_POPULAR_SLUGS = [
+    'united-arab-emirates', 'uae',
+    'bahrain',
+    'vietnam',
+    'morocco',
+    'qatar',
+    'sri-lanka', 'srilanka',
+    'egypt',
+    'thailand',
+    'philippines',
+    'russia'
+  ];
+
   // ---- contact links ----
   var waLink = 'https://wa.me/' + cfg.WHATSAPP + '?text=' + encodeURIComponent('Hi Visa Doo, I have a question about a visa.');
   function setHref(id, href){ var el=document.getElementById(id); if(el) el.setAttribute('href',href); }
@@ -41,12 +89,45 @@
   setHref('waFloat', waLink); setHref('cmWhatsapp', waLink); setHref('footWa', waLink); setText('waText', cfg.PHONE_DISPLAY);
   setHref('cmPhone', 'tel:'+cfg.PHONE_TEL); setText('phoneText', cfg.PHONE_DISPLAY);
   setHref('cmEmail', 'mailto:'+cfg.EMAIL); setText('emailText', cfg.EMAIL);
-  setHref('footEmail', 'mailto:'+cfg.EMAIL); setText('footEmail', cfg.EMAIL);
+  setHref('footEmail', 'mailto:'+cfg.EMAIL);
+
+  // Sync saved nationality to hero dock
+  var savedNat = localStorage.getItem('visadoo_nationality') || 'India';
+  var dockOriginEl = document.getElementById('dockOriginDisplay');
+  if (dockOriginEl) dockOriginEl.textContent = savedNat;
+
+  // ---- transparent header on hero -> solid white on scroll ----
+  function initHeaderScroll(){
+    var header = document.querySelector('.discover-header');
+    if(!header) return;
+    function handleScroll(){
+      if((window.pageYOffset || document.documentElement.scrollTop || 0) > 30){
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+  }
+  initHeaderScroll();
 
   // ---- mobile menu / year / contact form ----
   var menuBtn=document.getElementById('menuBtn'), navLinks=document.getElementById('navLinks');
-  if(menuBtn&&navLinks){ menuBtn.addEventListener('click',function(){navLinks.classList.toggle('open');});
-    navLinks.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){navLinks.classList.remove('open');});}); }
+  if(menuBtn&&navLinks&&!menuBtn.getAttribute('data-menu-wired')){
+    menuBtn.setAttribute('data-menu-wired','true');
+    menuBtn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var open=navLinks.classList.toggle('open');
+      menuBtn.setAttribute('aria-expanded',String(open));
+    });
+    navLinks.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click',function(){
+        navLinks.classList.remove('open');
+        menuBtn.setAttribute('aria-expanded','false');
+      });
+    });
+  }
   var y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
   var form=document.getElementById('contactForm');
   if(form){
@@ -56,402 +137,1094 @@
     function showMsg(text,isErr){ if(!okEl) return; okEl.textContent=text; okEl.style.display='block'; okEl.style.color=isErr?'#b91c1c':''; okEl.style.background=isErr?'#fef2f2':''; okEl.style.borderColor=isErr?'#fecaca':''; }
     form.addEventListener('submit',function(e){ e.preventDefault();
       var btn=form.querySelector('button[type=submit]'); var ot=btn?btn.textContent:'';
-      if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+      var fName = val('first_name') || val('firstName');
+      var lName = val('last_name') || val('lastName');
+      var fullName = (fName + ' ' + lName).trim() || val('name');
+      var payload = {
+        name: fullName,
+        email: val('email'),
+        message: val('message'),
+        'bot-field': val('bot-field'),
+        consent: !!(form.querySelector('#cConsent')||{}).checked,
+        consent_text: CONSENT_TEXT
+      };
       fetch(cfg.SUPABASE_URL.replace(/\/$/,'')+'/functions/v1/send-contact',{
         method:'POST', headers:{'Content-Type':'application/json','apikey':cfg.SUPABASE_ANON_KEY,'Authorization':'Bearer '+cfg.SUPABASE_ANON_KEY},
-        body:JSON.stringify({ name:val('name'), email:val('email'), message:val('message'), 'bot-field':val('bot-field'), consent:!!(form.querySelector('#cConsent')||{}).checked, consent_text:CONSENT_TEXT })
-      }).then(function(r){ return r.json().catch(function(){return {};}); }).then(function(d){
+        body:JSON.stringify(payload)
+      }).then(function(r){
+        if(!r.ok) throw new Error('Edge function status '+r.status);
+        return r.json().catch(function(){return {};});
+      }).then(function(d){
         if(btn){ btn.disabled=false; btn.textContent=ot; }
-        if(d && d.ok){ showMsg(okText,false); form.reset(); }
-        else { showMsg('Sorry — that didn’t send. Please email hello@visadoo.com or message us on WhatsApp.',true); }
-      }).catch(function(){ if(btn){ btn.disabled=false; btn.textContent=ot; } showMsg('Sorry — that didn’t send. Please email hello@visadoo.com or message us on WhatsApp.',true); });
+        if(d && (d.ok || d.success || !d.error)){ showMsg(okText,false); form.reset(); }
+        else { throw new Error('Edge function response not ok'); }
+      }).catch(function(){
+        // Safe fallback attempt via Supabase REST API
+        fetch(cfg.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/contact_messages',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':cfg.SUPABASE_ANON_KEY,'Authorization':'Bearer '+cfg.SUPABASE_ANON_KEY,'Prefer':'return=minimal'},
+          body:JSON.stringify({ name: payload.name, email: payload.email, message: payload.message, created_at: new Date().toISOString() })
+        }).then(function(tableRes){
+          if(btn){ btn.disabled=false; btn.textContent=ot; }
+          if(tableRes.ok){ showMsg(okText,false); form.reset(); }
+          else { showMsg('Sorry — that didn’t send. Please email hello@visadoo.com or message us on WhatsApp.',true); }
+        }).catch(function(){
+          if(btn){ btn.disabled=false; btn.textContent=ot; }
+          showMsg('Sorry — that didn’t send. Please email hello@visadoo.com or message us on WhatsApp.',true);
+        });
+      });
     });
   }
 
-  // ---- destinations ----
-  // Fastest processing time across a country's visas (compares hours vs days fairly); null if none set.
-  function fastestEta(cv){
-    var best=null;
-    cv.forEach(function(v){
-      var n=v.processing_time_value, u=v.processing_time_unit;
-      if(n==null||n===''||!u) return;
-      var hours = u==='hours' ? Number(n) : Number(n)*24;
-      if(best===null || hours<best.hours) best={hours:hours, value:n, unit:u};
-    });
-    return best;
-  }
-  function etaLabel(eta){
-    if(!eta) return '';
-    var unit = eta.unit==='hours' ? ('hr'+(Number(eta.value)===1?'':'s')) : ('day'+(Number(eta.value)===1?'':'s'));
-    return eta.value+' '+unit;
+  // ---- destinations photography helper ----
+  function isFlagImage(url){
+    if(!url) return false;
+    return /flagcdn\.com|flagsapi\.com|\/flags?\/|flag|\.svg$/i.test(url) || /\/assets\/flags\//i.test(url);
   }
 
   function destinationPhoto(c){
     var photos=window.VISADOO_DESTINATION_PHOTOS||{};
-    var src=photos[c.slug+'-card']||photos[c.slug]||c.hero_image_url||c.image_url||'';
-    if (!src) {
-      var fallbacks = {
-        'thailand': 'https://images.unsplash.com/photo-1528181304800-2f19024b321d?auto=format&fit=crop&w=1200&q=84',
-        'indonesia': 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=84',
-        'russia': 'https://images.unsplash.com/photo-1520106212299-d99c443e4568?auto=format&fit=crop&w=1200&q=84',
-        'kenya': 'https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=84'
-      };
-      src = fallbacks[c.slug.toLowerCase()] || '';
+    var baseSlug = (c.slug || '').toLowerCase().replace(/-\d+$/, '');
+    var src = photos[c.slug+'-card'] || photos[c.slug+'-banner'] || photos[c.slug] || photos[baseSlug+'-card'] || photos[baseSlug+'-banner'] || photos[baseSlug] || '';
+    if (!src || isFlagImage(src)) {
+      if (c.hero_image_url && !isFlagImage(c.hero_image_url)) {
+        src = c.hero_image_url;
+      } else if (c.image_url && !isFlagImage(c.image_url)) {
+        src = c.image_url;
+      } else {
+        src = 'assets/hero-visa-travel.jpg';
+      }
     }
-    return /^https?:\/\//i.test(src) ? src : '';
+    if (!src) return '';
+    return (/^(\/|https?:\/\/|assets\/)/i.test(src)) ? src : ('/' + src);
   }
 
-  function countryCard(c,index){
-    var n=c.visaCount||0;
-    var photo=destinationPhoto(c);
-    var eta=c.eta ? etaLabel(c.eta) : 'Flexible';
-    var etaHours=c.eta ? c.eta.hours : '';
-    var iso=(c.iso2||'').toUpperCase();
-    var photoStyle=photo ? ' style="background-image:url(&quot;'+photo+'&quot;)"' : '';
-    var price=c.minPrice!=null ? money(c.minPrice) : 'Ask us';
-    return '<a class="dest-card-simple destination-tile tile-shape-'+((index%4)+1)+'" href="'+countryHref(c.slug)+'"'+
-      ' data-group="'+(c.group_slug||'')+'" data-types="'+(c.visaTypes||'')+'" data-hours="'+etaHours+'" data-price="'+(c.minPrice==null?'':c.minPrice)+'">'+
-      '<span class="tile-photo"'+photoStyle+'></span><span class="tile-shade"></span>'+
-      '<span class="tile-topline"><span class="dc-flag-badge"><img src="'+flag(c.iso2)+'" alt="" loading="lazy"><b>'+iso+'</b></span>'+
-      '<span class="tile-eta">'+eta+'</span></span>'+
-      '<span class="tile-copy"><small>VisaDoo destination</small><h3>'+(c.name||'')+'</h3><span class="tile-divider"></span>'+
-      '<span class="tile-details"><span><small>Visa options</small><b>'+n+'</b></span><span><small>Starts from</small><b>'+price+'</b></span></span></span>'+
-      '<span class="tile-arrow" aria-hidden="true">↗</span></a>';
+  function countryIso(c) {
+    var slug = (c.slug || '').toLowerCase();
+    if (slug === 'philippines') return 'PH';
+    if (slug === 'united-arab-emirates' || slug === 'uae' || slug === 'dubai') return 'AE';
+    if (slug === 'bahrain') return 'BH';
+    if (slug === 'vietnam') return 'VN';
+    if (slug === 'morocco') return 'MA';
+    if (slug === 'qatar') return 'QA';
+    if (slug === 'sri-lanka' || slug === 'srilanka') return 'LK';
+    if (slug === 'egypt') return 'EG';
+    if (slug === 'thailand') return 'TH';
+    if (slug === 'russia') return 'RU';
+    if (slug === 'oman') return 'OM';
+    if (slug === 'azerbaijan') return 'AZ';
+    if (slug === 'indonesia' || slug === 'bali') return 'ID';
+    if (slug === 'singapore') return 'SG';
+    if (slug === 'malaysia') return 'MY';
+    if (slug === 'georgia') return 'GE';
+    if (slug === 'saudi-arabia' || slug === 'saudi') return 'SA';
+    if (slug === 'turkey' || slug === 'turkiye') return 'TR';
+    if (slug === 'kenya') return 'KE';
+    return (c.iso2 || '').toUpperCase();
   }
 
-  function render(countries, groups){
-    var INITIAL_COUNTRY_LIMIT=25;
-    var showAllCountries=false;
-    var featured = countries.filter(function(c){return c.featured;});
-    var chips = (featured.length?featured:countries).slice(0,6).map(function(c){
-      return '<a href="'+countryHref(c.slug)+'" class="destination-chip"><img src="'+flag(c.iso2)+'" alt="">'+ (c.name||'') +'</a>';
-    }).join('');
-    var chipBox=document.getElementById('popularChips'); if(chipBox) chipBox.innerHTML=chips;
+  var COUNTRY_TAGLINES = {
+    'united-arab-emirates': 'Modern Opportunities',
+    'uae': 'Modern Opportunities',
+    'dubai': 'Modern Opportunities',
+    'bahrain': 'Where Tradition Meets Future',
+    'vietnam': 'Natural Beauty Awaits',
+    'thailand': 'Experience a New Culture',
+    'qatar': 'Oasis of Modern Luxury',
+    'morocco': 'Kingdom of Wonder',
+    'sri-lanka': 'Pearl of the Indian Ocean',
+    'srilanka': 'Pearl of the Indian Ocean',
+    'egypt': 'Cradle of Civilization',
+    'russia': 'Land of Rich Heritage',
+    'indonesia': 'Tropical Island Paradise',
+    'azerbaijan': 'Land of Fire & Culture',
+    'oman': 'Beauty Has An Address',
+    'saudi-arabia': 'Kingdom of Heritage & Future',
+    'saudi': 'Kingdom of Heritage & Future',
+    'singapore': 'Where Possibilities Meet',
+    'malaysia': 'Truly Asia',
+    'georgia': 'Heart of the Caucasus',
+    'turkey': 'Where Continents Meet',
+    'kenya': 'Magical Wildlife & Landscapes',
+    'japan': 'Land of the Rising Sun',
+    'france': 'Gateway to Europe',
+    'germany': 'Gateway to Europe',
+    'spain': 'Gateway to Europe',
+    'switzerland': 'Alpine Wonder & Lakes',
+    'italy': 'Art, History & Charm',
+    'united-kingdom': 'Historic Royal Heritage',
+    'uk': 'Historic Royal Heritage',
+    'united-states': 'Land of Endless Possibilities',
+    'usa': 'Land of Endless Possibilities'
+  };
 
-    var countEl=document.getElementById('countryCount');
-    if(countEl) countEl.textContent=countries.length;
+  var COUNTRY_TAGS = {
+    'united-arab-emirates': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'uae': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'dubai': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'bahrain': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'users', label: 'Family Visa' }
+    ],
+    'vietnam': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'thailand': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'qatar': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'morocco': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'sri-lanka': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'srilanka': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'egypt': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'russia': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'indonesia': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'azerbaijan': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'oman': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'saudi-arabia': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'saudi': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'philippines': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'singapore': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'malaysia': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'georgia': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'turkey': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ],
+    'kenya': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'Business Visa' }
+    ],
+    'japan': [
+      { icon: 'building', label: 'Tourist Visa' },
+      { icon: 'plane', label: 'E-Visa' }
+    ]
+  };
 
-    var grid=document.getElementById('destGrid');
-    if(grid) grid.innerHTML=countries.map(countryCard).join('');
+  var COUNTRY_PROCESSING_TIMES = {
+    'united-arab-emirates': '3-5 working days',
+    'uae': '3-5 working days',
+    'dubai': '3-5 working days',
+    'bahrain': '3-7 working days',
+    'vietnam': '3-5 working days',
+    'thailand': '3-7 working days',
+    'qatar': '5-6 working days',
+    'morocco': '3-5 working days',
+    'sri-lanka': '24 to 48 hours',
+    'srilanka': '24 to 48 hours',
+    'egypt': '10 - 15 days',
+    'russia': '10 - 12 days',
+    'indonesia': '5-7 working days',
+    'azerbaijan': 'Upto 3 days',
+    'oman': '5-6 working days',
+    'saudi-arabia': '5 working days',
+    'saudi': '5 working days',
+    'philippines': '8 - 10 days',
+    'singapore': '3-5 working days',
+    'malaysia': '2-3 working days',
+    'georgia': '3-5 working days',
+    'turkey': '2-3 working days',
+    'kenya': 'Upto 2 days',
+    'japan': '3-5 working days'
+  };
 
-    var ga=document.getElementById('groupsArea');
-    if(ga) ga.innerHTML='';
+  function esc(s){
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
-    var availableGroups=groups.filter(function(g){
-      return countries.some(function(c){return c.group_slug===g.slug;});
-    });
-    var featuredGroups=availableGroups.filter(function(g){
-      var key=((g.slug||'')+' '+(g.name||'')).toLowerCase().replace(/[^a-z]/g,'');
-      return key.indexOf('schengen')>-1||key.indexOf('evisa')>-1;
-    }).sort(function(a,b){
-      var aKey=((a.slug||'')+' '+(a.name||'')).toLowerCase();
-      var bKey=((b.slug||'')+' '+(b.name||'')).toLowerCase();
-      return (aKey.indexOf('schengen')>-1?0:1)-(bKey.indexOf('schengen')>-1?0:1);
-    });
-    if(ga){
-      ga.innerHTML=featuredGroups.map(function(g){
-        var groupCountries=countries.filter(function(c){return c.group_slug===g.slug;});
-        var key=((g.slug||'')+' '+(g.name||'')).toLowerCase().replace(/[^a-z]/g,'');
-        var fallbackDescription=key.indexOf('schengen')>-1
-          ? 'One visa can unlock multiple European destinations. Apply through your main destination.'
-          : 'Enjoy a simpler travel process with the convenience and flexibility of an electronic visa.';
-        var description=g.description||fallbackDescription;
-        return '<section class="visa-country-group" aria-labelledby="group-'+g.slug+'">'+
-          '<div class="visa-group-heading"><div><span class="board-kicker">Visa collection</span>'+
-          '<h3 id="group-'+g.slug+'">'+(g.name||'Visa group')+'</h3></div>'+
-          '<span class="visa-group-count">'+groupCountries.length+' countr'+(groupCountries.length===1?'y':'ies')+'</span></div>'+
-          '<p class="visa-group-description">'+description+'</p>'+
-          '<div class="dest-grid dest-grid--simple">'+groupCountries.map(countryCard).join('')+'</div></section>';
-      }).join('');
+  function tagIconSvg(type) {
+    if (type === 'users') {
+      return '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>';
     }
-    var regionBox=document.getElementById('regionPills');
-    if(regionBox){
-      regionBox.innerHTML='<button type="button" class="active" data-group="all">All places</button>'+
-        availableGroups.map(function(g){
-          return '<button type="button" data-group="'+g.slug+'">'+(g.name||'Region')+'</button>';
-        }).join('');
+    if (type === 'plane') {
+      return '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z"/></svg>';
+  }
+
+  // ---- Country Card renderer matching media_1788953353275.png Reference ----
+  function countryCard(c){
+    var photo = destinationPhoto(c);
+    var baseSlug = (c.slug || '').toLowerCase();
+    var photoStyle = photo ? ' style="background-image:url(&quot;' + photo + '&quot;)"' : '';
+    
+    var countryDisplayName = c.name || '';
+    if (baseSlug === 'united-arab-emirates' || baseSlug === 'uae') countryDisplayName = 'United Arab Emirates';
+    else if (baseSlug === 'bahrain') countryDisplayName = 'Bahrain';
+    else if (baseSlug === 'vietnam') countryDisplayName = 'Vietnam';
+    else if (baseSlug === 'morocco') countryDisplayName = 'Morocco';
+    else if (baseSlug === 'qatar') countryDisplayName = 'Qatar';
+    else if (baseSlug === 'sri-lanka' || baseSlug === 'srilanka') countryDisplayName = 'Sri Lanka';
+    else if (baseSlug === 'egypt') countryDisplayName = 'Egypt';
+    else if (baseSlug === 'thailand') countryDisplayName = 'Thailand';
+    else if (baseSlug === 'philippines') countryDisplayName = 'Philippines';
+    else if (baseSlug === 'russia') countryDisplayName = 'Russia';
+    else if (baseSlug === 'oman') countryDisplayName = 'Oman';
+    else if (baseSlug === 'azerbaijan') countryDisplayName = 'Azerbaijan';
+    else if (baseSlug === 'indonesia') countryDisplayName = 'Indonesia';
+    else if (baseSlug === 'singapore') countryDisplayName = 'Singapore';
+    else if (baseSlug === 'malaysia') countryDisplayName = 'Malaysia';
+    else if (baseSlug === 'georgia') countryDisplayName = 'Georgia';
+    else if (baseSlug === 'saudi-arabia' || baseSlug === 'saudi') countryDisplayName = 'Saudi Arabia';
+    else if (baseSlug === 'turkey' || baseSlug === 'turkiye') countryDisplayName = 'Turkey';
+    else if (baseSlug === 'kenya') countryDisplayName = 'Kenya';
+
+    return '<a class="dest-mockup-card dest-card-item-link" href="' + countryHref(c.slug) + '"' +
+      ' data-group="' + (c.group_slug || '') + '" data-types="' + (c.visaTypes || '') + '" data-slug="' + baseSlug + '">' +
+      '<div class="dest-photo-box"' + photoStyle + '>' +
+        '<div class="dest-card-overlay"></div>' +
+        '<span class="dest-card-name-centered">' + esc(countryDisplayName) + '</span>' +
+      '</div>' +
+      '<div class="dest-card-under-info">' +
+        '<span class="dest-under-docs-label">Documents needed:</span>' +
+        '<span class="dest-under-docs-val">Passport, Photo</span>' +
+      '</div>' +
+    '</a>';
+  }
+
+  // Top 4 Popular Destination Slugs (1 clean row)
+  var TOP_POPULAR_SLUGS = [
+    'united-arab-emirates', 'uae', 'dubai',
+    'bahrain',
+    'vietnam',
+    'thailand'
+  ];
+
+  // Curated fallback countries for instant hydration
+  var FALLBACK_COUNTRIES = [
+    { name: 'Morocco', slug: 'morocco', iso2: 'ma', group_slug: 'e-visa', minPrice: 4149 },
+    { name: 'Qatar', slug: 'qatar', iso2: 'qa', group_slug: 'e-visa', minPrice: 8999 },
+    { name: 'Sri Lanka', slug: 'sri-lanka', iso2: 'lk', group_slug: 'e-visa', minPrice: 999 },
+    { name: 'Philippines', slug: 'philippines', iso2: 'ph', group_slug: 'e-visa', minPrice: 8499 },
+    { name: 'United Arab Emirates', slug: 'united-arab-emirates', iso2: 'ae', group_slug: 'e-visa', minPrice: 3499 },
+    { name: 'Bahrain', slug: 'bahrain', iso2: 'bh', group_slug: 'e-visa', minPrice: 4500 },
+    { name: 'Vietnam', slug: 'vietnam', iso2: 'vn', group_slug: 'e-visa', minPrice: 2999 },
+    { name: 'Thailand', slug: 'thailand', iso2: 'th', group_slug: 'e-visa', minPrice: 499 },
+    { name: 'Egypt', slug: 'egypt', iso2: 'eg', group_slug: 'e-visa', minPrice: 5999 },
+    { name: 'Russia', slug: 'russia', iso2: 'ru', group_slug: 'e-visa', minPrice: 4999 },
+    { name: 'Oman', slug: 'oman', iso2: 'om', group_slug: 'e-visa', minPrice: 4499 },
+    { name: 'Azerbaijan', slug: 'azerbaijan', iso2: 'az', group_slug: 'e-visa', minPrice: 2899 },
+    { name: 'Indonesia', slug: 'indonesia', iso2: 'id', group_slug: 'e-visa', minPrice: 8999 },
+    { name: 'Singapore', slug: 'singapore', iso2: 'sg', group_slug: 'e-visa', minPrice: 2500 },
+    { name: 'Malaysia', slug: 'malaysia', iso2: 'my', group_slug: 'e-visa', minPrice: 2200 },
+    { name: 'Georgia', slug: 'georgia', iso2: 'ge', group_slug: 'e-visa', minPrice: 2800 },
+    { name: 'Saudi Arabia', slug: 'saudi-arabia', iso2: 'sa', group_slug: 'e-visa', minPrice: 5500 },
+    { name: 'Kenya', slug: 'kenya', iso2: 'ke', group_slug: 'e-visa', minPrice: 5999 },
+    { name: 'Turkey', slug: 'turkey', iso2: 'tr', group_slug: 'e-visa', minPrice: 4500 },
+    { name: 'France', slug: 'france', iso2: 'fr', group_slug: 'schengen', minPrice: 7999 },
+    { name: 'Germany', slug: 'germany', iso2: 'de', group_slug: 'schengen', minPrice: 7999 },
+    { name: 'Italy', slug: 'italy', iso2: 'it', group_slug: 'schengen', minPrice: 7999 },
+    { name: 'Spain', slug: 'spain', iso2: 'es', group_slug: 'schengen', minPrice: 7999 },
+    { name: 'Switzerland', slug: 'switzerland', iso2: 'ch', group_slug: 'schengen', minPrice: 8499 },
+    { name: 'Greece', slug: 'greece', iso2: 'gr', group_slug: 'schengen', minPrice: 7499 }
+  ];
+
+  var SEARCH_ALIASES = {
+    'united-arab-emirates': ['uae', 'dubai', 'abu dhabi', 'sharjah', 'emirates', 'united arab emirates', 'dxb', 'ajman', 'ras al khaimah'],
+    'united-kingdom': ['uk', 'london', 'england', 'britain', 'great britain', 'united kingdom', 'scotland', 'wales'],
+    'united-states': ['usa', 'us', 'america', 'new york', 'california', 'united states', 'washington'],
+    'thailand': ['thailand', 'thai', 'bangkok', 'phuket', 'pattaya', 'krabi', 'koh samui'],
+    'indonesia': ['indonesia', 'bali', 'jakarta', 'lombok', 'denpasar'],
+    'malaysia': ['malaysia', 'kuala lumpur', 'kl', 'penang', 'langkawi'],
+    'singapore': ['singapore', 'sg', 'changi'],
+    'vietnam': ['vietnam', 'hanoi', 'ho chi minh', 'da nang', 'saigon'],
+    'saudi-arabia': ['saudi', 'saudi arabia', 'ksa', 'riyadh', 'jeddah', 'mecca', 'medina', 'umrah'],
+    'qatar': ['qatar', 'doha'],
+    'bahrain': ['bahrain', 'manama'],
+    'oman': ['oman', 'muscat', 'salalah'],
+    'egypt': ['egypt', 'cairo', 'giza', 'pyramids', 'hurghada', 'sharm el sheikh'],
+    'turkey': ['turkey', 'turkiye', 'istanbul', 'antalya', 'cappadocia', 'ankara'],
+    'morocco': ['morocco', 'marrakech', 'casablanca', 'rabat'],
+    'sri-lanka': ['sri lanka', 'srilanka', 'colombo', 'kandy'],
+    'russia': ['russia', 'moscow', 'st petersburg'],
+    'azerbaijan': ['azerbaijan', 'baku'],
+    'georgia': ['georgia', 'tbilisi', 'batumi'],
+    'philippines': ['philippines', 'manila', 'cebu', 'boracay'],
+    'japan': ['japan', 'tokyo', 'osaka', 'kyoto'],
+    'france': ['france', 'paris', 'french', 'schengen', 'europe', 'nice'],
+    'germany': ['germany', 'berlin', 'frankfurt', 'munich', 'german', 'schengen', 'europe'],
+    'italy': ['italy', 'rome', 'milan', 'venice', 'florence', 'italian', 'schengen', 'europe'],
+    'spain': ['spain', 'madrid', 'barcelona', 'spanish', 'schengen', 'europe'],
+    'switzerland': ['switzerland', 'swiss', 'zurich', 'geneva', 'schengen', 'europe'],
+    'greece': ['greece', 'athens', 'santorini', 'mykonos', 'schengen', 'europe'],
+    'denmark': ['denmark', 'copenhagen', 'schengen', 'europe'],
+    'china': ['china', 'beijing', 'shanghai', 'guangzhou'],
+    'south-korea': ['south korea', 'korea', 'seoul', 'busan'],
+    'ireland': ['ireland', 'dublin', 'europe'],
+    'kenya': ['kenya', 'nairobi', 'mombasa', 'safari']
+  };
+
+  var activeSearchCountries = FALLBACK_COUNTRIES;
+
+  function scoreMatch(c, q) {
+    if (!q) return -1;
+    var name = (c.name || '').toLowerCase();
+    var slug = (c.slug || '').toLowerCase();
+    var iso = (c.iso2 || countryIso(c) || '').toLowerCase();
+
+    // Exact match
+    if (name === q || slug === q || iso === q) return 100;
+    // Prefix match
+    if (name.indexOf(q) === 0 || slug.indexOf(q) === 0) return 80;
+    // Contains match
+    if (name.indexOf(q) > -1 || slug.indexOf(q) > -1) return 60;
+
+    // Alias matches
+    var aliases = SEARCH_ALIASES[slug] || [];
+    for (var i = 0; i < aliases.length; i++) {
+      var al = aliases[i];
+      if (al === q) return 90;
+      if (al.indexOf(q) === 0) return 70;
+      if (al.indexOf(q) > -1 || q.indexOf(al) > -1) return 50;
     }
 
-    var visaTypeFilter=document.getElementById('visaTypeFilter');
-    var visaTabs=[].slice.call(document.querySelectorAll('[data-visa-tab]'));
-    var deliveryFilter=document.getElementById('deliveryFilter');
-    var budgetFilter=document.getElementById('budgetFilter');
-    var empty=document.getElementById('destinationEmpty');
-    var moreWrap=document.getElementById('destinationMoreWrap');
-    var moreButton=document.getElementById('destinationMore');
-    var activeGroup='all';
+    // Schengen group search
+    if (q === 'schengen' && (c.group_slug === 'schengen' || ['france','germany','italy','spain','switzerland','greece','denmark','japan'].indexOf(slug) > -1)) {
+      return 65;
+    }
+    // E-Visa group search
+    if ((q === 'evisa' || q === 'e-visa') && (c.group_slug === 'e-visa' || c.group_slug === 'evisa')) {
+      return 65;
+    }
 
-    function applyDestinationFilters(){
-      if(!grid) return;
-      var cards=[].slice.call(grid.querySelectorAll('.destination-tile'));
-      var visaType=visaTypeFilter?visaTypeFilter.value:'all';
-      var delivery=deliveryFilter?deliveryFilter.value:'all';
-      var budget=budgetFilter?budgetFilter.value:'all';
-      var matched=0;
-      cards.forEach(function(card){
-        var groupOk=activeGroup==='all'||card.getAttribute('data-group')===activeGroup;
-        var typeText=(card.getAttribute('data-types')||'').toLowerCase();
-        var typeOk=visaType==='all'||typeText.indexOf(visaType)>-1;
-        var hours=Number(card.getAttribute('data-hours'));
-        var etaOk=delivery==='all'||(delivery==='fast'&&hours>0&&hours<=72)||(delivery==='week'&&hours>0&&hours<=168);
-        var price=Number(card.getAttribute('data-price'));
-        var budgetOk=budget==='all'||(price>0&&price<=Number(budget));
-        var isMatch=groupOk&&typeOk&&etaOk&&budgetOk;
-        if(isMatch){
-          card.hidden=!showAllCountries&&matched>=INITIAL_COUNTRY_LIMIT;
-          matched++;
-        }else{
-          card.hidden=true;
+    return -1;
+  }
+
+  var DEFAULT_NATIONALITIES = [
+    { name: 'India', iso2: 'in' },
+    { name: 'Qatar', iso2: 'qa' }
+  ];
+
+  function initHeroNationalityDropdown() {
+    var trigger = document.getElementById('heroNationalityTrigger');
+    var dropdown = document.getElementById('heroNationalityDropdown');
+    var valEl = document.getElementById('heroSelectedNationality');
+    var flagEl = document.getElementById('heroSelectedFlag');
+    if (!trigger || !dropdown || !valEl) return;
+
+    var currentNat = localStorage.getItem('visadoo_nationality') || 'India';
+    if (currentNat.toLowerCase() !== 'india' && currentNat.toLowerCase() !== 'qatar') {
+      currentNat = 'India';
+      localStorage.setItem('visadoo_nationality', 'India');
+    }
+
+    var options = dropdown.querySelectorAll('.viator-nat-opt');
+
+    function syncState() {
+      valEl.textContent = currentNat;
+      var iso = (currentNat.toLowerCase() === 'qatar') ? 'qa' : 'in';
+      if (flagEl) {
+        flagEl.src = 'https://flagcdn.com/w40/' + iso + '.png';
+        flagEl.alt = currentNat + ' flag';
+      }
+      options.forEach(function (btn) {
+        var name = btn.getAttribute('data-name');
+        var isActive = (name && name.toLowerCase() === currentNat.toLowerCase());
+        if (isActive) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+        } else {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-selected', 'false');
         }
       });
-      if(empty) empty.hidden=matched!==0;
-      if(moreWrap) moreWrap.hidden=matched<=INITIAL_COUNTRY_LIMIT;
-      if(moreButton){
-        moreButton.setAttribute('aria-expanded',showAllCountries?'true':'false');
-        moreButton.querySelector('span').textContent=showAllCountries?'Show fewer countries':'Show more countries';
-      }
+    }
+    syncState();
+
+    function openDropdown() {
+      // Close other dropdowns
+      var visaDropdown = document.getElementById('heroVisaTypeDropdown');
+      if (visaDropdown) visaDropdown.classList.remove('show');
+      var destResults = document.getElementById('destResults');
+      if (destResults) destResults.classList.remove('show');
+
+      dropdown.classList.add('show');
+      trigger.setAttribute('aria-expanded', 'true');
     }
 
-    if(moreButton){
-      moreButton.addEventListener('click',function(){
-        showAllCountries=!showAllCountries;
-        applyDestinationFilters();
-        if(!showAllCountries){
-          grid.scrollIntoView({behavior:'smooth',block:'start'});
+    function closeDropdown() {
+      dropdown.classList.remove('show');
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    trigger.addEventListener('click', function (e) {
+      if (e.target.closest('.viator-nat-dropdown')) return;
+      e.stopPropagation();
+      var isOpen = dropdown.classList.contains('show');
+      if (isOpen) closeDropdown(); else openDropdown();
+    });
+
+    trigger.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        var isOpen = dropdown.classList.contains('show');
+        if (isOpen) closeDropdown(); else openDropdown();
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+
+    options.forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var name = btn.getAttribute('data-name') || 'India';
+        var iso = btn.getAttribute('data-iso') || (name.toLowerCase() === 'qatar' ? 'qa' : 'in');
+        currentNat = name;
+        localStorage.setItem('visadoo_nationality', name);
+
+        syncState();
+        closeDropdown();
+
+        // Sync with header UI
+        var headerFlag = document.getElementById('selectedNationalityFlag');
+        if (headerFlag && iso) headerFlag.src = 'https://flagcdn.com/w40/' + iso + '.png';
+        var headerText = document.getElementById('selectedNationalityText');
+        if (headerText) headerText.textContent = name;
+
+        // Dispatch event so Supabase destination filters update
+        document.dispatchEvent(new CustomEvent('nationalitychanged', { detail: name }));
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!trigger.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+
+    document.addEventListener('nationalitychanged', function (e) {
+      if (e && e.detail && typeof e.detail === 'string') {
+        currentNat = e.detail;
+        syncState();
+      }
+    });
+  }
+  initHeroNationalityDropdown();
+
+  function initHeroVisaTypeDropdown() {
+    var trigger = document.getElementById('heroVisaTypeTrigger');
+    var dropdown = document.getElementById('heroVisaTypeDropdown');
+    var valEl = document.getElementById('heroSelectedVisaType');
+    var destInput = document.getElementById('destSearch');
+    if (!trigger || !dropdown || !valEl) return;
+
+    function openDropdown() {
+      var natDropdown = document.getElementById('heroNationalityDropdown');
+      if (natDropdown) natDropdown.classList.remove('show');
+      var destResults = document.getElementById('destResults');
+      if (destResults) destResults.classList.remove('show');
+      dropdown.classList.add('show');
+      trigger.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeDropdown() {
+      dropdown.classList.remove('show');
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    trigger.addEventListener('click', function (e) {
+      if (e.target.closest('.viator-type-dropdown')) return;
+      e.stopPropagation();
+      var isOpen = dropdown.classList.contains('show');
+      if (isOpen) {
+        closeDropdown();
+      } else {
+        openDropdown();
+      }
+    });
+
+    trigger.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        var isOpen = dropdown.classList.contains('show');
+        if (isOpen) closeDropdown(); else openDropdown();
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+
+    var options = dropdown.querySelectorAll('.viator-type-opt');
+    options.forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var type = btn.getAttribute('data-type') || 'all';
+        var strongEl = btn.querySelector('strong');
+        var labelText = strongEl ? strongEl.textContent.trim() : 'All Visa Types';
+
+        valEl.textContent = labelText;
+        valEl.setAttribute('data-value', type);
+
+        options.forEach(function (b) {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
+
+        closeDropdown();
+
+        // Sync filter down to destinations
+        if (typeof window.setVisaFilter === 'function') {
+          window.setVisaFilter(type);
+        }
+
+        // If search input has text, trigger search again to update suggestions
+        if (destInput && destInput.value.trim()) {
+          destInput.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!trigger.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+  }
+  initHeroVisaTypeDropdown();
+
+  function initDestinationSearch() {
+    var input = document.getElementById('destSearch');
+    var results = document.getElementById('destResults');
+    var searchButton = document.getElementById('destSearchButton');
+    if (!input || !results) return;
+
+    var searchDebounceTimer = null;
+    var activeResultIndex = -1;
+
+    var SCHENGEN_SLUGS = [
+      'france', 'germany', 'italy', 'spain', 'switzerland',
+      'greece', 'denmark', 'austria', 'netherlands', 'belgium',
+      'portugal', 'japan'
+    ];
+    var EVISA_SLUGS = [
+      'united-arab-emirates', 'uae', 'vietnam', 'morocco', 'qatar',
+      'sri-lanka', 'egypt', 'thailand', 'russia', 'bahrain',
+      'indonesia', 'azerbaijan', 'oman', 'singapore', 'malaysia',
+      'georgia', 'saudi-arabia', 'turkey', 'kenya'
+    ];
+
+    function updateActiveItem(items) {
+      items.forEach(function (el, idx) {
+        if (idx === activeResultIndex) {
+          el.classList.add('active-item');
+          el.scrollIntoView({ block: 'nearest' });
+        } else {
+          el.classList.remove('active-item');
         }
       });
     }
 
-    if(regionBox){
-      regionBox.querySelectorAll('button').forEach(function(button){
-        button.addEventListener('click',function(){
-          activeGroup=button.getAttribute('data-group')||'all';
-          regionBox.querySelectorAll('button').forEach(function(item){item.classList.toggle('active',item===button);});
-          applyDestinationFilters();
-        });
-      });
-    }
-    function syncVisaTabs(value){
-      visaTabs.forEach(function(tab){
-        var active=tab.getAttribute('data-visa-tab')===value;
-        tab.classList.toggle('active',active);
-        tab.setAttribute('aria-selected',active?'true':'false');
-      });
-    }
-    visaTabs.forEach(function(tab){
-      tab.addEventListener('click',function(){
-        var value=tab.getAttribute('data-visa-tab')||'all';
-        if(visaTypeFilter) visaTypeFilter.value=value;
-        syncVisaTabs(value);
-        applyDestinationFilters();
-      });
-    });
-    if(visaTypeFilter) visaTypeFilter.addEventListener('change',function(){
-      syncVisaTabs(visaTypeFilter.value);
-      applyDestinationFilters();
-    });
-    if(deliveryFilter) deliveryFilter.addEventListener('change',applyDestinationFilters);
-    if(budgetFilter) budgetFilter.addEventListener('change',applyDestinationFilters);
-    applyDestinationFilters();
-
-    // search over ALL countries
-    var input=document.getElementById('destSearch'), results=document.getElementById('destResults');
-    var searchButton=document.getElementById('destSearchButton');
-    function doSearch(){
-      var q=(input.value||'').trim().toLowerCase();
-      if(!q){ results.classList.remove('show'); results.innerHTML=''; return; }
-      var matches=countries.filter(function(c){return (c.name||'').toLowerCase().indexOf(q)>-1;}).slice(0,8);
-      if(!matches.length){ results.innerHTML='<div class="none">No destination found. Try another country, or contact us.</div>'; }
-      else { results.innerHTML=matches.map(function(c){
-        return '<a href="'+countryHref(c.slug)+'"><img class="flag" src="'+flag(c.iso2)+'" alt="">'+(c.name||'')+'<span style="margin-left:auto;color:var(--muted);font-weight:600;font-size:13px">'+(c.visaCount||0)+' visas</span></a>';
-      }).join(''); }
-      results.classList.add('show');
-    }
-    if(input){ input.addEventListener('input',doSearch); input.addEventListener('focus',doSearch);
-      input.addEventListener('keydown',function(e){
-        if(e.key==='Enter'){
-          var first=results.querySelector('a');
-          if(first){ e.preventDefault(); window.location.href=first.href; }
-        }
-      });
-      document.addEventListener('click',function(e){ if(!results.contains(e.target)&&e.target!==input) results.classList.remove('show'); }); }
-    if(searchButton){ searchButton.addEventListener('click',function(){
-      doSearch();
-      var first=results.querySelector('a');
-      if(first) window.location.href=first.href;
-      else if(input) input.focus();
-    }); }
-
-    // interactive map selector
-    var mapToggle=document.getElementById('mapToggle');
-    var mapPanel=document.getElementById('countryMapPanel');
-    var mapClose=document.getElementById('countryMapClose');
-    var mapStatus=document.getElementById('countryMapStatus');
-    var mapFallback=document.getElementById('mapCountryFallback');
-    var countryMap=null;
-    var mapStarted=false;
-
-    function showMapFallback(message){
-      if(mapStatus){
-        mapStatus.textContent=message||'Select a country below.';
-        mapStatus.hidden=false;
-      }
-      if(!mapFallback) return;
-      mapFallback.innerHTML=countries.map(function(c){
-        return '<button type="button" data-map-country="'+c.slug+'"><img src="'+flag(c.iso2)+'" alt="" loading="lazy"><span>'+(c.name||'')+'</span></button>';
-      }).join('');
-      mapFallback.hidden=false;
-      mapFallback.querySelectorAll('[data-map-country]').forEach(function(button){
-        button.addEventListener('click',function(){
-          window.location.href=countryHref(button.getAttribute('data-map-country'));
-        });
-      });
-    }
-
-    function initCountryMap(){
-      if(mapStarted){
-        if(countryMap) setTimeout(function(){countryMap.invalidateSize();},0);
-        return;
-      }
-      mapStarted=true;
-      if(!window.L){
-        showMapFallback('Map could not load. Select a country below.');
-        return;
-      }
-      countryMap=window.L.map('countryMap',{
-        minZoom:1,
-        maxZoom:6,
-        zoomControl:true,
-        worldCopyJump:true,
-        maxBounds:[[-85,-180],[85,180]]
-      }).setView([22,15],1);
-      window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        maxZoom:6,
-        attribution:'&copy; OpenStreetMap contributors'
-      }).addTo(countryMap);
-
-      fetch('https://restcountries.com/v3.1/all?fields=cca2,latlng').then(function(response){
-        if(!response.ok) throw new Error('Country coordinates unavailable');
-        return response.json();
-      }).then(function(rows){
-        var coordinateByIso={};
-        rows.forEach(function(row){
-          if(row.cca2&&row.latlng&&row.latlng.length===2) coordinateByIso[String(row.cca2).toUpperCase()]=row.latlng;
-        });
-        var markerCount=0;
-        countries.forEach(function(c){
-          var coordinates=coordinateByIso[String(c.iso2||'').toUpperCase()];
-          if(!coordinates) return;
-          markerCount++;
-          window.L.circleMarker(coordinates,{
-            radius:7,
-            color:'#fff',
-            weight:2,
-            fillColor:'#176fc1',
-            fillOpacity:.95
-          }).addTo(countryMap).bindTooltip(c.name||'Destination',{
-            direction:'top',
-            offset:[0,-7]
-          }).on('click',function(){
-            window.location.href=countryHref(c.slug);
-          });
-        });
-        if(!markerCount){
-          showMapFallback('Select a country below.');
+    function doSearch() {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(function () {
+        var rawVal = input.value || '';
+        var q = rawVal.trim().toLowerCase();
+        activeResultIndex = -1;
+        if (!q) {
+          results.classList.remove('show');
+          results.innerHTML = '';
           return;
         }
-        if(mapStatus) mapStatus.hidden=true;
-        setTimeout(function(){countryMap.invalidateSize();},0);
-      }).catch(function(){
-        showMapFallback('Map markers could not load. Select a country below.');
+
+        var pool = (activeSearchCountries && activeSearchCountries.length) ? activeSearchCountries : FALLBACK_COUNTRIES;
+        var selectedVisaType = 'all';
+        var typeEl = document.getElementById('heroSelectedVisaType');
+        if (typeEl) {
+          selectedVisaType = (typeEl.getAttribute('data-value') || 'all').toLowerCase();
+        }
+
+        var scored = [];
+        var seen = {};
+
+        pool.forEach(function (c) {
+          if (seen[c.slug]) return;
+          var slug = (c.slug || '').toLowerCase();
+          var group = (c.group_slug || '').toLowerCase();
+          var isSchengen = group === 'schengen' || SCHENGEN_SLUGS.indexOf(slug) > -1;
+          var isEvisa = group === 'e-visa' || group === 'evisa' || EVISA_SLUGS.indexOf(slug) > -1;
+
+          // If a visa type filter is active, respect it
+          if (selectedVisaType === 'schengen' && !isSchengen) return;
+          if ((selectedVisaType === 'evisa' || selectedVisaType === 'e-visa') && !isEvisa) return;
+          if (selectedVisaType === 'sticker' && !isSchengen && ['united-kingdom','united-states','china','japan','philippines'].indexOf(slug) === -1) return;
+
+          var s = scoreMatch(c, q);
+          if (s > 0) {
+            scored.push({ country: c, score: s });
+            seen[c.slug] = true;
+          }
+        });
+
+        scored.sort(function (a, b) {
+          return b.score - a.score;
+        });
+
+        var matches = scored.slice(0, 8).map(function (item) { return item.country; });
+
+        if (!matches.length) {
+          var typeHint = selectedVisaType === 'schengen' ? ' Schengen' : (selectedVisaType === 'evisa' ? ' e-Visa' : '');
+          results.innerHTML = '<div class="none">' +
+            '<div>No' + typeHint + ' destination found for "<strong>' + esc(rawVal.trim()) + '</strong>"</div>' +
+            '<span class="none-sub">Try searching another country or explore our full catalog.</span>' +
+            '<a href="#destinations" class="none-action-btn" id="searchExploreAllBtn">Explore All Destinations &darr;</a>' +
+          '</div>';
+          var exploreBtn = results.querySelector('#searchExploreAllBtn');
+          if (exploreBtn) {
+            exploreBtn.addEventListener('click', function (e) {
+              e.preventDefault();
+              results.classList.remove('show');
+              if (typeof window.setVisaFilter === 'function') {
+                window.setVisaFilter('all');
+              }
+              var destSec = document.getElementById('destinations');
+              if (destSec) destSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
+        } else {
+          results.innerHTML = matches.map(function (c) {
+            var iso = (c.iso2 || countryIso(c) || 'un').toLowerCase();
+            var slug = (c.slug || '').toLowerCase();
+            var isSchengen = (c.group_slug === 'schengen') || SCHENGEN_SLUGS.indexOf(slug) > -1;
+            var badgeText = isSchengen
+              ? 'Schengen'
+              : ((c.visaCount != null && c.visaCount > 0)
+                ? (c.visaCount + (c.visaCount === 1 ? ' Visa' : ' Visas'))
+                : 'e-Visa');
+
+            return '<a href="' + countryHref(c.slug) + '" class="dest-search-item" data-slug="' + c.slug + '">' +
+              '<img class="flag" src="' + flag(iso) + '" alt="' + esc(c.name || 'Country') + ' flag" loading="lazy">' +
+              '<span class="dest-search-name">' + esc(c.name || '') + '</span>' +
+              '<span class="dest-search-badge">' + esc(badgeText) + '</span>' +
+            '</a>';
+          }).join('');
+        }
+
+        results.classList.add('show');
+      }, 70);
+    }
+
+    input.addEventListener('input', doSearch, { passive: true });
+    input.addEventListener('focus', function () {
+      var natDropdown = document.getElementById('heroNationalityDropdown');
+      if (natDropdown) natDropdown.classList.remove('show');
+      var visaDropdown = document.getElementById('heroVisaTypeDropdown');
+      if (visaDropdown) visaDropdown.classList.remove('show');
+      if ((input.value || '').trim()) doSearch();
+    }, { passive: true });
+
+    input.addEventListener('keydown', function (e) {
+      var items = [].slice.call(results.querySelectorAll('a.dest-search-item'));
+      if (e.key === 'ArrowDown') {
+        if (!results.classList.contains('show') || !items.length) {
+          doSearch();
+          return;
+        }
+        e.preventDefault();
+        activeResultIndex = (activeResultIndex + 1) % items.length;
+        updateActiveItem(items);
+      } else if (e.key === 'ArrowUp') {
+        if (!results.classList.contains('show') || !items.length) return;
+        e.preventDefault();
+        activeResultIndex = (activeResultIndex - 1 + items.length) % items.length;
+        updateActiveItem(items);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (activeResultIndex >= 0 && items[activeResultIndex]) {
+          window.location.href = items[activeResultIndex].href;
+        } else if (items.length > 0) {
+          window.location.href = items[0].href;
+        } else if (!(input.value || '').trim()) {
+          var selectedVisaType = 'all';
+          var typeEl = document.getElementById('heroSelectedVisaType');
+          if (typeEl) selectedVisaType = (typeEl.getAttribute('data-value') || 'all').toLowerCase();
+          if (typeof window.setVisaFilter === 'function') {
+            window.setVisaFilter(selectedVisaType);
+          }
+          var destSec = document.getElementById('destinations');
+          if (destSec) destSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } else if (e.key === 'Escape') {
+        results.classList.remove('show');
+      }
+    });
+
+    if (searchButton) {
+      searchButton.addEventListener('click', function () {
+        var q = (input.value || '').trim();
+        var selectedVisaType = 'all';
+        var typeEl = document.getElementById('heroSelectedVisaType');
+        if (typeEl) selectedVisaType = (typeEl.getAttribute('data-value') || 'all').toLowerCase();
+
+        if (!q) {
+          if (typeof window.setVisaFilter === 'function') {
+            window.setVisaFilter(selectedVisaType);
+          }
+          var destSec = document.getElementById('destinations');
+          if (destSec) destSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+        var first = results.querySelector('a.dest-search-item');
+        if (first) {
+          window.location.href = first.href;
+        } else {
+          doSearch();
+        }
       });
     }
 
-    function setMapOpen(open){
-      if(!mapPanel||!mapToggle) return;
-      mapPanel.hidden=!open;
-      mapToggle.setAttribute('aria-expanded',open?'true':'false');
-      mapToggle.classList.toggle('active',open);
-      if(open) setTimeout(initCountryMap,0);
-    }
-    if(mapToggle) mapToggle.addEventListener('click',function(){
-      setMapOpen(mapToggle.getAttribute('aria-expanded')!=='true');
-    });
-    if(mapClose) mapClose.addEventListener('click',function(){
-      setMapOpen(false);
-      mapToggle.focus();
+    document.addEventListener('click', function (e) {
+      if (!results.contains(e.target) && e.target !== input && e.target !== searchButton) {
+        results.classList.remove('show');
+      }
     });
   }
+  initDestinationSearch();
 
-  if(window.supabase && cfg.SUPABASE_URL){
-    try{
-      var sb=window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  function render(countries, groups){
+    var INITIAL_LIMIT = 8;
+    var showAllCountries = false;
+    var activeVisaFilter = 'all';
+
+    // Curate order: prioritizes top requested countries (Morocco, Qatar, Sri Lanka, Philippines, UAE, Bahrain, Vietnam, Thailand, etc.)
+    var topPrioritySlugs = [
+      'morocco', 'qatar', 'sri-lanka', 'philippines',
+      'united-arab-emirates', 'bahrain', 'vietnam', 'thailand',
+      'egypt', 'russia', 'oman', 'azerbaijan',
+      'indonesia', 'singapore', 'malaysia', 'saudi-arabia',
+      'georgia', 'turkey', 'kenya'
+    ];
+
+    var orderedCountries = [];
+    var seenSlugs = {};
+
+    topPrioritySlugs.forEach(function(ts){
+      var match = countries.filter(function(c){
+        var s = (c.slug||'').toLowerCase();
+        return s === ts || (ts === 'united-arab-emirates' && (s === 'uae' || s === 'dubai'));
+      })[0];
+      if(match && !seenSlugs[match.slug]){
+        orderedCountries.push(match);
+        seenSlugs[match.slug] = true;
+      }
+    });
+
+    countries.forEach(function(c){
+      if(!seenSlugs[c.slug]){
+        orderedCountries.push(c);
+        seenSlugs[c.slug] = true;
+      }
+    });
+
+    var SCHENGEN_SLUGS = [
+      'france', 'germany', 'italy', 'spain', 'switzerland',
+      'greece', 'denmark', 'austria', 'netherlands', 'belgium',
+      'portugal', 'sweden', 'norway', 'finland', 'poland',
+      'czech-republic', 'hungary'
+    ];
+
+    function isSchengenCountry(c) {
+      if (!c) return false;
+      var s = (c.slug || '').toLowerCase();
+      var g = (c.group_slug || '').toLowerCase();
+      return SCHENGEN_SLUGS.indexOf(s) > -1 || (g === 'schengen' && ['japan', 'china', 'south-korea', 'ireland', 'azerbaijan'].indexOf(s) === -1);
+    }
+
+    // Top 5 Popular Destinations (Top 5 countries)
+    var popularCountries = orderedCountries.slice(0, 5);
+
+    // E-Visas (remaining countries that are not Schengen)
+    var evisaCountries = orderedCountries.slice(5).filter(function(c) {
+      return !isSchengenCountry(c);
+    });
+
+    // Schengen Visas (all Schengen countries)
+    var schengenCountries = orderedCountries.filter(function(c) {
+      return isSchengenCountry(c);
+    });
+
+    // Populate Grids
+    var popularGrid = document.getElementById('destPopularGrid');
+    var evisaGrid = document.getElementById('destEvisaGrid');
+    var schengenGrid = document.getElementById('destSchengenGrid');
+    var legacyGrid = document.getElementById('destGrid');
+
+    if(popularGrid) popularGrid.innerHTML = popularCountries.map(countryCard).join('');
+    if(evisaGrid) evisaGrid.innerHTML = evisaCountries.map(countryCard).join('');
+    if(schengenGrid) schengenGrid.innerHTML = schengenCountries.map(countryCard).join('');
+    if(legacyGrid && legacyGrid !== popularGrid && legacyGrid !== evisaGrid && legacyGrid !== schengenGrid) {
+      legacyGrid.innerHTML = orderedCountries.map(countryCard).join('');
+    }
+
+    var empty = document.getElementById('destinationEmpty');
+    var viewAllCountriesBtn = document.getElementById('viewAllCountriesBtn') || document.getElementById('viewAllEvisasBtn');
+
+    var initialHeroTypeEl = document.getElementById('heroSelectedVisaType');
+    if (initialHeroTypeEl) {
+      var initialTypeVal = (initialHeroTypeEl.getAttribute('data-value') || 'all').toLowerCase();
+      if (initialTypeVal && initialTypeVal !== 'all') {
+        activeVisaFilter = initialTypeVal;
+        if (activeVisaFilter === 'schengen') showAllCountries = true;
+      }
+    }
+
+    function checkTypeOk(card){
+      var cardSlug = (card.getAttribute('data-slug') || '').toLowerCase();
+      var cardGroup = (card.getAttribute('data-group') || '').toLowerCase();
+      var cardTypes = (card.getAttribute('data-types') || '').toLowerCase();
+
+      if(activeVisaFilter === 'all') return true;
+      if(activeVisaFilter === 'evisa' || activeVisaFilter === 'e-visa'){
+        return cardGroup.indexOf('evisa') > -1 || cardGroup.indexOf('e-visa') > -1 || cardTypes.indexOf('evisa') > -1 || cardTypes.indexOf('e-visa') > -1 || ['united-arab-emirates','uae','vietnam','morocco','qatar','sri-lanka','egypt','thailand','russia','bahrain','indonesia','azerbaijan','oman','singapore','malaysia','georgia','saudi-arabia','turkey','kenya'].indexOf(cardSlug) > -1;
+      } else if(activeVisaFilter === 'schengen'){
+        return cardGroup.indexOf('schengen') > -1 || ['france','germany','italy','spain','switzerland','greece','denmark','austria','netherlands','belgium','portugal'].indexOf(cardSlug) > -1;
+      } else if(activeVisaFilter === 'sticker'){
+        return cardGroup.indexOf('sticker') > -1 || ['france','germany','italy','spain','switzerland','united-kingdom','united-states','china','philippines','japan','greece'].indexOf(cardSlug) > -1;
+      } else if(activeVisaFilter === 'business'){
+        return cardTypes.indexOf('business') > -1 || true;
+      } else if(activeVisaFilter === 'transit'){
+        return cardTypes.indexOf('transit') > -1 || ['united-arab-emirates','uae','qatar','bahrain','singapore'].indexOf(cardSlug) > -1;
+      } else if(activeVisaFilter === 'student'){
+        return cardTypes.indexOf('student') > -1 || ['united-kingdom','united-states','germany','france','canada','australia'].indexOf(cardSlug) > -1;
+      } else if(activeVisaFilter === 'work'){
+        return cardTypes.indexOf('work') > -1 || ['united-arab-emirates','uae','saudi-arabia','qatar','bahrain','oman'].indexOf(cardSlug) > -1;
+      }
+      return true;
+    }
+
+    function applyFilters(){
+      var totalMatched = 0;
+      var popSection = document.getElementById('popularSectionBlock');
+      var evisaSection = document.getElementById('evisaSectionBlock');
+      var schengenSection = document.getElementById('schengenSectionBlock');
+
+      var popMatched = 0;
+      if(popularGrid){
+        var popCards = [].slice.call(popularGrid.querySelectorAll('.dest-mockup-card'));
+        popCards.forEach(function(card){
+          var ok = checkTypeOk(card);
+          card.hidden = !ok;
+          if(ok){
+            popMatched++;
+            totalMatched++;
+          }
+        });
+      }
+      if(popSection) popSection.hidden = (popMatched === 0 && activeVisaFilter !== 'all');
+
+      var evisaMatched = 0;
+      if(evisaGrid){
+        var evisaCards = [].slice.call(evisaGrid.querySelectorAll('.dest-mockup-card'));
+        evisaCards.forEach(function(card){
+          var ok = checkTypeOk(card);
+          if(ok){
+            card.hidden = !showAllCountries && evisaMatched >= INITIAL_LIMIT;
+            evisaMatched++;
+            totalMatched++;
+          } else {
+            card.hidden = true;
+          }
+        });
+      }
+      if(evisaSection) evisaSection.hidden = (evisaMatched === 0);
+
+      var schengenMatched = 0;
+      if(schengenGrid){
+        var schengenCards = [].slice.call(schengenGrid.querySelectorAll('.dest-mockup-card'));
+        schengenCards.forEach(function(card){
+          var ok = checkTypeOk(card);
+          if(ok){
+            card.hidden = false;
+            schengenMatched++;
+            totalMatched++;
+          } else {
+            card.hidden = true;
+          }
+        });
+      }
+      if(schengenSection) schengenSection.hidden = (schengenMatched === 0);
+
+      if(empty) empty.hidden = totalMatched > 0;
+      if(viewAllCountriesBtn){
+        var span = viewAllCountriesBtn.querySelector('span');
+        if(span) span.textContent = showAllCountries ? 'Show fewer destinations' : 'View all destinations';
+        viewAllCountriesBtn.style.display = (evisaMatched > INITIAL_LIMIT) ? 'inline-flex' : 'none';
+      }
+      if(window.refreshScrollAnimations) window.refreshScrollAnimations();
+    }
+
+    window.setVisaFilter = function(newFilter){
+      activeVisaFilter = (newFilter || 'all').toLowerCase();
+      if (activeVisaFilter === 'schengen') {
+        showAllCountries = true;
+      }
+      applyFilters();
+    };
+
+    if(viewAllCountriesBtn){
+      viewAllCountriesBtn.addEventListener('click', function(){
+        showAllCountries = !showAllCountries;
+        applyFilters();
+        if(!showAllCountries){
+          var evisaSec = document.getElementById('evisaSectionBlock') || document.getElementById('destinations');
+          if(evisaSec) evisaSec.scrollIntoView({behavior:'smooth', block:'start'});
+        }
+      });
+    }
+
+    var destPrevBtn = document.getElementById('destPrevBtn');
+    var destNextBtn = document.getElementById('destNextBtn');
+    if(destPrevBtn && popularGrid){
+      destPrevBtn.addEventListener('click', function(){
+        popularGrid.scrollBy({ left: -320, behavior: 'smooth' });
+      });
+    }
+    if(destNextBtn && popularGrid){
+      destNextBtn.addEventListener('click', function(){
+        popularGrid.scrollBy({ left: 320, behavior: 'smooth' });
+      });
+    }
+
+    // Hero Visa Category Pills
+    var pillsContainer = document.getElementById('heroVisaPills');
+    if(pillsContainer){
+      var pills = pillsContainer.querySelectorAll('.category-pill');
+      pills.forEach(function(pill){
+        pill.addEventListener('click', function(){
+          pills.forEach(function(p){
+            p.classList.remove('active');
+            p.setAttribute('aria-selected','false');
+          });
+          pill.classList.add('active');
+          pill.setAttribute('aria-selected','true');
+          activeVisaFilter = pill.getAttribute('data-visa-type') || 'all';
+          applyFilters();
+          var destSec = document.getElementById('destinations');
+          if(destSec) destSec.scrollIntoView({behavior:'smooth', block:'start'});
+        });
+      });
+    }
+
+    applyFilters();
+
+    // Update active search pool for instant search
+    if (Array.isArray(countries) && countries.length) {
+      activeSearchCountries = countries;
+    }
+
+    // Reviews Carousel Controls
+    var revTrack = document.getElementById('reviewsTrack');
+    var revPrev = document.getElementById('revPrevBtn');
+    var revNext = document.getElementById('revNextBtn');
+    var revDots = document.getElementById('revDots');
+
+    if(revTrack && revPrev && revNext){
+      revPrev.addEventListener('click', function(){
+        revTrack.scrollBy({ left: -320, behavior: 'smooth' });
+      });
+      revNext.addEventListener('click', function(){
+        revTrack.scrollBy({ left: 320, behavior: 'smooth' });
+      });
+      if(revDots){
+        var dots = revDots.querySelectorAll('.rev-dot');
+        dots.forEach(function(dot, idx){
+          dot.addEventListener('click', function(){
+            dots.forEach(function(d){ d.classList.remove('active'); });
+            dot.classList.add('active');
+            var cardWidth = (revTrack.querySelector('.review-card-item') || {}).offsetWidth || 300;
+            revTrack.scrollTo({ left: idx * (cardWidth + 20), behavior: 'smooth' });
+          });
+        });
+      }
+    }
+  }
+
+    // Initial render with fallback data for instant display
+    render(FALLBACK_COUNTRIES, []);
+
+    // Supabase live database connection
+    if(window.supabase && cfg.SUPABASE_URL){
+      try{
+        var sb=window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
       Promise.all([
         sb.from('countries').select('*').order('sort_order'),
         sb.from('visa_types').select('slug,country_slug,price_aed,prices,processing_time_value,processing_time_unit').eq('active',true),
         sb.from('visa_groups').select('*').eq('active',true).order('sort_order'),
-        sb.from('site_settings').select('hero_image_url,hero_image_alt,active_currency,currencies').eq('id','global').single()
+        sb.from('site_settings').select('hero_image_url,hero_image_alt,active_currency,currencies').eq('id','global').single(),
+        sb.from('pages').select('content').eq('slug','system-nationality-destinations').eq('status','published').maybeSingle()
       ]).then(function(res){
-        var allowedSlugs = [
-          'japan', 'spain', 'denmark', 'france', 'germany', 'switzerland', 
-          'china', 'greece', 'azerbaijan', 'south-korea', 'ireland',
-          'thailand', 'turkey', 'indonesia', 'russia', 'vietnam', 'india', 
-          'sri-lanka', 'kenya', 'morocco'
-        ];
-        
         var allDbCountries = (res[0].data) || [];
-        var dbSlugs = allDbCountries.map(function(c) { return c.slug.toLowerCase(); });
-
-        var countries = allDbCountries.filter(function(c) {
-          return c.active;
-        });
-
-        // Find and dynamically inject missing database countries
-        var missingSlugs = allowedSlugs.filter(function(slug) {
-          return dbSlugs.indexOf(slug) === -1;
-        });
-        
-        var countryMetadata = {
-          'japan': { name: 'Japan', iso2: 'JP' },
-          'spain': { name: 'Spain', iso2: 'ES' },
-          'denmark': { name: 'Denmark', iso2: 'DK' },
-          'france': { name: 'France', iso2: 'FR' },
-          'germany': { name: 'Germany', iso2: 'DE' },
-          'switzerland': { name: 'Switzerland', iso2: 'CH' },
-          'china': { name: 'China', iso2: 'CN' },
-          'greece': { name: 'Greece', iso2: 'GR' },
-          'azerbaijan': { name: 'Azerbaijan', iso2: 'AZ' },
-          'south-korea': { name: 'South Korea', iso2: 'KR' },
-          'ireland': { name: 'Ireland', iso2: 'IE' },
-          'thailand': { name: 'Thailand', iso2: 'TH' },
-          'turkey': { name: 'Türkiye', iso2: 'TR' },
-          'indonesia': { name: 'Indonesia', iso2: 'ID' },
-          'russia': { name: 'Russia', iso2: 'RU' },
-          'vietnam': { name: 'Vietnam', iso2: 'VN' },
-          'india': { name: 'India', iso2: 'IN' },
-          'sri-lanka': { name: 'Sri Lanka', iso2: 'LK' },
-          'kenya': { name: 'Kenya', iso2: 'KE' },
-          'morocco': { name: 'Morocco', iso2: 'MA' }
-        };
-
-        missingSlugs.forEach(function(slug) {
-          var meta = countryMetadata[slug];
-          if (meta) {
-            countries.push({
-              id: 'mock-' + slug,
-              name: meta.name,
-              slug: slug,
-              iso2: meta.iso2,
-              active: true,
-              featured: false,
-              group_slug: '',
-              visaCount: 1,
-              visaTypes: 'tourist-visa',
-              minPrice: null,
-              eta: null
-            });
-          }
-        });
+        var countries = allDbCountries.filter(function(c) { return c.active; });
+        var nationalities=[]; try{nationalities=JSON.parse((res[4]&&res[4].data&&res[4].data.content)||'[]');}catch(e){nationalities=[];}
+        nationalities=(Array.isArray(nationalities)?nationalities:[]).filter(function(n){return n.active!==false;}).sort(function(a,b){return (a.sort_order||0)-(b.sort_order||0);});
+        var selectedNatName=localStorage.getItem('visadoo_nationality')||'India';
+        var selectedNat=nationalities.filter(function(n){return n.name===selectedNatName;})[0];
+        if(selectedNat){
+          var allowed=Array.isArray(selectedNat.destinations)?selectedNat.destinations:[];
+          countries=countries.filter(function(c){return allowed.indexOf(c.slug)>-1;});
+        }
         
         countries.forEach(function(c) {
           var slug = c.slug.toLowerCase();
@@ -470,203 +1243,430 @@
 
         var visas=(res[1].data)||[], groups=(res[2].data)||[];
         var ss=res[3].data||{};
-        var heroImg=ss.hero_image_url||null;
-        if(heroImg){ var hero=document.querySelector('.hero'); if(hero){ hero.style.backgroundImage='linear-gradient(rgba(244,249,255,.78),rgba(255,255,255,.9)), url('+heroImg+')'; hero.classList.add('has-banner'); if(ss.hero_image_alt){ hero.setAttribute('role','img'); hero.setAttribute('aria-label', ss.hero_image_alt); } } }
-        // compute min price + count per country (in the active currency)
+        
+        // compute min price + count per country
         countries.forEach(function(c){
           var cv=visas.filter(function(v){return v.country_slug===c.slug;});
           c.visaCount=cv.length;
           c.visaTypes=cv.map(function(v){return v.slug||'';}).join(' ');
           var cprices=cv.map(visaActivePrice).filter(function(p){return p!=null;});
           c.minPrice=cprices.length?Math.min.apply(null,cprices):null;
-          c.eta=fastestEta(cv);
         });
-        render(countries, groups);
-      }).catch(function(err){ console.error("Error loading home page content:", err); });
 
-      // reviews + FAQs + footer pages
+        render(countries, groups);
+
+        if(!window.__visadooNationalityHomeBound){
+          window.__visadooNationalityHomeBound=true;
+          document.addEventListener('nationalitychanged',function(){ window.location.reload(); });
+        }
+      }).catch(function(err){
+        console.error("Error loading home page content:", err);
+      });
+
+      // Reviews & footer pages
       Promise.all([
         sb.from('reviews').select('*').eq('active',true).order('sort_order'),
-        sb.from('faqs').select('*').eq('active',true).order('sort_order'),
         sb.from('pages').select('slug,title,sort_order').eq('status','published').eq('show_in_footer',true).order('sort_order')
-      ]).then(function(res){ renderExtras((res[0].data)||[], (res[1].data)||[], (res[2].data)||[]); }).catch(function(err){ console.error("Error loading reviews/FAQs/pages:", err); });
-    }catch(e){ /* leave empty */ }
+      ]).then(function(res){
+        var dbReviews = (res[0].data) || [];
+        var pages = (res[1].data) || [];
+        var DISTINCT_AVATARS = [
+          'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=120&h=120&q=80',
+          'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&h=120&q=80'
+        ];
+        if(dbReviews.length >= 6){
+          var track = document.getElementById('reviewsTrack');
+          if(track){
+            track.innerHTML = dbReviews.map(function(r, idx){
+              var stars = '★★★★★';
+              var avatar = (r.avatar_url && r.avatar_url.indexOf('photo-1534528741775') === -1)
+                ? r.avatar_url
+                : DISTINCT_AVATARS[idx % DISTINCT_AVATARS.length];
+              return '<div class="review-card-item">' +
+                '<div class="rev-user-profile">' +
+                  '<img src="' + avatar + '" alt="' + (r.name||'User') + '" class="rev-avatar">' +
+                  '<div class="rev-user-meta">' +
+                    '<strong class="rev-user-name">' + (r.name||'') + '</strong>' +
+                    '<span class="rev-user-country">' + (r.location||'Traveller') + '</span>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="rev-stars-gold">' + stars + '</div>' +
+                '<p class="rev-feedback-quote">"' + (r.body||'') + '"</p>' +
+              '</div>';
+            }).join('');
+          }
+        }
+        initReviewsCarousel();
+        if(pages.length){
+          var fc=document.getElementById('footerCompany');
+          if(fc){
+            var existing={};
+            fc.querySelectorAll('a[href]').forEach(function(a){
+              existing[(a.getAttribute('href')||'').replace(/^\/+/, '')]=true;
+            });
+            var li=pages.filter(function(p){
+              return !existing['p/'+encodeURIComponent(p.slug)];
+            }).map(function(p){
+              return '<li><a href="/p/'+encodeURIComponent(p.slug)+'">'+p.title+'</a></li>';
+            }).join('');
+            if(li) fc.insertAdjacentHTML('afterbegin', li);
+          }
+        }
+      }).catch(function(err){ 
+        console.error("Error loading reviews/pages:", err); 
+        initReviewsCarousel();
+      });
+    }catch(e){ 
+      initReviewsCarousel();
+    }
   }
 
-  function renderExtras(reviews, faqs, pages){
-    // reviews
-    if(reviews.length){
-      var rg=document.getElementById('reviewGrid');
-      rg.innerHTML=reviews.map(function(r){
-        var st=''; for(var i=1;i<=5;i++){ st+='<span style="color:'+(i<=r.rating?'#f5a623':'#d8dee9')+'">★</span>'; }
-        return '<div class="review-card"><div class="review-stars">'+st+'</div>'+
-          '<p class="review-body">"'+(r.body||'')+'"</p>'+
-          '<div class="review-name">'+(r.name||'')+(r.location?'<span> · '+r.location+'</span>':'')+'</div></div>';
-      }).join('');
-      document.getElementById('reviews').style.display='';
+  function initReviewsCarousel(){
+    var track = document.getElementById('reviewsTrack');
+    var prevBtn = document.getElementById('revPrevBtn');
+    var nextBtn = document.getElementById('revNextBtn');
+    var dotsContainer = document.getElementById('revDots');
+    var carouselBox = document.querySelector('.reviews-carousel-container');
+    if(!track) return;
+
+    function getScrollStep(){
+      var card = track.querySelector('.review-card-item');
+      if(!card) return 320;
+      return card.offsetWidth + 20;
     }
-    // faqs (accordion)
-    if(faqs.length){
-      var fl=document.getElementById('faqList');
-      fl.innerHTML=faqs.map(function(f){
-        return '<div class="faq-item"><button class="faq-q" type="button">'+(f.question||'')+'<span class="faq-ic">+</span></button>'+
-          '<div class="faq-a"><p>'+(f.answer||'')+'</p></div></div>';
-      }).join('');
-      fl.querySelectorAll('.faq-q').forEach(function(b){ b.addEventListener('click',function(){ b.parentNode.classList.toggle('open'); }); });
-      document.getElementById('faq').style.display='';
-    }
-    // footer page links
-    if(pages.length){
-      var fc=document.getElementById('footerCompany');
-      if(fc){
-        var existing={};
-        fc.querySelectorAll('a[href]').forEach(function(a){
-          existing[(a.getAttribute('href')||'').replace(/^\/+/, '')]=true;
-        });
-        var li=pages.filter(function(p){
-          return !existing['p/'+encodeURIComponent(p.slug)];
-        }).map(function(p){
-          return '<li><a href="/p/'+encodeURIComponent(p.slug)+'">'+p.title+'</a></li>';
-        }).join('');
-        if(li) fc.insertAdjacentHTML('afterbegin', li);
+
+    // Auto-scroll every 5 seconds (advancing 3 reviews / 1 page batch)
+    var autoTimer = null;
+    function nextBatch(){
+      var maxScroll = track.scrollWidth - track.clientWidth;
+      if(track.scrollLeft >= maxScroll - 30){
+        track.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        var step = getScrollStep() * 3;
+        track.scrollBy({ left: step, behavior: 'smooth' });
       }
     }
+
+    function startAutoScroll(){
+      stopAutoScroll();
+      autoTimer = setInterval(nextBatch, 5000);
+    }
+
+    function stopAutoScroll(){
+      if(autoTimer){
+        clearInterval(autoTimer);
+        autoTimer = null;
+      }
+    }
+
+    startAutoScroll();
+
+    if(carouselBox && !carouselBox.__hoverBound){
+      carouselBox.__hoverBound = true;
+      carouselBox.addEventListener('mouseenter', stopAutoScroll);
+      carouselBox.addEventListener('mouseleave', startAutoScroll);
+      carouselBox.addEventListener('touchstart', stopAutoScroll, { passive: true });
+      carouselBox.addEventListener('touchend', startAutoScroll, { passive: true });
+    }
+
+    if(prevBtn && !prevBtn.__bound){
+      prevBtn.__bound = true;
+      prevBtn.addEventListener('click', function(){
+        stopAutoScroll();
+        track.scrollBy({ left: -getScrollStep() * 3, behavior: 'smooth' });
+        startAutoScroll();
+      });
+    }
+
+    if(nextBtn && !nextBtn.__bound){
+      nextBtn.__bound = true;
+      nextBtn.addEventListener('click', function(){
+        stopAutoScroll();
+        nextBatch();
+        startAutoScroll();
+      });
+    }
+
+    function updateDots(){
+      if(!dotsContainer) return;
+      var dots = dotsContainer.querySelectorAll('.rev-dot');
+      if(!dots.length) return;
+      var scrollLeft = track.scrollLeft;
+      var step = getScrollStep();
+      var activeIndex = Math.round(scrollLeft / step);
+      if(activeIndex >= dots.length) activeIndex = dots.length - 1;
+      if(activeIndex < 0) activeIndex = 0;
+      dots.forEach(function(dot, idx){
+        dot.classList.toggle('active', idx === activeIndex);
+      });
+    }
+
+    if(dotsContainer && !dotsContainer.__bound){
+      dotsContainer.__bound = true;
+      dotsContainer.addEventListener('click', function(e){
+        var dot = e.target.closest('.rev-dot');
+        if(!dot) return;
+        var dots = Array.from(dotsContainer.querySelectorAll('.rev-dot'));
+        var idx = dots.indexOf(dot);
+        if(idx !== -1){
+          stopAutoScroll();
+          var step = getScrollStep();
+          track.scrollTo({ left: idx * step, behavior: 'smooth' });
+          startAutoScroll();
+        }
+      });
+    }
+
+    if(!track.__scrollBound){
+      track.__scrollBound = true;
+      track.addEventListener('scroll', function(){
+        if(track.scrollTop !== 0) track.scrollTop = 0;
+        requestAnimationFrame(updateDots);
+      }, { passive: true });
+    }
   }
 
-  function isUaePage(){
-    var path=(window.location.pathname||'').toLowerCase();
-    var search=(window.location.search||'').toLowerCase();
-    var code=(document.body.getAttribute('data-country-code')||'').toLowerCase();
-    return document.body.classList.contains('uae-country-page')||
-           code==='ae'||
-           path.indexOf('/country/uae')!==-1||
-           path.indexOf('/country/united-arab-emirates')!==-1||
-           search.indexOf('country=uae')!==-1||
-           search.indexOf('country=united-arab-emirates')!==-1||
-           search.indexOf('country=ae')!==-1;
+  // ---- FAQ Accordion Toggle ----
+  function initFaqAccordion() {
+    var faqCards = document.querySelectorAll('.faq-card-item');
+    if (!faqCards.length) return;
+    faqCards.forEach(function(card) {
+      var btn = card.querySelector('.faq-question-btn');
+      if (!btn || btn.__bound) return;
+      btn.__bound = true;
+      btn.addEventListener('click', function() {
+        var wasActive = card.classList.contains('active');
+        // Toggle active on clicked card
+        if (wasActive) {
+          card.classList.remove('active');
+          btn.setAttribute('aria-expanded', 'false');
+        } else {
+          card.classList.add('active');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+  }
+
+  // ---- Why Recommendations Modal ----
+  function initWhyRecommendationsModal() {
+    var linkBtn = document.getElementById('whyRecLink');
+    var modal = document.getElementById('whyRecModal');
+    var closeBtn = document.getElementById('whyRecClose');
+    if (!modal) return;
+
+    function openModal() {
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    if (linkBtn && !linkBtn.__bound) {
+      linkBtn.__bound = true;
+      linkBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openModal();
+      });
+    }
+
+    if (closeBtn && !closeBtn.__bound) {
+      closeBtn.__bound = true;
+      closeBtn.addEventListener('click', closeModal);
+    }
+
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modal.classList.contains('show')) {
+        closeModal();
+      }
+    });
+  }
+
+  // ---- Smooth Count-Up Animation for Trust Metrics ----
+  function initCountUpAnimation(){
+    var grid = document.getElementById('trustMetricsGrid') || document.querySelector('.trust-metrics-grid');
+    if (!grid) return;
+
+    var items = grid.querySelectorAll('.trust-metric-number');
+    if (!items.length) return;
+
+    var animated = false;
+
+    function runCountUp(){
+      if (animated) return;
+      animated = true;
+
+      items.forEach(function(el, idx){
+        var target = parseInt(el.getAttribute('data-count'), 10);
+        var valueSpan = el.querySelector('.trust-metric-value');
+        if (isNaN(target) || !valueSpan) return;
+
+        var duration = 1800; // ms
+        var startTime = null;
+        valueSpan.textContent = '0';
+
+        function step(timestamp){
+          if (!startTime) startTime = timestamp;
+          var progress = Math.min((timestamp - startTime) / duration, 1);
+          // Smooth easeOutExpo deceleration
+          var ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+          var current = Math.floor(ease * target);
+          valueSpan.textContent = current;
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            valueSpan.textContent = target;
+          }
+        }
+
+        setTimeout(function(){
+          requestAnimationFrame(step);
+        }, idx * 75);
+      });
+    }
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      items.forEach(function(el){
+        var target = el.getAttribute('data-count');
+        var val = el.querySelector('.trust-metric-value');
+        if (val && target) val.textContent = target;
+      });
+      return;
+    }
+
+    if ('IntersectionObserver' in window) {
+      var observer = new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          if (entry.isIntersecting) {
+            runCountUp();
+            observer.unobserve(grid);
+          }
+        });
+      }, { threshold: 0.25 });
+      observer.observe(grid);
+    } else {
+      runCountUp();
+    }
+  }
+
+  // =========================================================================
+  // SMOOTH SCROLL REVEALS (Wipes In/Out, Fade In/Out, Scale In/Out)
+  // =========================================================================
+  function initScrollAnimations() {
+    // Enable animation classes on root
+    document.documentElement.classList.add('has-scroll-animations');
+
+    if (!('IntersectionObserver' in window)) {
+      var all = document.querySelectorAll('.scroll-reveal, [data-reveal]');
+      for (var i = 0; i < all.length; i++) {
+        all[i].classList.add('is-revealed');
+      }
+      return;
+    }
+
+    // Bidirectional observer for entering (in) and leaving (out) viewport
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed');
+        } else {
+          // Check if element has left viewport to smoothly animate out
+          entry.target.classList.remove('is-revealed');
+        }
+      });
+    }, {
+      root: null,
+      rootMargin: '0px 0px -40px 0px',
+      threshold: [0, 0.15]
+    });
+
+    var observedElements = new WeakSet();
+
+    function observeAll() {
+      var selector = [
+        '.scroll-reveal',
+        '[data-reveal]',
+        '.board-heading-row',
+        '.dest-mockup-card',
+        '.trust-proof-banner',
+        '.trust-proof-content',
+        '.trust-metric-col',
+        '.trust-pill-badge',
+        '.why-recommendations-divider',
+        '.flexible-travel-content',
+        '.how-evisas-header',
+        '.how-stepper-track-wrap',
+        '.how-evisas-col',
+        '.faq-header-block',
+        '.faq-card-item',
+        '.cta-confusion-card',
+        '.home-footer .footer-intro',
+        '.home-footer .footer-links',
+        '.home-footer .footer-contact'
+      ].join(', ');
+
+      var items = document.querySelectorAll(selector);
+      items.forEach(function(el) {
+        if (el.closest('.reviews-carousel-container') || el.classList.contains('review-card-item') || el.closest('.destination-board') || el.classList.contains('dest-mockup-card')) return;
+        if (!el.classList.contains('scroll-reveal') && !el.hasAttribute('data-reveal')) {
+          el.classList.add('scroll-reveal');
+        }
+        if (!observedElements.has(el)) {
+          observedElements.add(el);
+          observer.observe(el);
+        }
+      });
+    }
+
+    observeAll();
+    window.refreshScrollAnimations = observeAll;
+  }
+
+  function initCtaBannerAction() {
+    var ctaBtn = document.getElementById('ctaCheckVisaBtn');
+    if (!ctaBtn) return;
+    ctaBtn.addEventListener('click', function(e) {
+      var dest = document.getElementById('destinations');
+      if (dest) {
+        e.preventDefault();
+        dest.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        var search = document.getElementById('destSearch');
+        if (search) {
+          setTimeout(function() { search.focus(); }, 600);
+        }
+      }
+    });
   }
 
   function initGlobalAiAssistant(){
-    if(!isUaePage()){
-      var existing=document.querySelector('.ai-assistant');
-      if(existing) existing.remove();
-      return;
-    }
-    if(document.querySelector('.ai-assistant')) return;
-    var wrapper=document.createElement('div');
-    wrapper.className='ai-assistant';
-    wrapper.innerHTML='<button class="ai-assistant-trigger" type="button" aria-label="Open AI travel assistant" aria-expanded="false">'+
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>'+
-      '<span>Chat with us</span></button>'+
-      '<section class="ai-assistant-panel" aria-label="AI travel assistant" aria-hidden="true">'+
-        '<header><span class="ai-bot-mark" aria-hidden="true">V</span><div><b>VisaDoo AI Assistant</b><small><i></i><span>Online now</span></small></div>'+
-        '<button type="button" data-ai-close aria-label="Close assistant">&#215;</button></header>'+
-        '<div class="ai-conversation" data-ai-conversation>'+
-          '<div class="ai-message ai-message-bot">Hi! I am VisaDoo AI. How can I help with your visa options, documents, processing times, or application tracking today?</div>'+
-          '<div class="ai-wa-card"><div class="ai-wa-info"><div class="ai-wa-icon-bg"><svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg></div><div class="ai-wa-details"><h4>Need human support?</h4><p>Chat with a visa specialist on WhatsApp.</p></div></div><a href="#" class="ai-wa-btn" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 3C9 3 3.3 8.7 3.3 15.7c0 2.5.66 4.84 1.82 6.84L3 29l6.66-2.08a12.6 12.6 0 0 0 6.34 1.62h.01c7 0 12.69-5.7 12.69-12.69C28.7 8.7 23 3 16 3zm0 23.07h-.01a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.95 1.04 1.05-3.85-.25-.4a10.39 10.39 0 0 1-1.59-5.53c0-5.74 4.68-10.42 10.43-10.42 2.78 0 5.4 1.09 7.37 3.06a10.36 10.36 0 0 1 3.05 7.37c0 5.75-4.68 10.43-10.42 10.43zm5.72-7.8c-.31-.16-1.85-.91-2.14-1.02-.29-.1-.5-.16-.71.16-.21.31-.81 1.02-1 1.23-.18.21-.37.23-.68.08-.31-.16-1.32-.49-2.52-1.55-.93-.83-1.56-1.86-1.74-2.17-.18-.31-.02-.48.14-.63.14-.14.31-.37.47-.55.16-.18.21-.31.31-.52.1-.21.05-.39-.03-.55-.08-.16-.71-1.71-.97-2.34-.26-.62-.52-.54-.71-.55l-.61-.01c-.21 0-.55.08-.84.39-.29.31-1.1 1.08-1.1 2.63s1.13 3.05 1.29 3.26c.16.21 2.22 3.39 5.38 4.76.75.32 1.34.52 1.8.66.76.24 1.44.21 1.99.13.61-.09 1.85-.76 2.11-1.49.26-.73.26-1.36.18-1.49-.08-.13-.29-.21-.6-.37z"/></svg><span>Chat with us</span></a></div>'+
-          '<div class="ai-suggestions">'+
-            '<button type="button" data-ai-question="Which visa should I choose?">Choose a visa</button>'+
-            '<button type="button" data-ai-question="Which documents do I need?">Required documents</button>'+
-            '<button type="button" data-ai-question="How long does processing take?">Processing times</button>'+
-            '<button type="button" data-ai-question="How can I track my visa?">Track application</button>'+
-          '</div>'+
-        '</div>'+
-        '<form class="ai-input-row">'+
-          '<input data-ai-input type="text" autocomplete="off" placeholder="Ask about your visa…" aria-label="Message">'+
-          '<button data-ai-send type="submit">Send</button>'+
-        '</form>'+
-        '<footer>Instant answers · Human support available</footer>'+
-      '</section>';
-    document.body.appendChild(wrapper);
-
-    // Initialize WhatsApp button link
-    var waBtnLink = wrapper.querySelector('.ai-wa-btn');
-    if (waBtnLink) {
-      var cfg = window.VISADOO_CONFIG || {};
-      var num = (cfg.WHATSAPP || "919895226697").replace(/[^0-9]/g, "");
-      var msg = "Hi, I have a question about a visa.";
-      waBtnLink.href = "https://wa.me/" + num + "?text=" + encodeURIComponent(msg);
-    }
-
-    var trigger=wrapper.querySelector('.ai-assistant-trigger');
-    var panel=wrapper.querySelector('.ai-assistant-panel');
-    var close=wrapper.querySelector('[data-ai-close]');
-    var conversation=wrapper.querySelector('[data-ai-conversation]');
-    var form=wrapper.querySelector('form');
-    var input=wrapper.querySelector('[data-ai-input]');
-
-    function toggle(force){
-      var open=typeof force==='boolean'?force:!wrapper.classList.contains('open');
-      wrapper.classList.toggle('open',open);
-      panel.setAttribute('aria-hidden',String(!open));
-      trigger.setAttribute('aria-expanded',String(open));
-      if(open) window.setTimeout(function(){input.focus();},100);
-    }
-
-    function answer(question){
-      var q=String(question||'').toLowerCase();
-      if(/document|passport|photo|രേഖ|ദസ്താവേജ്/.test(q)) return 'For most tourist visas (like UAE/Dubai, Singapore, Thailand, Schengen), you need a clear color scan of your passport bio page and a recent passport-size photo. Extra travel/accommodation details may be required for some nationalities.';
-      if(/track|status|ട്രാക്ക്|സ്ഥിതി/.test(q)) return 'Open your VisaDoo account and use the Track section to check the latest application status and required actions.';
-      if(/price|fee|cost|ഫീസ്|രൂപ/.test(q)) return 'Visa fees vary by destination and stay duration. You can search your country on the homepage to compare all starting prices!';
-      if(/which|choose|type|visa|വിസ/.test(q)) return 'Choose based on your stay length (14 days, 30 days, 60 days) and whether you need single or multiple entries. Search your destination above to view all options.';
-      if(/time|days|hours|സമയം|സെക്കൻഡ്/.test(q)) return 'Most e-Visas are processed within 24 to 72 hours once complete documents are submitted!';
-      return 'I can assist you with global visa requirements, fees, processing times and tracking. You can also click "Chat on WhatsApp" at the bottom right to talk to our human visa specialists directly!';
-    }
-
-    var aiHistory=[];
-    function requestAi(){
-      var payload={messages:aiHistory.slice(-12),country:isUaePage()?'United Arab Emirates':''};
-      return fetch('/api/ai-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-        .then(function(r){if(!r.ok) throw new Error('vercel');return r.json();})
-        .catch(function(){
-          return fetch('/.netlify/functions/ai-chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-            .then(function(r){if(!r.ok) throw new Error('netlify');return r.json();});
-        });
-    }
-    function submitQuestion(question){
-      var value=String(question||'').trim();
-      if(!value) return;
-      var user=document.createElement('div');
-      user.className='ai-message ai-message-user';
-      user.textContent=value;
-      conversation.appendChild(user);
-      var bot=document.createElement('div');
-      bot.className='ai-message ai-message-bot ai-message-loading';
-      bot.textContent='Thinking…';
-      conversation.appendChild(bot);
-      conversation.scrollTop=conversation.scrollHeight;
-      aiHistory.push({role:'user',content:value});
-      requestAi().then(function(data){
-        var reply=data&&data.reply?String(data.reply):answer(value);
-        aiHistory.push({role:'assistant',content:reply});
-        bot.classList.remove('ai-message-loading');
-        bot.textContent=reply;
-        conversation.scrollTop=conversation.scrollHeight;
-      }).catch(function(){
-        var reply=answer(value);
-        aiHistory.push({role:'assistant',content:reply});
-        bot.classList.remove('ai-message-loading');
-        bot.textContent=reply;
-        conversation.scrollTop=conversation.scrollHeight;
-      });
-    }
-
-    trigger.addEventListener('click',function(){toggle();});
-    close.addEventListener('click',function(){toggle(false);});
-    wrapper.querySelectorAll('[data-ai-question]').forEach(function(button){
-      button.addEventListener('click',function(){
-        submitQuestion(button.getAttribute('data-ai-question'));
-      });
-    });
-    form.addEventListener('submit',function(event){
-      event.preventDefault();
-      submitQuestion(input.value);
-      input.value='';
-    });
-    document.addEventListener('keydown',function(event){if(event.key==='Escape') toggle(false);});
+    var old=document.querySelector('.ai-assistant');
+    if(old) old.remove();
   }
-
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initGlobalAiAssistant);
-  else initGlobalAiAssistant();
-  document.addEventListener('visadoo:country-rendered', initGlobalAiAssistant);
+  window.initGlobalAiAssistant = initGlobalAiAssistant;
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ initGlobalAiAssistant(); initReviewsCarousel(); initFaqAccordion(); initWhyRecommendationsModal(); initScrollAnimations(); initCountUpAnimation(); initCtaBannerAction(); });
+  else { initGlobalAiAssistant(); initReviewsCarousel(); initFaqAccordion(); initWhyRecommendationsModal(); initScrollAnimations(); initCountUpAnimation(); initCtaBannerAction(); }
+  document.addEventListener('visadoo:country-rendered', function(){ initGlobalAiAssistant(); initFaqAccordion(); initWhyRecommendationsModal(); initCountUpAnimation(); initCtaBannerAction(); if(window.refreshScrollAnimations) window.refreshScrollAnimations(); });
 })();
+

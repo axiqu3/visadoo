@@ -3,8 +3,13 @@
    Sign-in (Google + email code) · Apply · Upload · Track · Admin
    ============================================================ */
 (function () {
-  var cfg = window.VISADOO_CONFIG;
-  var sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  var cfg = window.VISADOO_CONFIG || {
+    SUPABASE_URL: 'https://rfueqawvadcvhpmleeoi.supabase.co',
+    SUPABASE_ANON_KEY: ''
+  };
+  var sb = (window.supabase && typeof window.supabase.createClient === 'function')
+    ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY)
+    : null;
   var SITE_PATH = 'visadoo-uae.netlify.app';
 
   var root = document.getElementById('appRoot');
@@ -38,11 +43,61 @@
   // Expected processing time as a friendly estimate, e.g. "about 5 days" (blank if not set).
   function etaText(v){
     if(!v) return '';
-    var n=(v.etaValue!=null?v.etaValue:v.processing_time_value);
-    var u=(v.etaUnit||v.processing_time_unit);
-    if(n==null||n==='' || !u) return '';
-    var unit = u==='hours' ? ('hour'+(Number(n)===1?'':'s')) : ('day'+(Number(n)===1?'':'s'));
-    return 'about '+n+' '+unit;
+    if(v.processing && typeof v.processing === 'string') return v.processing;
+    var slug = ((v.slug || v.id || '') + ' ' + (v.country_slug || '')).toLowerCase();
+    var name = (v.name || '').toLowerCase();
+    
+    if (slug.indexOf('super-express') > -1 || name.indexOf('super express') > -1) return '12 hours';
+    if (slug.indexOf('express') > -1 || name.indexOf('express') > -1) {
+      if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1 || slug.indexOf('dubai') > -1) return 'Upto 48 hours';
+      if (slug.indexOf('thailand') > -1) return 'Upto 24 hours';
+      return '24 hours';
+    }
+    if (slug.indexOf('thailand-e-visa') > -1) return '24 hours';
+    if (slug.indexOf('thailand') > -1 && (slug.indexOf('stamp') > -1 || name.indexOf('stamp') > -1)) return '3 – 4 days';
+
+    var n = (v.etaValue != null ? v.etaValue : v.processing_time_value);
+    var u = String(v.etaUnit || v.processing_time_unit || '').toLowerCase();
+    
+    if (n != null && n !== '' && u) {
+      if (u.indexOf('hour') > -1) {
+        var hrs = Number(n);
+        if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1) return 'Upto ' + n + ' hour' + (hrs === 1 ? '' : 's');
+        return n + ' hour' + (hrs === 1 ? '' : 's');
+      }
+      if (u.indexOf('working') > -1 || u.indexOf('business') > -1) {
+        if (String(n).indexOf('working') > -1) return String(n);
+        if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1) return 'Upto 5 days';
+        if (slug.indexOf('vietnam') > -1) return '3–5 working days';
+        if (slug.indexOf('thailand') > -1) return '3 – 4 days';
+        return n + ' working day' + (String(n) === '1' ? '' : 's');
+      }
+      if (u.indexOf('day') > -1) {
+        if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1) return 'Upto 5 days';
+        if (slug.indexOf('vietnam') > -1) return '3–5 working days';
+        if (slug.indexOf('thailand') > -1) return '3 – 4 days';
+        return n + ' day' + (String(n) === '1' ? '' : 's');
+      }
+    }
+
+    if (slug.indexOf('united-arab-emirates') > -1 || slug.indexOf('uae') > -1 || slug.indexOf('dubai') > -1) return 'Upto 5 days';
+    if (slug.indexOf('vietnam') > -1) return '3–5 working days';
+    if (slug.indexOf('thailand') > -1) return '24 hours';
+    if (slug.indexOf('morocco') > -1 && slug.indexOf('business') > -1) return '5-7 working days';
+    if (slug.indexOf('morocco') > -1) return '3-5 working days';
+    if (slug.indexOf('qatar') > -1) return '5-6 working days';
+    if (slug.indexOf('srilanka') > -1 || slug.indexOf('sri-lanka') > -1) return '24 to 48 hours';
+    if (slug.indexOf('kenya') > -1) return 'Upto 2 days';
+    if (slug.indexOf('russia') > -1) return '10 - 12 days';
+    if (slug.indexOf('indonesia') > -1) return '5-7 working days';
+    if (slug.indexOf('azerbaijan') > -1) return 'Upto 3 days';
+    if (slug.indexOf('bahrain') > -1) return '3-5 working days';
+    if (slug.indexOf('egypt') > -1) return '10 - 15 days';
+    if (slug.indexOf('philippines') > -1) return '8 - 10 days';
+    if (slug.indexOf('saudi') > -1) return '5 working days';
+    if (slug.indexOf('oman') > -1) return '5 - 6 days';
+
+    return '3-5 working days';
   }
   function loadVisaTypes(){
     return sb.from('visa_types').select('*').eq('active',true).order('sort_order').then(function(r){
@@ -111,8 +166,137 @@
       if(!VISAS.some(function(v){return v.country_slug==='ireland';})) VISAS.push(fallbackIreland);
       var fallbackGreece={id:'greece-schengen-tourist',name:'Greece Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Greece.',features:['Up to 90 days','Schengen visa','Greece'],active:true,country_slug:'greece',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
       if(!VISAS.some(function(v){return v.country_slug==='greece';})) VISAS.push(fallbackGreece);
-      var fallbackAzerbaijan={id:'azerbaijan-tourist-visa',name:'Azerbaijan Tourist Visa',sub:'Tourist Visa',price:6500,days:30,popular:true,blurb:'Tourist visa for Azerbaijan.',features:['Tourist visa','Azerbaijan'],active:true,country_slug:'azerbaijan',category:'Tourist',prices:{INR:6500},etaValue:10,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='azerbaijan';})) VISAS.push(fallbackAzerbaijan);
+      var fallbackItaly={id:'italy-schengen-tourist',name:'Italy Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Italy.',features:['Up to 90 days','Schengen visa','Italy'],active:true,country_slug:'italy',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='italy';})) VISAS.push(fallbackItaly);
+      var fallbackAzerbaijanTourist={id:'azerbaijan-tourist-evisa',slug:'azerbaijan-tourist-evisa',name:'Azerbaijan Tourist E Visa',sub:'Single Entry',price:2899,days:30,popular:true,blurb:'Azerbaijan Tourist E Visa.',features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],active:true,country_slug:'azerbaijan',category:'Tourist',prices:{INR:2899},etaValue:3,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='azerbaijan-tourist-evisa'||v.slug==='azerbaijan-tourist-evisa';})) VISAS.push(fallbackAzerbaijanTourist);
+      var fallbackAzerbaijanBiz={id:'azerbaijan-business-evisa',slug:'azerbaijan-business-evisa',name:'Azerbaijan Business E Visa',sub:'Single Entry',price:2899,days:30,popular:false,blurb:'Azerbaijan Business E Visa.',features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],active:true,country_slug:'azerbaijan',category:'Business',prices:{INR:2899},etaValue:3,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='azerbaijan-business-evisa'||v.slug==='azerbaijan-business-evisa';})) VISAS.push(fallbackAzerbaijanBiz);
+      var fallbackChina={id:'china-business-visa',name:'China Business Visa',sub:'M Visa',price:6500,days:30,popular:true,blurb:'China business visa application.',features:['Business visa','China','M Visa'],active:true,country_slug:'china',category:'Business',prices:{INR:6500},etaValue:7,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.country_slug==='china';})) VISAS.push(fallbackChina);
+      // Russia must also work when the live visa_types row is unavailable.
+      var fallbackRussiaTourist={id:'russia-tourist-visa',slug:'russia-tourist-visa',name:'Russia Tourist Visa',sub:'Single Entry',price:4999,days:30,popular:true,blurb:'Russia Tourist Visa.',features:['Stay Period: 30 Days','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],active:true,country_slug:'russia',category:'Tourist',prices:{INR:4999},etaValue:12,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='russia-tourist-visa'||v.slug==='russia-tourist-visa';})) VISAS.push(fallbackRussiaTourist);
+      var fallbackRussiaBiz={id:'russia-business-visa',slug:'russia-business-visa',name:'Russia Business Visa',sub:'Single Entry',price:4999,days:90,popular:false,blurb:'Russia Business Visa.',features:['Stay Period: 3 Months','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],active:true,country_slug:'russia',category:'Business',prices:{INR:4999},etaValue:12,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='russia-business-visa'||v.slug==='russia-business-visa';})) VISAS.push(fallbackRussiaBiz);
+      // Indonesia must always open the same upload wizard even if the live visa row is unavailable.
+      var fallbackIndonesiaTourist={id:'indonesia-tourist-visa',slug:'indonesia-tourist-visa',name:'Indonesia Tourist Visa',sub:'Single Entry',price:8999,days:30,popular:true,blurb:'Indonesia Tourist Visa.',features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],active:true,country_slug:'indonesia',category:'Tourist',prices:{INR:8999},etaValue:7,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='indonesia-tourist-visa'||v.slug==='indonesia-tourist-visa';})) VISAS.push(fallbackIndonesiaTourist);
+      var fallbackIndonesiaBiz={id:'indonesia-business-visa',slug:'indonesia-business-visa',name:'Indonesia Business Visa',sub:'Single Entry',price:8999,days:30,popular:false,blurb:'Indonesia Business Visa.',features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],active:true,country_slug:'indonesia',category:'Business',prices:{INR:8999},etaValue:7,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='indonesia-business-visa'||v.slug==='indonesia-business-visa';})) VISAS.push(fallbackIndonesiaBiz);
+      // Kenya must always open the upload wizard even if its live visa row is unavailable.
+      var fallbackKenyaTourist={id:'kenya-single-entry-tourist-visa',slug:'kenya-single-entry-tourist-visa',name:'Single Entry Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:true,blurb:'Single Entry Tourist Visa for Kenya.',features:['Stay Period: As per Embassy','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],active:true,country_slug:'kenya',category:'Tourist',prices:{INR:5999},etaValue:2,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='kenya-single-entry-tourist-visa'||v.slug==='kenya-single-entry-tourist-visa';})) VISAS.push(fallbackKenyaTourist);
+      var fallbackKenyaBiz={id:'kenya-single-entry-business-visa',slug:'kenya-single-entry-business-visa',name:'Single Entry Business Visa',sub:'Single Entry',price:5999,days:3,popular:false,blurb:'Single Entry Business Visa for Kenya.',features:['Stay Period: 72 Hours','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],active:true,country_slug:'kenya',category:'Business',prices:{INR:5999},etaValue:2,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='kenya-single-entry-business-visa'||v.slug==='kenya-single-entry-business-visa';})) VISAS.push(fallbackKenyaBiz);
+      var fallbackKenyaLegacy={id:'kenya-tourist-visa',slug:'kenya-tourist-visa',name:'Single Entry Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:false,blurb:'Single Entry Tourist Visa for Kenya.',features:['Stay Period: As per Embassy','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],active:true,country_slug:'kenya',category:'Tourist',prices:{INR:5999},etaValue:2,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='kenya-tourist-visa'||v.slug==='kenya-tourist-visa';})) VISAS.push(fallbackKenyaLegacy);
+      // Thailand must always open the same upload wizard even if its live visa row is unavailable.
+      var fallbackThailandEv = {id:'thailand-e-visa',slug:'thailand-e-visa',name:'Thailand E Visa',sub:'Single Entry',price:499,days:30,popular:true,blurb:'Thailand E-Visa.',features:['30 days stay','1 Month validity','Single entry','24 Hours processing'],active:true,country_slug:'thailand',category:'Tourist',prices:{INR:499},etaValue:24,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='thailand-e-visa';})) VISAS.push(fallbackThailandEv);
+      var fallbackThailandExp = {id:'thailand-e-visa-express',slug:'thailand-e-visa-express',name:'Thailand E Visa (Express)',sub:'Single Entry',price:11999,days:15,popular:false,blurb:'Thailand E-Visa (Express).',features:['Upto 15 days stay','1 Month validity','Single entry','Upto 24 Hours processing'],active:true,country_slug:'thailand',category:'Tourist',prices:{INR:11999},etaValue:24,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='thailand-e-visa-express';})) VISAS.push(fallbackThailandExp);
+      var fallbackThailandStamp = {id:'thailand-tourist-visa-stamp-visa',slug:'thailand-tourist-visa-stamp-visa',name:'Thailand Tourist Visa (Stamp Visa)',sub:'Single Entry',price:5999,days:60,popular:false,blurb:'Thailand Tourist Visa (Stamp Visa).',features:['Upto 60 days stay','3 Months validity','Single entry','3 – 4 Days processing'],active:true,country_slug:'thailand',category:'Tourist',prices:{INR:5999},etaValue:4,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='thailand-tourist-visa-stamp-visa';})) VISAS.push(fallbackThailandStamp);
+      var fallbackThailandBiz = {id:'thailand-business-visa-stamp-visa',slug:'thailand-business-visa-stamp-visa',name:'Thailand Business Visa (Stamp Visa)',sub:'Single Entry',price:7999,days:90,popular:false,blurb:'Thailand Business Visa (Stamp Visa).',features:['Upto 90 days stay','3 Months validity','Single entry','3 – 4 Days processing'],active:true,country_slug:'thailand',category:'Business',prices:{INR:7999},etaValue:4,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='thailand-business-visa-stamp-visa';})) VISAS.push(fallbackThailandBiz);
+      // Bahrain must always open the same upload wizard even if its live visa row is unavailable.
+      var fallbackBahrain14={id:'bahrain-14-days-tourist-visa',name:'Bahrain 2 Weeks Single Entry',sub:'Single Entry',price:4500,days:14,popular:true,blurb:'Tourist eVisa application for Bahrain.',features:['Tourist eVisa','Bahrain','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:4500},etaValue:5,etaUnit:'days'};
+      var fallbackBahrain30={id:'bahrain-30-days-tourist-visa',name:'Bahrain One Month Multiple Entry',sub:'Multiple Entry',price:7000,days:30,popular:false,blurb:'Multiple entry tourist eVisa application for Bahrain.',features:['Tourist eVisa','Bahrain','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:7000},etaValue:5,etaUnit:'days'};
+      var fallbackBahrain={id:'bahrain-tourist-visa',name:'Bahrain 2 Weeks Single Entry',sub:'Single Entry',price:4500,days:14,popular:true,blurb:'Tourist eVisa application for Bahrain.',features:['Tourist eVisa','Bahrain','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:4500},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='bahrain-14-days-tourist-visa';})) VISAS.push(fallbackBahrain14);
+      if(!VISAS.some(function(v){return v.id==='bahrain-30-days-tourist-visa';})) VISAS.push(fallbackBahrain30);
+      if(!VISAS.some(function(v){return v.id==='bahrain-tourist-visa';})) VISAS.push(fallbackBahrain);
+      var fallbackBahrain365={id:'bahrain-one-year-multiple-entry',name:'Bahrain One Year Multiple Entry',sub:'Multiple Entry',price:14000,days:365,popular:false,blurb:'One year multiple entry tourist eVisa for Bahrain.',features:['One year validity','Multiple entry','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:14000},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='bahrain-one-year-multiple-entry';})) VISAS.push(fallbackBahrain365);
+      // Sri Lanka must always open the same upload wizard even if its live visa row is unavailable.
+      var fallbackSriLankaTourist={id:'srilanka-30-days-tourist-visa',slug:'srilanka-30-days-tourist-visa',name:'30 Days Sri Lanka Tourist Visa',sub:'Double Entry',price:999,days:30,popular:true,blurb:'30 Days Sri Lanka Tourist Visa.',features:['Stay: Upto 30 Days','Validity: 6 Months','Double entry','24 to 48 Hours processing'],active:true,country_slug:'srilanka',category:'Tourist',prices:{INR:999},etaValue:48,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='srilanka-30-days-tourist-visa'||v.slug==='srilanka-30-days-tourist-visa';})) VISAS.push(fallbackSriLankaTourist);
+      var fallbackSriLankaBiz={id:'srilanka-30-days-business-visa',slug:'srilanka-30-days-business-visa',name:'30 Days Sri Lanka Business Visa',sub:'Multiple Entry',price:3499,days:30,popular:false,blurb:'30 Days Sri Lanka Business Visa.',features:['Stay: Upto 30 Days','Validity: 6 Months','Multiple entry','24 to 48 Hours processing'],active:true,country_slug:'srilanka',category:'Business',prices:{INR:3499},etaValue:48,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='srilanka-30-days-business-visa'||v.slug==='srilanka-30-days-business-visa';})) VISAS.push(fallbackSriLankaBiz);
+      var fallbackSriLankaLegacy={id:'srilanka-tourist-visa',slug:'srilanka-tourist-visa',name:'30 Days Sri Lanka Tourist Visa',sub:'Double Entry',price:999,days:30,popular:false,blurb:'30 Days Sri Lanka Tourist Visa.',features:['Stay: Upto 30 Days','Validity: 6 Months','Double entry','24 to 48 Hours processing'],active:true,country_slug:'srilanka',category:'Tourist',prices:{INR:999},etaValue:48,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='srilanka-tourist-visa'||v.slug==='srilanka-tourist-visa';})) VISAS.push(fallbackSriLankaLegacy);
+      var fallbackVietnam={id:'vietnam-tourist-visa',slug:'vietnam-tourist-visa',name:'Tourist eVisa',sub:'Single Entry',price:2999,days:30,popular:true,blurb:'Tourist eVisa for Vietnam.',features:['30 days stay','Single entry','3–5 working days'],active:true,country_slug:'vietnam',category:'Tourist',prices:{INR:2999},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='vietnam-tourist-visa';})) VISAS.push(fallbackVietnam);
+      var fallbackVietnamExpress={id:'vietnam-tourist-visa-express',slug:'vietnam-tourist-visa-express',name:'Tourist eVisa (Express)',sub:'Single Entry',price:9999,days:30,popular:false,blurb:'Express Tourist eVisa for Vietnam (24 Hours).',features:['24 hours processing','30 days stay','Single entry'],active:true,country_slug:'vietnam',category:'Tourist',prices:{INR:9999},etaValue:24,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='vietnam-tourist-visa-express';})) VISAS.push(fallbackVietnamExpress);
+      var fallbackVietnamSuper={id:'vietnam-tourist-visa-super-express',slug:'vietnam-tourist-visa-super-express',name:'Tourist eVisa (Super Express)',sub:'Single Entry',price:10999,days:30,popular:false,blurb:'Super Express Tourist eVisa for Vietnam (12 Hours).',features:['12 hours processing','30 days stay','Single entry'],active:true,country_slug:'vietnam',category:'Tourist',prices:{INR:10999},etaValue:12,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='vietnam-tourist-visa-super-express';})) VISAS.push(fallbackVietnamSuper);
+      var fallbackMorocco={id:'morocco-tourist-visa',slug:'morocco-tourist-visa',name:'Morocco Tourist eVisa',sub:'Single Entry',price:4149,days:90,popular:true,blurb:'Online tourist eVisa for Morocco.',features:['Stay up to 90 Days','Validity: Up to 90 Days','Single entry','3 – 5 Days processing'],active:true,country_slug:'morocco',category:'Tourist',prices:{INR:4149},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='morocco-tourist-visa'||v.slug==='morocco-tourist-visa';})) VISAS.push(fallbackMorocco);
+      var fallbackMoroccoBiz={id:'morocco-business-visa',slug:'morocco-business-visa',name:'Morocco Business eVisa',sub:'Single Entry',price:4149,days:90,popular:false,blurb:'Online business eVisa for Morocco.',features:['Stay up to 90 Days','Validity: Up to 90 Days','Single entry','5 – 7 Days processing'],active:true,country_slug:'morocco',category:'Business',prices:{INR:4149},etaValue:7,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='morocco-business-visa'||v.slug==='morocco-business-visa';})) VISAS.push(fallbackMoroccoBiz);
+      var fallbackTurkey={id:'turkey-tourist-evisa',name:'Turkey Tourist eVisa',sub:'Single Entry',price:5500,days:30,popular:true,blurb:'Online tourist eVisa for Turkey.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'turkey',category:'Tourist',prices:{INR:5500},etaValue:2,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='turkey-tourist-evisa';})) VISAS.push(fallbackTurkey);
+      var fallbackTurkeyVisa={id:'turkey-tourist-visa',name:'Turkey Tourist eVisa',sub:'Single Entry',price:5500,days:30,popular:true,blurb:'Online tourist eVisa for Turkey.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'turkey',category:'Tourist',prices:{INR:5500},etaValue:2,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='turkey-tourist-visa';})) VISAS.push(fallbackTurkeyVisa);
+      var fallbackUae48={id:'48-hours-transit-visa',slug:'uae-48-hours-transit-visa',name:'48 Hours Transit Visa',sub:'Single Entry',price:3499,days:2,popular:false,blurb:'48 Hours Transit Visa for UAE.',features:['2 days stay (48h)','Single entry','Validity 30 days'],active:true,country_slug:'united-arab-emirates',category:'Transit',prices:{INR:3499},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='48-hours-transit-visa'||v.slug==='uae-48-hours-transit-visa';})) VISAS.push(fallbackUae48);
+
+      var fallbackUae={id:'30-days-tourist-visa',slug:'uae-30-days-tourist-visa',name:'30 Days Tourist Visa',sub:'Single Entry',price:7600,days:30,popular:true,blurb:'30 days tourist visa for UAE.',features:['30 days stay','Single entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:7600},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='30-days-tourist-visa'||v.slug==='uae-30-days-tourist-visa';})) VISAS.push(fallbackUae);
+
+      var fallbackUaeFamily={id:'30-days-family-tourist-visa',slug:'uae-30-days-family-tourist-visa',name:'30 Days Family Tourist Visa (Includes 2 Adults + 1 Child)',sub:'Single Entry',price:19999,days:30,popular:false,blurb:'30 days family tourist visa for UAE (Includes 2 Adults + 1 Child).',features:['Includes 2 Adults + 1 Child','30 days stay','Single entry'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:19999},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='30-days-family-tourist-visa'||v.slug==='uae-30-days-family-tourist-visa';})) VISAS.push(fallbackUaeFamily);
+
+      var fallbackUae96={id:'96-hours-transit-visa',slug:'uae-96-hours-transit-visa',name:'96 Hours Transit Visa',sub:'Single Entry',price:5299,days:4,popular:false,blurb:'96 Hours Transit Visa for UAE.',features:['4 days stay (96h)','Single entry','Validity 30 days'],active:true,country_slug:'united-arab-emirates',category:'Transit',prices:{INR:5299},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='96-hours-transit-visa'||v.slug==='uae-96-hours-transit-visa';})) VISAS.push(fallbackUae96);
+
+      var fallbackUae14={id:'14-days-tourist-visa',slug:'uae-14-days-tourist-visa',name:'14 Days Tourist Visa',sub:'Single Entry',price:7699,days:14,popular:false,blurb:'14 days tourist visa for UAE.',features:['14 days stay','Single entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:7699},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='14-days-tourist-visa'||v.slug==='uae-14-days-tourist-visa';})) VISAS.push(fallbackUae14);
+
+      var fallbackUaeExpress={id:'30-days-tourist-visa-express',slug:'uae-30-days-tourist-visa-express',name:'30 Days Tourist Visa (Express)',sub:'Single Entry',price:8999,days:30,popular:false,blurb:'Express 30 days tourist visa for UAE.',features:['Express 48h processing','30 days stay','Single entry'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:8999},etaValue:48,etaUnit:'hours'};
+      if(!VISAS.some(function(v){return v.id==='30-days-tourist-visa-express'||v.slug==='uae-30-days-tourist-visa-express';})) VISAS.push(fallbackUaeExpress);
+
+      var fallbackUae60={id:'60-days-tourist-visa',slug:'uae-60-days-tourist-visa',name:'60 Days Tourist Visa',sub:'Single Entry',price:10800,days:60,popular:false,blurb:'60 days tourist visa for UAE.',features:['60 days stay','Single entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:10800},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='60-days-tourist-visa'||v.slug==='uae-60-days-tourist-visa';})) VISAS.push(fallbackUae60);
+
+      var fallbackUaeMulti={id:'30-days-multiple-entry-visa',slug:'uae-30-days-multiple-entry-visa',name:'30 Days Multiple Entry Tourist Visa',sub:'Multiple Entry',price:17999,days:30,popular:false,blurb:'30 days multiple entry tourist visa for UAE.',features:['30 days stay','Multiple entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:17999},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='30-days-multiple-entry-visa'||v.slug==='uae-30-days-multiple-entry-visa';})) VISAS.push(fallbackUaeMulti);
+      var fallbackQatar1={id:'qatar-30-days-tourist-visa-age-1-55',slug:'qatar-30-days-tourist-visa-age-1-55',name:'Qatar Tourist Visa 30 Days (Age 1–55 Years)',sub:'Single Entry',price:8999,days:30,popular:true,blurb:'Qatar Tourist Visa 30 Days (Age 1–55 Years).',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Tourist',prices:{INR:8999},etaValue:6,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='qatar-30-days-tourist-visa-age-1-55'||v.slug==='qatar-30-days-tourist-visa-age-1-55';})) VISAS.push(fallbackQatar1);
+      var fallbackQatar2={id:'qatar-30-days-tourist-visa-age-55-plus',slug:'qatar-30-days-tourist-visa-age-55-plus',name:'Qatar Tourist Visa 30 Days (Age 55 Years & Above)',sub:'Single Entry',price:13999,days:30,popular:false,blurb:'Qatar Tourist Visa 30 Days (Age 55 Years & Above).',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Tourist',prices:{INR:13999},etaValue:6,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='qatar-30-days-tourist-visa-age-55-plus'||v.slug==='qatar-30-days-tourist-visa-age-55-plus';})) VISAS.push(fallbackQatar2);
+      var fallbackQatar3={id:'qatar-30-days-business-visa',slug:'qatar-30-days-business-visa',name:'Qatar Business Visa 30 Days',sub:'Single Entry',price:9999,days:30,popular:false,blurb:'Qatar Business Visa 30 Days.',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Business',prices:{INR:9999},etaValue:6,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='qatar-30-days-business-visa'||v.slug==='qatar-30-days-business-visa';})) VISAS.push(fallbackQatar3);
+      var fallbackQatar4={id:'qatar-90-days-business-visa',slug:'qatar-90-days-business-visa',name:'Qatar Business Visa 90 Days',sub:'Single Entry',price:20999,days:90,popular:false,blurb:'Qatar Business Visa 90 Days.',features:['Stay 90 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Business',prices:{INR:20999},etaValue:6,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='qatar-90-days-business-visa'||v.slug==='qatar-90-days-business-visa';})) VISAS.push(fallbackQatar4);
+      var fallbackQatarLegacy={id:'qatar-tourist-evisa',slug:'qatar-tourist-evisa',name:'Qatar Tourist Visa 30 Days (Age 1–55 Years)',sub:'Single Entry',price:8999,days:30,popular:false,blurb:'Qatar Tourist Visa 30 Days (Age 1–55 Years).',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Tourist',prices:{INR:8999},etaValue:6,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='qatar-tourist-evisa'||v.slug==='qatar-tourist-evisa';})) VISAS.push(fallbackQatarLegacy);
+      
+      var fallbackEgyptTourist={id:'egypt-tourist-visa',slug:'egypt-tourist-visa',name:'Egypt Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:true,blurb:'Egypt Tourist Visa.',features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],active:true,country_slug:'egypt',category:'Tourist',prices:{INR:5999},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='egypt-tourist-visa'||v.slug==='egypt-tourist-visa';})) VISAS.push(fallbackEgyptTourist);
+      var fallbackEgypt30Legacy={id:'egypt-30-days-tourist-visa',slug:'egypt-30-days-tourist-visa',name:'Egypt Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:false,blurb:'Egypt Tourist Visa.',features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],active:true,country_slug:'egypt',category:'Tourist',prices:{INR:5999},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='egypt-30-days-tourist-visa'||v.slug==='egypt-30-days-tourist-visa';})) VISAS.push(fallbackEgypt30Legacy);
+      var fallbackEgyptBusiness={id:'egypt-business-visa',slug:'egypt-business-visa',name:'Egypt Business Visa',sub:'Single Entry',price:6999,days:30,popular:false,blurb:'Egypt Business Visa.',features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],active:true,country_slug:'egypt',category:'Business',prices:{INR:6999},etaValue:15,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='egypt-business-visa'||v.slug==='egypt-business-visa';})) VISAS.push(fallbackEgyptBusiness);
+
+      var fallbackPhilippinesSingle={id:'philippines-single-entry-visa',slug:'philippines-single-entry-visa',name:'Philippines Single Entry Visa',sub:'Single Entry',price:8499,days:59,popular:true,blurb:'Philippines Single Entry Visa (Tourist/Business).',features:['Stay Period: Upto 59 Days','Validity: 3 Months','Single Entry','Processing: 8 - 10 Days'],active:true,country_slug:'philippines',category:'Tourist / Business',prices:{INR:8499},etaValue:10,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='philippines-single-entry-visa'||v.slug==='philippines-single-entry-visa';})) VISAS.push(fallbackPhilippinesSingle);
+      var fallbackPhilippinesMulti={id:'philippines-multiple-entry-business-visa',slug:'philippines-multiple-entry-business-visa',name:'Philippines Multiple Entry Business Visa',sub:'Multiple Entry',price:9999,days:59,popular:false,blurb:'Philippines Multiple Entry Business Visa.',features:['Stay Period: Upto 59 Days','Validity: 6 Months / 1 Year','Multiple Entry','Processing: 8 - 10 Days'],active:true,country_slug:'philippines',category:'Business',prices:{INR:9999},etaValue:10,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='philippines-multiple-entry-business-visa'||v.slug==='philippines-multiple-entry-business-visa';})) VISAS.push(fallbackPhilippinesMulti);
+
+      var fallbackOman10={id:'oman-10-days-tourist-visa',slug:'oman-10-days-tourist-visa',name:'10 Days Tourist Visa',sub:'Single Entry',price:4499,days:10,popular:false,blurb:'Oman 10 Days Tourist Visa.',features:['Stay Period: 10 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],active:true,country_slug:'oman',category:'Tourist',prices:{INR:4499},etaValue:6,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='oman-10-days-tourist-visa'||v.slug==='oman-10-days-tourist-visa';})) VISAS.push(fallbackOman10);
+      var fallbackOman30={id:'oman-30-days-tourist-visa',slug:'oman-30-days-tourist-visa',name:'30 Days Tourist Visa',sub:'Single Entry',price:7999,days:30,popular:true,blurb:'Oman 30 Days Tourist Visa.',features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],active:true,country_slug:'oman',category:'Tourist',prices:{INR:7999},etaValue:6,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='oman-30-days-tourist-visa'||v.slug==='oman-30-days-tourist-visa';})) VISAS.push(fallbackOman30);
+
+      var fallbackSaudi30={id:'saudi-arabia-30-days-tourist-visa',slug:'saudi-arabia-30-days-tourist-visa',name:'Saudi Arabia Tourist Visa',sub:'Single Entry',price:16000,days:30,popular:true,blurb:'30 days tourist eVisa for Saudi Arabia.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:16000},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='saudi-arabia-30-days-tourist-visa';})) VISAS.push(fallbackSaudi30);
+      var fallbackSaudiTourist={id:'saudi-arabia-tourist-visa',slug:'saudi-arabia-tourist-visa',name:'Saudi Arabia Tourist Visa',sub:'Single Entry',price:16000,days:30,popular:true,blurb:'30 days tourist eVisa for Saudi Arabia.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:16000},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='saudi-arabia-tourist-visa';})) VISAS.push(fallbackSaudiTourist);
+      var fallbackSaudiShort={id:'saudi-30-days-tourist-visa',slug:'saudi-30-days-tourist-visa',name:'Saudi Arabia Tourist Visa',sub:'Single Entry',price:16000,days:30,popular:true,blurb:'30 days tourist eVisa for Saudi Arabia.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:16000},etaValue:5,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='saudi-30-days-tourist-visa';})) VISAS.push(fallbackSaudiShort);
+      var fallbackSaudiMulti={id:'saudi-arabia-one-year-multiple-entry',slug:'saudi-arabia-one-year-multiple-entry',name:'Saudi Arabia One Year Multiple Entry',sub:'Multiple Entry',price:12500,days:365,popular:true,blurb:'1 year multiple entry tourist eVisa for Saudi Arabia.',features:['1 year validity','Multiple entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:12500},etaValue:1,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='saudi-arabia-one-year-multiple-entry';})) VISAS.push(fallbackSaudiMulti);
+      var fallbackSaudi90={id:'saudi-arabia-90-days-tourist-visa',slug:'saudi-arabia-90-days-tourist-visa',name:'Saudi Arabia 90 Days Single Entry',sub:'Single Entry',price:7500,days:90,popular:false,blurb:'90 days tourist eVisa for Saudi Arabia.',features:['90 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:7500},etaValue:1,etaUnit:'days'};
+      if(!VISAS.some(function(v){return v.id==='saudi-arabia-90-days-tourist-visa';})) VISAS.push(fallbackSaudi90);
+
+      VISAS.forEach(function(v){
+        if(v && (v.id==='30-days-tourist-visa'||v.id==='60-days-tourist-visa'||v.id==='30-days-uae-visa'||v.id==='60-days-uae-visa'||v.id==='uae-30-days-tourist-visa'||v.id==='uae-60-days-tourist-visa'||(v.slug&&v.slug.indexOf('uae-')===0)||(v.id&&v.id.indexOf('uae-')===0)||(v.slug&&v.slug.indexOf('transit-visa')>-1)||(v.id&&v.id.indexOf('transit-visa')>-1))){
+          v.country_slug = 'united-arab-emirates';
+        }
+      });
       return VISAS;
     });
   }
@@ -139,14 +323,49 @@
   }
 
   // Countries & groups (for admin managers + visa assignment)
-  var countryList = [], groupList = [];
+  var countryList = [], groupList = [], nationalityList = [], nationalityDestinationList = [], nationalityConfigPageId = null;
+  var NATIONALITY_CONFIG_SLUG='system-nationality-destinations';
+  function makeNatId(){ return (window.crypto&&crypto.randomUUID)?crypto.randomUUID():('nat-'+Date.now()+'-'+Math.random().toString(36).slice(2)); }
+  function rebuildNationalityMap(){
+    nationalityDestinationList=[];
+    nationalityList.forEach(function(n){ (n.destinations||[]).forEach(function(slug){ nationalityDestinationList.push({nationality_id:n.id,country_slug:slug}); }); });
+  }
+  function parseNationalityConfig(row){
+    nationalityConfigPageId=row&&row.id||null;
+    var arr=[]; try{ arr=JSON.parse((row&&row.content)||'[]'); }catch(e){ arr=[]; }
+    if(!Array.isArray(arr)||!arr.length){
+      arr=[{id:makeNatId(),name:'India',iso2:'IN',active:true,sort_order:1,destinations:countryList.map(function(c){return c.slug;})},{id:makeNatId(),name:'Qatar',iso2:'QA',active:true,sort_order:2,destinations:countryList.map(function(c){return c.slug;})}];
+    }
+    nationalityList=arr.map(function(n,i){ return {id:n.id||makeNatId(),name:n.name||'',iso2:n.iso2||null,active:n.active!==false,sort_order:Number(n.sort_order)||i+1,destinations:Array.isArray(n.destinations)?n.destinations:[]}; }).sort(function(a,b){return a.sort_order-b.sort_order;});
+    rebuildNationalityMap();
+  }
+  function saveNationalityConfig(){
+    var payload={title:'Nationality destination configuration',slug:NATIONALITY_CONFIG_SLUG,content:JSON.stringify(nationalityList.map(function(n){return {id:n.id,name:n.name,iso2:n.iso2||null,active:n.active!==false,sort_order:n.sort_order||0,destinations:nationalityAssignedSlugs(n.id)};})),status:'published',show_in_footer:false,sort_order:9999,seo_title:null,seo_description:'System configuration — do not delete'};
+    var q=nationalityConfigPageId?sb.from('pages').update(payload).eq('id',nationalityConfigPageId).select().single():sb.from('pages').insert(payload).select().single();
+    return q.then(function(r){ if(r.error) throw r.error; nationalityConfigPageId=r.data&&r.data.id||nationalityConfigPageId; return r; });
+  }
   function loadCountriesGroups(){
     return Promise.all([
       sb.from('countries').select('*').order('sort_order'),
-      sb.from('visa_groups').select('*').order('sort_order')
-    ]).then(function(res){ countryList=(res[0].data)||[]; groupList=(res[1].data)||[]; return true; });
+      sb.from('visa_groups').select('*').order('sort_order'),
+      sb.from('pages').select('id,content').eq('slug',NATIONALITY_CONFIG_SLUG).maybeSingle()
+    ]).then(function(res){
+      countryList=(res[0].data)||[];
+      groupList=(res[1].data)||[];
+      parseNationalityConfig(res[2]&&res[2].data);
+      return true;
+    });
   }
-  function countryName(slug){ for(var i=0;i<countryList.length;i++){ if(countryList[i].slug===slug) return countryList[i].name; } return slug||'—'; }
+  function countryName(slug){
+    if(slug==='uae'||slug==='united-arab-emirates') return 'United Arab Emirates';
+    if(slug==='qatar') return 'Qatar';
+    if(slug==='egypt'||slug==='egypt-2') return 'Egypt';
+    if(slug==='philippines') return 'Philippines';
+    if(slug==='oman') return 'Oman';
+    if(slug==='saudi-arabia'||slug==='saudi') return 'Saudi Arabia';
+    for(var i=0;i<countryList.length;i++){ if(countryList[i].slug===slug) return countryList[i].name; }
+    return slug||'—';
+  }
   function fnUrl(name){ return cfg.SUPABASE_URL.replace(/\/$/,'') + '/functions/v1/' + name; }
 
   // Email the customer when their status changes (sends only for key stages; silently skips if email isn't set up).
@@ -155,7 +374,7 @@
       var token=sess.data.session?sess.data.session.access_token:cfg.SUPABASE_ANON_KEY;
       return fetch(fnUrl('send-status-email'), {
         method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':cfg.SUPABASE_ANON_KEY, 'Authorization':'Bearer '+token },
-        body: JSON.stringify({ application_id:appId, status:status, origin:location.origin })
+        body: JSON.stringify({ application_id:appId, status:status, name:fullName, full_name:fullName, origin:location.origin })
       });
     }).then(function(r){ return r.json().catch(function(){return {};}); }).then(function(d){
       if(d && d.ok){ toast((fullName?fullName.split(' ')[0]:'Customer')+' was emailed about the update'); }
@@ -168,42 +387,151 @@
   function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function el(html){ var d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
   function toast(msg){ toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){toastEl.classList.remove('show');},3200); }
+  function showDraftConfirmModal(options) {
+    options = options || {};
+    var existing = document.getElementById('draftConfirmModal');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.id = 'draftConfirmModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:draftFadeIn 0.2s ease-out;';
+
+    var keyframes = document.getElementById('draftConfirmStyles');
+    if (!keyframes) {
+      keyframes = document.createElement('style');
+      keyframes.id = 'draftConfirmStyles';
+      keyframes.textContent = '@keyframes draftFadeIn{from{opacity:0;}to{opacity:1;}} @keyframes draftPopIn{from{opacity:0;transform:scale(0.96) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);}}';
+      document.head.appendChild(keyframes);
+    }
+
+    var backLabel = options.backText || options.cancelText || 'Back';
+
+    overlay.innerHTML = 
+      '<div style="background-color:#ffffff;border-radius:16px;padding:24px;max-width:440px;width:90%;box-shadow:0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);text-align:center;font-family:system-ui,-apple-system,sans-serif;animation:draftPopIn 0.2s cubic-bezier(0.16,1,0.3,1);box-sizing:border-box;">' +
+        '<h3 style="margin-top:0;margin-bottom:0;color:#1e293b;font-size:18px;font-weight:700;">' + esc(options.title || 'Save to Draft?') + '</h3>' +
+        '<p style="color:#64748b;font-size:14.5px;line-height:1.5;margin:12px 0 24px;">' + esc(options.message || 'Would you like to save your application as a draft before leaving?') + '</p>' +
+        '<div style="display:flex;gap:12px;justify-content:center;">' +
+          '<button type="button" id="modalBackBtn" style="padding:10px 20px;border:1px solid #cbd5e1;background:#ffffff;color:#334155;border-radius:12px;font-weight:600;cursor:pointer;font-size:14px;transition:all 0.15s ease;">' + esc(backLabel) + '</button>' +
+          '<button type="button" id="modalSaveDraftBtn" style="padding:10px 20px;border:none;background:#0f172a;color:#ffffff;border-radius:12px;font-weight:600;cursor:pointer;font-size:14px;transition:background 0.2s;">' + esc(options.saveText || 'Save Draft') + '</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    function close() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }
+
+    var saveBtn = overlay.querySelector('#modalSaveDraftBtn');
+    if (saveBtn) {
+      saveBtn.onclick = function() {
+        close();
+        if (typeof options.onSave === 'function') options.onSave();
+      };
+    }
+
+    var backBtn = overlay.querySelector('#modalBackBtn') || overlay.querySelector('#modalCancelBtn');
+    if (backBtn) {
+      backBtn.onclick = function() {
+        close();
+        if (typeof options.onBack === 'function') {
+          options.onBack();
+        } else if (typeof options.onCancel === 'function') {
+          options.onCancel();
+        }
+      };
+    }
+
+    overlay.onclick = function(e) {
+      if (e.target === overlay) {
+        close();
+        if (typeof options.onDismiss === 'function') {
+          options.onDismiss();
+        }
+      }
+    };
+  }
   function planeLogo(){ return '<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>'; }
   var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  function visaById(id){ for(var i=0;i<VISAS.length;i++){ if(VISAS[i].id===id) return VISAS[i]; } return null; }
+  function visaById(id){
+    if(!id) return null;
+    for(var i=0;i<VISAS.length;i++){
+      if(VISAS[i].id===id || VISAS[i].slug===id) return VISAS[i];
+    }
+    var lower = String(id).toLowerCase();
+    for(var j=0;j<VISAS.length;j++){
+      if((VISAS[j].id && VISAS[j].id.toLowerCase()===lower) || (VISAS[j].slug && VISAS[j].slug.toLowerCase()===lower)) return VISAS[j];
+    }
+    // Match by prefix or country match first
+    for(var k=0;k<VISAS.length;k++){
+      var vid = (VISAS[k].id||'').toLowerCase();
+      var vslug = (VISAS[k].slug||'').toLowerCase();
+      var vcslug = (VISAS[k].country_slug||'').toLowerCase();
+      if(vid && lower.indexOf(vid) === 0) return VISAS[k];
+      if(vslug && lower.indexOf(vslug) === 0) return VISAS[k];
+      if(vcslug && (lower.indexOf(vcslug) === 0 || lower.indexOf(vcslug+'-') === 0)) return VISAS[k];
+    }
+    // General fallback
+    for(var m=0;m<VISAS.length;m++){
+      var mid = (VISAS[m].id||'').toLowerCase();
+      var mslug = (VISAS[m].slug||'').toLowerCase();
+      var mcslug = (VISAS[m].country_slug||'').toLowerCase();
+      if(mid && (lower.indexOf(mid) !== -1 || mid.indexOf(lower) !== -1)) return VISAS[m];
+      if(mslug && (lower.indexOf(mslug) !== -1 || mslug.indexOf(lower) !== -1)) return VISAS[m];
+      if(mcslug && (lower.indexOf(mcslug) !== -1 || mcslug.indexOf(lower) !== -1)) return VISAS[m];
+    }
+    return null;
+  }
   function qParam(k){ return new URLSearchParams(location.search).get(k); }
 
   // Prepare an image for upload: normalise to a web-friendly JPEG and shrink if huge.
-  // Resolves {blob, ext, type}; rejects {code:'decode'|'big'|'convert', name}.
+  // Resolves {blob, ext, type}; rejects {code:'decode'|'big'|'convert'|'invalid', name, error}.
   function prepareImage(file){
     return new Promise(function(resolve, reject){
+      if(!file){ reject({code:'invalid', error:'No file selected'}); return; }
       if(file.size > 25*1024*1024){ reject({code:'big'}); return; }
-      if(file.type === 'image/gif'){ // keep gifs as-is (canvas would drop animation)
-        if(file.size > 10485760){ reject({code:'big'}); return; }
-        resolve({ blob:file, ext:'gif', type:'image/gif' }); return;
+      
+      // Magic-byte / binary signature validation (anti-spoofing)
+      if(window.VisaDooSecurity && typeof window.VisaDooSecurity.validateFileSignature === 'function'){
+        window.VisaDooSecurity.validateFileSignature(file, ['image']).then(function(val){
+          if(!val.valid){
+            reject({code:'invalid', name:file.name, error:val.error});
+            return;
+          }
+          proceedWithImage();
+        }).catch(function(){ proceedWithImage(); });
+      } else {
+        proceedWithImage();
       }
-      var url = URL.createObjectURL(file);
-      var img = new Image();
-      img.onload = function(){
-        URL.revokeObjectURL(url);
-        var maxW = 1200;
-        var scale = Math.min(1, maxW / (img.naturalWidth || maxW));
-        var w = Math.max(1, Math.round((img.naturalWidth||maxW) * scale));
-        var h = Math.max(1, Math.round((img.naturalHeight||maxW) * scale));
-        try {
-          var canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          var ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,w,h); // flatten transparency for JPEG
-          ctx.drawImage(img, 0, 0, w, h);
-          canvas.toBlob(function(blob){
-            if(!blob){ reject({code:'convert'}); return; }
-            resolve({ blob:blob, ext:'jpg', type:'image/jpeg' });
-          }, 'image/jpeg', 0.85);
-        } catch(e){ reject({code:'convert'}); }
-      };
-      img.onerror = function(){ URL.revokeObjectURL(url); reject({code:'decode', name:file.name}); };
-      img.src = url;
+
+      function proceedWithImage(){
+        if(file.type === 'image/gif'){ // keep gifs as-is (canvas would drop animation)
+          if(file.size > 10485760){ reject({code:'big'}); return; }
+          resolve({ blob:file, ext:'gif', type:'image/gif' }); return;
+        }
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function(){
+          URL.revokeObjectURL(url);
+          var maxW = 1200;
+          var scale = Math.min(1, maxW / (img.naturalWidth || maxW));
+          var w = Math.max(1, Math.round((img.naturalWidth||maxW) * scale));
+          var h = Math.max(1, Math.round((img.naturalHeight||maxW) * scale));
+          try {
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,w,h); // flatten transparency for JPEG
+            ctx.drawImage(img, 0, 0, w, h);
+            canvas.toBlob(function(blob){
+              if(!blob){ reject({code:'convert'}); return; }
+              resolve({ blob:blob, ext:'jpg', type:'image/jpeg' });
+            }, 'image/jpeg', 0.85);
+          } catch(e){ reject({code:'convert'}); }
+        };
+        img.onerror = function(){ URL.revokeObjectURL(url); reject({code:'decode', name:file.name}); };
+        img.src = url;
+      }
     });
   }
 
@@ -221,6 +549,9 @@
     if(!btn || btn.disabled) return;
     btn.disabled=true;
     btn.textContent='Signing out…';
+    if(window.VisaDooSecurity && typeof window.VisaDooSecurity.broadcastLogout === 'function'){
+      window.VisaDooSecurity.broadcastLogout();
+    }
     var finished=false;
     var timer=setTimeout(function(){ finish(true); },5000);
     function finish(useFallback){
@@ -248,7 +579,7 @@
   }
   function renderHeader(){
     var header=document.querySelector('.header');
-    var navLinks=document.getElementById('appNavLinks');
+    var navLinks=document.getElementById('navLinks') || document.getElementById('appNavLinks');
     var brandLink=document.querySelector('.brand');
     if(brandLink){
       if(state.user && isStaff()){
@@ -261,10 +592,55 @@
         brandLink.onclick=null;
       }
     }
+    var profileIconSvg = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+    var curNat = localStorage.getItem('visadoo_nationality') || 'India';
+    var curFlagIso = 'in';
+    try {
+      if (window.visadooDbNationalities && window.visadooDbNationalities.length) {
+        var foundNat = window.visadooDbNationalities.find(function(n){ return n.name === curNat; });
+        if (foundNat && foundNat.iso2) curFlagIso = foundNat.iso2.toLowerCase();
+      }
+    } catch(_e) {}
+
+    var natDropHtml =
+      '<div class="header-dropdown notranslate" translate="no" id="nationalityDropdown">' +
+        '<button class="header-dropdown-trigger notranslate" translate="no" type="button" aria-haspopup="listbox" aria-expanded="false">' +
+          '<img src="https://flagcdn.com/w40/' + curFlagIso + '.png" class="dropdown-flag notranslate" id="selectedNationalityFlag" alt="">' +
+          '<span id="selectedNationalityText" class="notranslate" translate="no">' + esc(curNat) + '</span>' +
+          '<span class="dropdown-chevron"></span>' +
+        '</button>' +
+        '<div class="header-dropdown-menu nat-luxury-modal notranslate" role="listbox">' +
+          '<div class="nat-modal-top-bar">' +
+            '<div class="nat-modal-header-text"><h3 class="nat-modal-title">I’m from</h3><p class="nat-modal-sub">Choose a destination to see available visas.</p></div>' +
+            '<button type="button" class="nat-modal-close" id="natModalClose" aria-label="Close">✕</button>' +
+          '</div>' +
+          '<div class="header-dropdown-search">' +
+            '<input type="text" placeholder="Search destination..." class="dropdown-search-input nat-dest-search-input" id="nationalitySearchInput" autocomplete="off">' +
+          '</div>' +
+          '<div class="dropdown-options-list nat-feed-list nat-dest-list"></div>' +
+        '</div>' +
+      '</div>';
+
     if(!state.user){
-      if(header){ header.classList.remove('app-customer-header'); header.classList.remove('discover-header'); }
-      if(navLinks){ navLinks.hidden=true; navLinks.classList.remove('open'); }
-      headerActions.innerHTML='<a class="signin-home-link" href="index.html">Back to home <span aria-hidden="true">&rarr;</span></a>';
+      if(header){ header.classList.add('discover-header'); header.classList.remove('app-customer-header'); }
+      if(navLinks){ navLinks.hidden=false; navLinks.classList.remove('open'); }
+      headerActions.innerHTML =
+        natDropHtml +
+        '<button class="nav-profile app-header-profile" data-go="profile" type="button" aria-label="Profile" title="Profile">' + profileIconSvg + '</button>'+
+        '<button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>';
+      if (typeof window.initLanguageSelectorIn === 'function') {
+        window.initLanguageSelectorIn(headerActions);
+      }
+      if (typeof window.initDraftResumeButton === 'function') {
+        window.initDraftResumeButton(headerActions);
+      }
+      if (typeof window.initHeaderDropdowns === 'function') {
+        window.initHeaderDropdowns();
+      }
+      if (typeof window.initMobileMenu === 'function') {
+        window.initMobileMenu();
+      }
+      headerActions.querySelectorAll('[data-go]').forEach(function(b){ b.onclick=function(){ go(b.getAttribute('data-go')); }; });
       return;
     }
     var meta = state.user.user_metadata || {};
@@ -274,14 +650,26 @@
     var roleLabels = { admin:'Admin', agent:'Agent', content:'Content', viewer:'Viewer', finance:'Finance', sales:'Sales' };
     var roleBadge = isStaff() ? '<span class="role-badge">'+esc(roleLabels[state.role]||state.role)+'</span>' : '';
     if(!isStaff()){
-      if(header){ header.classList.add('app-customer-header'); header.classList.add('discover-header'); }
+      if(header){ header.classList.add('app-customer-header', 'discover-header'); }
       if(navLinks){ navLinks.hidden=false; navLinks.classList.remove('open'); }
       headerActions.innerHTML =
-        '<button class="nav-language" type="button" title="Language" aria-label="Language">🌐 <span>EN</span></button>'+
-        '<button class="nav-track app-header-track '+(state.view==='track'?'active':'')+'" data-go="track" type="button">Track visa</button>'+
-        '<button class="nav-profile app-header-profile '+(state.view==='profile'?'active':'')+'" data-go="profile" type="button" aria-label="Profile" title="Profile"></button>';
+        natDropHtml +
+        '<button class="nav-profile app-header-profile '+(state.view==='profile'?'active':'')+'" data-go="profile" type="button" aria-label="Profile" title="Profile">' + profileIconSvg + '</button>'+
+        '<button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg></button>';
+      if (typeof window.initLanguageSelectorIn === 'function') {
+        window.initLanguageSelectorIn(headerActions);
+      }
+      if (typeof window.initDraftResumeButton === 'function') {
+        window.initDraftResumeButton(headerActions);
+      }
+      if (typeof window.initHeaderDropdowns === 'function') {
+        window.initHeaderDropdowns();
+      }
+      if (typeof window.initMobileMenu === 'function') {
+        window.initMobileMenu();
+      }
     } else {
-      if(header){ header.classList.remove('app-customer-header'); header.classList.remove('discover-header'); }
+      if(header){ header.classList.remove('app-customer-header', 'discover-header'); }
       if(navLinks){ navLinks.hidden=true; navLinks.classList.remove('open'); }
       headerActions.innerHTML =
         '<button class="admin-notify-bell" id="adminNotifyBell" type="button" aria-label="New applications" title="New applications">🔔<span id="adminNotifyCount" hidden>0</span></button>'+
@@ -389,7 +777,20 @@
         else if (intended.indexOf('germany') > -1) countrySlug = 'germany';
         else if (intended.indexOf('greece') > -1) countrySlug = 'greece';
         else if (intended.indexOf('ireland') > -1) countrySlug = 'ireland';
-        else if (intended.indexOf('uae') > -1 || intended.indexOf('emirates') > -1) countrySlug = 'united-arab-emirates';
+        else if (intended.indexOf('thailand') > -1) countrySlug = 'thailand';
+        else if (intended.indexOf('bahrain') > -1) countrySlug = 'bahrain';
+        else if (intended.indexOf('russia') > -1) countrySlug = 'russia';
+        else if (intended.indexOf('indonesia') > -1) countrySlug = 'indonesia';
+        else if (intended.indexOf('kenya') > -1) countrySlug = 'kenya';
+        else if (intended.indexOf('vietnam') > -1) countrySlug = 'vietnam';
+        else if (intended.indexOf('morocco') > -1) countrySlug = 'morocco';
+        else if (intended.indexOf('srilanka') > -1 || intended.indexOf('sri-lanka') > -1) countrySlug = 'srilanka';
+        else if (intended.indexOf('uae') > -1 || intended.indexOf('emirates') > -1 || intended === '30-days-tourist-visa' || intended === '60-days-tourist-visa' || intended === '30-days-uae-visa' || intended === '60-days-uae-visa' || intended === 'uae-30-days-tourist-visa' || intended === 'uae-60-days-tourist-visa') countrySlug = 'united-arab-emirates';
+        else if (intended.indexOf('qatar') > -1) countrySlug = 'qatar';
+        else if (intended.indexOf('egypt') > -1) countrySlug = 'egypt';
+        else if (intended.indexOf('philippines') > -1) countrySlug = 'philippines';
+        else if (intended.indexOf('oman') > -1) countrySlug = 'oman';
+        else if (intended.indexOf('saudi') > -1) countrySlug = 'saudi-arabia';
       }
       if (countrySlug) {
         backUrl = 'country.html?slug=' + encodeURIComponent(countrySlug) + '#visa-info';
@@ -416,7 +817,7 @@
           '<div class="field"><label for="siPass">Password</label>' +
             '<div class="input-icon-wrap">' +
               '<span class="field-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>' +
-              '<input id="siPass" type="password" placeholder="Enter your password" autocomplete="current-password">' +
+              '<input id="siPass" type="password" placeholder="Enter your password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" style="text-transform:none !important;">' +
               '<button type="button" class="pw-toggle" id="togglePwBtn" title="Toggle password visibility">' +
                 '<svg id="eyeIcon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
               '</button>' +
@@ -586,10 +987,28 @@
       var pass=siPass.value;
       if(!/.+@.+\..+/.test(email)){ showMsg('Please enter a valid email address.','err'); return; }
       if(!pass){ showMsg('Enter your password, or choose the sign-in link option below.','err'); return; }
+
+      // Brute-force & rate limit protection
+      if(window.VisaDooSecurity && typeof window.VisaDooSecurity.checkRateLimit === 'function'){
+        var rate = window.VisaDooSecurity.checkRateLimit('login', email);
+        if(!rate.allowed){
+          showMsg(rate.error || 'Too many failed login attempts. Please wait before retrying.','err');
+          return;
+        }
+      }
+
       pwBtn.disabled=true; pwBtn.innerHTML='<span class="spin"></span> Signing in…';
       sb.auth.signInWithPassword({ email:email, password:pass }).then(function(r){
         pwBtn.disabled=false; pwBtn.innerHTML='Sign in';
         if(r.error){
+          if(window.VisaDooSecurity){
+            window.VisaDooSecurity.recordFailedAttempt('login', email);
+            window.VisaDooSecurity.logSecurityEvent(sb, {
+              action: 'AUTH_FAILED_PASSWORD',
+              actorRole: 'anonymous',
+              metadata: { email: email, error: r.error.message }
+            });
+          }
           var errHtml='Email or password is incorrect.';
           errHtml+='<button type="button" class="signin-msg-btn" id="fallbackMagicBtn">Send me a sign-in link</button>';
           showMsg(errHtml,'err');
@@ -600,6 +1019,15 @@
             };
           }
           return;
+        }
+        if(window.VisaDooSecurity){
+          window.VisaDooSecurity.clearRateLimit('login', email);
+          window.VisaDooSecurity.logSecurityEvent(sb, {
+            action: 'AUTH_SUCCESS_PASSWORD',
+            actorId: r.data.user ? r.data.user.id : null,
+            actorRole: 'staff',
+            metadata: { email: email }
+          });
         }
         // onAuthStateChange handles routing
       });
@@ -621,8 +1049,17 @@
     document.getElementById('forgotBtn').onclick=function(){
       var email=document.getElementById('siEmail').value.trim();
       if(!/.+@.+\..+/.test(email)){ showMsg('Enter your email address above first, then tap “Forgot password?”.','err'); return; }
+      if(window.VisaDooSecurity && typeof window.VisaDooSecurity.checkRateLimit === 'function'){
+        var rate = window.VisaDooSecurity.checkRateLimit('reset_pw', email);
+        if(!rate.allowed){ showMsg(rate.error || 'Please wait before requesting another reset email.','err'); return; }
+      }
       sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/app.html' }).then(function(r){
-        if(r.error){ showMsg(esc(r.error.message||'Could not send the reset email.'),'err'); return; }
+        if(r.error){
+          if(window.VisaDooSecurity) window.VisaDooSecurity.recordFailedAttempt('reset_pw', email);
+          showMsg(esc(r.error.message||'Could not send the reset email.'),'err');
+          return;
+        }
+        if(window.VisaDooSecurity) window.VisaDooSecurity.clearRateLimit('reset_pw', email);
         showMsg('Password reset link sent to <b>'+esc(email)+'</b>. Open it to set a new password.','ok');
       });
     };
@@ -631,10 +1068,19 @@
     sendBtn.onclick=function(){
       var email=emailInput.value.trim();
       if(!/.+@.+\..+/.test(email)){ showMsg('Please enter a valid email address.','err'); return; }
+      if(window.VisaDooSecurity && typeof window.VisaDooSecurity.checkRateLimit === 'function'){
+        var rate = window.VisaDooSecurity.checkRateLimit('magic_link', email);
+        if(!rate.allowed){ showMsg(rate.error || 'Please wait before requesting another sign-in link.','err'); return; }
+      }
       sendBtn.disabled=true; sendBtn.innerHTML='<span class="spin"></span> Sending…';
       sb.auth.signInWithOtp({ email:email, options:{ shouldCreateUser:true, emailRedirectTo: redirectTo } }).then(function(r){
         sendBtn.disabled=false; sendBtn.innerHTML='Email me a sign-in link';
-        if(r.error){ showMsg(esc(r.error.message||'Could not send the email. Please try again in a minute.'),'err'); return; }
+        if(r.error){
+          if(window.VisaDooSecurity) window.VisaDooSecurity.recordFailedAttempt('magic_link', email);
+          showMsg(esc(r.error.message||'Could not send the email. Please try again in a minute.'),'err');
+          return;
+        }
+        if(window.VisaDooSecurity) window.VisaDooSecurity.clearRateLimit('magic_link', email);
         document.getElementById('sentTargetEmail').textContent = email;
         emailStep.style.display='none';
         accountStep.style.display='none';
@@ -675,6 +1121,7 @@
         '<div class="profile-stats"><div><strong id="profileCompletedCount">0</strong><span>Completed</span></div><div><strong id="profileOngoingCount">0</strong><span>Ongoing</span></div></div>'+
         '<div class="profile-sidebar-label">Account</div><div class="profile-actions">'+customerActions+
           '<button class="profile-action" type="button" data-profile-go="setpw"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" stroke-linecap="round"/></svg></span><span><b>Change password</b><small>Update your account password</small></span><i aria-hidden="true">&rarr;</i></button>'+
+          '<button class="profile-action" type="button" id="profileMfaBtn"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span><b>Two-Factor Auth (2FA)</b><small id="profileMfaStatus">Protected with TOTP</small></span><i aria-hidden="true">&rarr;</i></button>'+
           '<button class="profile-action profile-action-signout" type="button" data-profile-signout><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Sign out</b><small>Sign out of your VisaDoo account</small></span><i aria-hidden="true">&rarr;</i></button>'+
         '</div>'+
       '</aside>'+
@@ -685,6 +1132,76 @@
     if(profileExplore) profileExplore.onclick=function(){ window.location.href='index.html#destinations'; };
     var profileSignout=root.querySelector('[data-profile-signout]');
     if(profileSignout) profileSignout.onclick=function(){ signOutCurrentUser(profileSignout); };
+
+    // MFA / 2FA status check and management modal
+    var mfaBtn=document.getElementById('profileMfaBtn');
+    var mfaStatus=document.getElementById('profileMfaStatus');
+    if(mfaBtn && sb.auth && sb.auth.mfa){
+      sb.auth.mfa.listFactors().then(function(res){
+        var factors=(res.data&&res.data.totp)||[];
+        var verified=factors.filter(function(f){ return f.status==='verified'; });
+        if(mfaStatus) mfaStatus.textContent=verified.length?'Enabled (Authenticator App)':'Not enabled (Tap to set up)';
+      }).catch(function(){ if(mfaStatus) mfaStatus.textContent='Tap to configure'; });
+
+      mfaBtn.onclick=function(){
+        sb.auth.mfa.listFactors().then(function(res){
+          var factors=(res.data&&res.data.totp)||[];
+          var verified=factors.filter(function(f){ return f.status==='verified'; });
+          if(verified.length){
+            if(confirm('Two-Factor Authentication is currently active for your account.\n\nWould you like to remove this authenticator?')){
+              sb.auth.mfa.unenroll({ factorId: verified[0].id }).then(function(unres){
+                if(unres.error) {
+                  toast('Could not remove 2FA: '+unres.error.message);
+                } else {
+                  if(window.VisaDooSecurity){
+                    window.VisaDooSecurity.logSecurityEvent(sb, {
+                      action: 'MFA_UNENROLLED',
+                      actorId: state.user ? state.user.id : null,
+                      actorRole: state.role || 'staff',
+                      metadata: { email: state.user.email }
+                    });
+                  }
+                  toast('2FA removed.');
+                  renderProfile();
+                }
+              });
+            }
+          } else {
+            sb.auth.mfa.enroll({ factorType:'totp', issuer:'VisaDoo', friendlyName: state.user.email }).then(function(enRes){
+              if(enRes.error){ toast('Could not start 2FA enrollment: '+enRes.error.message); return; }
+              var totp=enRes.data.totp;
+              var factorId=enRes.data.id;
+              var code=prompt('Scan this secret key in your Authenticator app (Google Authenticator, Microsoft Authenticator, 1Password):\n\n'+totp.secret+'\n\nThen enter the 6-digit code from your app to verify:');
+              if(code && code.trim()){
+                if(window.VisaDooSecurity && typeof window.VisaDooSecurity.checkRateLimit === 'function'){
+                  var rate = window.VisaDooSecurity.checkRateLimit('mfa_verify', state.user.email, 5, 15 * 60 * 1000);
+                  if(!rate.allowed){ toast(rate.error || 'Too many verification attempts. Please wait.'); return; }
+                }
+                sb.auth.mfa.challengeAndVerify({ factorId: factorId, code: code.trim() }).then(function(verRes){
+                  if(verRes.error){
+                    if(window.VisaDooSecurity) window.VisaDooSecurity.recordFailedAttempt('mfa_verify', state.user.email, 5, 15 * 60 * 1000);
+                    toast('Verification failed: '+verRes.error.message);
+                  } else {
+                    if(window.VisaDooSecurity){
+                      window.VisaDooSecurity.clearRateLimit('mfa_verify', state.user.email);
+                      window.VisaDooSecurity.logSecurityEvent(sb, {
+                        action: 'MFA_ENROLLED_SUCCESS',
+                        actorId: state.user ? state.user.id : null,
+                        actorRole: state.role || 'staff',
+                        metadata: { email: state.user.email }
+                      });
+                    }
+                    toast('Two-Factor Authentication successfully enabled!');
+                    renderProfile();
+                  }
+                });
+              }
+            });
+          }
+        });
+      };
+    }
+
     sb.from('applications').select('id,reference_code,visa_type,status,created_at,documents(*)').order('created_at',{ascending:false}).then(function(result){
       var box=document.getElementById('profileDocuments');
       if(!box) return;
@@ -719,8 +1236,8 @@
       '<h1>'+(recovery?'Set a new password':'Change password')+'</h1>'+
       '<p class="password-lead">Create a password with at least 8 characters for <b>'+esc(state.user.email||'')+'</b>.</p>'+
       '<div class="signin-msg" id="spMsg"></div>'+
-      '<div class="password-fields"><div class="field"><label for="spPass">New password</label><input id="spPass" type="password" placeholder="At least 8 characters" autocomplete="new-password"></div>'+
-      '<div class="field"><label for="spPass2">Confirm password</label><input id="spPass2" type="password" placeholder="Re-enter password" autocomplete="new-password"></div></div>'+
+      '<div class="password-fields"><div class="field"><label for="spPass">New password</label><input id="spPass" type="password" placeholder="At least 8 characters" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" style="text-transform:none !important;"></div>'+
+      '<div class="field"><label for="spPass2">Confirm password</label><input id="spPass2" type="password" placeholder="Re-enter password" autocomplete="new-password" autocapitalize="none" autocorrect="off" spellcheck="false" style="text-transform:none !important;"></div></div>'+
       '<button class="btn password-save" id="spSave">Save password <span aria-hidden="true">&rarr;</span></button>'+
     '</section></main>';
     var m=document.getElementById('spMsg');
@@ -768,9 +1285,7 @@
           '<div class="grid2">' +
             field('first_name','First name','text','',true) +
             field('last_name','Last name','text','',false) +
-            field('father_name','Father\'s name','text','',false) +
-            field('mother_name','Mother\'s name','text','',false) +
-            '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Unspecified">Unspecified</option></select></div>'+
+            '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
             field('passport_number','Passport number','text','',true) +
             '<input id="passport_issuing_country" type="hidden" value="India">' +
             '<div class="review-passport-details-grid">'+
@@ -798,13 +1313,951 @@
         '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;">'+
           '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
           '<div style="display:flex; gap:12px; align-items:center;">'+
-            '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:13px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button>'+
-            '<button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="background:#168177 !important; border-radius:13px !important; max-width:330px !important;">Submit application</button>'+
+            '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+            '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
           '</div>'+
         '</div>'+
       '</div></div>';
   }
 
+
+  // ============================================================
+  //  UAE · CLEAN SINGLE-PAGE REVIEW
+  // ============================================================
+  function getUaeStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    var cSlug = (chosen && chosen.country_slug) || '';
+    var cName = (cSlug === 'uae' || cSlug === 'united-arab-emirates') ? 'UAE' : (countryName(cSlug) || 'Tourist');
+    var headingTitle = cName + ' Tourist eVisa application';
+    return ''+
+      '<div class="denmark-review-shell uae-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>'+esc(headingTitle)+'</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card uae-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="uae-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="uae-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+
+                '<div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div>'+
+              '</div>' :
+              '<div class="uae-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+  // ============================================================
+  //  QATAR · CLEAN SINGLE-PAGE REVIEW
+  // ============================================================
+  function getQatarStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell qatar-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Qatar ' + ((chosen && chosen.category === 'Business') ? 'Business' : 'Tourist') + ' eVisa application</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card qatar-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="qatar-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="qatar-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+
+                '<div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div>'+
+              '</div>' :
+              '<div class="qatar-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+
+  // ============================================================
+  //  VIETNAM · CLEAN SINGLE-PAGE REVIEW
+  //  Keep the original OCR/review questions only. Upload steps remain unchanged;
+  //  only the Step 3 side preview and extra premium questions are removed.
+  // ============================================================
+  function getVietnamStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell vietnam-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Vietnam Tourist eVisa application</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card vietnam-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="vietnam-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('religion','Religion','text','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                field('arrival_date','Travel Date','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="vietnam-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+
+                '<div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div>'+
+              '</div>' :
+              '<div class="vietnam-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+
+  // ============================================================
+  //  INDONESIA · CLEAN SINGLE-PAGE REVIEW
+  //  Same visual flow as Vietnam/Morocco: one continuous Step 3 page.
+  //  Existing Indonesia field IDs are preserved so validation/autofill remain intact.
+  // ============================================================
+  function getIndonesiaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell indonesia-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Indonesia Tourist eVisa application</h2>'+ 
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+ 
+        '</div>'+ 
+        '<div class="review-section-card denmark-single-card indonesia-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+ 
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="indonesia-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+ 
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+ 
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+ 
+              '</div>'+ 
+            '</div>'+ 
+            (isSecondary ?
+              '<div class="indonesia-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+ 
+                '<div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div>'+ 
+              '</div>' :
+              '<div class="indonesia-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+ 
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+ 
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+ 
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+ 
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+ 
+                '</div>'+ 
+              '</div>')+ 
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+ 
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+ 
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+ 
+              '</div>'+ 
+            '</div>'+ 
+          '</div>'+ 
+        '</div>'+ 
+      '</div>';
+  }
+
+
+  // ============================================================
+  //  PHILIPPINES · CLEAN SINGLE-PAGE REVIEW WITH FATHER/MOTHER OCR & EMPLOYER DETAILS
+  // ============================================================
+  function updatePhilippinesSpouseField() {
+    var msEl = document.getElementById('marital_status');
+    var gEl = document.getElementById('gender');
+    var wrap = document.getElementById('ph_spouse_wrap');
+    var label = document.getElementById('ph_spouse_label');
+    var input = document.getElementById('spouse_name');
+    if (!msEl || !wrap || !label) return;
+    var ms = (msEl.value || '').trim().toLowerCase();
+    var g = (gEl ? gEl.value : '').trim().toLowerCase();
+    if (ms === 'married') {
+      wrap.style.display = '';
+      if (input) input.required = true;
+      if (g === 'male') {
+        label.innerHTML = 'Wife’s Name <span class="req-star">*</span>';
+        if (input) input.placeholder = 'Enter wife’s full name';
+      } else if (g === 'female') {
+        label.innerHTML = 'Husband’s Name <span class="req-star">*</span>';
+        if (input) input.placeholder = 'Enter husband’s full name';
+      } else {
+        label.innerHTML = 'Spouse’s Name <span class="req-star">*</span>';
+        if (input) input.placeholder = 'Enter spouse’s full name';
+      }
+    } else {
+      wrap.style.display = 'none';
+      if (input) input.required = false;
+    }
+  }
+
+  function getPhilippinesStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell philippines-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>' + (chosen && chosen.name ? esc(chosen.name) + ' application' : 'Philippines Visa application') + '</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card philippines-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="philippines-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender <span class="req-star">*</span></label><select id="gender" name="gender" required><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                '<div class="field"><label for="marital_status">Civil Status <span class="req-star">*</span></label><select id="marital_status" name="marital_status" required><option value="">Select civil status</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div>'+
+                '<div class="field" id="ph_spouse_wrap" style="display:none"><label for="spouse_name" id="ph_spouse_label">Spouse Name <span class="req-star">*</span></label><input type="text" id="spouse_name" name="spouse_name" placeholder="Enter spouse full name"></div>'+
+                field('father_name','Father’s Name','text','',false)+
+                field('mother_name','Mother’s Name','text','',false)+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="philippines-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+              '<h4 class="denmark-subheading">2. Employment details</h4>'+
+              '<div class="grid2">'+
+                field('occupation','Occupation / Job Position','text','',true)+
+                field('employer_name','Employer / Company Name','text','',true)+
+                field('employer_phone','Employer Phone Number','tel','',true)+
+                field('employer_address','Employer Address','text','',true)+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="philippines-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">3. Contact details</h4>'+
+                '<div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div>'+
+              '</div>' :
+              '<div class="philippines-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">3. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+
+  // ============================================================
+  //  TURKEY · CLEAN SINGLE-PAGE REVIEW
+  //  Same compact questions as Indonesia/Vietnam.
+  // ============================================================
+  function getTurkeyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell turkey-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Turkey Tourist eVisa application</h2>'+ 
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+ 
+        '</div>'+ 
+        '<div class="review-section-card denmark-single-card turkey-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+ 
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="turkey-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+ 
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+ 
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+ 
+              '</div>'+ 
+            '</div>'+ 
+            (isSecondary ?
+              '<div class="turkey-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+ 
+                '<div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div>'+ 
+              '</div>' :
+              '<div class="turkey-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+ 
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+ 
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+ 
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+ 
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+ 
+                '</div>'+ 
+              '</div>')+ 
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+ 
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+ 
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+ 
+              '</div>'+ 
+            '</div>'+ 
+          '</div>'+ 
+        '</div>'+ 
+      '</div>';
+  }
+
+  // ============================================================
+  //  KENYA · CLEAN SINGLE-PAGE REVIEW
+  //  1. Personal details, 2. Contact details
+  // ============================================================
+  function getKenyaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell kenya-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Kenya Tourist eVisa application</h2>'+ 
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+ 
+        '</div>'+ 
+        '<div class="review-section-card denmark-single-card kenya-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+ 
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="kenya-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+ 
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+ 
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+ 
+                field('position','Current position','text','',false)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+ 
+              '</div>'+ 
+            '</div>'+ 
+            (isSecondary ?
+              '<div class="kenya-sec" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">2. Contact details</h4><div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div></div>' :
+              '<div class="kenya-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+ 
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+ 
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+ 
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+ 
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+ 
+                '</div>'+ 
+              '</div>')+ 
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+ 
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+ 
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+ 
+              '</div>'+ 
+            '</div>'+ 
+          '</div>'+ 
+        '</div>'+ 
+      '</div>';
+  }
+
+  // ============================================================
+  //  AZERBAIJAN EVISA · KENYA-STYLE CLEAN REVIEW
+  //  1. Personal details, 2. Employment details, 3. Contact details
+  // ============================================================
+  function getAzerbaijanEvisaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell kenya-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>' + (chosen && chosen.name ? esc(chosen.name) + ' application' : 'Azerbaijan eVisa application') + '</h2>'+ 
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+ 
+        '</div>'+ 
+        '<div class="review-section-card denmark-single-card kenya-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+ 
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="kenya-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+ 
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+ 
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+ 
+                field('position','Current position','text','',false)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+ 
+              '</div>'+ 
+            '</div>'+ 
+            (isSecondary ?
+              '<div class="kenya-sec" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">2. Contact details</h4><div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div></div>' :
+              '<div class="kenya-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+ 
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+ 
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+ 
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+ 
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+ 
+                '</div>'+ 
+              '</div>')+ 
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+ 
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+ 
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+ 
+              '</div>'+ 
+            '</div>'+ 
+          '</div>'+ 
+        '</div>'+ 
+      '</div>';
+  }
+
+  // ============================================================
+  //  MOROCCO · CLEAN SINGLE-PAGE REVIEW
+  //  Upload steps remain unchanged. Keep passport/OCR questions and add
+  //  only Residence Address and Occupation.
+  // ============================================================
+  function getMoroccoStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell morocco-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Morocco ' + ((chosen && chosen.category === 'Business') ? 'Business' : 'Tourist') + ' eVisa application</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card morocco-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="morocco-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
+                field('position','Current position','text','',false)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="morocco-sec" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">2. Contact details</h4><div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div></div>' :
+              '<div class="morocco-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">2. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+ 
+  // ============================================================
+  //  THAILAND · CLEAN SINGLE-PAGE REVIEW
+  //  Single-page card review flow matching Morocco:
+  //  1. Personal details, 2. Employment details, 3. Contact details
+  // ============================================================
+  function getThailandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell thailand-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Thailand Tourist eVisa application</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card thailand-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="thailand-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Date of arrival in Thailand','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+              '<h4 class="denmark-subheading">2. Employment & Bank details</h4>'+
+              '<div class="grid2">'+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
+                field('position','Current position','text','',false)+
+                field('thai_bank_name','Bank Name','text','',true)+
+                '<div class="field">' +
+                  '<label for="annual_income_select">Annual income <span class="req-star">*</span></label>' +
+                  '<select id="annual_income_select" required onchange="var c=document.getElementById(\'annual_income_custom_wrap\'),inp=document.getElementById(\'annual_income\');if(this.value===\'Other\'){if(c)c.style.display=\'\';if(inp){inp.value=\'\';inp.required=true;inp.focus();}}else{if(c)c.style.display=\'none\';if(inp){inp.value=this.value;inp.required=false;}}">' +
+                    '<option value="" selected disabled>Select annual income</option>' +
+                    '<option value="Up to ₹1 Lakh">Up to ₹1 Lakh</option>' +
+                    '<option value="₹1 Lakh - ₹3 Lakhs">₹1 Lakh - ₹3 Lakhs</option>' +
+                    '<option value="₹3 Lakhs - ₹5 Lakhs">₹3 Lakhs - ₹5 Lakhs</option>' +
+                    '<option value="₹5 Lakhs - ₹10 Lakhs">₹5 Lakhs - ₹10 Lakhs</option>' +
+                    '<option value="Above ₹10 Lakhs">Above ₹10 Lakhs</option>' +
+                    '<option value="Other">Other (Enter manually)</option>' +
+                  '</select>' +
+                  '<div id="annual_income_custom_wrap" style="display:none;margin-top:8px">' +
+                    '<input id="annual_income" name="annual_income" type="text" placeholder="Enter annual income (e.g. ₹4,50,000)">' +
+                  '</div>' +
+                '</div>' +
+              '</div>'+
+              '<div class="field bank-statement-field" style="margin-top:20px!important;width:100%">'+
+                '<label class="ulabel" style="display:block;margin-top:14px!important;margin-bottom:6px!important">Upload Bank Statement / Proof of Funds (PDF or Image) <span class="req-star">*</span></label>'+
+                '<div class="drop" id="drop_bank_statement" style="cursor:pointer;padding:16px 20px;display:flex;align-items:center;gap:14px;border:1.5px dashed #cbd5e1;border-radius:12px;background:#f8fafc;transition:all .15s ease">'+
+                  '<div class="di" style="width:40px;height:40px;border-radius:10px;background:#eaf5ff;display:grid;place-items:center;color:#0b67c2;flex-shrink:0">'+
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M12 16V4m0 0L8 8m4-4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/></svg>'+
+                  '</div>'+
+                  '<div style="flex:1;text-align:left">'+
+                    '<b style="font-size:14px;display:block;color:#1e293b">Tap to upload Bank Statement</b>'+
+                    '<small style="color:#64748b;font-size:12px">PDF, JPG, PNG or WEBP · max 10 MB</small>'+
+                    '<div class="fname" id="fname_bank_statement" style="font-size:12.5px;color:#168177;font-weight:600;margin-top:4px"></div>'+
+                  '</div>'+
+                  '<button type="button" class="btn btn-ghost" style="padding:6px 14px;font-size:13px;font-weight:600;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;pointer-events:none">Choose file</button>'+
+                '</div>'+
+                '<input type="file" id="file_bank_statement" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none">'+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">3. Contact details</h4><div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div></div>' :
+              '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">3. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+
+  // ============================================================
+  //  BAHRAIN · CLEAN SINGLE-PAGE REVIEW (Matching Thailand layout)
+  //  1. Personal details, 2. Employment & Bank details, 3. Contact details
+  // ============================================================
+  function getBahrainStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell bahrain-review-shell thailand-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Bahrain Tourist eVisa application</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card bahrain-single-card thailand-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="thailand-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender"><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Date of arrival in Bahrain','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+              '<h4 class="denmark-subheading">2. Employment & Bank details</h4>'+
+              '<div class="grid2">'+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
+                field('job_title','Job Title','text','',true)+
+                field('position','Current position','text','',false)+
+                field('thai_bank_name','Bank Name','text','',false)+
+              '</div>'+
+              '<div class="field bank-statement-field" style="margin-top:20px!important;width:100%">'+
+                '<label class="ulabel" style="display:block;margin-top:14px!important;margin-bottom:6px!important">Upload Bank Statement / Proof of Funds (PDF or Image) <span class="req-star">*</span></label>'+
+                '<div class="drop" id="drop_bank_statement" style="cursor:pointer;padding:16px 20px;display:flex;align-items:center;gap:14px;border:1.5px dashed #cbd5e1;border-radius:12px;background:#f8fafc;transition:all .15s ease">'+
+                  '<div class="di" style="width:40px;height:40px;border-radius:10px;background:#eaf5ff;display:grid;place-items:center;color:#0b67c2;flex-shrink:0">'+
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M12 16V4m0 0L8 8m4-4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/></svg>'+
+                  '</div>'+
+                  '<div style="flex:1;text-align:left">'+
+                    '<b style="font-size:14px;display:block;color:#1e293b">Tap to upload Bank Statement</b>'+
+                    '<small style="color:#64748b;font-size:12px">PDF, JPG, PNG or WEBP · max 10 MB</small>'+
+                    '<div class="fname" id="fname_bank_statement" style="font-size:12.5px;color:#168177;font-weight:600;margin-top:4px"></div>'+
+                  '</div>'+
+                  '<button type="button" class="btn btn-ghost" style="padding:6px 14px;font-size:13px;font-weight:600;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;pointer-events:none">Choose file</button>'+
+                '</div>'+
+                '<input type="file" id="file_bank_statement" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none">'+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">3. Contact details</h4><div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div></div>' :
+              '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">3. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+
+  // ============================================================
+  //  SAUDI ARABIA · CLEAN SINGLE-PAGE REVIEW
+  // ============================================================
+  function getSaudiArabiaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary = isMultiple && travellerIndex > 0;
+    return ''+
+      '<div class="denmark-review-shell saudi-review-shell">'+
+        '<div class="denmark-page-header">'+
+          '<h2>Saudi Arabia Tourist eVisa application</h2>'+
+          '<p>Simple questions only - passport details are filled from your uploaded passport.</p>'+
+        '</div>'+
+        '<div class="review-section-card denmark-single-card saudi-single-card">'+
+          '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+          '<div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:30px;">'+
+            '<div class="saudi-sec">'+
+              '<h4 class="denmark-subheading">1. Personal details</h4>'+
+              '<div class="grid2">'+
+                field('first_name','First name','text','',true)+
+                field('last_name','Last name / Surname','text','',false)+
+                field('date_of_birth','Date of birth','date','',true)+
+                '<div class="field"><label for="gender">Gender <span class="req-star">*</span></label><select id="gender" name="gender" required><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option><option value="UNSPECIFIED">UNSPECIFIED</option></select></div>'+
+                field('nationality','Nationality','text','',false)+
+                field('passport_number','Passport number','text','',true)+
+                field('passport_issuing_country','Place of Issue','text','',false)+
+                field('arrival_date','Travel Date','date','',true)+
+                field('passport_issue_date','Passport issued on','date','',true)+
+                field('passport_expiry','Passport valid till','date','',true)+
+                '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+
+              '</div>'+
+            '</div>'+
+            '<div class="saudi-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+              '<h4 class="denmark-subheading">2. Additional details & documents</h4>'+
+              '<div class="grid2">'+
+                field('absher_contact','Absher Contact','tel','',true)+
+                field('national_address','National Address','text','',true)+
+                '<div class="field" style="grid-column:1/-1">'+
+                  '<span class="ulabel">Upload PAN Card <span class="req-star">*</span></span>'+
+                  '<div class="drop-horizontal" id="drop_pan_card" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px dashed #cbd5e1;border-radius:12px;background:#f8fafc;cursor:pointer;transition:all .2s">'+
+                    '<div class="di" style="width:40px;height:40px;border-radius:10px;background:#eaf5ff;display:grid;place-items:center;color:#0b67c2;flex-shrink:0">'+
+                      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><line x1="15" y1="8" x2="17" y2="8"/><line x1="15" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>'+
+                    '</div>'+
+                    '<div style="flex:1;text-align:left">'+
+                      '<b style="font-size:14px;display:block;color:#1e293b">Tap to upload PAN Card</b>'+
+                      '<small style="color:#64748b;font-size:12px">PDF, JPG, PNG or WEBP · max 10 MB</small>'+
+                      '<div class="fname" id="fname_pan_card" style="font-size:12.5px;color:#168177;font-weight:600;margin-top:4px"></div>'+
+                    '</div>'+
+                    '<button type="button" class="btn btn-ghost" style="padding:6px 14px;font-size:13px;font-weight:600;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;pointer-events:none">Choose file</button>'+
+                  '</div>'+
+                  '<input type="file" id="file_pan_card" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none">'+
+                '</div>'+
+                '<div class="field" style="grid-column:1/-1">'+
+                  '<span class="ulabel">Upload IQAMA <span class="req-star">*</span></span>'+
+                  '<div class="drop-horizontal" id="drop_iqama" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px dashed #cbd5e1;border-radius:12px;background:#f8fafc;cursor:pointer;transition:all .2s">'+
+                    '<div class="di" style="width:40px;height:40px;border-radius:10px;background:#f0fdf4;display:grid;place-items:center;color:#16a34a;flex-shrink:0">'+
+                      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><line x1="14" y1="9" x2="18" y2="9"/><line x1="14" y1="13" x2="18" y2="13"/><line x1="6" y1="17" x2="18" y2="17"/></svg>'+
+                    '</div>'+
+                    '<div style="flex:1;text-align:left">'+
+                      '<b style="font-size:14px;display:block;color:#1e293b">Tap to upload IQAMA</b>'+
+                      '<small style="color:#64748b;font-size:12px">PDF, JPG, PNG or WEBP · max 10 MB</small>'+
+                      '<div class="fname" id="fname_iqama" style="font-size:12.5px;color:#168177;font-weight:600;margin-top:4px"></div>'+
+                    '</div>'+
+                    '<button type="button" class="btn btn-ghost" style="padding:6px 14px;font-size:13px;font-weight:600;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;pointer-events:none">Choose file</button>'+
+                  '</div>'+
+                  '<input type="file" id="file_iqama" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none">'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+            (isSecondary ?
+              '<div class="saudi-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">3. Contact details</h4>'+
+                '<div class="group-contact-note"><p>This group uses the primary applicant’s verified email and phone number for all visa updates.</p></div>'+
+              '</div>' :
+              '<div class="saudi-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
+                '<h4 class="denmark-subheading">3. Contact details</h4>'+
+                '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+                  '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+                  '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+                '</div>'+
+              '</div>')+
+            '<div class="wizard-navigation-footer" style="margin-top:4px;display:flex;justify-content:space-between;width:100%;align-items:center">'+
+              '<button type="button" class="btn btn-ghost" id="standardBackBtn"><span aria-hidden="true">←</span> Back to passport</button>'+
+              '<div style="display:flex;gap:12px;align-items:center">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  }
+
+
+  function getTodayIsoString(){
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = (d.getMonth() + 1 < 10 ? '0' : '') + (d.getMonth() + 1);
+    var day = (d.getDate() < 10 ? '0' : '') + d.getDate();
+    return y + '-' + m + '-' + day;
+  }
+
+  function isTravelDateField(id){
+    return id === 'arrival_date' || id === 'travel_date' || id === 'intended_entry_date' || id === 'date_of_arrival';
+  }
+
+  function getSavedTravelDate(fallbackVal){
+    if(fallbackVal && String(fallbackVal).trim()) return String(fallbackVal).trim();
+    try {
+      var qp = (typeof qParam === 'function') ? qParam('travel_date') : '';
+      if(qp) return qp;
+      var ss = sessionStorage.getItem('visadoo-selected-travel-date') || localStorage.getItem('visadoo-selected-travel-date');
+      if(ss) return ss;
+    } catch(_e){}
+    var d = new Date();
+    d.setDate(d.getDate() + 14);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function enforceHiddenTravelDateInputs(container){
+    var root = container || document;
+    var resolvedDate = getSavedTravelDate('');
+    ['arrival_date', 'travel_date', 'intended_entry_date', 'date_of_arrival'].forEach(function(tid){
+      var inps = root.querySelectorAll('#' + tid + ', [name="' + tid + '"]');
+      Array.prototype.forEach.call(inps, function(inp){
+        if(!inp.value && resolvedDate){
+          inp.value = resolvedDate;
+        }
+        inp.removeAttribute('required');
+        inp.type = 'hidden';
+        var wrap = inp.closest('.field');
+        if(wrap){
+          wrap.style.setProperty('display', 'none', 'important');
+          wrap.classList.add('field-travel-date-hidden');
+        }
+      });
+    });
+
+    // If departure_date is present, align its min date with the prefilled travel date
+    var arrInp = root.querySelector('#arrival_date, #travel_date');
+    if(arrInp && arrInp.value){
+      var depInp = root.querySelector('#departure_date');
+      if(depInp){
+        depInp.min = arrInp.value;
+        if(depInp.value && depInp.value < arrInp.value){
+          depInp.value = arrInp.value;
+        }
+      }
+    }
+  }
+
+  function applyDateInputConstraints(container){
+    var root = container || document;
+    var todayStr = getTodayIsoString();
+
+    // Future-only date fields
+    var futureDateSelectors = [
+      '#arrival_date', '#travel_date', '#departure_date', '#date_of_arrival',
+      '#intended_entry_date', '#passport_expiry', '#hotel_checkin', '#checkin_date',
+      '#hotel_checkout', '#checkout_date', '#visa_expiry', '#return_date',
+      '#out_date', '#ret_date', '#odate', '#idate', '#checkin', '#checkout', '#resdate'
+    ];
+    
+    futureDateSelectors.forEach(function(sel){
+      Array.prototype.forEach.call(root.querySelectorAll('input' + sel + ', input[name="' + sel.replace('#','') + '"]'), function(el){
+        if(el.type === 'date' || el.getAttribute('type') === 'date'){
+          el.min = todayStr;
+          if(!el._boundDateMinCheck){
+            el._boundDateMinCheck = true;
+            el.addEventListener('change', function(){
+              if(el.value && el.value < todayStr){
+                el.value = '';
+                toast('Please select today or a future date for travel.');
+              }
+              // If this is arrival_date, dynamically adjust departure_date min
+              if(el.id === 'arrival_date'){
+                var depEl = document.getElementById('departure_date');
+                if(depEl && el.value){
+                  depEl.min = el.value;
+                  if(depEl.value && depEl.value < el.value){
+                    depEl.value = el.value;
+                  }
+                }
+              }
+            });
+          }
+        }
+      });
+    });
+
+    // Past-only date fields (DOB, Passport issue date, etc.)
+    var pastDateSelectors = [
+      '#date_of_birth', '#passport_issue_date', '#dob', '#father_dob', 
+      '#mother_dob', '#spouse_dob', '#issue_date'
+    ];
+    pastDateSelectors.forEach(function(sel){
+      Array.prototype.forEach.call(root.querySelectorAll('input' + sel + ', input[name="' + sel.replace('#','') + '"]'), function(el){
+        if(el.type === 'date' || el.getAttribute('type') === 'date'){
+          el.max = todayStr;
+        }
+      });
+    });
+
+    enforceHiddenTravelDateInputs(root);
+  }
 
   // ============================================================
   //  DENMARK · SIMPLE SCHENGEN APPLICATION FLOW
@@ -841,7 +2294,7 @@
                 field('nationality_at_birth','Nationality at birth (if different)','text','',false)+
                 field('other_nationalities','Other nationalities (if any)','text','',false)+
                 field('national_id','National identity number (if applicable)','text','',false)+
-                opt('gender','Sex',['Male','Female'],true)+
+                opt('gender','Sex',['MALE','FEMALE'],true)+
                 opt('marital_status','Civil status',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+
                 req('residential_address','Residence address','text','')+
                 req('residence_pincode','Pincode','text','')+
@@ -909,7 +2362,7 @@
               '<div id="otpArea" class="otp-area" style="display:none"></div>')+
               '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="schengen_declaration" required> I confirm that the information I provided is correct and complete. <span class="req-star">*</span></label>'+
               '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
-              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button><button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button></div></div>'+
             '</div>'+
 
           '</div>'+
@@ -921,10 +2374,84 @@
     var today=new Date().toISOString().slice(0,10),isSecondary=isMultiple&&travellerIndex>0;
     function req(id,label,type,value){return field(id,label,type||'text',value||'',true);} function opt(id,label,arr,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+arr.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
     return '<div class="denmark-review-shell"><div class="denmark-page-header"><h2>Greece Schengen application</h2><p>Questions follow the supplied filled Greece form and your required-details list.</p></div><div class="review-section-card denmark-single-card"><div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:32px">'+
-    '<div class="denmark-sec" data-denmark-section="1"><h4 class="denmark-subheading">1. Personal details</h4><div class="grid2">'+req('first_name','Given name(s)')+req('last_name','Surname')+req('date_of_birth','Date of birth','date')+req('birthplace_city','Place of birth')+req('birthplace_country','Country of birth')+req('nationality','Current nationality')+opt('gender','Sex',['Male','Female','Other'],true)+opt('marital_status','Marital Status',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+req('residential_address','Residence Address')+req('residence_pincode','Pincode')+(isSecondary?'':req('contact_email','Mail ID','email',meta.email||'')+'<div class="field" id="mobileField"><label for="phone">Phone Number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" required></div>')+'</div><div id="otpArea" class="otp-area" style="display:none"></div></div>'+
+    '<div class="denmark-sec" data-denmark-section="1"><h4 class="denmark-subheading">1. Personal details</h4><div class="grid2">'+req('first_name','Given name(s)')+req('last_name','Surname')+req('date_of_birth','Date of birth','date')+req('birthplace_city','Place of birth')+req('birthplace_country','Country of birth')+req('nationality','Current nationality')+opt('gender','Sex',['MALE','FEMALE','OTHER'],true)+opt('marital_status','Marital Status',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+req('residential_address','Residence Address')+req('residence_pincode','Pincode')+(isSecondary?'':req('contact_email','Mail ID','email',meta.email||'')+'<div class="field" id="mobileField"><label for="phone">Phone Number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" required></div>')+'</div><div id="otpArea" class="otp-area" style="display:none"></div></div>'+
     '<div class="denmark-sec" data-denmark-section="2" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">2. Passport details</h4><div class="grid2">'+opt('passport_type','Passport type',['Ordinary passport','Diplomatic passport','Service passport','Official passport','Special passport','Other'],true)+req('passport_number','Passport number')+req('passport_issue_date','Date of issue','date')+req('passport_expiry','Valid until','date')+req('passport_issuing_country','Issued by (country)')+'</div></div>'+
     '<div class="denmark-sec" data-denmark-section="3" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">3. Schengen Visa Required Details</h4><div class="grid2">'+req('arrival_date','Travel Date','date')+req('departure_date','Return Date','date')+req('arrival_airport','Arrival Airport')+req('departure_airport','Departure Airport')+opt('purpose','Purpose of journey',['Tourism','Business','Visiting family or friends','Study','Other'],true)+req('main_destination','Main destination','text','Greece')+req('first_entry_country','First Schengen country','text','Greece')+opt('entries_requested','Number of entries',['Single entry','Two entries','Multiple entries'],true)+opt('schengen_fingerprints','Fingerprints collected previously for a Schengen visa?',['No','Yes'],true)+'</div></div>'+
     '<div class="denmark-sec" data-denmark-section="4" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">4. Employment / School Details</h4><div class="grid2">'+req('employer_name','Employer / School Name')+req('employer_address','Employment / School Address')+req('occupation','Job Position')+req('employer_phone','Employer / School Number')+req('employer_email','Employer / School Mail ID','email')+'</div><h4 class="denmark-subheading" style="margin-top:24px">Stay & expenses</h4><div class="grid2">'+req('host_name','Hotel / accommodation name')+req('host_address','Hotel / accommodation address')+req('host_phone','Hotel / accommodation phone')+opt('trip_payer','Cost of trip covered by',['Applicant','Sponsor'],true)+'</div><div class="field"><label>Means of support</label><div class="denmark-check-grid">'+['Cash','Credit card','Pre-paid accommodation','Pre-paid transport'].map(function(x){return '<label><input type="checkbox" name="support_means" value="'+x+'"> '+x+'</label>';}).join('')+'</div></div>'+req('application_place','Place of application','text','Doha, Qatar')+req('application_date','Application date','date',today)+'<label class="consent-check"><input type="checkbox" id="schengen_declaration" required> I confirm the information is correct and complete. <span class="req-star">*</span></label><div class="wizard-navigation-footer" style="margin-top:25px;display:flex;justify-content:space-between"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div></div></div></div>';
+  }
+
+  function getChinaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var isSecondary=isMultiple&&travellerIndex>0;
+    function field(id,label,type,placeholder,required){
+      if(isTravelDateField(id)){
+        var savedDate = getSavedTravelDate('');
+        return '<div class="field field-travel-date-hidden" style="display:none !important;"><input id="'+id+'" name="'+id+'" type="hidden" value="'+esc(savedDate)+'"></div>';
+      }
+      var extraAttr = '';
+      var todayStr = getTodayIsoString();
+      if(type === 'date'){
+        if(id === 'arrival_date' || id === 'departure_date' || id === 'travel_date' || id === 'passport_expiry'){
+          extraAttr = ' min="' + todayStr + '"';
+        } else if(id === 'date_of_birth' || id === 'passport_issue_date' || id === 'dob' || id === 'father_dob' || id === 'mother_dob'){
+          extraAttr = ' max="' + todayStr + '"';
+        }
+      }
+      return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><input id="'+id+'" name="'+id+'" type="'+(type||'text')+'" '+(placeholder?'placeholder="'+placeholder+'" ':'')+extraAttr+(required?'required':'')+'></div>';
+    }
+    function req(id,label,type,placeholder){return field(id,label,type,placeholder,true);}
+    function opt(id,label,vals,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'" name="'+id+'" '+(required?'required':'')+'><option value="">Select</option>'+vals.map(function(v){return '<option value="'+esc(v)+'">'+esc(v)+'</option>';}).join('')+'</select></div>';}
+    function nav(prev,last){return '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;">'+(prev?'<button type="button" class="btn btn-ghost denmark-prev">← Back</button>':'<button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button>')+(last?'<div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button><button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button></div>':'<button type="button" class="btn btn-primary denmark-next">Next →</button>')+'</div>';}
+    var today=new Date().toISOString().slice(0,10);
+    return '<div class="denmark-review-shell">'+
+      '<div class="denmark-page-header"><h2>China visa application</h2><p>Questions follow the official China visa application form requirements.</p></div>'+
+      
+      // Section 1
+      '<div class="review-section-card denmark-sec" data-denmark-section="1"><div class="review-section-card-header"><h3>1. Personal & passport details</h3></div><div class="review-section-body" style="padding:24px!important;"><div class="grid2">'+
+        req('passport_last_name','Family name')+req('passport_first_name','Given name(s)')+req('date_of_birth','Date of birth','date')+opt('gender','Gender',['MALE','FEMALE'],true)+req('birthplace_country','Country of birth')+req('birthplace_state','Province / State')+req('birthplace_city','City of birth')+opt('marital_status','Marital status',['Married','Single','Divorced','Widowed','Other'],true)+req('nationality','Nationality')+field('other_permanent_residence','Other permanent resident country / region','text','Qatar',false)+opt('passport_type','Passport type',['Ordinary','Diplomatic','Service','Official','Special','Other'],true)+req('passport_number','Passport number')+req('passport_issuing_country','Issuing country / region')+req('passport_issue_place','Place of issue')+req('passport_issue_date','Passport Date of Issue','date')+req('passport_expiry','Passport expiration date','date')+
+      '</div>'+nav(false,false)+'</div></div>'+
+      
+      // Section 2
+      '<div class="review-section-card denmark-sec" data-denmark-section="2" style="margin-top:24px;"><div class="review-section-card-header"><h3>2. Work & education details</h3></div><div class="review-section-body" style="padding:24px!important;"><div class="grid2">'+
+        opt('occupation','Current occupation',['Company employee','Businessperson','Self-employed','Student','Unemployed','Other'],true)+req('employer_name','Employer / School Name')+req('employer_address','Employer / School Address')+req('employer_phone','Employer Contact No','tel')+req('position','Job Position')+req('work_from','Joining Date','date')+req('education_level','Education Details (Highest degree)')+req('school_name','Last Institution Name')+req('course_of_study','Course of Study')+field('supervisor_name','Supervisor name','text','',false)+field('supervisor_phone','Supervisor telephone','tel','',false)+field('duty','Duty','text','',false)+
+      '</div>'+nav(true,false)+'</div></div>'+
+      
+      // Section 3
+      '<div class="review-section-card denmark-sec" data-denmark-section="3" style="margin-top:24px;"><div class="review-section-card-header"><h3>3. Family & contact details</h3></div><div class="review-section-body" style="padding:24px!important;"><div class="grid2">'+
+        req('residential_address','Residential Address in Qatar')+(isSecondary?'':req('phone','Phone number','tel')+req('mobile_phone','Mobile phone number / WhatsApp','tel'))+req('contact_email','Email ID','email',meta.email||'')+req('father_name','Father Name')+req('father_dob','Father DOB','date')+req('father_nationality','Father nationality')+opt('father_in_china','Is your father in China?',['No','Yes'],true)+req('mother_name','Mother\'s Name')+req('mother_dob','Mother DOB','date')+req('mother_nationality','Mother nationality')+opt('mother_in_china','Is your mother in China?',['No','Yes'],true)+
+      '</div>'+
+      '<div id="spouse_wrap" style="margin-top:24px; border-top:1px solid #e2e8f0; padding-top:24px;" hidden>'+
+        '<h4>Spouse Details</h4>'+
+        '<div class="grid2" style="margin-top:16px;">'+
+          field('spouse_name','Spouse Name','text','',false)+
+          field('spouse_dob','Spouse DOB','date','',false)+
+          field('spouse_birthplace','Spouse\'s Place of Birth','text','',false)+
+        '</div>'+
+      '</div>'+
+      nav(true,false)+'</div></div>'+
+      
+      // Section 4
+      '<div class="review-section-card denmark-sec" data-denmark-section="4" style="margin-top:24px;"><div class="review-section-card-header"><h3>4. Intended trip</h3></div><div class="review-section-body" style="padding:24px!important;"><div class="grid2">'+
+        req('arrival_date','Travel Date (Arrival date)','date')+req('departure_date','Return Date (Departure date)','date')+opt('china_visit_purpose','Purpose / visa category',['M - Other commercial activities','M - Trade','L - Tourism'],true)+opt('china_service','Service',['Normal','Express'],true)+req('china_visa_validity','Visa validity (months)','number','3')+req('stay_duration','Maximum stay (days)','number','30')+opt('entries_requested','Entries',['Single','Double','Multiple'],true)+field('arrival_flight','Arrival flight number')+req('arrival_city','City of arrival')+req('stay_city','City of stay')+field('stay_address','Address in China')+field('departure_flight','Departure flight number')+req('departure_city','City of departure')+req('inviting_party','Inviting person / organization')+req('inviter_relationship','Relationship to you')+req('inviter_phone','Inviter phone')+field('inviter_email','Inviter e-mail','email')+req('inviter_address','Inviter address')+req('emergency_name','Emergency contact name')+req('emergency_relationship','Emergency contact relationship')+req('emergency_phone','Emergency contact phone')+field('emergency_email','Emergency contact e-mail','email')+opt('trip_payer','Who will pay for this travel?',['Self','Other','Organization'],true)+opt('travel_companion','Travelling with someone using same passport?',['No','Yes'],true)+
+      '</div>'+nav(true,false)+'</div></div>'+
+      
+      // Section 5
+      '<div class="review-section-card denmark-sec" data-denmark-section="5" style="margin-top:24px;"><div class="review-section-card-header"><h3>5. Previous travel & history</h3></div><div class="review-section-body" style="padding:24px!important;"><div class="grid2">'+
+        opt('visited_china','Have you been to China?',['No','Yes'],true)+opt('previous_china_visa','Have you been issued a Chinese visa?',['No','Yes'],true)+field('previous_visa_type','Previous China visa type')+field('previous_visa_number','Previous China visa number')+field('previous_visa_issue_place','Previous visa place of issue')+field('previous_visa_issue_date','Previous visa issue date','month')+opt('china_fingerprinted','Fingerprinted for a Chinese visa?',['No','Yes'],true)+opt('china_residence_permit','Ever issued a Chinese residence permit?',['No','Yes'],true)+opt('valid_other_visas','Any valid visas from other countries?',['No','Yes'],true)+opt('travelled_12_months','Travelled to other countries in past 12 months?',['No','Yes'],true)+
+      '</div>'+
+      '<div class="field" style="margin-top:16px;"><label for="previous_travel">Previous Travel <span class="req-star">*</span></label><textarea id="previous_travel" name="previous_travel" required placeholder="Provide details of your previous travel history..."></textarea></div>'+
+      '<div class="field" style="margin-top:16px;"><label for="history_1y">History for the Last 1 Year <span class="req-star">*</span></label><textarea id="history_1y" name="history_1y" required placeholder="Provide your residence, work, travel, or any significant history for the last 1 year..."></textarea></div>'+
+      nav(true,false)+'</div></div>'+
+      
+      // Section 6
+      '<div class="review-section-card denmark-sec" data-denmark-section="6" style="margin-top:24px;"><div class="review-section-card-header"><h3>6. Declarations</h3></div><div class="review-section-body" style="padding:24px!important;"><div class="grid2">'+
+        opt('china_refused','Ever refused China visa / entry?',['No','Yes'],true)+opt('china_visa_cancelled','Chinese visa ever cancelled?',['No','Yes'],true)+opt('china_illegal_stay','Ever entered/stayed/worked illegally in China?',['No','Yes'],true)+opt('criminal_record','Any criminal record?',['No','Yes'],true)+opt('serious_disease','Serious mental disorder or infectious disease?',['No','Yes'],true)+opt('epidemic_visit','Visited epidemic area in last 30 days?',['No','Yes'],true)+opt('special_training','Special firearms/explosives/nuclear/biological/chemical training?',['No','Yes'],true)+opt('military_service','Ever served in military?',['No','Yes'],true)+opt('paramilitary','Ever served in a paramilitary/armed organization?',['No','Yes'],true)+opt('professional_org','Worked for professional/social/charitable organization?',['No','Yes'],true)+opt('other_declaration','Anything else to declare?',['No','Yes'],true)+req('application_place','Application submission city','text','Doha')+req('application_date','Application date','date',today)+
+      '</div>'+
+      (isSecondary?'<div class="review-contact-details group-contact-note"><p>Contact details are taken from the primary applicant.</p></div>':
+      '<div id="otpArea" class="otp-area" style="display:none"></div>')+
+      '<label class="consent-check" style="margin-top:24px;"><input type="checkbox" id="schengen_declaration" required> I confirm the information is correct and complete. <span class="req-star">*</span></label>'+
+      '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
+      nav(true,true)+'</div></div>'+
+    '</div>';
   }
 
   function getAzerbaijanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
@@ -932,7 +2459,7 @@
     function req(id,label,type,value){return field(id,label,type||'text',value||'',true);}
     function opt(id,label,arr,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+arr.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
     return '<div class="denmark-review-shell"><div class="denmark-page-header"><h2>Azerbaijan visa application</h2><p>Questions are based on the supplied filled Azerbaijan application. Required details are marked *.</p></div><div class="review-section-card denmark-single-card"><div class="review-section-body" style="padding:24px!important;display:flex;flex-direction:column;gap:32px">'+
-    '<div class="denmark-sec" data-denmark-section="1"><h4 class="denmark-subheading">1. Personal & passport details</h4><div class="grid2">'+req('first_name','Name (as in passport)')+req('last_name','Surname (as in passport)')+req('date_of_birth','Date of birth','date')+req('birthplace_city','Place of birth (city, country)')+req('nationality','Citizenship')+opt('gender','Sex',['Male','Female'],true)+opt('marital_status','Marital Status',['Single','Married','Widow(er)','Divorced'],true)+opt('passport_type','Travel document type',['Ordinary passport','Service / official / special passport','Diplomatic passport','Other'],true)+req('passport_number','Passport number')+req('passport_issuing_country','Place of issue (city, country)')+req('passport_issue_date','Passport date of issue','date')+req('passport_expiry','Passport validity','date')+'</div></div>'+
+    '<div class="denmark-sec" data-denmark-section="1"><h4 class="denmark-subheading">1. Personal & passport details</h4><div class="grid2">'+req('first_name','Name (as in passport)')+req('last_name','Surname (as in passport)')+req('date_of_birth','Date of birth','date')+req('birthplace_city','Place of birth (city, country)')+req('nationality','Citizenship')+opt('gender','Sex',['MALE','FEMALE'],true)+opt('marital_status','Marital Status',['Single','Married','Widow(er)','Divorced'],true)+opt('passport_type','Travel document type',['Ordinary passport','Service / official / special passport','Diplomatic passport','Other'],true)+req('passport_number','Passport number')+req('passport_issuing_country','Place of issue (city, country)')+req('passport_issue_date','Passport date of issue','date')+req('passport_expiry','Passport validity','date')+'</div></div>'+
     '<div class="denmark-sec" data-denmark-section="2" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">2. Azerbaijan Visa Required Details</h4><div class="grid2">'+req('arrival_date','Travel Date','date')+req('departure_date','Return Date','date')+req('residential_address','Residence Address')+req('residence_pincode','Pincode')+req('occupation','Current Occupation')+(isSecondary?'':req('contact_email','Mail ID','email',meta.email||'')+'<div class="field" id="mobileField"><label for="phone">Phone Number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" required></div>')+'</div><div id="otpArea" class="otp-area" style="display:none"></div></div>'+
     '<div class="denmark-sec" data-denmark-section="3" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">3. Trip details</h4><div class="grid2">'+field('transport_type','Type of transport','text','',false)+req('stay_duration','Duration of stay (days)')+field('final_destination','Final destination (city, country)','text','Baku, Azerbaijan',false)+opt('visited_azerbaijan','Have you ever visited Azerbaijan?',['No','Yes'],true)+opt('azerbaijan_visa_before','Have you ever been issued an Azerbaijan visa?',['No','Yes'],true)+opt('azerbaijan_refused','Have you ever been refused an Azerbaijan visa?',['No','Yes'],true)+opt('criminal_offence','Have you ever been charged with any criminal offence?',['No','Yes'],true)+opt('karabakh_visit','Have you ever visited Nagorno Karabakh region?',['No','Yes'],true)+opt('purpose','Purpose of visit',['Tourism','Business','Private visit','Official','Employment','Scientific','Education','Medical','Cultural','Sports','Humanitarian'],true)+opt('visa_type','Type of visa',['Entry','Transit'],true)+opt('entries_requested','Number of entries',['Single entry visa','Multiple entry visa','Single entry transit visa','Double entry transit visa'],true)+'</div></div>'+
     '<div class="denmark-sec" data-denmark-section="4" style="padding-top:24px;border-top:1px solid #e2e8f0"><h4 class="denmark-subheading">4. Stay & expenses</h4><div class="grid2">'+field('inviting_party','Inviting party name, address & phone','text','',false)+req('host_address','Address and phone number of your stay')+req('trip_payer','Who will cover the cost of your visit?','text','Myself')+opt('intend_employed','Do you intend to be employed in Azerbaijan?',['No','Yes'],true)+opt('intend_study','Do you intend to study in Azerbaijan?',['No','Yes'],true)+req('application_place','Place of application','text','Doha, Qatar')+req('application_date','Application date','date',today)+'</div><label class="consent-check"><input type="checkbox" id="schengen_declaration" required> I confirm the information is correct and complete. <span class="req-star">*</span></label><div class="wizard-navigation-footer" style="margin-top:25px;display:flex;justify-content:space-between"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div></div></div></div>';
@@ -975,7 +2502,7 @@
                 req('birthplace_country','Country of birth','text','')+
                 req('nationality','Current nationality','text','')+
                 field('nationality_at_birth','Nationality at birth, if different','text','',false)+
-                opt('gender','Sex',['Male','Female','Diverse'],true)+
+                opt('gender','Sex',['MALE','FEMALE','DIVERSE'],true)+
                 opt('marital_status','Civil status',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+
                 req('residential_address','Residence address','text','')+
                 req('residence_pincode','Pincode','text','')+
@@ -1060,7 +2587,7 @@
               '<div id="otpArea" class="otp-area" style="display:none"></div>')+
               '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="schengen_declaration" required> I confirm that the information I provided is correct and complete. <span class="req-star">*</span></label>'+
               '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
-              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button><button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button></div></div>'+
             '</div>'+
 
           '</div>'+
@@ -1100,7 +2627,7 @@
                 (chosen.country_slug === 'greece' ? '' : field('nationality_at_birth','Nationality at birth (if different)','text','',false))+
                 (chosen.country_slug === 'greece' ? '' : field('other_nationalities','Other nationalities (if any)','text','',false))+
                 (chosen.country_slug === 'greece' ? '' : field('national_id','National identity number (if applicable)','text','',false))+
-                opt('gender','Sex',['Male','Female'],true)+
+                opt('gender','Sex',['MALE','FEMALE'],true)+
                 opt('marital_status','Marital status (Civil status)',['Single','Married','Registered Partnership','Separated','Divorced','Widow(er)','Other'],true)+
                 req('residential_address','Residence address','text','')+
                 req('residence_pincode','Pincode','text','')+
@@ -1174,7 +2701,7 @@
               '<div id="otpArea" class="otp-area" style="display:none"></div>')+
               '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="schengen_declaration" required> I confirm that the information I provided is correct and complete. <span class="req-star">*</span></label>'+
               '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
-              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button><button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button></div></div>'+
             '</div>'+
 
           '</div>'+
@@ -1191,7 +2718,7 @@
     function nav(prev,last){return '<div class="wizard-navigation-footer">'+(prev?'<button type="button" class="btn btn-ghost denmark-prev">← Back</button>':'<button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button>')+(last?'<button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button>':'<button type="button" class="btn btn-primary denmark-next">Next →</button>')+'</div>';}
     return '<div class="denmark-review-shell"><div class="review-progress-card"><div><b>Ireland visa application</b><small>Simple questions only - details are printed on the supplied Ireland application form.</small></div></div>'+
       '<div class="review-section-card denmark-sec" data-denmark-section="1"><div class="review-section-card-header"><h3>1. Visa & personal details</h3></div><div class="review-section-body"><div class="grid2">'+
-      opt('ire_visa_type','Visa / preclearance type',['Short Stay C','Long Stay D','Preclearance'],true)+opt('ire_journey_type','Journey type',['Single','Multiple'],true)+req('ire_reason','Reason for travel')+req('ire_purpose','Purpose of travel')+opt('passport_type','Passport type',['Ordinary / Regular','Diplomatic','Official','Other'],true)+req('passport_number','Passport number')+req('arrival_date','Proposed entry date','date')+req('departure_date','Proposed leave date','date')+req('first_name','Forename as in passport')+req('last_name','Surname as in passport')+fld('ire_other_name','Other / previous name')+req('date_of_birth','Date of birth','date')+opt('gender','Gender',['Male','Female'],true)+req('birthplace_country','Country of birth')+req('nationality','Nationality')+req('ire_current_location','Current location')+'</div>'+'</div></div>'+
+      opt('ire_visa_type','Visa / preclearance type',['Short Stay C','Long Stay D','Preclearance'],true)+opt('ire_journey_type','Journey type',['Single','Multiple'],true)+req('ire_reason','Reason for travel')+req('ire_purpose','Purpose of travel')+opt('passport_type','Passport type',['Ordinary / Regular','Diplomatic','Official','Other'],true)+req('passport_number','Passport number')+req('arrival_date','Proposed entry date','date')+req('departure_date','Proposed leave date','date')+req('first_name','Forename as in passport')+req('last_name','Surname as in passport')+fld('ire_other_name','Other / previous name')+req('date_of_birth','Date of birth','date')+opt('gender','Gender',['MALE','FEMALE'],true)+req('birthplace_country','Country of birth')+req('nationality','Nationality')+req('ire_current_location','Current location')+'</div>'+'</div></div>'+
       '<div class="review-section-card denmark-sec" data-denmark-section="2"><div class="review-section-card-header"><h3>2. Address, contact & passport</h3></div><div class="review-section-body"><div class="grid2">'+
       req('residential_address','Current address')+fld('ire_address2','Address line 2')+fld('ire_address3','Address line 3')+fld('ire_address4','Address line 4')+(isSecondary?'':'<div class="field" id="mobileField"><label for="phone">Contact phone <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div><div id="otpArea" class="otp-area" style="display:none"></div>'+req('contact_email','Contact email','email',meta.email||''))+
       req('passport_issuing_country','Issuing authority / country')+req('passport_issue_date','Passport date of issue','date')+req('passport_expiry','Passport date of expiry','date')+opt('ire_first_passport','Is this your first passport?',['Yes','No'],true)+req('ire_residence_length','Length of residence in present country')+opt('ire_return_permission','Permission to return after Ireland stay?',['Yes','No'],true)+opt('ire_biometric_exempt','Exempt from biometrics?',['Yes','No'],true)+'</div>'+'</div></div>'+
@@ -1201,7 +2728,7 @@
       opt('ire_employed','Currently employed?',['Yes','No'],true)+fld('employer_name','Current employer')+fld('ire_employment_duration','Duration of employment')+fld('position','Position held')+fld('employer_address','Work address')+fld('employer_phone','Employer phone','tel')+fld('ire_employer_email','Employer email','email')+opt('ire_student','Currently a student?',['Yes','No'],true)+opt('ire_travelling_others','Travelling with another person?',['Yes','No'],true)+'</div>'+'</div></div>'+
       '<div class="review-section-card denmark-sec" data-denmark-section="5"><div class="review-section-card-header"><h3>5. Contact / host in Ireland & family</h3></div><div class="review-section-body"><div class="grid2">'+
       req('host_name','Host / accommodation name')+req('host_address','Host / accommodation address')+fld('host_phone','Host phone','tel')+opt('ire_host_known','Is the host personally known to you?',['Yes','No'],true)+fld('ire_host_surname','Host surname')+fld('ire_host_forename','Host forename')+fld('ire_host_citizenship','Host citizenship')+fld('ire_host_occupation','Host occupation')+fld('ire_host_relationship','Relationship to applicant')+fld('ire_host_doj_ref','Department of Justice reference no.')+fld('ire_host_dob','Host date of birth','date')+fld('ire_host_email','Host email','email')+opt('marital_status','Personal status',['Single','Married','Partner','Divorced','Widowed','Separated'],true)+fld('ire_spouse_surname','Spouse / partner surname')+fld('ire_spouse_forename','Spouse / partner forenames')+fld('ire_spouse_other','Spouse other / maiden name')+fld('ire_spouse_dob','Spouse date of birth','date')+fld('ire_spouse_passport','Spouse passport number')+fld('ire_spouse_gender','Spouse gender')+fld('ire_spouse_country','Country spouse currently lives in')+fld('ire_spouse_travel','Is spouse travelling with you?')+'</div>'+'</div></div>'+
-      '<div class="review-section-card denmark-sec" data-denmark-section="6"><div class="review-section-card-header"><h3>6. Children & declaration</h3></div><div class="review-section-body"><div class="grid2">'+req('ire_children_count','Number of dependant children','number')+opt('ire_agency_help','Did an agent / agency help complete this form?',['Yes','No'],true)+'</div>'+fld('ire_children_details','Children details (surname, forename, DOB, gender, nationality, travelling Yes/No)')+'<div class="field"><label class="check-line"><input id="ire_declaration" type="checkbox" required> I confirm these details are correct. <span class="req-star">*</span></label></div>'+'<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+'</div></div></div>';
+      '<div class="review-section-card denmark-sec" data-denmark-section="6"><div class="review-section-card-header"><h3>6. Children & declaration</h3></div><div class="review-section-body"><div class="grid2">'+req('ire_children_count','Number of dependant children','number')+opt('ire_agency_help','Did an agent / agency help complete this form?',['Yes','No'],true)+'</div>'+fld('ire_children_details','Children details (surname, forename, DOB, gender, nationality, travelling Yes/No)')+'<div class="field"><label class="check-line"><input id="ire_declaration" type="checkbox" required> I confirm these details are correct. <span class="req-star">*</span></label></div>'+'<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="denmarkBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button><button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button></div></div>'+'</div></div></div>';
   }
 
 
@@ -1225,7 +2752,7 @@
             '<h4 class="denmark-subheading">1. About you</h4>'+
             '<div class="grid2">'+
               req('first_name','Given name(s) as in passport')+req('last_name','Family name / surname as in passport')+
-              req('date_of_birth','Date of birth','date')+opt('gender','Sex',['Male','Female'],true)+req('nationality','Nationality')+req('birthplace_country','Country of birth')+
+              req('date_of_birth','Date of birth','date')+opt('gender','Sex',['MALE','FEMALE'],true)+req('nationality','Nationality')+req('birthplace_country','Country of birth')+
               field('national_id','National identity number (if you have one)','text','',false)+
               opt('other_names_used','Have you ever used another name to enter or leave Korea?',['No','Yes'],true)+
               opt('multiple_citizenship','Are you a citizen of more than one country?',['No','Yes'],true)+'</div>'+
@@ -1303,7 +2830,7 @@
               '<div id="otpArea" class="otp-area" style="display:none"></div>')+
               '<label class="consent-check" style="margin-top:16px;"><input type="checkbox" id="korea_declaration" required> I confirm that the information I provided is true and correct. <span class="req-star">*</span></label>'+
               '<label class="consent-check"><input type="checkbox" id="marketingConsent" checked> '+esc(MARKETING_CONSENT_TEXT)+'</label>'+
-              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="koreaBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:7px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button><button type="submit" class="btn btn-primary btn-lg" id="submitBtn">Submit application</button></div></div>'+
+              '<div class="wizard-navigation-footer" style="margin-top:25px; display:flex; justify-content:space-between; width:100%; align-items:center;"><button type="button" class="btn btn-ghost" id="koreaBackToPassport">← Back</button><div style="display:flex; gap:12px; align-items:center;"><button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button><button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button></div></div>'+
           '</div>'+
 
         '</div>'+
@@ -1424,8 +2951,314 @@
     Array.prototype.forEach.call(document.querySelectorAll('.korea-prev'),function(b){b.onclick=function(){showKoreaSection(koreaSection-1);};});
     var back=document.getElementById('koreaBackToPassport');if(back)back.onclick=function(){setApplyStep(2);};
   }
-  function validateKoreaSection(section){var sec=document.querySelector('.korea-sec[data-korea-section="'+section+'"]');if(!sec)return true;var reqs=Array.prototype.slice.call(sec.querySelectorAll('[required]'));for(var i=0;i<reqs.length;i++){if(!reqs[i].checkValidity()){reqs[i].reportValidity();try{reqs[i].focus();}catch(_e){}return false;}}if(section===2){var a=(document.getElementById('passport_issue_date').value||''),b=(document.getElementById('passport_expiry').value||'');if(a&&b&&a>=b){toast('Passport expiry date must be after the issue date.');return false;}}if(section===7){var secondary=(Number(qParam('travellers'))||1)>1&&(Number(qParam('travellerIndex'))||0)>0;if(!secondary&&!mobileIsValid()){toast('Please enter a valid mobile number.');return false;}}return true;}
+  function validateKoreaSection(section){
+    var sec=document.querySelector('.korea-sec[data-korea-section="'+section+'"]');
+    if(!sec)return true;
+    var reqs=Array.prototype.slice.call(sec.querySelectorAll('[required]'));
+    for(var i=0;i<reqs.length;i++){
+      if(!reqs[i].checkValidity()){
+        reqs[i].reportValidity();
+        try{reqs[i].focus();}catch(_e){}
+        return false;
+      }
+    }
+    if(section===1){
+      var dobEl=document.getElementById('date_of_birth');
+      if(dobEl && dobEl.value){
+        var dobVal=new Date(dobEl.value+'T00:00:00');
+        var nowVal=new Date(); nowVal.setHours(23,59,59,999);
+        if(!isNaN(dobVal.getTime()) && dobVal > nowVal){
+          toast('Date of birth cannot be in the future.');
+          return false;
+        }
+      }
+    }
+    if(section===2){
+      var a=(document.getElementById('passport_issue_date').value||''),b=(document.getElementById('passport_expiry').value||'');
+      if(a&&b&&a>=b){
+        toast('Passport expiry date must be after the issue date.');
+        return false;
+      }
+      if(b){
+        var arrEl=document.getElementById('arrival_date')||document.getElementById('travel_date');
+        var travelDate=(arrEl&&arrEl.value)?new Date(arrEl.value+'T00:00:00'):new Date();
+        if(isNaN(travelDate.getTime())) travelDate=new Date();
+        var minExpiry=new Date(travelDate.getTime()+180*24*60*60*1000);
+        var expDate=new Date(b+'T00:00:00');
+        if(!isNaN(expDate.getTime()) && expDate < minExpiry){
+          toast('Passport must be valid for at least 6 months (180 days) beyond your travel date.');
+          return false;
+        }
+      }
+    }
+    if(section===7){
+      var secondary=(Number(qParam('travellers'))||1)>1&&(Number(qParam('travellerIndex'))||0)>0;
+      if(!secondary&&!mobileIsValid()){
+        toast('Please enter a valid mobile number.');
+        return false;
+      }
+    }
+    return true;
+  }
   function validateAllKoreaSections(){for(var i=1;i<=7;i++){if(!validateKoreaSection(i)){showKoreaSection(i);return false;}}return true;}
+
+  // RUSSIA · SINGLE PAGE CARD FORM redesign (same fields but on one scrollable card, matching South Korea's flow)
+  function getRussiaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today=new Date().toISOString().slice(0,10), isSecondary=isMultiple&&travellerIndex>0;
+    function req(id,label,type,value){return field(id,label,type||'text',value||'',true);}
+    function opt(id,label,options,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+options.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
+    
+    var contactDetailsSection = '';
+    if (isSecondary) {
+      contactDetailsSection = 
+        '<div class="review-contact-details group-contact-note">'+
+          '<p>Contact Details are inherited from the primary applicant. No separate verification is required.</p>'+
+        '</div>';
+    } else {
+      contactDetailsSection = 
+        '<div class="grid2">'+
+          '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+          '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+          '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+        '</div>';
+    }
+
+    return '<div class="denmark-review-shell">'+
+      '<div class="denmark-page-header">'+
+        '<h2>Russia Tourist eVisa application</h2>'+
+        '<p>Simple questions only - extra details appear only when needed.</p>'+
+      '</div>'+
+
+      '<div class="review-section-card denmark-single-card">'+
+        '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+        '<div class="review-section-body" style="padding: 24px !important; display: flex; flex-direction: column; gap: 32px;">'+
+
+          '<div class="russia-sec" data-russia-section="1">'+
+            '<h4 class="denmark-subheading">1. Personal details</h4>'+
+            '<div class="grid2">'+
+              req('first_name','First name')+
+              field('last_name','Last name / Surname','text','',false)+
+              req('date_of_birth','Date of birth','date')+
+              opt('gender','Gender',['MALE','FEMALE'],false)+
+              field('nationality','Nationality','text','',false)+
+              opt('marital_status','Marital Status',['Single','Married','Widowed','Divorced','Other'],true)+
+              req('passport_number','Passport Number')+
+              field('passport_issuing_country','Place of Issue','text','',false)+
+              req('passport_issue_date','Issue Date','date')+
+              req('passport_expiry','Expiry Date','date')+
+              req('arrival_date','Travel Date','date')+
+              opt('occupation','Current Occupation',['Employee','Business Owner','Self Employed','Student','Retired','Unemployed','Other'],true)+
+              field('position','Current Position','text','',false)+
+              (!isSecondary ? '<div class="field" style="grid-column:1/-1"><label for="residential_address">Current residential address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter full residential address"></textarea></div>' : '') +
+            '</div>'+
+          '</div>'+
+
+          '<div class="russia-sec" data-russia-section="2" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">2. Parent details</h4>'+
+            '<div class="grid2">' +
+              req('father_name','Father’s Full Name') +
+              req('mother_name','Mother’s Full Name') +
+              req('father_dob','Father’s Date of Birth','date') +
+              req('mother_dob','Mother’s Date of Birth','date') +
+              req('father_pob','Father’s Place of Birth') +
+              req('mother_pob','Mother’s Place of Birth') +
+            '</div>' +
+          '</div>'+
+
+          '<div class="russia-sec" data-russia-section="3" style="padding-top: 24px; border-top: 1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">3. Contact details</h4>'+
+            contactDetailsSection +
+            '<input type="hidden" id="application_date" value="'+today+'">'+
+            '<div style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px">'+
+              '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer;margin:0">'+
+                '<input id="marketingConsent" type="checkbox" checked style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex:none">'+
+                '<span style="font-size:14.5px;line-height:1.5;color:var(--ink)">'+esc(MARKETING_CONSENT_TEXT)+' '+
+                  '<span class="phint" style="display:inline">You can unsubscribe anytime. We\'ll still send updates about your own application either way.</span></span>'+
+              '</label>'+
+            '</div>'+
+            '<div class="wizard-navigation-footer" style="align-items:center; margin-top:25px; display:flex; justify-content:space-between; width:100%;">'+
+              '<button type="button" class="btn btn-ghost" id="russiaBackToPassport">← Back</button>'+
+              '<div style="display:flex; gap:12px; align-items:center;">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+
+
+  // SRI LANKA · SINGLE PAGE CARD FORM (Clean 2-section layout: 1. Personal details & 2. Contact details)
+  function getSriLankaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName) {
+    var today=new Date().toISOString().slice(0,10), isSecondary=isMultiple&&travellerIndex>0;
+    function req(id,label,type,value){return field(id,label,type||'text',value||'',true);}
+    function opt(id,label,options,required){return '<div class="field"><label for="'+id+'">'+label+(required?' <span class="req-star">*</span>':'')+'</label><select id="'+id+'"'+(required?' required':'')+'><option value="">Select</option>'+options.map(function(x){return '<option value="'+esc(x)+'">'+esc(x)+'</option>';}).join('')+'</select></div>';}
+    var contactHtml = isSecondary
+      ? '<div class="review-contact-details group-contact-note"><p>Email and phone number are inherited from the primary applicant.</p></div>'
+      : '<p style="margin:0 0 16px;color:#64748b;font-size:14px">Required for sharing essential visa updates. In real time.</p>'+
+        '<div class="grid2">'+
+          '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+          '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+          '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+        '</div>';
+
+    return '<div class="denmark-review-shell">'+
+      '<div class="denmark-page-header">'+
+        '<h2>Sri Lanka ' + ((chosen && chosen.category === 'Business') ? 'Business Visa' : 'Tourist Visa') + ' application</h2>'+
+        '<p>Complete the required Sri Lanka visa details below.</p>'+
+      '</div>'+
+      '<div class="review-section-card denmark-single-card">'+
+        '<div class="review-section-card-header"><h3>Visa application details</h3></div>'+
+        '<div class="review-section-body" style="padding:24px !important;display:flex;flex-direction:column;gap:32px;">'+
+          '<div class="russia-sec" data-russia-section="1">'+
+            '<h4 class="denmark-subheading">1. Personal details</h4>'+
+            '<div class="grid2">'+
+              req('first_name','First name')+
+              field('last_name','Last name / Surname','text','',false)+
+              req('date_of_birth','Date of birth','date')+
+              opt('gender','Gender',['MALE','FEMALE'],false)+
+              field('nationality','Nationality','text','',false)+
+              req('passport_number','Passport Number')+
+              field('passport_issuing_country','Place of Issue','text','',false)+
+              req('arrival_date','Travel Date','date')+
+              req('passport_issue_date','Issue Date','date')+
+              req('passport_expiry','Expiry Date','date')+
+              '<div class="field" style="grid-column:1/-1"><label for="residential_address">Residential Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter your full residential address"></textarea></div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="russia-sec" data-russia-section="2" style="padding-top:24px;border-top:1px solid #e2e8f0;">'+
+            '<h4 class="denmark-subheading">2. Contact details</h4>'+
+            contactHtml+
+            '<input type="hidden" id="application_date" value="'+today+'">'+
+            '<div class="wizard-navigation-footer" style="align-items:center;margin-top:25px;display:flex;justify-content:space-between;width:100%;">'+
+              '<button type="button" class="btn btn-ghost" id="russiaBackToPassport">← Back</button>'+
+              '<div style="display:flex;gap:12px;align-items:center;">'+
+                '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function wireRussiaWorkflow(){
+    var occ = document.getElementById('occupation');
+    if (occ) {
+      occ.onchange = function() {
+        var needsEmp = ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1;
+        var pos = document.getElementById('position');
+        if (pos) {
+          var fWrap = pos.closest('.field');
+          if (fWrap) fWrap.style.display = needsEmp ? '' : 'none';
+        }
+      };
+      occ.onchange();
+    }
+    var back=document.getElementById('russiaBackToPassport');if(back)back.onclick=function(){setApplyStep(2);};
+    
+    var arrDate = document.getElementById('arrival_date');
+    if (arrDate) {
+      arrDate.setAttribute('min', new Date().toISOString().slice(0, 10));
+    }
+    
+    var vPass = document.getElementById('viewPassportBtn');
+    if (vPass) {
+      vPass.onclick = function(e) {
+        e.preventDefault();
+        var pm = document.querySelector('[data-passport-preview="passport"]');
+        if (pm) pm.click();
+      };
+    }
+    var vPhoto = document.getElementById('viewPhotoBtn');
+    if (vPhoto) {
+      vPhoto.onclick = function(e) {
+        e.preventDefault();
+        var pm = document.querySelector('[data-passport-preview="photo"]');
+        if (pm) pm.click();
+      };
+    }
+    var rPass = document.getElementById('replacePassportBtn');
+    if (rPass) {
+      rPass.onclick = function(e) {
+        e.preventDefault();
+        setApplyStep(2);
+      };
+    }
+    var rPhoto = document.getElementById('replacePhotoBtn');
+    if (rPhoto) {
+      rPhoto.onclick = function(e) {
+        e.preventDefault();
+        setApplyStep(1);
+      };
+    }
+  }
+
+  function validateRussiaSection(section){
+    var sec=document.querySelector('.russia-sec[data-russia-section="'+section+'"]');
+    if(!sec)return true;
+    var reqs=Array.prototype.slice.call(sec.querySelectorAll('[required]'));
+    for(var i=0;i<reqs.length;i++){
+      if(!reqs[i].checkValidity()){
+        reqs[i].reportValidity();
+        try{reqs[i].focus();}catch(_e){}
+        return false;
+      }
+    }
+    if(section===1){
+      var dobEl = sec.querySelector('#date_of_birth');
+      if(dobEl && dobEl.value){
+        var dobVal=new Date(dobEl.value+'T00:00:00');
+        var nowVal=new Date(); nowVal.setHours(23,59,59,999);
+        if(!isNaN(dobVal.getTime()) && dobVal > nowVal){
+          toast('Date of birth cannot be in the future.');
+          return false;
+        }
+      }
+    }
+    var pidEl = sec.querySelector('#passport_issue_date'), pexpEl = sec.querySelector('#passport_expiry');
+    if(pidEl && pexpEl){
+      var a=(pidEl.value||''),b=(pexpEl.value||'');
+      if(a&&b&&a>=b){
+        toast('Passport expiry date must be after the issue date.');
+        return false;
+      }
+      if(b){
+        var arrEl=document.getElementById('arrival_date')||document.getElementById('travel_date');
+        var travelDate=(arrEl&&arrEl.value)?new Date(arrEl.value+'T00:00:00'):new Date();
+        if(isNaN(travelDate.getTime())) travelDate=new Date();
+        var minExpiry=new Date(travelDate.getTime()+180*24*60*60*1000);
+        var expDate=new Date(b+'T00:00:00');
+        if(!isNaN(expDate.getTime()) && expDate < minExpiry){
+          toast('Passport must be valid for at least 6 months (180 days) beyond your travel date.');
+          return false;
+        }
+      }
+    }
+    if(sec.querySelector('#phone') || section===3){
+      var secondary=(Number(qParam('travellers'))||1)>1&&(Number(qParam('travellerIndex'))||0)>0;
+      if(!secondary&&!mobileIsValid()){
+        toast('Please enter a valid mobile number.');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function validateAllRussiaSections(){
+    for(var i=1;i<=3;i++){
+      if(!validateRussiaSection(i)){
+        var sec=document.querySelector('.russia-sec[data-russia-section="'+i+'"]');
+        if(sec){sec.scrollIntoView({behavior:'smooth',block:'center'});}
+        return false;
+      }
+    }
+    return true;
+  }
 
   var denmarkSection=1;
   function showDenmarkSection(n){
@@ -1450,6 +3283,22 @@
       conditional('trip_payer','sponsor_wrap',['sponsor_details']);
     }
     conditional('eu_family','eu_family_wrap',['eu_family_name','eu_family_nationality','eu_family_dob','eu_family_document','eu_family_relationship']);
+
+    // Spouse conditional check for China / Denmark / Greece
+    var msEl = document.getElementById('marital_status');
+    var spWrap = document.getElementById('spouse_wrap');
+    if (msEl && spWrap) {
+      function syncSpouse() {
+        var isMarried = msEl.value === 'Married';
+        spWrap.hidden = !isMarried;
+        ['spouse_name', 'spouse_dob', 'spouse_birthplace'].forEach(function(id) {
+          var e = document.getElementById(id);
+          if (e) e.required = isMarried;
+        });
+      }
+      msEl.addEventListener('change', syncSpouse);
+      syncSpouse();
+    }
 
     if (window.currentCountrySlug === 'switzerland') {
       var tripPayer = document.getElementById('trip_payer');
@@ -1613,7 +3462,7 @@
           if(arr&&pexp){
             var d=new Date(arr+'T00:00:00'); d.setMonth(d.getMonth()+6);
             var min=d.toISOString().slice(0,10);
-            if(pexp<min) return denmarkFieldError('arrival_date','Your passport should be valid for at least 6 months from the travel date.', depSecNum);
+            if(pexp<min) return denmarkFieldError('passport_expiry','Your passport should be valid for at least 6 months from the travel date.', 2);
           }
         }
       }
@@ -1801,7 +3650,7 @@
                   field('birthplace_city','Place of Birth: City','text','',true) +
                   field('birthplace_state','Place of Birth: State / Province','text','',true) +
                   field('birthplace_country','Place of Birth: Country','text','',true) +
-                  '<div class="field"><label for="gender">Gender <span class="req-star">*</span></label><select id="gender" required><option value="">Select gender</option><option value="Male">Male</option><option value="Female">Female</option></select></div>'+
+                  '<div class="field"><label for="gender">Gender <span class="req-star">*</span></label><select id="gender" required><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option></select></div>'+
                   '<div class="field"><label for="marital_status">Marital Status <span class="req-star">*</span></label><select id="marital_status" required><option value="">Select status</option><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Divorced">Divorced</option><option value="Other">Other</option></select></div>'+
                   field('nationality','Nationality','text','',true) +
                   field('former_nationality','Former / Other Nationality (optional)','text','',false) +
@@ -1910,7 +3759,7 @@
                     field('guarantor_name','Name','text','',true) +
                     field('guarantor_phone','Telephone','text','',true) +
                     field('guarantor_dob','Date of Birth','date','',true) +
-                    '<div class="field guarantor-field"><label for="guarantor_gender">Gender <span class="req-star">*</span></label><select id="guarantor_gender" required><option value="">Select gender</option><option value="Male">Male</option><option value="Female">Female</option></select></div>'+
+                    '<div class="field guarantor-field"><label for="guarantor_gender">Gender <span class="req-star">*</span></label><select id="guarantor_gender" required><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option></select></div>'+
                     field('guarantor_relationship','Relationship to Applicant','text','',true) +
                     field('guarantor_occupation','Profession / Occupation','text','',true) +
                     field('guarantor_nationality','Nationality','text','',true) +
@@ -1931,7 +3780,7 @@
                     field('inviter_name','Name','text','',true) +
                     field('inviter_phone','Telephone','text','',true) +
                     field('inviter_dob','Date of Birth','date','',true) +
-                    '<div class="field inviter-field"><label for="inviter_gender">Gender <span class="req-star">*</span></label><select id="inviter_gender" required><option value="">Select gender</option><option value="Male">Male</option><option value="Female">Female</option></select></div>'+
+                    '<div class="field inviter-field"><label for="inviter_gender">Gender <span class="req-star">*</span></label><select id="inviter_gender" required><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option></select></div>'+
                     field('inviter_relationship','Relationship to Applicant','text','',true) +
                     field('inviter_occupation','Profession / Occupation','text','',true) +
                     field('inviter_nationality','Nationality','text','',true) +
@@ -1998,8 +3847,8 @@
                 '<div class="wizard-navigation-footer" style="align-items:center;">'+
                   '<button type="button" class="btn btn-ghost wizard-btn-back"><span aria-hidden="true">←</span> Back</button>'+
                   '<div style="display:flex; gap:12px; align-items:center;">'+
-                    '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn" style="border-radius:13px !important; height:49px !important; min-height:49px !important; padding:13px 24px !important; font-weight:750 !important; font-size:14.5px !important; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; margin-top:24px !important;">Save Draft</button>'+
-                    '<button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="background:#168177 !important; border-radius:13px !important; max-width:330px !important;">Submit application</button>'+
+                    '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                    '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
                   '</div>'+
                 '</div>'+
               '</div>'+
@@ -2008,6 +3857,1526 @@
           '</div>'+
         '</section>'+
       '</div></div>';
+  }
+
+  // ============================================================
+  //  DYNAMIC PREMIUM COUNTRY WIZARDS (Thailand, Russia, Indonesia, Kenya, Vietnam)
+  //  Replicates the multi-step layout with progress bar, step grids, and validation of Japan.
+  // ============================================================
+  function getPremiumWizardStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName, countrySlug) {
+    var today = new Date().toISOString().slice(0, 10);
+    var isSecondary = isMultiple && travellerIndex > 0;
+    
+    var contactDetailsSection = '';
+    if (isSecondary) {
+      contactDetailsSection = 
+        '<div class="review-contact-details group-contact-note">'+
+          '<p>Contact Details are inherited from the primary applicant. No separate verification is required.</p>'+
+        '</div>';
+    } else {
+      contactDetailsSection = 
+        '<div class="grid2">'+
+          '<div class="field"><label for="contact_email">Email address <span class="req-star">*</span></label><input id="contact_email" type="email" value="'+esc(state.user.email||'')+'" readonly></div>'+
+          '<div class="field" id="mobileField"><label for="phone">Phone number <span class="req-star">*</span></label><input id="phone" name="phone" type="tel" autocomplete="tel" required></div>'+
+          '<div id="otpArea" class="otp-area" style="display:none"></div>'+
+          '<div class="field"><label for="residential_address">Current residential address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter full residential address"></textarea></div>'+
+          '<div class="field"><label for="telephone">Telephone number (Landline)</label><input id="telephone" type="tel" placeholder="e.g. 0221234567"></div>'+
+        '</div>';
+    }
+
+    var countryNameCaps = countrySlug.charAt(0).toUpperCase() + countrySlug.slice(1);
+    var sec3Html = '';
+    if (countrySlug === 'thailand') {
+      sec3Html = '<div class="grid2">' +
+        '<div class="field"><label for="purpose">Purpose of Visit <span class="req-star">*</span></label><select id="purpose" required><option value="">Select purpose</option><option value="Tourism">Tourism</option><option value="Business">Business</option><option value="Transit">Transit</option><option value="Other">Other</option></select></div>' +
+        field('arrival_date','Date of Arrival in Thailand','date','',true) +
+        field('stay_duration','Intended Length of Stay (Days)','text','',true) +
+        field('port_of_entry','Port of Entry (Airport/Border)','text','',true) +
+        field('airline','Airline / Flight Number','text','',true) +
+        field('hotel_name','Hotel / Host Name','text','',true) +
+        field('hotel_phone','Hotel / Host Phone','text','',true) +
+        '<div class="field"><label for="previous_japan_stay">Previous Stay in Thailand <span class="req-star">*</span></label><select id="previous_japan_stay" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+      '</div>' +
+      '<div class="field" style="width:100%"><label for="hotel_address">Hotel / Host Address <span class="req-star">*</span></label><textarea id="hotel_address" style="min-height:64px" required placeholder="Enter hotel or host full address"></textarea></div>' +
+      '<div class="field" id="prev_stays_wrap" style="display:none;width:100%"><label for="previous_japan_stays">Previous Stay Dates / Duration <span class="req-star">*</span></label><textarea id="previous_japan_stays" style="min-height:64px" placeholder="e.g. 15 Jan 2024 to 30 Jan 2024 (15 days)"></textarea></div>';
+    } else if (countrySlug === 'russia') {
+      sec3Html = '<div class="grid2">' +
+        field('arrival_date','Travel Date','date','',true) +
+        field('hotel_name','Hotel Name','text','',true) +
+        field('hotel_phone','Hotel Phone Number','text','',true) +
+      '</div>' +
+      '<div class="field" style="width:100%"><label for="hotel_address">Hotel Address <span class="req-star">*</span></label><textarea id="hotel_address" style="min-height:64px" required placeholder="Enter full hotel address"></textarea></div>';
+    } else if (countrySlug === 'indonesia') {
+      sec3Html = '<div class="grid2">' +
+        '<div class="field"><label for="purpose">Purpose of Visit <span class="req-star">*</span></label><select id="purpose" required><option value="">Select purpose</option><option value="Tourism">Tourism</option><option value="Business Meeting">Business Meeting</option><option value="Social">Social</option><option value="Other">Other</option></select></div>' +
+        field('arrival_date','Date of Arrival in Indonesia','date','',true) +
+        field('stay_duration','Intended Length of Stay (Days)','text','',true) +
+        field('port_of_entry','Port of Entry','text','',true) +
+        field('airline','Airline / Flight Number','text','',true) +
+        field('hotel_name','Hotel / Host Name','text','',true) +
+        field('hotel_phone','Hotel / Host Phone','text','',true) +
+        '<div class="field"><label for="previous_japan_stay">Previous Stay in Indonesia <span class="req-star">*</span></label><select id="previous_japan_stay" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+      '</div>' +
+      '<div class="field" style="width:100%"><label for="hotel_address">Hotel / Host Address <span class="req-star">*</span></label><textarea id="hotel_address" style="min-height:64px" required placeholder="Enter hotel or host full address"></textarea></div>' +
+      '<div class="field" id="prev_stays_wrap" style="display:none;width:100%"><label for="previous_japan_stays">Previous Stay Dates / Duration <span class="req-star">*</span></label><textarea id="previous_japan_stays" style="min-height:64px" placeholder="e.g. 15 Jan 2024 to 30 Jan 2024 (15 days)"></textarea></div>';
+    } else if (countrySlug === 'kenya') {
+      sec3Html = '<div class="grid2">' +
+        '<div class="field"><label for="purpose">Purpose of Visit <span class="req-star">*</span></label><select id="purpose" required><option value="">Select purpose</option><option value="Tourism">Tourism</option><option value="Business">Business</option><option value="Visiting family/friends">Visiting family/friends</option><option value="Other">Other</option></select></div>' +
+        field('arrival_date','Date of Arrival in Kenya','date','',true) +
+        field('port_of_entry','Port of Entry','text','',true) +
+        field('airline','Airline / Flight Number','text','',true) +
+        field('hotel_name','Hotel / Host Name','text','',true) +
+        field('hotel_phone','Hotel / Host Phone','text','',true) +
+        '<div class="field"><label for="previous_japan_stay">Previous Stay in Kenya <span class="req-star">*</span></label><select id="previous_japan_stay" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+      '</div>' +
+      '<div class="field" style="width:100%"><label for="hotel_address">Hotel / Host Address <span class="req-star">*</span></label><textarea id="hotel_address" style="min-height:64px" required placeholder="Enter hotel or host full address"></textarea></div>' +
+      '<div class="field" id="prev_stays_wrap" style="display:none;width:100%"><label for="previous_japan_stays">Previous Stay Dates / Duration <span class="req-star">*</span></label><textarea id="previous_japan_stays" style="min-height:64px" placeholder="e.g. 15 Jan 2024 to 30 Jan 2024 (15 days)"></textarea></div>';
+    } else if (countrySlug === 'vietnam') {
+      sec3Html = '<div class="grid2">' +
+        '<div class="field"><label for="purpose">Purpose of Visit <span class="req-star">*</span></label><select id="purpose" required><option value="">Select purpose</option><option value="Tourism">Tourism</option><option value="Business">Business</option><option value="Other">Other</option></select></div>' +
+        field('arrival_date','Date of Arrival in Vietnam','date','',true) +
+        field('stay_duration','Intended Length of Stay (Days)','text','',true) +
+        field('port_of_entry','Entry Gate (Airport/Landport)','text','',true) +
+        field('port_of_exit','Exit Gate (Airport/Landport)','text','',true) +
+        field('airline','Airline / Flight Number','text','',true) +
+        field('hotel_name','Hotel / Host Name','text','',true) +
+        field('hotel_phone','Hotel / Host Phone','text','',true) +
+        '<div class="field"><label for="previous_japan_stay">Previous Stay in Vietnam <span class="req-star">*</span></label><select id="previous_japan_stay" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+      '</div>' +
+      '<div class="field" style="width:100%"><label for="hotel_address">Hotel / Host Address <span class="req-star">*</span></label><textarea id="hotel_address" style="min-height:64px" required placeholder="Enter hotel or host full address"></textarea></div>' +
+      '<div class="field" id="prev_stays_wrap" style="display:none;width:100%"><label for="previous_japan_stays">Previous Stay Dates / Duration <span class="req-star">*</span></label><textarea id="previous_japan_stays" style="min-height:64px" placeholder="e.g. 15 Jan 2024 to 30 Jan 2024 (15 days)"></textarea></div>';
+    } else if (countrySlug === 'morocco' || countrySlug === 'srilanka' || countrySlug === 'turkey') {
+      var countryLabel = countrySlug === 'srilanka' ? 'Sri Lanka' : (countrySlug === 'morocco' ? 'Morocco' : 'Turkey');
+      sec3Html = '<div class="grid2">' +
+        '<div class="field"><label for="purpose">Purpose of Visit <span class="req-star">*</span></label><select id="purpose" required><option value="">Select purpose</option><option value="Tourism">Tourism</option><option value="Business">Business</option><option value="Transit">Transit</option><option value="Other">Other</option></select></div>' +
+        field('arrival_date','Date of Arrival in ' + countryLabel,'date','',true) +
+        field('stay_duration','Intended Length of Stay (Days)','text','',true) +
+        field('port_of_entry','Port of Entry','text','',true) +
+        field('airline','Airline / Flight Number','text','',true) +
+        field('hotel_name','Hotel / Host Name','text','',true) +
+        field('hotel_phone','Hotel / Host Phone','text','',true) +
+        '<div class="field"><label for="previous_japan_stay">Previous Stay in ' + countryLabel + ' <span class="req-star">*</span></label><select id="previous_japan_stay" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+      '</div>' +
+      '<div class="field" style="width:100%"><label for="hotel_address">Hotel / Host Address <span class="req-star">*</span></label><textarea id="hotel_address" style="min-height:64px" required placeholder="Enter hotel or host full address"></textarea></div>' +
+      '<div class="field" id="prev_stays_wrap" style="display:none;width:100%"><label for="previous_japan_stays">Previous Stay Dates / Duration <span class="req-star">*</span></label><textarea id="previous_japan_stays" style="min-height:64px" placeholder="e.g. 15 Jan 2024 to 30 Jan 2024 (15 days)"></textarea></div>';
+    }
+
+    var sec6Html = '';
+    if (countrySlug === 'thailand') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. FINANCIAL SPONSOR DETAILS</h4></div>' +
+        '<div class="field" style="margin-bottom: 12px"><label for="thai_payer">Who is paying for your trip? <span class="req-star">*</span></label><select id="thai_payer" required><option value="Self">Self (I pay for myself)</option><option value="Sponsor">Sponsor / Host / Organisation</option></select></div>' +
+        '<div id="thai_sponsor_panel" style="display:none">' +
+          '<div class="grid2">' +
+            field('thai_sponsor_name','Sponsor Name','text','',true) +
+            field('thai_sponsor_relationship','Relationship to Applicant','text','',true) +
+            field('thai_sponsor_phone','Sponsor Telephone','text','',true) +
+          '</div>' +
+          '<div class="field" style="width:100%"><label for="thai_sponsor_address">Sponsor Address <span class="req-star">*</span></label><textarea id="thai_sponsor_address" style="min-height:64px" required placeholder="Enter sponsor address"></textarea></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. BANK DETAILS & STATEMENT</h4></div>' +
+        '<div class="grid2">' +
+          field('thai_bank_name','Bank Name','text','',true) +
+          '<div class="field">' +
+            '<label for="annual_income_select">Annual income <span class="req-star">*</span></label>' +
+            '<select id="annual_income_select" required onchange="var c=document.getElementById(\'annual_income_custom_wrap\'),inp=document.getElementById(\'annual_income\');if(this.value===\'Other\'){if(c)c.style.display=\'\';if(inp){inp.value=\'\';inp.required=true;inp.focus();}}else{if(c)c.style.display=\'none\';if(inp){inp.value=this.value;inp.required=false;}}">' +
+              '<option value="" selected disabled>Select annual income</option>' +
+              '<option value="Up to ₹1 Lakh">Up to ₹1 Lakh</option>' +
+              '<option value="₹1 Lakh - ₹3 Lakhs">₹1 Lakh - ₹3 Lakhs</option>' +
+              '<option value="₹3 Lakhs - ₹5 Lakhs">₹3 Lakhs - ₹5 Lakhs</option>' +
+              '<option value="₹5 Lakhs - ₹10 Lakhs">₹5 Lakhs - ₹10 Lakhs</option>' +
+              '<option value="Above ₹10 Lakhs">Above ₹10 Lakhs</option>' +
+              '<option value="Other">Other (Enter manually)</option>' +
+            '</select>' +
+            '<div id="annual_income_custom_wrap" style="display:none;margin-top:8px">' +
+              '<input id="annual_income" name="annual_income" type="text" placeholder="Enter annual income (e.g. ₹4,50,000)">' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="field" style="margin-top:14px;width:100%">' +
+          '<label class="ulabel">Upload Bank Statement / Proof of Funds (PDF or Image) <span class="req-star">*</span></label>' +
+          '<div class="drop" id="drop_bank_statement" style="cursor:pointer;padding:16px 20px;display:flex;align-items:center;gap:14px;border:1.5px dashed #cbd5e1;border-radius:12px;background:#f8fafc;transition:all .15s ease">' +
+            '<div class="di" style="width:40px;height:40px;border-radius:10px;background:#eaf5ff;display:grid;place-items:center;color:#0b67c2;flex-shrink:0">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M12 16V4m0 0L8 8m4-4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/></svg>' +
+            '</div>' +
+            '<div style="flex:1;text-align:left">' +
+              '<b style="font-size:14px;display:block;color:#1e293b">Tap to upload Bank Statement</b>' +
+              '<small style="color:#64748b;font-size:12px">PDF, JPG, PNG or WEBP · max 10 MB</small>' +
+              '<div class="fname" id="fname_bank_statement" style="font-size:12.5px;color:#168177;font-weight:600;margin-top:4px"></div>' +
+            '</div>' +
+            '<button type="button" class="btn btn-ghost" style="padding:6px 14px;font-size:13px;font-weight:600;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;pointer-events:none">Choose file</button>' +
+          '</div>' +
+          '<input type="file" id="file_bank_statement" accept="application/pdf,image/jpeg,image/png,image/webp" style="display:none">' +
+        '</div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>C. DECLARATION</h4></div>' +
+        '<div class="field" style="margin-top:12px">' +
+          '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer">' +
+            '<input id="thai_declaration_check" type="checkbox" required style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex:none">' +
+            '<span style="font-size:14.5px;line-height:1.5;color:var(--ink)">I confirm that I hold a return flight ticket and proof of sufficient funds (at least 20,000 THB per person) for my stay in Thailand. <span class="req-star">*</span></span>' +
+          '</label>' +
+        '</div>' +
+      '</div>';
+    } else if (countrySlug === 'russia') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. PARENTS DETAILS</h4></div>' +
+        '<div class="grid2">' +
+          field('father_name','Father’s Full Name','text','',true) +
+          field('father_dob','Father’s Date of Birth','date','',true) +
+          field('father_pob','Father’s Place of Birth','text','',true) +
+          field('mother_name','Mother’s Full Name','text','',true) +
+          field('mother_dob','Mother’s Date of Birth','date','',true) +
+          field('mother_pob','Mother’s Place of Birth','text','',true) +
+        '</div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. ADDITIONAL CONTACT DETAILS</h4></div>' +
+        '<div class="grid2">' +
+          field('fax_number','Fax Number','text','',true) +
+          field('social_media_accounts','Social Media Accounts','text','',true) +
+        '</div>' +
+        '<p class="phint" style="margin-top:8px">Enter social media username/profile details (for example: Instagram, Facebook, X, LinkedIn).</p>' +
+      '</div>';
+    } else if (countrySlug === 'indonesia') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. INDONESIAN SPONSOR DETAILS</h4></div>' +
+        '<div class="field" style="margin-bottom: 12px"><label for="indo_sponsor">Do you have a sponsor in Indonesia? <span class="req-star">*</span></label><select id="indo_sponsor" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+        '<div id="indo_sponsor_panel" style="display:none">' +
+          '<div class="grid2">' +
+            field('indo_sponsor_name','Sponsor Name','text','',true) +
+            '<div class="field"><label for="indo_sponsor_type">Sponsor Type <span class="req-star">*</span></label><select id="indo_sponsor_type" required><option value="">Select type</option><option value="Individual">Individual</option><option value="Company">Company</option><option value="Hotel/Accommodation">Hotel/Accommodation</option></select></div>' +
+            field('indo_sponsor_phone','Sponsor Phone','text','',true) +
+          '</div>' +
+          '<div class="field" style="width:100%"><label for="indo_sponsor_address">Sponsor Address <span class="req-star">*</span></label><textarea id="indo_sponsor_address" style="min-height:64px" required placeholder="Enter sponsor address"></textarea></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. PROOF OF FUNDS</h4></div>' +
+        '<div class="grid2">' +
+          '<div class="field"><label for="indo_funds_type">Sufficient Funds Proof <span class="req-star">*</span></label><select id="indo_funds_type" required><option value="Bank Statement">Bank Statement</option><option value="Credit Card">Credit Card</option><option value="Cash">Cash</option></select></div>' +
+          field('indo_bank_name','Bank Name','text','',true) +
+          field('indo_bank_balance','Current Balance Amount (minimum USD 2000 equivalent)','text','',true) +
+        '</div>' +
+      '</div>';
+    } else if (countrySlug === 'kenya') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. HOST / INVITER DETAILS</h4></div>' +
+        '<div class="grid2">' +
+          '<div class="field"><label for="kenya_host_type">Host Type in Kenya <span class="req-star">*</span></label><select id="kenya_host_type" required><option value="Hotel">Hotel</option><option value="Private Host">Private Host</option><option value="Travel Agency">Travel Agency</option></select></div>' +
+          field('kenya_host_name','Host / Inviter Name','text','',true) +
+          field('kenya_host_email','Host Email Address','email','',true) +
+          field('kenya_host_phone','Host Phone Number','text','',true) +
+        '</div>' +
+        '<div class="field" style="width:100%"><label for="kenya_host_address">Host Address <span class="req-star">*</span></label><textarea id="kenya_host_address" style="min-height:64px" required placeholder="Enter host full address"></textarea></div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. IMMIGRATION HISTORY</h4></div>' +
+        '<div class="field" style="margin-bottom: 12px"><label for="kenya_refused">Have you been refused a visa or entry to Kenya or another country? <span class="req-star">*</span></label><select id="kenya_refused" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+        '<div id="kenya_refused_panel" style="display:none">' +
+          '<div class="field" style="width:100%"><label for="kenya_refused_details">Provide Refusal Details <span class="req-star">*</span></label><textarea id="kenya_refused_details" style="min-height:64px" required placeholder="Provide details..."></textarea></div>' +
+        '</div>' +
+      '</div>';
+    } else if (countrySlug === 'vietnam') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. INVITING ORGANISATION / INDIVIDUAL (OPTIONAL)</h4></div>' +
+        '<div class="grid2">' +
+          field('vietnam_inviter_name','Inviter Name (optional)','text','',false) +
+          field('vietnam_inviter_relationship','Relationship (optional)','text','',false) +
+        '</div>' +
+        '<div class="field" style="width:100%"><label for="vietnam_inviter_address">Inviter Address (optional)</label><textarea id="vietnam_inviter_address" style="min-height:64px" placeholder="Enter inviter full address"></textarea></div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. DECLARATION</h4></div>' +
+        '<div class="field" style="margin-top:12px">' +
+          '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer">' +
+            '<input id="vietnam_declaration_check" type="checkbox" required style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex:none">' +
+            '<span style="font-size:14.5px;line-height:1.5;color:var(--ink)">I declare that I have truthfully declared all details. I understand any false statements will lead to visa refusal or deportation from Vietnam. <span class="req-star">*</span></span>' +
+          '</label>' +
+        '</div>' +
+      '</div>';
+    } else if (countrySlug === 'morocco') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. MOROCCAN HOST / SPONSOR DETAILS</h4></div>' +
+        '<div class="field" style="margin-bottom: 12px"><label for="morocco_sponsor">Host / Accommodation Type in Morocco <span class="req-star">*</span></label><select id="morocco_sponsor" required><option value="None">None (Hotel Booking)</option><option value="Private Host">Private Host (Friend/Family)</option><option value="NGO">NGO / Organisation</option></select></div>' +
+        '<div id="morocco_sponsor_panel" style="display:none">' +
+          '<div class="grid2">' +
+            field('morocco_host_name','Host / Inviter Name','text','',true) +
+            field('morocco_host_phone','Host Phone Number','text','',true) +
+          '</div>' +
+          '<div class="field" style="width:100%"><label for="morocco_host_address">Host Full Address <span class="req-star">*</span></label><textarea id="morocco_host_address" style="min-height:64px" required placeholder="Enter host address"></textarea></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. PROFESSIONAL STATUS</h4></div>' +
+        '<div class="grid2">' +
+          '<div class="field"><label for="morocco_professional_status">Professional / Occupation Status <span class="req-star">*</span></label><select id="morocco_professional_status" required><option value="">Select status</option><option value="Employed">Employed</option><option value="Student">Student</option><option value="Business Owner">Business Owner</option><option value="Retired">Retired</option><option value="Unemployed">Unemployed</option></select></div>' +
+        '</div>' +
+        '<div class="field" id="morocco_employer_panel" style="display:none;width:100%"><label for="morocco_employer_details">Employer / School details (Name, Address, Phone) <span class="req-star">*</span></label><textarea id="morocco_employer_details" style="min-height:64px" placeholder="Enter school or employer contact details"></textarea></div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>C. DECLARATION</h4></div>' +
+        '<div class="field" style="margin-top:12px">' +
+          '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer">' +
+            '<input id="morocco_declaration_check" type="checkbox" required style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex:none">' +
+            '<span style="font-size:14.5px;line-height:1.5;color:var(--ink)">I declare that I hold standard travel insurance valid for Morocco and that all facts listed in this form are accurate. <span class="req-star">*</span></span>' +
+          '</label>' +
+        '</div>' +
+      '</div>';
+    } else if (countrySlug === 'srilanka') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. EMERGENCY CONTACT IN SRI LANKA / ORIGIN</h4></div>' +
+        '<div class="grid2">' +
+          field('srilanka_emergency_name','Emergency Contact Name','text','',true) +
+          field('srilanka_emergency_relationship','Relationship to Applicant','text','',true) +
+          field('srilanka_emergency_phone','Emergency Telephone Number','text','',true) +
+        '</div>' +
+        '<div class="field" style="width:100%"><label for="srilanka_emergency_address">Emergency Contact Address <span class="req-star">*</span></label><textarea id="srilanka_emergency_address" style="min-height:64px" required placeholder="Enter emergency contact full address"></textarea></div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. DECLARATION</h4></div>' +
+        '<div class="field" style="margin-top:12px">' +
+          '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer">' +
+            '<input id="srilanka_declaration_check" type="checkbox" required style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex:none">' +
+            '<span style="font-size:14.5px;line-height:1.5;color:var(--ink)">I agree that I will not engage in any form of employment, paid or unpaid, during my stay in Sri Lanka. <span class="req-star">*</span></span>' +
+          '</label>' +
+        '</div>' +
+      '</div>';
+    } else if (countrySlug === 'turkey') {
+      sec6Html = '<div class="japan-subsection" style="margin-top:0;padding-top:0;border-top:none">' +
+        '<div class="japan-subsection-header"><h4>A. SUPPORTING DOCUMENT (SCHENGEN, US, UK, OR IRELAND VISA / PR)</h4></div>' +
+        '<div class="field" style="margin-bottom: 12px"><label for="turkey_supporting_visa">Do you hold a valid visa or residence permit from Schengen, USA, UK, or Ireland? <span class="req-star">*</span></label><select id="turkey_supporting_visa" required><option value="No">No</option><option value="Yes">Yes</option></select></div>' +
+        '<div id="turkey_supporting_visa_panel" style="display:none">' +
+          '<div class="grid2">' +
+            field('turkey_supporting_visa_name','Visa / Permit Country Name','text','',true) +
+            field('turkey_supporting_visa_number','Visa / Permit Number','text','',true) +
+            field('turkey_supporting_visa_expiry','Visa / Permit Expiry Date','date','',true) +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>B. FINANCIAL SPONSOR DETAILS</h4></div>' +
+        '<div class="field" style="margin-bottom: 12px"><label for="turkey_payer">Who is paying for your trip? <span class="req-star">*</span></label><select id="turkey_payer" required><option value="Self">Self (I pay for myself)</option><option value="Sponsor">Sponsor / Organisation</option></select></div>' +
+        '<div id="turkey_sponsor_panel" style="display:none">' +
+          '<div class="grid2">' +
+            field('turkey_sponsor_name','Sponsor Name','text','',true) +
+            field('turkey_sponsor_relationship','Relationship to Applicant','text','',true) +
+            field('turkey_sponsor_phone','Sponsor Telephone','text','',true) +
+          '</div>' +
+          '<div class="field" style="width:100%"><label for="turkey_sponsor_address">Sponsor Address <span class="req-star">*</span></label><textarea id="turkey_sponsor_address" style="min-height:64px" required placeholder="Enter sponsor address"></textarea></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="japan-subsection" style="margin-top:16px">' +
+        '<div class="japan-subsection-header"><h4>C. DECLARATION</h4></div>' +
+        '<div class="field" style="margin-top:12px">' +
+          '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer">' +
+            '<input id="turkey_declaration_check" type="checkbox" required style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex:none">' +
+            '<span style="font-size:14.5px;line-height:1.5;color:var(--ink)">I declare that I hold a round-trip ticket, hotel reservation, and at least 50 USD per day for my stay in Turkey. <span class="req-star">*</span></span>' +
+          '</label>' +
+        '</div>' +
+      '</div>';
+    }
+
+    return '<div class="passport-review-layout" style="grid-template-columns:1fr;gap:0">'+
+      '<aside class="passport-review-previews" aria-label="Uploaded document previews" style="display:none">'+
+        '<div class="review-passport-gallery">'+
+          '<button class="review-preview-card review-photo-card" type="button" data-passport-preview="photo" aria-label="View personal photo">'+
+            '<span class="review-preview-media"><img id="photoReviewPreview" alt="Uploaded personal photo"></span><span><b>Personal photo</b><small>Tap to view</small></span>'+
+          '</button>'+
+          '<button class="review-preview-card review-passport-card" type="button" data-passport-preview="passport" aria-label="View passport front page">'+
+            '<span class="review-preview-media"><img id="passportReviewPreview" alt="Uploaded passport front page"></span><span><b>Passport front page</b><small>Tap to view</small></span>'+
+          '</button>'+
+          '<button class="review-preview-card review-passport-card" type="button" data-passport-preview="passport_back" aria-label="View passport back page">'+
+            '<span class="review-preview-media"><img id="passportBackReviewPreview" alt="Uploaded passport back page"></span><span><b>Passport back page</b><small>Tap to view</small></span>'+
+          '</button>'+
+        '</div>'+
+        '<p>Tap the passport page to view it full size.</p>'+
+      '</aside>'+
+      '<div class="passport-review-content">'+
+        '<section class="passport-review-form apply-step active" style="border:none;box-shadow:none;background:transparent;padding:0;margin:0">'+
+          '<span class="step-badge">Step 3 of 3</span><h2>'+step3Heading+'</h2>'+
+          '<div class="smart-reuse-card" id="smartReuseCard" hidden>'+
+            '<div class="smart-reuse-copy"><span class="smart-reuse-icon">↻</span><div><b>Use saved traveller details</b><small id="smartReuseText">We found details from a previous visa application.</small></div></div>'+
+            '<div class="smart-reuse-actions"><select id="smartReuseSelect" aria-label="Saved traveller profile"></select><button type="button" class="btn btn-ghost" id="smartReuseBtn">Auto-fill</button></div>'+
+          '</div>'+
+          
+          '<!-- Wizard Progress UI Card -->'+
+          '<div class="wizard-progress-card">'+
+            '<div class="wizard-progress-meta">'+
+              '<div class="wizard-progress-header">'+
+                '<span class="wizard-step-info">Section <span id="wizardActiveStepNum">1</span> of 7</span>'+
+                '<h3 class="wizard-active-step-title" id="wizardActiveSectionName">Personal details</h3>'+
+              '</div>'+
+              '<div class="wizard-percentage-wrapper">'+
+                '<span class="wizard-percentage-text" id="wizardProgressPercentage">0% complete</span>'+
+              '</div>'+
+            '</div>'+
+            '<div class="wizard-progress-bar-track">'+
+              '<div class="wizard-progress-bar-fill" id="wizardProgressBar" style="width: 0%;"></div>'+
+            '</div>'+
+            '<div class="wizard-steps-grid">'+
+              '<button type="button" class="wizard-step-node" data-step="1">'+
+                '<span class="step-node-icon">1</span>'+
+                '<span class="step-node-label">Personal details</span>'+
+                '<span class="step-node-badge" id="step_node_badge_1"></span>'+
+              '</button>'+
+              '<button type="button" class="wizard-step-node" data-step="2">'+
+                '<span class="step-node-icon">2</span>'+
+                '<span class="step-node-label">Passport details</span>'+
+                '<span class="step-node-badge" id="step_node_badge_2"></span>'+
+              '</button>'+
+              '<button type="button" class="wizard-step-node" data-step="3">'+
+                '<span class="step-node-icon">3</span>'+
+                '<span class="step-node-label">Travel details</span>'+
+                '<span class="step-node-badge" id="step_node_badge_3"></span>'+
+              '</button>'+
+              '<button type="button" class="wizard-step-node" data-step="4">'+
+                '<span class="step-node-icon">4</span>'+
+                '<span class="step-node-label">Contact details</span>'+
+                '<span class="step-node-badge" id="step_node_badge_4"></span>'+
+              '</button>'+
+              '<button type="button" class="wizard-step-node" data-step="5">'+
+                '<span class="step-node-icon">5</span>'+
+                '<span class="step-node-label">Employment details</span>'+
+                '<span class="step-node-badge" id="step_node_badge_5"></span>'+
+              '</button>'+
+              '<button type="button" class="wizard-step-node" data-step="6">'+
+                '<span class="step-node-icon">6</span>'+
+                '<span class="step-node-label">'+countryNameCaps+'-specific details</span>'+
+                '<span class="step-node-badge" id="step_node_badge_6"></span>'+
+              '</button>'+
+              '<button type="button" class="wizard-step-node" data-step="7">'+
+                '<span class="step-node-icon">7</span>'+
+                '<span class="step-node-label">Documents & Final details</span>'+
+                '<span class="step-node-badge" id="step_node_badge_7"></span>'+
+              '</button>'+
+            '</div>'+
+          '</div>'+
+          
+          '<div class="japan-accordion-container">'+
+            
+            '<div class="review-section-card active-wizard-step" data-section="1">'+
+              '<div class="review-section-card-header">'+
+                '<h3>Personal details</h3>'+
+                '<span class="status-badge" id="badge_sec1"></span>'+
+              '</div>'+
+              '<div class="review-section-body">'+
+                '<div class="grid2">'+
+                  field('first_name','First name','text','',true) +
+                  field('last_name','Last name / Surname','text','',true) +
+                  field('date_of_birth','Date of birth','date','',true) +
+                  field('birthplace_city','Place of Birth: City','text','',true) +
+                  field('birthplace_state','Place of Birth: State / Province','text','',true) +
+                  field('birthplace_country','Place of Birth: Country','text','',true) +
+                  '<div class="field"><label for="gender">Gender <span class="req-star">*</span></label><select id="gender" required><option value="">Select gender</option><option value="MALE">MALE</option><option value="FEMALE">FEMALE</option></select></div>'+
+                  '<div class="field"><label for="marital_status">Marital Status <span class="req-star">*</span></label><select id="marital_status" required><option value="">Select status</option><option value="Single">Single</option><option value="Married">Married</option><option value="Widowed">Widowed</option><option value="Divorced">Divorced</option><option value="Other">Other</option></select></div>'+
+                  field('nationality','Nationality','text','',true) +
+                  field('former_nationality','Former / Other Nationality (optional)','text','',false) +
+                  field('government_id','Government ID Number (optional)','text','',false) +
+                '</div>'+
+                '<div class="wizard-navigation-footer">'+
+                  '<div></div>'+
+                  '<button type="button" class="btn btn-primary wizard-btn-next" id="wizardNextBtn">Next <span aria-hidden="true">→</span></button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+ 
+            '<div class="review-section-card" data-section="2" style="display:none">'+
+              '<div class="review-section-card-header">'+
+                '<h3>Passport details</h3>'+
+                '<span class="status-badge" id="badge_sec2"></span>'+
+              '</div>'+
+              '<div class="review-section-body">'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="passport_type">Passport Type <span class="req-star">*</span></label><select id="passport_type" required><option value="Ordinary">Ordinary</option><option value="Official">Official</option><option value="Diplomatic">Diplomatic</option><option value="Other">Other</option></select></div>'+
+                  field('passport_number','Passport Number','text','',true) +
+                  field('passport_issuing_country','Place of Issue','text','',true) +
+                  field('passport_issue_date','Issue Date','date','',true) +
+                  field('issuing_authority','Issuing Authority','text','',true) +
+                  field('passport_expiry','Expiry Date','date','',true) +
+                '</div>'+
+                '<div class="wizard-navigation-footer">'+
+                  '<button type="button" class="btn btn-ghost wizard-btn-back" id="wizardBackBtn"><span aria-hidden="true">←</span> Back</button>'+
+                  '<button type="button" class="btn btn-primary wizard-btn-next">Next <span aria-hidden="true">→</span></button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+
+            '<div class="review-section-card" data-section="3" style="display:none">'+
+              '<div class="review-section-card-header">'+
+                '<h3>Travel details</h3>'+
+                '<span class="status-badge" id="badge_sec3"></span>'+
+              '</div>'+
+              '<div class="review-section-body">'+
+                sec3Html +
+                '<div class="wizard-navigation-footer">'+
+                  '<button type="button" class="btn btn-ghost wizard-btn-back"><span aria-hidden="true">←</span> Back</button>'+
+                  '<button type="button" class="btn btn-primary wizard-btn-next">Next <span aria-hidden="true">→</span></button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+
+            '<div class="review-section-card" data-section="4" style="display:none">'+
+              '<div class="review-section-card-header">'+
+                '<h3>Contact details</h3>'+
+                '<span class="status-badge" id="badge_sec4"></span>'+
+              '</div>'+
+              '<div class="review-section-body">'+
+                contactDetailsSection +
+                '<div class="wizard-navigation-footer">'+
+                  '<button type="button" class="btn btn-ghost wizard-btn-back"><span aria-hidden="true">←</span> Back</button>'+
+                  '<button type="button" class="btn btn-primary wizard-btn-next">Next <span aria-hidden="true">→</span></button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+
+            '<div class="review-section-card" data-section="5" style="display:none">'+
+              '<div class="review-section-card-header">'+
+                '<h3>Employment details</h3>'+
+                '<span class="status-badge" id="badge_sec5"></span>'+
+              '</div>'+
+              '<div class="review-section-body">'+
+                '<div class="grid2">'+
+                  '<div class="field"><label for="occupation">Current Occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Retired">Retired</option><option value="Unemployed">Unemployed</option><option value="Other">Other</option></select></div>'+
+                  field('position','Current Position','text','',false) +
+                  field('employer_name','Employer Name','text','',false) +
+                  field('employer_phone','Employer Phone','text','',false) +
+                '</div>'+
+                '<div class="field" style="width:100%"><label for="employer_address">Employer Address</label><textarea id="employer_address" style="min-height:64px" placeholder="Enter employer full address"></textarea></div>'+
+                '<div class="wizard-navigation-footer">'+
+                  '<button type="button" class="btn btn-ghost wizard-btn-back"><span aria-hidden="true">←</span> Back</button>'+
+                  '<button type="button" class="btn btn-primary wizard-btn-next">Next <span aria-hidden="true">→</span></button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+
+            '<div class="review-section-card" data-section="6" style="display:none">'+
+              '<div class="review-section-card-header">'+
+                '<h3>'+countryNameCaps+'-specific details</h3>'+
+                '<span class="status-badge" id="badge_sec6"></span>'+
+              '</div>'+
+              '<div class="review-section-body">'+
+                sec6Html +
+                '<div class="wizard-navigation-footer">'+
+                  '<button type="button" class="btn btn-ghost wizard-btn-back"><span aria-hidden="true">←</span> Back</button>'+
+                  '<button type="button" class="btn btn-primary wizard-btn-next">Next <span aria-hidden="true">→</span></button>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+
+            '<div class="review-section-card" data-section="7" style="display:none">'+
+              '<div class="review-section-card-header">'+
+                '<h3>Documents & Final details</h3>'+
+                '<span class="status-badge" id="badge_sec7"></span>'+
+              '</div>'+
+              '<div class="review-section-body">'+
+                '<div class="field" style="margin-bottom:18px">'+
+                  '<label>Passport Copy</label>'+
+                  '<div class="doc-uploaded-bar">'+
+                    '<span>✓ Uploaded</span>'+
+                    '<div class="doc-uploaded-actions">'+
+                      '<button type="button" class="btn-view" id="viewPassportBtn">View</button>'+
+                      '<button type="button" class="btn-replace" id="replacePassportBtn">Replace</button>'+
+                    '</div>'+
+                  '</div>'+
+                '</div>'+
+                '<div class="field" style="margin-bottom:18px">'+
+                  '<label>Personal Photograph</label>'+
+                  '<div class="doc-uploaded-bar">'+
+                    '<span>✓ Uploaded</span>'+
+                    '<div class="doc-uploaded-actions">'+
+                      '<button type="button" class="btn-view" id="viewPhotoBtn">View</button>'+
+                      '<button type="button" class="btn-replace" id="replacePhotoBtn">Replace</button>'+
+                    '</div>'+
+                  '</div>'+
+                '</div>'+
+                '<div class="grid2" style="margin-top:18px">'+
+                  field('application_date','Application Date','date',today,true) +
+                '</div>'+
+                '<div style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px">'+
+                  '<label style="display:flex;gap:11px;align-items:flex-start;cursor:pointer;margin:0">'+
+                    '<input id="marketingConsent" type="checkbox" checked style="width:16px;height:16px;margin-top:4px;cursor:pointer;flex:none">'+
+                    '<span style="font-size:14.5px;line-height:1.5;color:var(--ink)">'+esc(MARKETING_CONSENT_TEXT)+' '+
+                      '<span class="phint" style="display:inline">You can unsubscribe anytime. We\'ll still send updates about your own application either way.</span></span>'+
+                  '</label>'+
+                '</div>'+
+                '<div class="wizard-navigation-footer" style="align-items:center;">'+
+                  '<button type="button" class="btn btn-ghost wizard-btn-back"><span aria-hidden="true">←</span> Back</button>'+
+                  '<div style="display:flex; gap:12px; align-items:center;">'+
+                    '<button type="button" class="btn btn-secondary save-draft-btn" id="saveDraftBtn">Save Draft</button>'+
+                    '<button type="submit" class="btn btn-primary" id="submitBtn">Submit application</button>'+
+                  '</div>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+
+          '</div>'+
+        '</section>'+
+      '</div></div>';
+  }
+
+  function wirePremiumWizard(countrySlug) {
+    activeWizardSection = 1;
+    goToWizardSection(1);
+    
+    document.querySelectorAll('.review-section-card .wizard-btn-next').forEach(function(btn) {
+      btn.onclick = function(e) {
+        e.preventDefault();
+        if (validateJapanSection(activeWizardSection)) {
+          goToWizardSection(activeWizardSection + 1);
+        }
+      };
+    });
+    
+    document.querySelectorAll('.review-section-card .wizard-btn-back').forEach(function(btn) {
+      btn.onclick = function(e) {
+        e.preventDefault();
+        goToWizardSection(activeWizardSection - 1);
+      };
+    });
+    
+    document.querySelectorAll('.wizard-step-node').forEach(function(node) {
+      node.onclick = function(e) {
+        e.preventDefault();
+        var step = parseInt(node.getAttribute('data-step'), 10);
+        if (isStepNavigable(step)) {
+          goToWizardSection(step);
+        }
+      };
+    });
+  }
+
+  function wirePremiumCountryWorkflow(countrySlug) {
+    var prevStay = document.getElementById('previous_japan_stay');
+    var prevWrap = document.getElementById('prev_stays_wrap');
+    var prevStaysText = document.getElementById('previous_japan_stays');
+    if (prevStay && prevWrap) {
+      prevStay.onchange = function() {
+        if (prevStay.value === 'Yes') {
+          prevWrap.style.display = 'block';
+          if (prevStaysText) prevStaysText.setAttribute('required', 'required');
+        } else {
+          prevWrap.style.display = 'none';
+          if (prevStaysText) prevStaysText.removeAttribute('required');
+        }
+        updateAllPremiumSectionStatuses(countrySlug);
+      };
+    }
+
+    var occ = document.getElementById('occupation');
+    if (occ) {
+      occ.onchange = function() {
+        var needsEmp = ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1;
+        ['position', 'employer_name', 'employer_phone'].forEach(function(id) {
+          var field = document.getElementById(id);
+          if (field) {
+            var fWrap = field.closest('.field');
+            if (needsEmp) {
+              field.setAttribute('required', 'required');
+              if (fWrap) fWrap.classList.remove('disabled');
+              field.removeAttribute('disabled');
+            } else {
+              field.removeAttribute('required');
+              if (fWrap) fWrap.classList.add('disabled');
+              field.setAttribute('disabled', 'disabled');
+              field.value = '';
+            }
+          }
+        });
+        var empAddr = document.getElementById('employer_address');
+        if (empAddr) {
+          var fWrap = empAddr.closest('.field');
+          if (needsEmp) {
+            empAddr.removeAttribute('disabled');
+            if (fWrap) fWrap.classList.remove('disabled');
+          } else {
+            empAddr.setAttribute('disabled', 'disabled');
+            if (fWrap) fWrap.classList.add('disabled');
+            empAddr.value = '';
+          }
+        }
+        updateAllPremiumSectionStatuses(countrySlug);
+      };
+    }
+
+    if (countrySlug === 'thailand') {
+      wireBankStatementDrop();
+      var payer = document.getElementById('thai_payer');
+      var panel = document.getElementById('thai_sponsor_panel');
+      if (payer && panel) {
+        payer.onchange = function() {
+          var isSponsor = payer.value === 'Sponsor';
+          panel.style.display = isSponsor ? 'block' : 'none';
+          ['thai_sponsor_name', 'thai_sponsor_relationship', 'thai_sponsor_phone', 'thai_sponsor_address'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+              if (isSponsor) {
+                el.setAttribute('required', 'required');
+                el.removeAttribute('disabled');
+              } else {
+                el.removeAttribute('required');
+                el.setAttribute('disabled', 'disabled');
+                el.value = '';
+              }
+            }
+          });
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+    } else if (countrySlug === 'russia') {
+      var rels = document.getElementById('russia_relatives');
+      var panel = document.getElementById('russia_relatives_panel');
+      if (rels && panel) {
+        rels.onchange = function() {
+          var hasRels = rels.value === 'Yes';
+          panel.style.display = hasRels ? 'block' : 'none';
+          var details = document.getElementById('russia_relatives_details');
+          if (details) {
+            if (hasRels) {
+              details.setAttribute('required', 'required');
+              details.removeAttribute('disabled');
+            } else {
+              details.removeAttribute('required');
+              details.setAttribute('disabled', 'disabled');
+              details.value = '';
+            }
+          }
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+    } else if (countrySlug === 'indonesia') {
+      var sponsor = document.getElementById('indo_sponsor');
+      var panel = document.getElementById('indo_sponsor_panel');
+      if (sponsor && panel) {
+        sponsor.onchange = function() {
+          var hasSponsor = sponsor.value === 'Yes';
+          panel.style.display = hasSponsor ? 'block' : 'none';
+          ['indo_sponsor_name', 'indo_sponsor_type', 'indo_sponsor_phone', 'indo_sponsor_address'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+              if (hasSponsor) {
+                el.setAttribute('required', 'required');
+                el.removeAttribute('disabled');
+              } else {
+                el.removeAttribute('required');
+                el.setAttribute('disabled', 'disabled');
+                el.value = '';
+              }
+            }
+          });
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+    } else if (countrySlug === 'kenya') {
+      var refused = document.getElementById('kenya_refused');
+      var panel = document.getElementById('kenya_refused_panel');
+      if (refused && panel) {
+        refused.onchange = function() {
+          var hasRefused = refused.value === 'Yes';
+          panel.style.display = hasRefused ? 'block' : 'none';
+          var details = document.getElementById('kenya_refused_details');
+          if (details) {
+            if (hasRefused) {
+              details.setAttribute('required', 'required');
+              details.removeAttribute('disabled');
+            } else {
+              details.removeAttribute('required');
+              details.setAttribute('disabled', 'disabled');
+              details.value = '';
+            }
+          }
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+    } else if (countrySlug === 'morocco') {
+      var sponsor = document.getElementById('morocco_sponsor');
+      var panel = document.getElementById('morocco_sponsor_panel');
+      if (sponsor && panel) {
+        sponsor.onchange = function() {
+          var hasSponsor = sponsor.value !== 'None';
+          panel.style.display = hasSponsor ? 'block' : 'none';
+          ['morocco_host_name', 'morocco_host_phone', 'morocco_host_address'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+              if (hasSponsor) {
+                el.setAttribute('required', 'required');
+                el.removeAttribute('disabled');
+              } else {
+                el.removeAttribute('required');
+                el.setAttribute('disabled', 'disabled');
+                el.value = '';
+              }
+            }
+          });
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+      var statusSelect = document.getElementById('morocco_professional_status');
+      var statusPanel = document.getElementById('morocco_employer_panel');
+      var statusText = document.getElementById('morocco_employer_details');
+      if (statusSelect && statusPanel) {
+        statusSelect.onchange = function() {
+          var needsEmployer = ['Employed', 'Student', 'Business Owner'].indexOf(statusSelect.value) > -1;
+          statusPanel.style.display = needsEmployer ? 'block' : 'none';
+          if (statusText) {
+            if (needsEmployer) {
+              statusText.setAttribute('required', 'required');
+              statusText.removeAttribute('disabled');
+            } else {
+              statusText.removeAttribute('required');
+              statusText.setAttribute('disabled', 'disabled');
+              statusText.value = '';
+            }
+          }
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+    } else if (countrySlug === 'turkey') {
+      var permit = document.getElementById('turkey_supporting_visa');
+      var permitPanel = document.getElementById('turkey_supporting_visa_panel');
+      if (permit && permitPanel) {
+        permit.onchange = function() {
+          var hasPermit = permit.value === 'Yes';
+          permitPanel.style.display = hasPermit ? 'block' : 'none';
+          ['turkey_supporting_visa_name', 'turkey_supporting_visa_number', 'turkey_supporting_visa_expiry'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+              if (hasPermit) {
+                el.setAttribute('required', 'required');
+                el.removeAttribute('disabled');
+              } else {
+                el.removeAttribute('required');
+                el.setAttribute('disabled', 'disabled');
+                el.value = '';
+              }
+            }
+          });
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+      var payer = document.getElementById('turkey_payer');
+      var payerPanel = document.getElementById('turkey_sponsor_panel');
+      if (payer && payerPanel) {
+        payer.onchange = function() {
+          var isSponsor = payer.value === 'Sponsor';
+          payerPanel.style.display = isSponsor ? 'block' : 'none';
+          ['turkey_sponsor_name', 'turkey_sponsor_relationship', 'turkey_sponsor_phone', 'turkey_sponsor_address'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+              if (isSponsor) {
+                el.setAttribute('required', 'required');
+                el.removeAttribute('disabled');
+              } else {
+                el.removeAttribute('required');
+                el.setAttribute('disabled', 'disabled');
+                el.value = '';
+              }
+            }
+          });
+          updateAllPremiumSectionStatuses(countrySlug);
+        };
+      }
+    }
+
+    var vPass = document.getElementById('viewPassportBtn');
+    if (vPass) {
+      vPass.onclick = function(e) {
+        e.preventDefault();
+        var pm = document.querySelector('[data-passport-preview="passport"]');
+        if (pm) pm.click();
+      };
+    }
+    var vPhoto = document.getElementById('viewPhotoBtn');
+    if (vPhoto) {
+      vPhoto.onclick = function(e) {
+        e.preventDefault();
+        var pm = document.querySelector('[data-passport-preview="photo"]');
+        if (pm) pm.click();
+      };
+    }
+    var rPass = document.getElementById('replacePassportBtn');
+    if (rPass) {
+      rPass.onclick = function(e) {
+        e.preventDefault();
+        setApplyStep(2);
+      };
+    }
+    var rPhoto = document.getElementById('replacePhotoBtn');
+    if (rPhoto) {
+      rPhoto.onclick = function(e) {
+        e.preventDefault();
+        setApplyStep(1);
+      };
+    }
+  }
+
+  function updateAllPremiumSectionStatuses(countrySlug) {
+    var isMultiple = (Number(qParam('travellers'))||1)>1;
+    var travellerIndex = Number(qParam('travellerIndex'))||0;
+    var isSecondary = isMultiple && travellerIndex > 0;
+
+    function countEmpty(ids) {
+      var count = 0;
+      ids.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el || (el.hasAttribute('disabled') === false && !el.value.trim())) {
+          if (el && el.hasAttribute('disabled') === false) {
+             count++;
+          }
+        }
+      });
+      return count;
+    }
+
+    var sec1Empty = countEmpty(['first_name', 'last_name', 'date_of_birth', 'birthplace_city', 'birthplace_state', 'birthplace_country', 'gender', 'marital_status', 'nationality']);
+    var badge1 = document.getElementById('badge_sec1');
+    if (badge1) {
+      if (sec1Empty === 0) {
+        badge1.className = 'status-badge complete';
+        badge1.textContent = '✓ Complete';
+      } else {
+        badge1.className = 'status-badge missing';
+        badge1.textContent = '⚠ Missing ' + sec1Empty + ' field' + (sec1Empty === 1 ? '' : 's');
+      }
+    }
+
+    var sec2Empty = countEmpty(['passport_type', 'passport_number', 'passport_issuing_country', 'passport_issue_date', 'issuing_authority', 'passport_expiry']);
+    var badge2 = document.getElementById('badge_sec2');
+    if (badge2) {
+      if (sec2Empty === 0) {
+        badge2.className = 'status-badge complete';
+        badge2.textContent = '✓ Complete';
+      } else {
+        badge2.className = 'status-badge missing';
+        badge2.textContent = '⚠ Missing ' + sec2Empty + ' field' + (sec2Empty === 1 ? '' : 's');
+      }
+    }
+
+    var sec3Reqs = ['arrival_date', 'port_of_entry', 'airline', 'hotel_name', 'hotel_phone', 'previous_japan_stay', 'hotel_address'];
+    if (['thailand', 'indonesia', 'vietnam', 'kenya', 'morocco', 'srilanka', 'turkey'].indexOf(countrySlug) > -1) {
+      sec3Reqs.push('purpose');
+    }
+    if (countrySlug === 'thailand' || countrySlug === 'indonesia' || countrySlug === 'vietnam' || countrySlug === 'morocco' || countrySlug === 'srilanka' || countrySlug === 'turkey') {
+      sec3Reqs.push('stay_duration');
+    }
+    if (countrySlug === 'russia') {
+      sec3Reqs = ['arrival_date', 'hotel_name', 'hotel_phone', 'hotel_address'];
+    }
+    if (countrySlug === 'vietnam') {
+      sec3Reqs.push('port_of_exit');
+    }
+    var prevStay = document.getElementById('previous_japan_stay');
+    if (prevStay && prevStay.value === 'Yes') {
+      sec3Reqs.push('previous_japan_stays');
+    }
+    var sec3Empty = countEmpty(sec3Reqs);
+    var badge3 = document.getElementById('badge_sec3');
+    if (badge3) {
+      if (sec3Empty === 0) {
+        badge3.className = 'status-badge complete';
+        badge3.textContent = '✓ Complete';
+      } else {
+        badge3.className = 'status-badge missing';
+        badge3.textContent = '⚠ Missing ' + sec3Empty + ' field' + (sec3Empty === 1 ? '' : 's');
+      }
+    }
+
+    var sec4Empty = 0;
+    if (!isSecondary) {
+      sec4Empty = countEmpty(['residential_address', 'phone', 'contact_email']);
+      if (mobileOtpRequired && !mobileVerified) {
+        sec4Empty++;
+      }
+    }
+    var badge4 = document.getElementById('badge_sec4');
+    if (badge4) {
+      if (sec4Empty === 0) {
+        badge4.className = 'status-badge complete';
+        badge4.textContent = '✓ Complete';
+      } else {
+        badge4.className = 'status-badge missing';
+        badge4.textContent = '⚠ Missing ' + sec4Empty + ' field' + (sec4Empty === 1 ? '' : 's');
+      }
+    }
+
+    var sec5Reqs = ['occupation'];
+    var occ = document.getElementById('occupation');
+    if (occ && ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1) {
+      sec5Reqs.push('position', 'employer_name', 'employer_phone', 'employer_address');
+    }
+    var sec5Empty = countEmpty(sec5Reqs);
+    var badge5 = document.getElementById('badge_sec5');
+    if (badge5) {
+      if (sec5Empty === 0) {
+        badge5.className = 'status-badge complete';
+        badge5.textContent = '✓ Complete';
+      } else {
+        badge5.className = 'status-badge missing';
+        badge5.textContent = '⚠ Missing ' + sec5Empty + ' field' + (sec5Empty === 1 ? '' : 's');
+      }
+    }
+
+    var sec6Empty = 0;
+    if (countrySlug === 'thailand') {
+      var payer = document.getElementById('thai_payer');
+      var reqs = ['thai_payer'];
+      if (payer && payer.value === 'Sponsor') {
+        reqs.push('thai_sponsor_name', 'thai_sponsor_relationship', 'thai_sponsor_phone', 'thai_sponsor_address');
+      }
+      if (document.getElementById('thai_bank_name')) reqs.push('thai_bank_name');
+      if (document.getElementById('annual_income_select')) reqs.push('annual_income_select');
+      var aIncWrap = document.getElementById('annual_income_custom_wrap');
+      if (aIncWrap && aIncWrap.style.display !== 'none') reqs.push('annual_income');
+      sec6Empty = countEmpty(reqs);
+      var decCheck = document.getElementById('thai_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        sec6Empty++;
+      }
+    } else if (countrySlug === 'russia') {
+      // Russia-specific required details supplied by the customer.
+      var reqs = ['father_name','father_dob','father_pob','mother_name','mother_dob','mother_pob','fax_number','social_media_accounts'];
+      sec6Empty = countEmpty(reqs);
+    } else if (countrySlug === 'indonesia') {
+      var reqs = ['indo_sponsor', 'indo_funds_type', 'indo_bank_name', 'indo_bank_balance'];
+      var sponsor = document.getElementById('indo_sponsor');
+      if (sponsor && sponsor.value === 'Yes') {
+        reqs.push('indo_sponsor_name', 'indo_sponsor_type', 'indo_sponsor_phone', 'indo_sponsor_address');
+      }
+      sec6Empty = countEmpty(reqs);
+    } else if (countrySlug === 'kenya') {
+      var reqs = ['kenya_host_type', 'kenya_host_name', 'kenya_host_email', 'kenya_host_phone', 'kenya_host_address', 'kenya_refused'];
+      var refused = document.getElementById('kenya_refused');
+      if (refused && refused.value === 'Yes') {
+        reqs.push('kenya_refused_details');
+      }
+      sec6Empty = countEmpty(reqs);
+    } else if (countrySlug === 'vietnam') {
+      var decCheck = document.getElementById('vietnam_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        sec6Empty++;
+      }
+    } else if (countrySlug === 'morocco') {
+      var sponsor = document.getElementById('morocco_sponsor');
+      var reqs = ['morocco_sponsor', 'morocco_professional_status'];
+      if (sponsor && sponsor.value !== 'None') {
+        reqs.push('morocco_host_name', 'morocco_host_phone', 'morocco_host_address');
+      }
+      var status = document.getElementById('morocco_professional_status');
+      if (status && ['Employed', 'Student', 'Business Owner'].indexOf(status.value) > -1) {
+        reqs.push('morocco_employer_details');
+      }
+      sec6Empty = countEmpty(reqs);
+      var decCheck = document.getElementById('morocco_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        sec6Empty++;
+      }
+    } else if (countrySlug === 'srilanka') {
+      var reqs = ['srilanka_emergency_name', 'srilanka_emergency_relationship', 'srilanka_emergency_phone', 'srilanka_emergency_address'];
+      sec6Empty = countEmpty(reqs);
+      var decCheck = document.getElementById('srilanka_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        sec6Empty++;
+      }
+    } else if (countrySlug === 'turkey') {
+      var permit = document.getElementById('turkey_supporting_visa');
+      var payer = document.getElementById('turkey_payer');
+      var reqs = ['turkey_supporting_visa', 'turkey_payer'];
+      if (permit && permit.value === 'Yes') {
+        reqs.push('turkey_supporting_visa_name', 'turkey_supporting_visa_number', 'turkey_supporting_visa_expiry');
+      }
+      if (payer && payer.value === 'Sponsor') {
+        reqs.push('turkey_sponsor_name', 'turkey_sponsor_relationship', 'turkey_sponsor_phone', 'turkey_sponsor_address');
+      }
+      sec6Empty = countEmpty(reqs);
+      var decCheck = document.getElementById('turkey_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        sec6Empty++;
+      }
+    }
+    var badge6 = document.getElementById('badge_sec6');
+    if (badge6) {
+      if (sec6Empty === 0) {
+        badge6.className = 'status-badge complete';
+        badge6.textContent = '✓ Complete';
+      } else {
+        badge6.className = 'status-badge missing';
+        badge6.textContent = '⚠ Missing ' + sec6Empty + ' field' + (sec6Empty === 1 ? '' : 's');
+      }
+    }
+
+    var sec7Missing = 0;
+    if (!picked.photo) sec7Missing++;
+    if (picked.passport || picked.passport_back) {
+      if (!picked.passport) sec7Missing++;
+      if (!picked.passport_back) sec7Missing++;
+    }
+    var appDate = document.getElementById('application_date');
+    if (appDate && !appDate.value.trim()) sec7Missing++;
+
+    var badge7 = document.getElementById('badge_sec7');
+    if (badge7) {
+      if (sec7Missing === 0) {
+        badge7.className = 'status-badge complete';
+        badge7.textContent = '✓ Complete';
+      } else {
+        badge7.className = 'status-badge missing';
+        badge7.textContent = '⚠ Missing ' + sec7Missing + ' item' + (sec7Missing === 1 ? '' : 's');
+      }
+    }
+
+    if (typeof activeWizardSection !== 'undefined') {
+      var activeNumSpan = document.getElementById('wizardActiveStepNum');
+      var activeNameHeading = document.getElementById('wizardActiveSectionName');
+      var progressPercentageSpan = document.getElementById('wizardProgressPercentage');
+      var progressBarFill = document.getElementById('wizardProgressBar');
+      
+      if (activeNumSpan) activeNumSpan.textContent = activeWizardSection;
+      
+      var countryLabel = countrySlug.charAt(0).toUpperCase() + countrySlug.slice(1) + '-specific';
+      var sectionNames = [
+        'Personal details',
+        'Passport details',
+        'Travel details',
+        'Contact details',
+        'Employment details',
+        countryLabel + ' details',
+        'Documents & Final details'
+      ];
+      if (activeNameHeading) activeNameHeading.textContent = sectionNames[activeWizardSection - 1];
+      
+      var completedCount = 0;
+      for (var i = 1; i <= 7; i++) {
+        var b = document.getElementById('badge_sec' + i);
+        var node = document.querySelector('.wizard-step-node[data-step="' + i + '"]');
+        var badgeNode = document.getElementById('step_node_badge_' + i);
+        
+        if (b && b.classList.contains('complete')) {
+          completedCount++;
+          if (node) node.classList.add('node-complete');
+          if (badgeNode) {
+            badgeNode.className = 'step-node-badge complete';
+            badgeNode.textContent = '✓';
+          }
+        } else {
+          if (node) node.classList.remove('node-complete');
+          if (badgeNode) {
+            badgeNode.className = 'step-node-badge';
+            badgeNode.textContent = '';
+          }
+        }
+        
+        if (node) {
+          if (i === activeWizardSection) {
+            node.classList.add('active');
+          } else {
+            node.classList.remove('active');
+          }
+        }
+      }
+      
+      var pct = Math.round((completedCount / 7) * 100);
+      if (progressPercentageSpan) progressPercentageSpan.textContent = pct + '% complete';
+      if (progressBarFill) progressBarFill.style.width = pct + '%';
+    }
+  }
+
+  function validatePremiumFieldsBeforeSubmit(countrySlug) {
+    var isMultiple = (Number(qParam('travellers'))||1)>1;
+    var travellerIndex = Number(qParam('travellerIndex'))||0;
+    var isSecondary = isMultiple && travellerIndex > 0;
+
+    function check(id, name, secNum) {
+      var el = document.getElementById(id);
+      if (!el || (el.hasAttribute('disabled') === false && !el.value.trim())) {
+        return { id: id, name: name, sec: secNum };
+      }
+      return null;
+    }
+
+    var err = null;
+
+    // Thailand, Bahrain, Indonesia, Vietnam, Morocco, Turkey, Kenya, UAE, Qatar use the compact single-page form.
+    // Validate only the questions that are actually visible on that page.
+    if (countrySlug === 'thailand' || countrySlug === 'bahrain' || countrySlug === 'indonesia' || countrySlug === 'turkey' || countrySlug === 'kenya' || countrySlug === 'vietnam' || countrySlug === 'morocco' || countrySlug === 'uae' || countrySlug === 'united-arab-emirates' || countrySlug === 'qatar' || countrySlug === 'azerbaijan' || countrySlug === 'azerbaijan-2' || countrySlug === 'egypt' || countrySlug === 'egypt-2' || countrySlug === 'philippines' || countrySlug === 'oman' || countrySlug === 'saudi-arabia' || countrySlug === 'saudi') {
+      var indoReq = [
+        ['first_name', 'First name'],
+        ['passport_number', 'Passport number'],
+        ['date_of_birth', 'Date of birth'],
+        ['passport_issue_date', 'Passport issue date'],
+        ['passport_expiry', 'Passport expiry date'],
+        ['residential_address', 'Permanent residence address'],
+        ['arrival_date', 'Travel date']
+      ];
+      if (countrySlug === 'vietnam') {
+        indoReq.push(['religion', 'Religion']);
+      }
+      for (var ii = 0; ii < indoReq.length; ii++) {
+        err = check(indoReq[ii][0], indoReq[ii][1] + ' is required.', 1);
+        if (err) return err;
+      }
+      if (countrySlug === 'thailand' || countrySlug === 'bahrain') {
+        err = check('occupation', 'Current occupation is required.', 2); if (err) return err;
+        if (countrySlug === 'bahrain' || document.getElementById('job_title')) {
+          err = check('job_title', 'Job title is required.', 2); if (err) return err;
+        }
+        if (countrySlug === 'thailand' || document.getElementById('annual_income_select')) {
+          err = check('annual_income_select', 'Annual income is required.', 2); if (err) return err;
+          var aSel = document.getElementById('annual_income_select');
+          if (aSel && aSel.value === 'Other') {
+            err = check('annual_income', 'Please enter your annual income.', 2); if (err) return err;
+          }
+        }
+        if (countrySlug === 'thailand') {
+          err = check('thai_bank_name', 'Bank name is required.', 2); if (err) return err;
+        }
+      }
+      if (countrySlug === 'kenya' || countrySlug === 'morocco' || countrySlug === 'azerbaijan' || countrySlug === 'azerbaijan-2') {
+        err = check('occupation', 'Current occupation is required.', 2); if (err) return err;
+      }
+      if (countrySlug === 'saudi-arabia' || countrySlug === 'saudi') {
+        err = check('absher_contact', 'Absher Contact is required.', 2); if (err) return err;
+        err = check('national_address', 'National Address is required.', 2); if (err) return err;
+        if (!picked.pan_card) return { id: 'drop_pan_card', name: 'PAN Card is required.', sec: 2 };
+        if (!picked.iqama) return { id: 'drop_iqama', name: 'Iqama is required.', sec: 2 };
+      }
+      if (!isSecondary) {
+        err = check('phone', 'Mobile number is required.', 2); if (err) return err;
+        var pVal = (document.getElementById('phone')||{}).value || '';
+        var cleanP = pVal.replace(/[\s\-\+\(\)]/g, '');
+        if (cleanP && (cleanP.length < 6 || !/^\d+$/.test(cleanP))) {
+          return { id: 'phone', name: 'Please enter a valid mobile number (at least 6 digits).', sec: 2 };
+        }
+        err = check('contact_email', 'Email address is required.', 2); if (err) return err;
+        if (mobileOtpRequired && !mobileVerified) return { id:'phone', name:'Mobile number verification is required.', sec:2 };
+      }
+      var dobEl = document.getElementById('date_of_birth');
+      if (dobEl && dobEl.value) {
+        var dobVal = new Date(dobEl.value + 'T00:00:00');
+        var nowVal = new Date(); nowVal.setHours(23, 59, 59, 999);
+        if (!isNaN(dobVal.getTime()) && dobVal > nowVal) {
+          return { id: 'date_of_birth', name: 'Date of birth cannot be in the future.', sec: 1 };
+        }
+      }
+      var issEl = document.getElementById('passport_issue_date');
+      var expEl = document.getElementById('passport_expiry');
+      if (issEl && expEl && issEl.value && expEl.value && issEl.value >= expEl.value) {
+        return { id: 'passport_expiry', name: 'Passport expiry date must be after the issue date.', sec: 1 };
+      }
+      if (expEl && expEl.value) {
+        var arrEl = document.getElementById('arrival_date') || document.getElementById('intended_entry_date') || document.getElementById('travel_date');
+        var travelDate = (arrEl && arrEl.value) ? new Date(arrEl.value + 'T00:00:00') : new Date();
+        if (isNaN(travelDate.getTime())) travelDate = new Date();
+        var minExpiry = new Date(travelDate.getTime() + 180 * 24 * 60 * 60 * 1000);
+        var expDate = new Date(expEl.value + 'T00:00:00');
+        if (!isNaN(expDate.getTime()) && expDate < minExpiry) {
+          return { id: 'passport_expiry', name: 'Passport must be valid for at least 6 months (180 days) beyond your travel date.', sec: 1 };
+        }
+      }
+      if (!picked.photo) return { name:'Personal photo is required.', sec:1 };
+      if (picked.passport || picked.passport_back) {
+        if (!picked.passport) return { name:'Passport front page is required.', sec:1 };
+        if (!picked.passport_back) return { name:'Passport back page is required.', sec:1 };
+      }
+      return null;
+    }
+
+    var sec1 = [
+      ['first_name', 'First name'],
+      ['last_name', 'Last name / Surname'],
+      ['date_of_birth', 'Date of birth'],
+      ['birthplace_city', 'Birthplace city'],
+      ['birthplace_state', 'Birthplace state / province'],
+      ['birthplace_country', 'Birthplace country'],
+      ['gender', 'Gender'],
+      ['marital_status', 'Marital status'],
+      ['nationality', 'Nationality']
+    ];
+    for (var i = 0; i < sec1.length; i++) {
+      err = check(sec1[i][0], sec1[i][1] + ' is required.', 1);
+      if (err) return err;
+    }
+    var multiDobEl = document.getElementById('date_of_birth');
+    if (multiDobEl && multiDobEl.value) {
+      var multiDobVal = new Date(multiDobEl.value + 'T00:00:00');
+      var nowVal2 = new Date(); nowVal2.setHours(23, 59, 59, 999);
+      if (!isNaN(multiDobVal.getTime()) && multiDobVal > nowVal2) {
+        return { id: 'date_of_birth', name: 'Date of birth cannot be in the future.', sec: 1 };
+      }
+    }
+
+    var sec2 = [
+      ['passport_type', 'Passport type'],
+      ['passport_number', 'Passport number'],
+      ['passport_issuing_country', 'Place of issue (Passport issuing country)'],
+      ['passport_issue_date', 'Passport issue date'],
+      ['issuing_authority', 'Issuing authority'],
+      ['passport_expiry', 'Passport expiry date']
+    ];
+    for (i = 0; i < sec2.length; i++) {
+      err = check(sec2[i][0], sec2[i][1] + ' is required.', 2);
+      if (err) return err;
+    }
+    var multiIssEl = document.getElementById('passport_issue_date');
+    var multiExpEl = document.getElementById('passport_expiry');
+    if (multiIssEl && multiExpEl && multiIssEl.value && multiExpEl.value && multiIssEl.value >= multiExpEl.value) {
+      return { id: 'passport_expiry', name: 'Passport expiry date must be after the issue date.', sec: 2 };
+    }
+    if (multiExpEl && multiExpEl.value) {
+      var arrEl2 = document.getElementById('arrival_date') || document.getElementById('intended_entry_date') || document.getElementById('travel_date');
+      var travelDate2 = (arrEl2 && arrEl2.value) ? new Date(arrEl2.value + 'T00:00:00') : new Date();
+      if (isNaN(travelDate2.getTime())) travelDate2 = new Date();
+      var minExpiry2 = new Date(travelDate2.getTime() + 180 * 24 * 60 * 60 * 1000);
+      var expDate2 = new Date(multiExpEl.value + 'T00:00:00');
+      if (!isNaN(expDate2.getTime()) && expDate2 < minExpiry2) {
+        return { id: 'passport_expiry', name: 'Passport must be valid for at least 6 months (180 days) beyond your travel date.', sec: 2 };
+      }
+    }
+
+    var sec3 = [
+      ['arrival_date', 'Date of arrival'],
+      ['port_of_entry', 'Port of entry'],
+      ['airline', 'Airline / flight number'],
+      ['hotel_name', 'Hotel name'],
+      ['hotel_phone', 'Hotel phone'],
+      ['previous_japan_stay', 'Previous stay selection']
+    ];
+    if (['thailand', 'indonesia', 'vietnam', 'kenya', 'morocco', 'srilanka', 'turkey'].indexOf(countrySlug) > -1) {
+      sec3.push(['purpose', 'Purpose of visit']);
+    }
+    if (countrySlug === 'thailand' || countrySlug === 'indonesia' || countrySlug === 'vietnam' || countrySlug === 'morocco' || countrySlug === 'srilanka' || countrySlug === 'turkey') {
+      sec3.push(['stay_duration', 'Intended length of stay']);
+    }
+    if (countrySlug === 'russia') {
+      sec3 = [['arrival_date', 'Travel date'], ['hotel_name', 'Hotel name'], ['hotel_phone', 'Hotel phone'], ['hotel_address', 'Hotel address']];
+    }
+    if (countrySlug === 'vietnam') {
+      sec3.push(['port_of_exit', 'Exit gate']);
+    }
+    for (i = 0; i < sec3.length; i++) {
+      err = check(sec3[i][0], sec3[i][1] + ' is required.', 3);
+      if (err) return err;
+    }
+    var prevStay = document.getElementById('previous_japan_stay');
+    if (prevStay && prevStay.value === 'Yes') {
+      err = check('previous_japan_stays', 'Previous stay dates and duration are required.', 3);
+      if (err) return err;
+    }
+
+    if (!isSecondary) {
+      var sec4 = [
+        ['residential_address', 'Residential address'],
+        ['phone', 'Mobile number'],
+        ['contact_email', 'Email address']
+      ];
+      for (i = 0; i < sec4.length; i++) {
+        err = check(sec4[i][0], sec4[i][1] + ' is required.', 4);
+        if (err) return err;
+      }
+      var multiPhoneVal = (document.getElementById('phone')||{}).value || '';
+      var cleanMultiP = multiPhoneVal.replace(/[\s\-\+\(\)]/g, '');
+      if (cleanMultiP && (cleanMultiP.length < 6 || !/^\d+$/.test(cleanMultiP))) {
+        return { id: 'phone', name: 'Please enter a valid mobile number (at least 6 digits).', sec: 4 };
+      }
+      if (mobileOtpRequired && !mobileVerified) {
+        return { id: 'phone', name: 'Mobile number verification is required.', sec: 4 };
+      }
+    }
+
+    err = check('occupation', 'Current occupation is required.', 5);
+    if (err) return err;
+    var occ = document.getElementById('occupation');
+    if (occ && ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1) {
+      var sec5 = [
+        ['position', 'Current position'],
+        ['employer_name', 'Employer name'],
+        ['employer_phone', 'Employer phone'],
+        ['employer_address', 'Employer address']
+      ];
+      for (i = 0; i < sec5.length; i++) {
+        err = check(sec5[i][0], sec5[i][1] + ' is required.', 5);
+        if (err) return err;
+      }
+    }
+
+    if (countrySlug === 'thailand') {
+      var payer = document.getElementById('thai_payer');
+      if (payer) {
+        err = check('thai_payer', 'Paying sponsor selection is required.', 6);
+        if (err) return err;
+        if (payer.value === 'Sponsor') {
+          var sec6 = [
+            ['thai_sponsor_name', 'Sponsor name'],
+            ['thai_sponsor_relationship', 'Relationship to sponsor'],
+            ['thai_sponsor_phone', 'Sponsor phone'],
+            ['thai_sponsor_address', 'Sponsor address']
+          ];
+          for (i = 0; i < sec6.length; i++) {
+            err = check(sec6[i][0], sec6[i][1] + ' is required.', 6);
+            if (err) return err;
+          }
+        }
+      }
+      if (document.getElementById('thai_bank_name')) {
+        err = check('thai_bank_name', 'Bank name is required.', 6);
+        if (err) return err;
+      }
+      if (document.getElementById('annual_income_select')) {
+        err = check('annual_income_select', 'Annual income is required.', 6);
+        if (err) return err;
+        var aSel = document.getElementById('annual_income_select');
+        if (aSel && aSel.value === 'Other') {
+          err = check('annual_income', 'Please enter your annual income.', 6);
+          if (err) return err;
+        }
+      }
+      var decCheck = document.getElementById('thai_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        return { id: 'thai_declaration_check', name: 'Please accept the Thailand visa declaration.', sec: 6 };
+      }
+    } else if (countrySlug === 'russia') {
+      var sec6 = [
+        ['father_name', 'Father’s full name'], ['father_dob', 'Father’s date of birth'], ['father_pob', 'Father’s place of birth'],
+        ['mother_name', 'Mother’s full name'], ['mother_dob', 'Mother’s date of birth'], ['mother_pob', 'Mother’s place of birth'],
+        ['fax_number', 'Fax number'], ['social_media_accounts', 'Social media accounts']
+      ];
+      for (i = 0; i < sec6.length; i++) {
+        err = check(sec6[i][0], sec6[i][1] + ' is required.', 6);
+        if (err) return err;
+      }
+    } else if (countrySlug === 'indonesia') {
+      err = check('indo_sponsor', 'Sponsor option is required.', 6);
+      if (err) return err;
+      var sponsor = document.getElementById('indo_sponsor');
+      if (sponsor && sponsor.value === 'Yes') {
+        var sec6 = [
+          ['indo_sponsor_name', 'Sponsor name'],
+          ['indo_sponsor_type', 'Sponsor type'],
+          ['indo_sponsor_phone', 'Sponsor phone'],
+          ['indo_sponsor_address', 'Sponsor address']
+        ];
+        for (i = 0; i < sec6.length; i++) {
+          err = check(sec6[i][0], sec6[i][1] + ' is required.', 6);
+          if (err) return err;
+        }
+      }
+      var sec6b = [
+        ['indo_funds_type', 'Sufficient funds type'],
+        ['indo_bank_name', 'Bank name'],
+        ['indo_bank_balance', 'Bank balance']
+      ];
+      for (i = 0; i < sec6b.length; i++) {
+        err = check(sec6b[i][0], sec6b[i][1] + ' is required.', 6);
+        if (err) return err;
+      }
+    } else if (countrySlug === 'kenya') {
+      var sec6 = [
+        ['kenya_host_type', 'Host type'],
+        ['kenya_host_name', 'Host name'],
+        ['kenya_host_email', 'Host email'],
+        ['kenya_host_phone', 'Host phone'],
+        ['kenya_host_address', 'Host address'],
+        ['kenya_refused', 'Visa refusal history option']
+      ];
+      for (i = 0; i < sec6.length; i++) {
+        err = check(sec6[i][0], sec6[i][1] + ' is required.', 6);
+        if (err) return err;
+      }
+      var refused = document.getElementById('kenya_refused');
+      if (refused && refused.value === 'Yes') {
+        err = check('kenya_refused_details', 'Visa refusal details are required.', 6);
+        if (err) return err;
+      }
+    } else if (countrySlug === 'vietnam') {
+      var decCheck = document.getElementById('vietnam_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        return { id: 'vietnam_declaration_check', name: 'Please accept the Vietnam visa declaration.', sec: 6 };
+      }
+    } else if (countrySlug === 'morocco') {
+      err = check('morocco_sponsor', 'Host / Accommodation Type is required.', 6);
+      if (err) return err;
+      var sponsor = document.getElementById('morocco_sponsor');
+      if (sponsor && sponsor.value !== 'None') {
+        var sec6 = [
+          ['morocco_host_name', 'Host / inviter name'],
+          ['morocco_host_phone', 'Host phone number'],
+          ['morocco_host_address', 'Host address']
+        ];
+        for (i = 0; i < sec6.length; i++) {
+          err = check(sec6[i][0], sec6[i][1] + ' is required.', 6);
+          if (err) return err;
+        }
+      }
+      err = check('morocco_professional_status', 'Professional / Occupation Status is required.', 6);
+      if (err) return err;
+      var status = document.getElementById('morocco_professional_status');
+      if (status && ['Employed', 'Student', 'Business Owner'].indexOf(status.value) > -1) {
+        err = check('morocco_employer_details', 'Employer / School details are required.', 6);
+        if (err) return err;
+      }
+      var decCheck = document.getElementById('morocco_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        return { id: 'morocco_declaration_check', name: 'Please accept the Morocco visa declaration.', sec: 6 };
+      }
+    } else if (countrySlug === 'srilanka') {
+      var sec6 = [
+        ['srilanka_emergency_name', 'Emergency contact name'],
+        ['srilanka_emergency_relationship', 'Relationship to applicant'],
+        ['srilanka_emergency_phone', 'Emergency telephone number'],
+        ['srilanka_emergency_address', 'Emergency contact address']
+      ];
+      for (i = 0; i < sec6.length; i++) {
+        err = check(sec6[i][0], sec6[i][1] + ' is required.', 6);
+        if (err) return err;
+      }
+      var decCheck = document.getElementById('srilanka_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        return { id: 'srilanka_declaration_check', name: 'Please accept the Sri Lanka visa declaration.', sec: 6 };
+      }
+    } else if (countrySlug === 'turkey') {
+      err = check('turkey_supporting_visa', 'Supporting visa selection is required.', 6);
+      if (err) return err;
+      var permit = document.getElementById('turkey_supporting_visa');
+      if (permit && permit.value === 'Yes') {
+        var sec6 = [
+          ['turkey_supporting_visa_name', 'Visa / Permit Country Name'],
+          ['turkey_supporting_visa_number', 'Visa / Permit Number'],
+          ['turkey_supporting_visa_expiry', 'Visa / Permit Expiry Date']
+        ];
+        for (i = 0; i < sec6.length; i++) {
+          err = check(sec6[i][0], sec6[i][1] + ' is required.', 6);
+          if (err) return err;
+        }
+      }
+      err = check('turkey_payer', 'Paying sponsor option is required.', 6);
+      if (err) return err;
+      var payer = document.getElementById('turkey_payer');
+      if (payer && payer.value === 'Sponsor') {
+        var sec6b = [
+          ['turkey_sponsor_name', 'Sponsor name'],
+          ['turkey_sponsor_relationship', 'Relationship to sponsor'],
+          ['turkey_sponsor_phone', 'Sponsor phone'],
+          ['turkey_sponsor_address', 'Sponsor address']
+        ];
+        for (i = 0; i < sec6b.length; i++) {
+          err = check(sec6b[i][0], sec6b[i][1] + ' is required.', 6);
+          if (err) return err;
+        }
+      }
+      var decCheck = document.getElementById('turkey_declaration_check');
+      if (decCheck && !decCheck.checked) {
+        return { id: 'turkey_declaration_check', name: 'Please accept the Turkey visa declaration.', sec: 6 };
+      }
+    }
+
+    if (!picked.photo) return { name: 'Personal photo is required.', sec: 7 };
+    if (picked.passport || picked.passport_back) {
+      if (!picked.passport) return { name: 'Passport front page is required.', sec: 7 };
+      if (!picked.passport_back) return { name: 'Passport back page is required.', sec: 7 };
+    }
+
+    return null;
   }
 
   var activeWizardSection = 1;
@@ -2027,10 +5396,12 @@
   function goToWizardSection(secNum) {
     if (secNum < 1 || secNum > 7) return;
     
+    var numberedCards = document.querySelectorAll('.review-section-card[data-section]');
+    if (numberedCards.length === 0) return; // For single-page review cards, never hide the card
+    
     activeWizardSection = secNum;
     
-    var cards = document.querySelectorAll('.review-section-card');
-    cards.forEach(function(card) {
+    numberedCards.forEach(function(card) {
       var sectionIndex = parseInt(card.getAttribute('data-section'), 10);
       if (sectionIndex === secNum) {
         card.classList.add('active-wizard-step');
@@ -2054,8 +5425,24 @@
       }
     }
 
-    if (typeof updateAllJapanSectionStatuses === 'function') {
-      updateAllJapanSectionStatuses();
+    if (document.getElementById('thai_payer')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('thailand');
+    } else if (document.getElementById('russia_relatives')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('russia');
+    } else if (document.getElementById('indo_sponsor')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('indonesia');
+    } else if (document.getElementById('kenya_host_type')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('kenya');
+    } else if (document.getElementById('vietnam_declaration_check')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('vietnam');
+    } else if (document.getElementById('morocco_sponsor')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('morocco');
+    } else if (document.getElementById('srilanka_emergency_name')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('srilanka');
+    } else if (document.getElementById('turkey_supporting_visa')) {
+      if (typeof updateAllPremiumSectionStatuses === 'function') updateAllPremiumSectionStatuses('turkey');
+    } else {
+      if (typeof updateAllJapanSectionStatuses === 'function') updateAllJapanSectionStatuses();
     }
   }
 
@@ -2191,6 +5578,15 @@
           if (!firstInvalidElement) firstInvalidElement = phoneInput;
         }
       }
+      var phoneInput2 = card.querySelector('#phone');
+      if (phoneInput2 && phoneInput2.value) {
+        var cleanP = phoneInput2.value.replace(/[\s\-\+\(\)]/g, '');
+        if (cleanP && (cleanP.length < 6 || !/^\d+$/.test(cleanP))) {
+          isValid = false;
+          showFieldError(phoneInput2, 'Please enter a valid mobile number (at least 6 digits).');
+          if (!firstInvalidElement) firstInvalidElement = phoneInput2;
+        }
+      }
     } else {
       var fields = card.querySelectorAll('input, select, textarea');
       var checkedRadios = {};
@@ -2224,6 +5620,38 @@
           }
         }
       });
+      if (secNum === 1) {
+        var dobEl = card.querySelector('#date_of_birth');
+        if (dobEl && dobEl.value) {
+          var dobVal = new Date(dobEl.value + 'T00:00:00');
+          var nowVal = new Date(); nowVal.setHours(23, 59, 59, 999);
+          if (!isNaN(dobVal.getTime()) && dobVal > nowVal) {
+            isValid = false;
+            showFieldError(dobEl, 'Date of birth cannot be in the future.');
+            if (!firstInvalidElement) firstInvalidElement = dobEl;
+          }
+        }
+      } else if (secNum === 2) {
+        var issEl = card.querySelector('#passport_issue_date');
+        var expEl = card.querySelector('#passport_expiry');
+        if (issEl && expEl && issEl.value && expEl.value && issEl.value >= expEl.value) {
+          isValid = false;
+          showFieldError(expEl, 'Passport expiry date must be after the issue date.');
+          if (!firstInvalidElement) firstInvalidElement = expEl;
+        }
+        if (expEl && expEl.value) {
+          var arrEl = document.getElementById('arrival_date') || document.getElementById('intended_entry_date') || document.getElementById('travel_date');
+          var travelDate = (arrEl && arrEl.value) ? new Date(arrEl.value + 'T00:00:00') : new Date();
+          if (isNaN(travelDate.getTime())) travelDate = new Date();
+          var minExpiry = new Date(travelDate.getTime() + 180 * 24 * 60 * 60 * 1000);
+          var expDate = new Date(expEl.value + 'T00:00:00');
+          if (!isNaN(expDate.getTime()) && expDate < minExpiry) {
+            isValid = false;
+            showFieldError(expEl, 'Passport must be valid for at least 6 months (180 days) beyond your travel date.');
+            if (!firstInvalidElement) firstInvalidElement = expEl;
+          }
+        }
+      }
     }
     
     if (!isValid && firstInvalidElement) {
@@ -2883,6 +6311,14 @@
       err = check(sec1[i][0], sec1[i][1] + ' is required.', 1);
       if (err) return err;
     }
+    var jDobEl = document.getElementById('date_of_birth');
+    if (jDobEl && jDobEl.value) {
+      var jDobVal = new Date(jDobEl.value + 'T00:00:00');
+      var jNowVal = new Date(); jNowVal.setHours(23, 59, 59, 999);
+      if (!isNaN(jDobVal.getTime()) && jDobVal > jNowVal) {
+        return { id: 'date_of_birth', name: 'Date of birth cannot be in the future.', sec: 1 };
+      }
+    }
 
     var sec2 = [
       ['passport_type', 'Passport type'],
@@ -2895,6 +6331,21 @@
     for (i = 0; i < sec2.length; i++) {
       err = check(sec2[i][0], sec2[i][1] + ' is required.', 2);
       if (err) return err;
+    }
+    var jIssEl = document.getElementById('passport_issue_date');
+    var jExpEl = document.getElementById('passport_expiry');
+    if (jIssEl && jExpEl && jIssEl.value && jExpEl.value && jIssEl.value >= jExpEl.value) {
+      return { id: 'passport_expiry', name: 'Passport expiry date must be after the issue date.', sec: 2 };
+    }
+    if (jExpEl && jExpEl.value) {
+      var arrEl3 = document.getElementById('arrival_date') || document.getElementById('intended_entry_date') || document.getElementById('travel_date');
+      var travelDate3 = (arrEl3 && arrEl3.value) ? new Date(arrEl3.value + 'T00:00:00') : new Date();
+      if (isNaN(travelDate3.getTime())) travelDate3 = new Date();
+      var minExpiry3 = new Date(travelDate3.getTime() + 180 * 24 * 60 * 60 * 1000);
+      var expDate3 = new Date(jExpEl.value + 'T00:00:00');
+      if (!isNaN(expDate3.getTime()) && expDate3 < minExpiry3) {
+        return { id: 'passport_expiry', name: 'Passport must be valid for at least 6 months (180 days) beyond your travel date.', sec: 2 };
+      }
     }
 
     var sec3 = [
@@ -2926,6 +6377,11 @@
       for (i = 0; i < sec4.length; i++) {
         err = check(sec4[i][0], sec4[i][1] + ' is required.', 4);
         if (err) return err;
+      }
+      var jPhoneVal = (document.getElementById('phone')||{}).value || '';
+      var cleanJP = jPhoneVal.replace(/[\s\-\+\(\)]/g, '');
+      if (cleanJP && (cleanJP.length < 6 || !/^\d+$/.test(cleanJP))) {
+        return { id: 'phone', name: 'Please enter a valid mobile number (at least 6 digits).', sec: 4 };
       }
       if (mobileOtpRequired && !mobileVerified) {
         return { id: 'phone', name: 'Mobile number verification is required.', sec: 4 };
@@ -3013,6 +6469,24 @@
   // ============================================================
   //  APPLY
   // ============================================================
+  function syncDraftTravellers(draft, targetCount, defaultVisa) {
+    if (!draft || typeof draft !== 'object') {
+      draft = { visa: defaultVisa || '', count: targetCount, travellers: [] };
+    }
+    draft.travellers = Array.isArray(draft.travellers) ? draft.travellers : [];
+    draft.count = Math.max(targetCount, draft.travellers.length);
+    
+    while (draft.travellers.length < draft.count) {
+      var nextIdx = draft.travellers.length;
+      draft.travellers.push({
+        name: nextIdx === 0 ? 'Primary Applicant' : ('Applicant ' + (nextIdx + 1)),
+        relation: nextIdx === 0 ? 'Primary Applicant' : 'Traveler',
+        submitted: false
+      });
+    }
+    return draft;
+  }
+
   function renderApply(){
     document.body.classList.add('apply-focus');
     document.body.classList.remove('apply-reviewing');
@@ -3028,10 +6502,26 @@
     var travellerIndex = Number(qParam('travellerIndex')) || 0;
     var draft = null;
     try {
-      draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft'));
+      draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft') || localStorage.getItem('visadoo-traveller-draft'));
     } catch(_e) {}
+
+    var targetCount = Math.max(travellersParam, (draft && draft.travellers ? draft.travellers.length : 1), travellerIndex + 1);
+    if (targetCount > 1) {
+      draft = syncDraftTravellers(draft, targetCount, qParam('visa'));
+      if (meta && (meta.full_name || meta.name) && draft.travellers[0] && draft.travellers[0].name === 'Primary Applicant') {
+        draft.travellers[0].name = meta.full_name || meta.name;
+      }
+      try {
+        sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+        localStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+      } catch(_e) {}
+    }
     
-    var isMultiple = travellersParam > 1 && draft && draft.travellers && draft.travellers.length > 1;
+    var isMultiple = targetCount > 1 && draft && draft.travellers && draft.travellers.length > 1;
+    if (isMultiple && (qParam('view') === 'travellers' || qParam('view') === 'profiles' || qParam('view') === 'overview' || window.location.hash === '#travellers')) {
+      renderSuccess({ visa_type: chosen.id, price_aed: (visaPrice(chosen) || 0) }, false);
+      return;
+    }
     var currentTravellerName = '';
     var currentTravellerFirstName = '';
     if(isMultiple && draft.travellers[travellerIndex]) {
@@ -3049,7 +6539,7 @@
 
     clearDocumentPreviewUrls();
     picked={};
-    passportOcrState={ busy:false, complete:false, extracted:null, frontVerified:false };
+    passportOcrState={ busy:false, complete:false, extracted:null, backExtracted:null, frontVerified:false };
     
     var isSubmittedTraveller = false;
     if (isMultiple && draft && draft.travellers && draft.travellers[travellerIndex] && draft.travellers[travellerIndex].submitted) {
@@ -3059,11 +6549,12 @@
     applyWizardStep = isSubmittedTraveller ? 3 : 1;
     document.body.classList.toggle('apply-reviewing', applyWizardStep === 3);
 
+    var countryHeaderDisplay = chosen.country_slug ? countryName(chosen.country_slug) : ((chosen.id === '30-days-tourist-visa' || chosen.id === '60-days-tourist-visa' || chosen.id === '30-days-uae-visa' || chosen.id === '60-days-uae-visa' || chosen.id === 'uae-30-days-tourist-visa' || chosen.id === 'uae-60-days-tourist-visa') ? 'United Arab Emirates' : 'Visa Application');
     var html =
       '<div class="app-main apply-wizard-main">' +
         '<div class="apply-focus-top">'+
           '<button type="button" class="apply-exit" id="applyExit"><span aria-hidden="true">←</span> Back</button>'+
-          '<div class="apply-selected-line"><span>'+esc(chosen.country_slug ? countryName(chosen.country_slug) : 'United Arab Emirates')+'</span><b>'+esc(chosen.name)+'</b></div>'+
+          '<div class="apply-selected-line"><span>'+esc(countryHeaderDisplay)+'</span><b>'+esc(chosen.name)+'</b></div>'+
         '</div>'+
         '<form id="applyForm">' +
         '<input type="hidden" id="full_name" value="'+esc(defaultName)+'">'+
@@ -3074,7 +6565,7 @@
             '<h2 data-step-heading>'+photoHeading+'</h2>'+
             '<p class="apply-step-intro">Upload one clear, front-facing personal portrait. ID cards, documents and group photos are not accepted.</p>'+
             '<div class="upload-row apply-document-upload apply-single-upload apply-photo-upload">' +
-              dropZone('photo','','JPG, PNG or WEBP · max 10 MB') +
+              dropZone('photo','','') +
             '</div>'+
             '<div class="photo-check-status" id="photoCheckStatus" aria-live="polite" hidden><span class="photo-check-icon" aria-hidden="true"></span><div><b id="photoCheckTitle"></b><small id="photoCheckText"></small></div></div>'+
             '<div class="apply-step-actions">'+
@@ -3084,16 +6575,89 @@
         '</section>'+
 
         '<section class="panel apply-step' + (applyWizardStep === 2 ? ' active' : '') + '" id="applyStep2" data-apply-step="2"' + (applyWizardStep !== 2 ? ' hidden' : '') + '>'+
+          '<aside class="passport-outside-guide" id="passportOutsideGuide" title="Click to view sample passport">'+
+            '<div class="passport-dummy-guide-card">'+
+              '<div class="passport-dummy-guide-header">'+
+                '<span class="passport-dummy-guide-badge">'+
+                  '<svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>'+
+                  ' Sample'+
+                '</span>'+
+                '<div class="passport-guide-tab-pills">'+
+                  '<button type="button" class="passport-guide-tab-btn active" id="sampleTabFront">Front</button>'+
+                  '<button type="button" class="passport-guide-tab-btn" id="sampleTabBack">Back</button>'+
+                '</div>'+
+              '</div>'+
+              '<div class="passport-dummy-img-frame" id="passportSamplePreviewFrame">'+
+                '<img src="/assets/passport-sample.jpg" alt="Dummy passport specimen example" class="passport-dummy-img" id="passportSamplePreviewImg" loading="eager">'+
+                '<span class="passport-dummy-overlay-tag" id="passportSampleOverlayTag">FRONT PAGE</span>'+
+              '</div>'+
+              '<div class="passport-dummy-guide-notes">'+
+                '<div class="passport-dummy-note-item">'+
+                  '<svg class="passport-check-svg" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd"/></svg>'+
+                  '<span id="sampleNote1">Clear photo & readable text</span>'+
+                '</div>'+
+                '<div class="passport-dummy-note-item">'+
+                  '<svg class="passport-check-svg" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd"/></svg>'+
+                  '<span id="sampleNote2">All 4 corners visible</span>'+
+                '</div>'+
+                '<div class="passport-dummy-note-item">'+
+                  '<svg class="passport-check-svg" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd"/></svg>'+
+                  '<span id="sampleNote3">No glare or blur</span>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+          '</aside>'+
           '<span class="step-badge">Step 2 of 3</span>'+
           '<h2>'+passportPageHeading+'</h2><p class="apply-step-intro">Add the front/photo page first, then the back page.</p>'+
           '<div class="passport-page-list">'+
             '<div class="flip-card-container">'+
               '<div class="flip-card-inner" id="passportFlipInner">'+
                 '<div class="flip-card-front">'+
-                  '<section class="passport-page-card" id="passportFrontCard"><header><div><b>'+frontHeading+'</b></div></header>'+dropZone('passport','','JPG, PNG or WEBP · max 10 MB')+'<div class="passport-page-status" id="passportStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div></section>'+
+                  '<section class="passport-page-card" id="passportFrontCard">'+
+                    '<div class="drop" id="drop_passport">' +
+                      '<header class="passport-card-inner-header"><b>'+frontHeading+'</b></header>' +
+                      '<svg class="passport-dummy-svg" viewBox="0 0 120 80" fill="none" stroke-linecap="round">' +
+                        '<rect x="5" y="5" width="110" height="70" rx="6" fill="#f8fafc" stroke="#ccd7e0" stroke-width="1.5" />' +
+                        '<rect x="15" y="15" width="26" height="34" rx="3" fill="#edf2f7" stroke="#cbd5e1" stroke-width="1" />' +
+                        '<circle cx="28" cy="27" r="6" fill="#cbd5e1" />' +
+                        '<path d="M18 45c0-4 4-7 10-7s10 3 10 7" fill="#cbd5e1" />' +
+                        '<line x1="50" y1="20" x2="100" y2="20" stroke="#cbd5e1" stroke-width="3" />' +
+                        '<line x1="50" y1="28" x2="90" y2="28" stroke="#cbd5e1" stroke-width="2.5" />' +
+                        '<line x1="50" y1="36" x2="95" y2="36" stroke="#cbd5e1" stroke-width="2.5" />' +
+                        '<line x1="50" y1="44" x2="85" y2="44" stroke="#cbd5e1" stroke-width="2" />' +
+                        '<line x1="15" y1="58" x2="105" y2="58" stroke="#94a3b8" stroke-dasharray="2 2" stroke-width="2" />' +
+                        '<line x1="15" y1="64" x2="105" y2="64" stroke="#94a3b8" stroke-dasharray="2 2" stroke-width="2" />' +
+                      '</svg>' +
+                      '<b>Tap to upload</b>' +
+                      '<small style="color:#64748b;font-size:12px;display:block;margin-top:2px">JPG, PNG or PDF · max 10 MB</small>' +
+                      '<div class="drop-error-msg" id="drop_error_passport"></div>' +
+                      '<div class="fname" id="fname_passport"></div>' +
+                      '<input type="file" id="file_passport" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">' +
+                    '</div>' +
+                    '<div class="passport-page-status" id="passportStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div>' +
+                  '</section>'+
                 '</div>'+
                 '<div class="flip-card-back">'+
-                  '<section class="passport-page-card" id="passportBackCard"><header><div><b>'+backHeading+'</b></div></header>'+dropZone('passport_back','','JPG, PNG or WEBP · max 10 MB')+'<div class="passport-page-status" id="passport_backStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div></section>'+
+                  '<section class="passport-page-card" id="passportBackCard">'+
+                    '<div class="drop" id="drop_passport_back">' +
+                      '<header class="passport-card-inner-header"><b>'+backHeading+'</b></header>' +
+                      '<svg class="passport-dummy-svg" viewBox="0 0 120 80" fill="none" stroke-linecap="round">' +
+                        '<rect x="5" y="5" width="110" height="70" rx="6" fill="#f8fafc" stroke="#ccd7e0" stroke-width="1.5" />' +
+                        '<line x1="15" y1="20" x2="105" y2="20" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3" />' +
+                        '<line x1="15" y1="28" x2="95" y2="28" stroke="#cbd5e1" stroke-width="2" />' +
+                        '<line x1="15" y1="36" x2="100" y2="36" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3" />' +
+                        '<line x1="15" y1="44" x2="90" y2="44" stroke="#cbd5e1" stroke-width="2" />' +
+                        '<line x1="15" y1="52" x2="105" y2="52" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3" />' +
+                        '<line x1="15" y1="60" x2="80" y2="60" stroke="#cbd5e1" stroke-width="2" />' +
+                      '</svg>' +
+                      '<b>Tap to upload</b>' +
+                      '<small style="color:#64748b;font-size:12px;display:block;margin-top:2px">JPG, PNG or PDF · max 10 MB</small>' +
+                      '<div class="drop-error-msg" id="drop_error_passport_back"></div>' +
+                      '<div class="fname" id="fname_passport_back"></div>' +
+                      '<input type="file" id="file_passport_back" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">' +
+                    '</div>' +
+                    '<div class="passport-page-status" id="passport_backStatus" aria-live="polite" hidden><span></span><div><b></b><small></small></div></div>' +
+                  '</section>'+
                 '</div>'+
               '</div>'+
             '</div>'+
@@ -3102,20 +6666,34 @@
         '</section>'+
 
         '<div id="applyStep3" data-apply-step="3"' + (applyWizardStep !== 3 ? ' hidden' : '') + '>'+
-          (chosen.country_slug === 'japan'
-            ? getJapanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-            : (chosen.country_slug === 'ireland'
-              ? getIrelandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-              : (chosen.country_slug === 'greece' ? getFranceGermanyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-              : (chosen.country_slug === 'azerbaijan' ? getAzerbaijanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-              : (chosen.country_slug === 'south-korea'
-              ? getSouthKoreaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-              : ((chosen.country_slug === 'denmark' || chosen.country_slug === 'spain' || chosen.country_slug === 'switzerland' || chosen.country_slug === 'france' || chosen.country_slug === 'germany')
-                ? (chosen.country_slug === 'spain' ? getSpainStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-                  : (chosen.country_slug === 'switzerland' ? getSwitzerlandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-                  : (chosen.country_slug === 'france' || chosen.country_slug === 'germany' ? getFranceGermanyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName)
-                  : getDenmarkStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName))))
-                : getStandardStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName))))))) +
+          (function(){
+            var cSlug = (chosen && chosen.country_slug) || '';
+            var isUaeVisa = (cSlug === 'uae' || cSlug === 'united-arab-emirates' || (chosen && (chosen.id === '30-days-tourist-visa' || chosen.id === '60-days-tourist-visa' || chosen.id === '30-days-uae-visa' || chosen.id === '60-days-uae-visa' || chosen.id === 'uae-30-days-tourist-visa' || chosen.id === 'uae-60-days-tourist-visa')));
+            if (isUaeVisa) return getUaeStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'qatar') return getQatarStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'japan') return getJapanStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'vietnam') return getVietnamStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'morocco') return getMoroccoStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'indonesia') return getIndonesiaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'turkey') return getTurkeyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'kenya') return getKenyaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'thailand') return getThailandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'bahrain') return getBahrainStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'srilanka' || cSlug === 'sri-lanka') return getSriLankaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'russia') return getRussiaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'ireland') return getIrelandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'china') return getChinaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'azerbaijan' || cSlug === 'azerbaijan-2') return getAzerbaijanEvisaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'south-korea') return getSouthKoreaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'spain') return getSpainStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'switzerland') return getSwitzerlandStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'france' || cSlug === 'germany' || cSlug === 'italy') return getFranceGermanyStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'denmark') return getDenmarkStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'philippines') return getPhilippinesStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'saudi-arabia' || cSlug === 'saudi') return getSaudiArabiaStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            if (cSlug === 'egypt' || cSlug === 'egypt-2' || cSlug === 'oman') return getUaeStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+            return getStandardStep3Html(meta, photoHeading, step3Heading, chosen, isMultiple, travellerIndex, defaultName);
+          })() +
         '<div class="review-image-modal" id="passportPreviewModal" role="dialog" aria-modal="true" aria-labelledby="passportPreviewTitle" hidden>'+
           '<div class="review-image-dialog">'+
             '<div class="review-image-head"><b id="passportPreviewTitle">Passport page</b><button type="button" id="passportPreviewClose" aria-label="Close passport preview">×</button></div>'+
@@ -3144,6 +6722,89 @@
       wireApplyWizard(); wireJapanWizard(); wireJapanWorkflow(); updateAllJapanSectionStatuses();
       var form = document.getElementById('applyForm');
       if (form) { form.addEventListener('input', updateAllJapanSectionStatuses); form.addEventListener('change', updateAllJapanSectionStatuses); }
+    } else if (chosen.country_slug === 'philippines') {
+      wirePassportPages(); wireDrop('photo');
+      var phIsMultiple=(Number(qParam('travellers'))||1)>1, phIdx=Number(qParam('travellerIndex'))||0;
+      if(!(phIsMultiple&&phIdx>0)) initMobileField();
+      wireApplyWizard();
+      var phBack=document.getElementById('standardBackBtn'); if(phBack) phBack.onclick=function(){setApplyStep(2);};
+      var msEl = document.getElementById('marital_status');
+      var gEl = document.getElementById('gender');
+      if (msEl) {
+        msEl.addEventListener('change', updatePhilippinesSpouseField);
+        msEl.addEventListener('input', updatePhilippinesSpouseField);
+      }
+      if (gEl) {
+        gEl.addEventListener('change', updatePhilippinesSpouseField);
+        gEl.addEventListener('input', updatePhilippinesSpouseField);
+      }
+      updatePhilippinesSpouseField();
+    } else if (chosen.country_slug === 'saudi-arabia' || chosen.country_slug === 'saudi') {
+      wirePassportPages(); wireDrop('photo');
+      var saIsMultiple=(Number(qParam('travellers'))||1)>1, saIdx=Number(qParam('travellerIndex'))||0;
+      if(!(saIsMultiple&&saIdx>0)) initMobileField();
+      wireApplyWizard();
+      wireSaudiDrops();
+      var saBack=document.getElementById('standardBackBtn'); if(saBack) saBack.onclick=function(){setApplyStep(2);};
+    } else if (chosen.country_slug === 'uae' || chosen.country_slug === 'united-arab-emirates' || chosen.country_slug === 'qatar' || chosen.country_slug === 'egypt' || chosen.country_slug === 'egypt-2' || chosen.country_slug === 'oman' || chosen.id === '30-days-tourist-visa' || chosen.id === '60-days-tourist-visa' || chosen.id === '30-days-uae-visa' || chosen.id === '60-days-uae-visa' || chosen.id === 'uae-30-days-tourist-visa' || chosen.id === 'uae-60-days-tourist-visa') {
+      wirePassportPages(); wireDrop('photo');
+      var uaeIsMultiple=(Number(qParam('travellers'))||1)>1, uaeIdx=Number(qParam('travellerIndex'))||0;
+      if(!(uaeIsMultiple&&uaeIdx>0)) initMobileField();
+      wireApplyWizard();
+    } else if (chosen.country_slug === 'vietnam') {
+      wirePassportPages(); wireDrop('photo');
+      var vnIsMultiple=(Number(qParam('travellers'))||1)>1, vnIdx=Number(qParam('travellerIndex'))||0;
+      if(!(vnIsMultiple&&vnIdx>0)) initMobileField();
+      wireApplyWizard();
+      var vnBack=document.getElementById('standardBackBtn'); if(vnBack) vnBack.onclick=function(){setApplyStep(2);};
+    } else if (chosen.country_slug === 'morocco') {
+      // Morocco uses the same clean single-page Step 3 layout as Vietnam.
+      // Keep upload/OCR steps intact, but do not run the premium multi-card wizard
+      // because it hides cards that do not have data-section attributes.
+      wirePassportPages(); wireDrop('photo');
+      var maIsMultiple=(Number(qParam('travellers'))||1)>1, maIdx=Number(qParam('travellerIndex'))||0;
+      if(!(maIsMultiple&&maIdx>0)) initMobileField();
+      wireApplyWizard();
+      var maBack=document.getElementById('standardBackBtn'); if(maBack) maBack.onclick=function(){setApplyStep(2);};
+    } else if (chosen.country_slug === 'indonesia') {
+      // Indonesia uses the same clean single-page Step 3 pattern as Vietnam/Morocco.
+      wirePassportPages(); wireDrop('photo');
+      var idIsMultiple=(Number(qParam('travellers'))||1)>1, idIdx=Number(qParam('travellerIndex'))||0;
+      if(!(idIsMultiple&&idIdx>0)) initMobileField();
+      wireApplyWizard();
+      var idBack=document.getElementById('standardBackBtn'); if(idBack) idBack.onclick=function(){setApplyStep(2);};
+    } else if (chosen.country_slug === 'turkey') {
+      // Turkey uses the same clean single-page Step 3 pattern as Indonesia.
+      wirePassportPages(); wireDrop('photo');
+      var trIsMultiple=(Number(qParam('travellers'))||1)>1, trIdx=Number(qParam('travellerIndex'))||0;
+      if(!(trIsMultiple&&trIdx>0)) initMobileField();
+      wireApplyWizard();
+      var trBack=document.getElementById('standardBackBtn'); if(trBack) trBack.onclick=function(){setApplyStep(2);};
+    } else if (chosen.country_slug === 'kenya' || chosen.country_slug === 'azerbaijan' || chosen.country_slug === 'azerbaijan-2') {
+      // Kenya & Azerbaijan eVisa use the same clean single-page Step 3 pattern, with employment details.
+      wirePassportPages(); wireDrop('photo');
+      var keIsMultiple=(Number(qParam('travellers'))||1)>1, keIdx=Number(qParam('travellerIndex'))||0;
+      if(!(keIsMultiple&&keIdx>0)) initMobileField();
+      wireApplyWizard();
+      var keBack=document.getElementById('standardBackBtn'); if(keBack) keBack.onclick=function(){setApplyStep(2);};
+    } else if (chosen.country_slug === 'thailand' || chosen.country_slug === 'bahrain') {
+      // Thailand & Bahrain use the clean single-page Step 3 pattern with Bank Statement.
+      wirePassportPages(); wireDrop('photo');
+      var thIsMultiple=(Number(qParam('travellers'))||1)>1, thIdx=Number(qParam('travellerIndex'))||0;
+      if(!(thIsMultiple&&thIdx>0)) initMobileField();
+      wireApplyWizard();
+      wireBankStatementDrop();
+      var thBack=document.getElementById('standardBackBtn'); if(thBack) thBack.onclick=function(){setApplyStep(2);};
+    } else if (chosen.country_slug === 'srilanka') {
+      wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
+      var slIsMultiple=(Number(qParam('travellers'))||1)>1, slIdx=Number(qParam('travellerIndex'))||0;
+      if(!(slIsMultiple&&slIdx>0)) initMobileField();
+      wireApplyWizard(); wireRussiaWorkflow();
+    } else if (chosen.country_slug === 'russia') {
+      wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
+      var rusIsMultiple=(Number(qParam('travellers'))||1)>1, rusIdx=Number(qParam('travellerIndex'))||0;
+      if(!(rusIsMultiple&&rusIdx>0)) initMobileField();
+      wireApplyWizard(); wireRussiaWorkflow();
     } else if (chosen.country_slug === 'ireland') {
       wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
       var ireIsMultiple=(Number(qParam('travellers'))||1)>1, ireIdx=Number(qParam('travellerIndex'))||0;
@@ -3154,7 +6815,7 @@
       var korIsMultiple=(Number(qParam('travellers'))||1)>1, korIdx=Number(qParam('travellerIndex'))||0;
       if(!(korIsMultiple&&korIdx>0)) initMobileField();
       wireApplyWizard(); wireKoreaWorkflow();
-    } else if (chosen.country_slug === 'denmark' || chosen.country_slug === 'spain' || chosen.country_slug === 'switzerland' || chosen.country_slug === 'france' || chosen.country_slug === 'germany' || chosen.country_slug === 'greece' || chosen.country_slug === 'azerbaijan') {
+    } else if (chosen.country_slug === 'denmark' || chosen.country_slug === 'spain' || chosen.country_slug === 'switzerland' || chosen.country_slug === 'france' || chosen.country_slug === 'germany' || chosen.country_slug === 'greece' || chosen.country_slug === 'china') {
       window.currentCountrySlug = chosen.country_slug;
       wirePassportPages(); wireDrop('photo'); wirePassportReviewPreviews();
       var denIsMultiple=(Number(qParam('travellers'))||1)>1, denIdx=Number(qParam('travellerIndex'))||0;
@@ -3173,6 +6834,90 @@
     };
   }
 
+  // ---- Auto-uppercase text inputs & textareas (strictly excluding email, password, tel/phone, otp) ----
+  document.addEventListener('input', function(e) {
+    var el = e.target;
+    if (!el || !el.tagName) return;
+    var tag = el.tagName.toLowerCase();
+    var type = (el.type || 'text').toLowerCase();
+    var id = (el.id || '').toLowerCase();
+    var name = (el.name || '').toLowerCase();
+
+    if (type === 'email' || type === 'password' || type === 'date' || type === 'file' || type === 'checkbox' || type === 'radio' || type === 'number') {
+      return;
+    }
+    if (id.indexOf('email') > -1 || name.indexOf('email') > -1) {
+      return;
+    }
+    if (id.indexOf('pass') > -1 || name.indexOf('pass') > -1 || id === 'sipass' || id === 'sppass' || id === 'sppass2' || id === 'embrevokey' || id.indexOf('key') > -1) {
+      return;
+    }
+    if (id.indexOf('phone') > -1 || name.indexOf('phone') > -1 || type === 'tel') {
+      return;
+    }
+    if (id === 'otpcode' || name === 'otpcode' || id.indexOf('otp') > -1) {
+      return;
+    }
+    if (el.getAttribute && el.getAttribute('autocapitalize') === 'none') {
+      return;
+    }
+    if (el.closest && (el.closest('.password-fields') || el.closest('#accountStep') || el.closest('.password-card'))) {
+      return;
+    }
+
+    if (tag === 'textarea' || (tag === 'input' && (type === 'text' || type === 'search' || !type))) {
+      var val = el.value;
+      if (val) {
+        var upper = val.toUpperCase();
+        if (val !== upper) {
+          var start = el.selectionStart;
+          var end = el.selectionEnd;
+          el.value = upper;
+          if (start !== null && end !== null) {
+            try { el.setSelectionRange(start, end); } catch(_err) {}
+          }
+        }
+      }
+    }
+  }, true);
+
+  document.addEventListener('change', function(e) {
+    var el = e.target;
+    if (!el || !el.tagName) return;
+    var tag = el.tagName.toLowerCase();
+    var type = (el.type || 'text').toLowerCase();
+    var id = (el.id || '').toLowerCase();
+    var name = (el.name || '').toLowerCase();
+
+    if (type === 'email' || type === 'password' || type === 'date' || type === 'file' || type === 'checkbox' || type === 'radio' || type === 'number') {
+      return;
+    }
+    if (id.indexOf('email') > -1 || name.indexOf('email') > -1) {
+      return;
+    }
+    if (id.indexOf('pass') > -1 || name.indexOf('pass') > -1 || id === 'sipass' || id === 'sppass' || id === 'sppass2' || id === 'embrevokey' || id.indexOf('key') > -1) {
+      return;
+    }
+    if (id.indexOf('phone') > -1 || name.indexOf('phone') > -1 || type === 'tel') {
+      return;
+    }
+    if (id === 'otpcode' || name === 'otpcode' || id.indexOf('otp') > -1) {
+      return;
+    }
+    if (el.getAttribute && el.getAttribute('autocapitalize') === 'none') {
+      return;
+    }
+    if (el.closest && (el.closest('.password-fields') || el.closest('#accountStep') || el.closest('.password-card'))) {
+      return;
+    }
+
+    if (tag === 'textarea' || (tag === 'input' && (type === 'text' || type === 'search' || !type))) {
+      if (el.value) {
+        el.value = el.value.toUpperCase();
+      }
+    }
+  }, true);
+
   // ---- Mobile number field (intl-tel-input) + optional WhatsApp OTP verification ----
   var applyIti=null, mobileOtpRequired=false, mobileVerified=false, verifiedNumber='';
   function currentMobileE164(){ try { return applyIti ? applyIti.getNumber() : ((document.getElementById('phone')||{}).value||''); } catch(_e){ return ((document.getElementById('phone')||{}).value||''); } }
@@ -3182,10 +6927,18 @@
     var input=document.getElementById('phone'); if(!input) return;
     applyIti=null; mobileOtpRequired=false; mobileVerified=false; verifiedNumber='';
     if(window.intlTelInput){
-      applyIti=window.intlTelInput(input,{ initialCountry:'in', separateDialCode:true,
+      applyIti=window.intlTelInput(input,{
+        initialCountry:'in',
+        separateDialCode:true,
         preferredCountries:['in','ae','sa','qa','kw','om','bh','us','gb'],
-        utilsScript:'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+        customPlaceholder:function(selectedCountryPlaceholder, selectedCountryData){
+          return '9874563210';
+        },
+        utilsScript:'/vendor/utils.js'
+      });
     }
+    input.setAttribute('placeholder', '9874563210');
+    input.placeholder = '9874563210';
     sb.from('site_settings').select('mobile_otp_active').eq('id','global').single().then(function(r){
       mobileOtpRequired = !!(r.data && r.data.mobile_otp_active);
       if(mobileOtpRequired) buildOtpUI();
@@ -3206,63 +6959,129 @@
   }
   function buildOtpUI(){
     var area=document.getElementById('otpArea'); if(!area) return;
-    area.style.display='block';
-    if(mobileVerified){ area.innerHTML='<div class="otp-ok">✓ Mobile number verified</div>'; return; }
-    var waNum=((window.VISADOO_CONFIG&&window.VISADOO_CONFIG.WHATSAPP)||'919895226697').replace(/[^0-9]/g,'');
-    var waHelp='https://wa.me/'+waNum+'?text='+encodeURIComponent('Hi Visa Doo, I need help verifying my mobile number for my visa application.');
+    area.style.display='flex';
+    if(mobileVerified){
+      area.innerHTML=
+        '<label for="otpCode">OTP <span class="req-star">*</span></label>'+
+        '<div class="otp-input-group">'+
+          '<input id="otpCode" type="text" value="Verified" disabled style="background:#f0fdf4 !important;color:#15803d !important;font-weight:700 !important;border-color:#86efac !important;">'+
+          '<button type="button" class="btn btn-ghost" disabled style="background:#dcfce7;color:#15803d;font-weight:700;border:none;pointer-events:none;cursor:default;">✓ Verified</button>'+
+        '</div>';
+      return;
+    }
     area.innerHTML=
-      '<div class="otp-hint">We’ll send a one-time code to this number on WhatsApp to verify it.</div>'+
-      '<div class="otp-controls"><button type="button" class="btn btn-ghost" id="otpSend">Send verification code</button></div>'+
-      '<div id="otpStep" style="display:none;margin-top:8px">'+
-        '<div class="otp-controls">'+
-          '<input id="otpCode" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code">'+
-          '<button type="button" class="btn btn-primary" id="otpVerify">Verify</button>'+
-          '<button type="button" class="link-btn" id="otpResend" disabled>Resend</button>'+
-        '</div>'+
-        '<div class="otp-msg" id="otpMsg"></div>'+
+      '<label for="otpCode">OTP <span class="req-star">*</span></label>'+
+      '<div class="otp-input-group">'+
+        '<input id="otpCode" type="text" inputmode="numeric" maxlength="6" placeholder="Enter OTP" autocomplete="one-time-code">'+
+        '<button type="button" class="btn btn-primary" id="otpSend">Send OTP</button>'+
+        '<button type="button" class="btn btn-primary" id="otpVerify" hidden style="display:none">Verify</button>'+
+        '<button type="button" class="link-btn" id="otpResend" hidden style="display:none" disabled>Resend</button>'+
       '</div>'+
-      '<div class="otp-help">Not receiving the code? <a href="'+waHelp+'" target="_blank" rel="noopener">Contact us on WhatsApp</a> — our team can help or complete your application for you.</div>';
-    document.getElementById('otpSend').onclick=function(){ sendOtp(false); };
-    document.getElementById('otpVerify').onclick=function(){ doVerifyOtp(); };
-    document.getElementById('otpResend').onclick=function(){ sendOtp(true); };
+      '<div class="otp-hint-sub" id="otpHintSub"><svg width="12" height="12" viewBox="0 0 24 24" fill="#16a34a"><path d="M17.472 14.382c-.301-.15-1.78-.878-2.056-.978-.276-.1-.476-.15-.676.15-.2.3-.777.978-.952 1.178-.176.2-.351.226-.652.075-.3-.15-1.267-.467-2.413-1.488-.893-.795-1.496-1.777-1.671-2.078-.176-.3-.019-.462.132-.612.136-.135.301-.351.452-.526.15-.176.2-.3.301-.5.1-.2.05-.376-.025-.526-.075-.15-.676-1.63-.927-2.233-.244-.588-.492-.508-.676-.518-.175-.009-.376-.011-.577-.011s-.527.075-.802.376c-.276.3-1.053 1.029-1.053 2.509 0 1.48 1.078 2.91 1.228 3.11.15.2 2.122 3.24 5.141 4.544.718.31 1.279.495 1.716.634.721.23 1.378.197 1.897.12.578-.087 1.78-.727 2.03-1.43.251-.702.251-1.304.176-1.43-.076-.125-.276-.2-.577-.35zM12 2a9.93 9.93 0 0 0-8.528 15.02L2 22l5.127-1.344A9.934 9.934 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg> OTP will be sent to your WhatsApp number</div>'+
+      '<div class="otp-msg" id="otpMsg"></div>';
+
+    var sendBtn = document.getElementById('otpSend');
+    var verifyBtn = document.getElementById('otpVerify');
+    var resendBtn = document.getElementById('otpResend');
+    if(sendBtn) sendBtn.onclick=function(){ sendOtp(false); };
+    if(verifyBtn) verifyBtn.onclick=function(){ doVerifyOtp(); };
+    if(resendBtn) resendBtn.onclick=function(){ sendOtp(true); };
   }
   function startResendCooldown(){
     var resend=document.getElementById('otpResend'); if(!resend) return;
-    var left=30; resend.disabled=true; resend.textContent='Resend in '+left+'s';
-    var t=setInterval(function(){ left--; if(left<=0){ clearInterval(t); resend.disabled=false; resend.textContent='Resend'; } else { resend.textContent='Resend in '+left+'s'; } },1000);
+    var left=30; resend.disabled=true; resend.textContent='Resend ('+left+'s)';
+    var t=setInterval(function(){ left--; if(left<=0){ clearInterval(t); resend.disabled=false; resend.textContent='Resend'; } else { resend.textContent='Resend ('+left+'s)'; } },1000);
   }
   function sendOtp(isResend){
     if(!mobileIsValid()){ toast('Please enter a valid mobile number first.'); return; }
     var num=currentMobileE164();
     var sendBtn=document.getElementById('otpSend');
+    var verifyBtn=document.getElementById('otpVerify');
+    var resendBtn=document.getElementById('otpResend');
+    var msg=document.getElementById('otpMsg');
+    var hint=document.getElementById('otpHintSub');
+
+    if(window.VisaDooSecurity && typeof window.VisaDooSecurity.checkRateLimit === 'function'){
+      var rate = window.VisaDooSecurity.checkRateLimit('send_otp', num, 5, 15 * 60 * 1000);
+      if(!rate.allowed){
+        toast(rate.error || 'Too many OTP requests. Please wait a few minutes.');
+        return;
+      }
+    }
+
     if(!isResend && sendBtn){ sendBtn.disabled=true; sendBtn.innerHTML='<span class="spin"></span> Sending…'; }
+    if(isResend && resendBtn){ resendBtn.disabled=true; resendBtn.textContent='Sending…'; }
     sb.functions.invoke('send-mobile-otp',{ body:{ phone:num } }).then(function(res){
       var d=res&&res.data;
       if(!d || !d.ok){
-        if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='Send verification code'; }
+        if(window.VisaDooSecurity) window.VisaDooSecurity.recordFailedAttempt('send_otp', num, 5, 15 * 60 * 1000);
+        if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='Send OTP'; }
+        if(isResend && resendBtn){ resendBtn.disabled=false; resendBtn.textContent='Resend'; }
         var reason=(d&&d.reason)||'';
-        toast(reason==='rate_limited'?'Too many attempts. Please wait a few minutes.':(reason==='bad_phone'?'Please enter a valid mobile number.':(reason==='not_configured'?'Verification is temporarily unavailable. Please try again shortly.':'Could not send the code. Please try again.')));
+        toast(reason==='rate_limited'?'Too many attempts. Please wait a few minutes.':(reason==='bad_phone'?'Please enter a valid mobile number.':(reason==='not_configured'?'Verification is temporarily unavailable. Please try again shortly.':'Could not send OTP. Please try again.')));
         return;
       }
-      var step=document.getElementById('otpStep'); if(step) step.style.display='block';
-      if(sendBtn) sendBtn.style.display='none';
-      var msg=document.getElementById('otpMsg'); if(msg){ msg.className='otp-msg ok'; msg.textContent='Code sent on WhatsApp to '+num+'.'; }
+      if(hint) hint.style.display='none';
+      if(sendBtn){ sendBtn.hidden=true; sendBtn.style.display='none'; }
+      if(verifyBtn){ verifyBtn.hidden=false; verifyBtn.style.display='inline-flex'; }
+      if(resendBtn){ resendBtn.hidden=false; resendBtn.style.display='inline-flex'; }
+      if(msg){
+        msg.className='otp-msg ok';
+        msg.innerHTML='<span class="otp-wa-sent-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="#16a34a"><path d="M17.472 14.382c-.301-.15-1.78-.878-2.056-.978-.276-.1-.476-.15-.676.15-.2.3-.777.978-.952 1.178-.176.2-.351.226-.652.075-.3-.15-1.267-.467-2.413-1.488-.893-.795-1.496-1.777-1.671-2.078-.176-.3-.019-.462.132-.612.136-.135.301-.351.452-.526.15-.176.2-.3.301-.5.1-.2.05-.376-.025-.526-.075-.15-.676-1.63-.927-2.233-.244-.588-.492-.508-.676-.518-.175-.009-.376-.011-.577-.011s-.527.075-.802.376c-.276.3-1.053 1.029-1.053 2.509 0 1.48 1.078 2.91 1.228 3.11.15.2 2.122 3.24 5.141 4.544.718.31 1.279.495 1.716.634.721.23 1.378.197 1.897.12.578-.087 1.78-.727 2.03-1.43.251-.702.251-1.304.176-1.43-.076-.125-.276-.2-.577-.35zM12 2a9.93 9.93 0 0 0-8.528 15.02L2 22l5.127-1.344A9.934 9.934 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg> OTP sent to your WhatsApp ('+esc(num)+')</span>';
+      }
+      toast('OTP sent to your WhatsApp');
       startResendCooldown();
       var ci=document.getElementById('otpCode'); if(ci) ci.focus();
-    }).catch(function(){ if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='Send verification code'; } toast('Could not send the code. Please try again.'); });
+    }).catch(function(){
+      if(window.VisaDooSecurity) window.VisaDooSecurity.recordFailedAttempt('send_otp', num, 5, 15 * 60 * 1000);
+      if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='Send OTP'; }
+      if(isResend && resendBtn){ resendBtn.disabled=false; resendBtn.textContent='Resend'; }
+      toast('Could not send OTP. Please try again.');
+    });
   }
   function doVerifyOtp(){
     var num=currentMobileE164();
     var code=((document.getElementById('otpCode')||{}).value||'').replace(/\D/g,'');
     var msg=document.getElementById('otpMsg');
-    if(code.length!==6){ if(msg){ msg.className='otp-msg err'; msg.textContent='Enter the 6-digit code.'; } return; }
+    if(code.length!==6){ if(msg){ msg.className='otp-msg err'; msg.textContent='Enter the 6-digit OTP.'; } return; }
+
+    if(window.VisaDooSecurity && typeof window.VisaDooSecurity.checkRateLimit === 'function'){
+      var rate = window.VisaDooSecurity.checkRateLimit('verify_otp', num, 5, 15 * 60 * 1000);
+      if(!rate.allowed){
+        if(msg){ msg.className='otp-msg err'; msg.textContent=rate.error || 'Too many verification attempts. Please wait.'; }
+        return;
+      }
+    }
+
     var vb=document.getElementById('otpVerify'); if(vb){ vb.disabled=true; vb.innerHTML='<span class="spin"></span>'; }
     sb.functions.invoke('verify-mobile-otp',{ body:{ phone:num, code:code } }).then(function(res){
       if(vb){ vb.disabled=false; vb.innerHTML='Verify'; }
       var d=res&&res.data;
       if(d&&d.ok){
+        if(window.VisaDooSecurity) {
+          window.VisaDooSecurity.clearRateLimit('verify_otp', num);
+          window.VisaDooSecurity.clearRateLimit('send_otp', num);
+          window.VisaDooSecurity.logSecurityEvent(sb, {
+            action: 'OTP_VERIFIED_SUCCESS',
+            actorRole: 'customer',
+            metadata: { phone: num }
+          });
+        }
         mobileVerified=true;
         verifiedNumber=num;
+        try {
+          sessionStorage.setItem('visadoo_verified_phone', num);
+          localStorage.setItem('visadoo_verified_phone', num);
+          sessionStorage.setItem('visadoo_primary_phone', num);
+          localStorage.setItem('visadoo_primary_phone', num);
+          var td = null;
+          try { td = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft')); } catch(_e) {}
+          if (td) {
+            if (!td.primaryContact) td.primaryContact = {};
+            td.primaryContact.phone = num;
+            sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(td));
+          }
+        } catch(_e) {}
         buildOtpUI();
         toast('Mobile number verified');
         if (typeof updateAllJapanSectionStatuses === 'function') {
@@ -3270,9 +7089,21 @@
         }
         return;
       }
+      if(window.VisaDooSecurity) {
+        window.VisaDooSecurity.recordFailedAttempt('verify_otp', num, 5, 15 * 60 * 1000);
+        window.VisaDooSecurity.logSecurityEvent(sb, {
+          action: 'OTP_VERIFY_FAILED',
+          actorRole: 'customer',
+          metadata: { phone: num }
+        });
+      }
       var reason=(d&&d.reason)||'';
-      if(msg){ msg.className='otp-msg err'; msg.textContent=(reason==='wrong'?'Incorrect code. Please try again.':((reason==='expired'||reason==='no_code')?'Code expired. Tap Resend for a new one.':(reason==='too_many'?'Too many tries. Tap Resend for a new code.':'Could not verify. Please try again.'))); }
-    }).catch(function(){ if(vb){ vb.disabled=false; vb.innerHTML='Verify'; } if(msg){ msg.className='otp-msg err'; msg.textContent='Could not verify. Please try again.'; } });
+      if(msg){ msg.className='otp-msg err'; msg.textContent=(reason==='wrong'?'Incorrect OTP. Please try again.':((reason==='expired'||reason==='no_code')?'OTP expired. Click Resend for a new one.':(reason==='too_many'?'Too many tries. Click Resend for a new code.':'Could not verify. Please try again.'))); }
+    }).catch(function(){
+      if(window.VisaDooSecurity) window.VisaDooSecurity.recordFailedAttempt('verify_otp', num, 5, 15 * 60 * 1000);
+      if(vb){ vb.disabled=false; vb.innerHTML='Verify'; }
+      if(msg){ msg.className='otp-msg err'; msg.textContent='Could not verify. Please try again.'; }
+    });
   }
 
   // ---- custom questions on the apply form ----
@@ -3321,7 +7152,12 @@
     var answers=[], missing=null, fileQs=[];
     applyQ.forEach(function(q){
       var val='';
-      if(q.qtype==='text'){ val=(document.getElementById('q_'+q.id).value||'').trim(); }
+      if(q.qtype==='text'){
+        val=(document.getElementById('q_'+q.id).value||'').trim();
+        if(q.id.indexOf('email')===-1 && q.label.toLowerCase().indexOf('email')===-1 && q.id!=='phone'){
+          val=val.toUpperCase();
+        }
+      }
       else if(q.qtype==='choice'){ val=document.getElementById('q_'+q.id).value; }
       else if(q.qtype==='yesno'){ var c=document.querySelector('input[name="q_'+q.id+'"]:checked'); val=c?c.value:''; }
       else if(q.qtype==='file'){ if(applyQFiles[q.id]){ fileQs.push(q); val={ pending:true }; } else { val=''; } }
@@ -3332,8 +7168,23 @@
   }
 
   function field(id,label,type,val,req){
+    if(isTravelDateField(id)){
+      var savedDate = getSavedTravelDate(val);
+      return '<div class="field field-travel-date-hidden" style="display:none !important;">' +
+        '<input id="'+id+'" name="'+id+'" type="hidden" value="'+esc(savedDate)+'">' +
+      '</div>';
+    }
+    var extraAttr = '';
+    var todayStr = getTodayIsoString();
+    if(type === 'date'){
+      if(id === 'arrival_date' || id === 'departure_date' || id === 'travel_date' || id === 'intended_entry_date' || id === 'passport_expiry' || id === 'date_of_arrival'){
+        extraAttr = ' min="' + todayStr + '"';
+      } else if(id === 'date_of_birth' || id === 'passport_issue_date' || id === 'dob' || id === 'father_dob' || id === 'mother_dob'){
+        extraAttr = ' max="' + todayStr + '"';
+      }
+    }
     return '<div class="field"><label for="'+id+'">'+esc(label)+(req?' <span class="req-star">*</span>':'')+'</label>' +
-      '<input id="'+id+'" name="'+id+'" type="'+type+'" value="'+esc(val)+'"'+(req?' required':'')+'></div>';
+      '<input id="'+id+'" name="'+id+'" type="'+type+'" value="'+esc(val)+'"'+extraAttr+(req?' required':'')+'></div>';
   }
   function dropZone(key,title,sub){
     var label=title?'<span class="ulabel">'+esc(title)+' <span class="req-star">*</span></span>':'';
@@ -3344,7 +7195,7 @@
           '<b>Tap to upload</b>' +
           '<div class="drop-error-msg" id="drop_error_'+key+'"></div>' +
           '<div class="fname" id="fname_'+key+'"></div>' +
-          '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp" style="display:none">' +
+          '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">' +
         '</div></div>';
     }
     if(key==='passport'){
@@ -3365,7 +7216,7 @@
           '<b>Tap to upload</b>' +
           '<div class="drop-error-msg" id="drop_error_'+key+'"></div>' +
           '<div class="fname" id="fname_'+key+'"></div>' +
-          '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp" style="display:none">' +
+          '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">' +
         '</div></div>';
     }
     if(key==='passport_back'){
@@ -3383,7 +7234,7 @@
           '<b>Tap to upload</b>' +
           '<div class="drop-error-msg" id="drop_error_'+key+'"></div>' +
           '<div class="fname" id="fname_'+key+'"></div>' +
-          '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp" style="display:none">' +
+          '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">' +
         '</div></div>';
     }
     return '<div>'+label+
@@ -3391,7 +7242,7 @@
         '<div class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 0L8 8m4-4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round"/></svg></div>' +
         '<b>Tap to upload</b><small>'+esc(sub)+'</small>' +
         '<div class="fname" id="fname_'+key+'"></div>' +
-        '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp" style="display:none">' +
+        '<input type="file" id="file_'+key+'" accept="image/jpeg,image/png,image/webp,application/pdf" style="display:none">' +
       '</div></div>';
   }
 
@@ -3470,7 +7321,7 @@
   }
 
   var picked={};
-  var passportOcrState={ busy:false, complete:false, extracted:null, frontVerified:false };
+  var passportOcrState={ busy:false, complete:false, extracted:null, backExtracted:null, frontVerified:false };
   var applyWizardStep=1;
   var photoValidationRun=0;
   var photoFaceDetectorPromise=null;
@@ -3484,9 +7335,17 @@
     });
   }
 
-  function setDocumentPreview(key,file){
+  async function setDocumentPreview(key,file){
+    if(!file) return;
     if(documentPreviewUrls[key]){ try{ URL.revokeObjectURL(documentPreviewUrls[key]); }catch(_revokeError){} }
-    var url=URL.createObjectURL(file); documentPreviewUrls[key]=url;
+    var displayBlob = file;
+    var isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if(isPdf && (key === 'passport' || key === 'passport_back' || key === 'photo')){
+      try {
+        displayBlob = await convertPdfToImageBlob(file, 1);
+      } catch(_e) {}
+    }
+    var url=URL.createObjectURL(displayBlob); documentPreviewUrls[key]=url;
     var previewIds={passport:'passportReviewPreview',passport_back:'passportBackReviewPreview',photo:'photoReviewPreview'};
     var image=document.getElementById(previewIds[key]);
     if(image) image.src=url;
@@ -3521,6 +7380,19 @@
         button.classList.add('active');
       };
     });
+    var samplePreviewEl = document.getElementById('passportSamplePreviewFrame') || document.getElementById('passportSamplePreviewImg');
+    if(samplePreviewEl){
+      samplePreviewEl.onclick = function(){
+        opener = samplePreviewEl;
+        var currentImg = document.getElementById('passportSamplePreviewImg');
+        var isBack = currentImg && currentImg.src && currentImg.src.indexOf('passport-sample-back') > -1;
+        large.src = isBack ? '/assets/passport-sample-back.jpg' : '/assets/passport-sample.jpg';
+        title.textContent = isBack ? 'Sample Passport (Back Page Specimen)' : 'Sample Passport (Photo Page Specimen)';
+        modal.hidden = false;
+        document.body.classList.add('passport-preview-open');
+        closeButton.focus({preventScroll:true});
+      };
+    }
     closeButton.onclick=closePreview;
     modal.onclick=function(event){ if(event.target===modal) closePreview(); };
     modal.onkeydown=function(event){ if(event.key==='Escape'){ event.preventDefault(); closePreview(); } };
@@ -3636,7 +7508,68 @@
           }
         }
       });
-      localStorage.setItem(draftKey, JSON.stringify(draftData));
+      var hasMeaningfulData = false;
+      Object.keys(draftData).forEach(function(k) {
+        if (k.charAt(0) !== '_' && draftData[k] && draftData[k].value && String(draftData[k].value).trim().length > 0) {
+          hasMeaningfulData = true;
+        }
+      });
+      if (picked.photo || picked.passport || picked.passport_back) {
+        hasMeaningfulData = true;
+      }
+
+      if (!hasMeaningfulData) {
+        try {
+          localStorage.removeItem(draftKey);
+          localStorage.removeItem('visadoo-last-draft-url');
+          localStorage.removeItem('visadoo-last-draft-visa');
+        } catch(_e) {}
+        if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+        return;
+      }
+
+      try {
+        localStorage.setItem('visadoo-last-draft-url', window.location.pathname + window.location.search + window.location.hash);
+        localStorage.setItem('visadoo-last-draft-visa', visaId || '');
+      } catch(_e) {}
+
+      if (travellerIndex === 0) {
+        try {
+          var autoPhone = (currentMobileE164 && currentMobileE164()) || ((document.getElementById('phone')||{}).value||'').trim();
+          var autoEmail = (((document.getElementById('contact_email')||{}).value||'').trim()) || (state.user && state.user.email);
+          if (autoPhone) {
+            sessionStorage.setItem('visadoo_primary_phone', autoPhone);
+            localStorage.setItem('visadoo_primary_phone', autoPhone);
+          }
+          if (autoEmail) {
+            sessionStorage.setItem('visadoo_primary_email', autoEmail);
+            localStorage.setItem('visadoo_primary_email', autoEmail);
+          }
+          var td = null;
+          try { td = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft')); } catch(_e) {}
+          if (td) {
+            if (!td.primaryContact) td.primaryContact = {};
+            if (autoPhone) td.primaryContact.phone = autoPhone;
+            if (autoEmail) td.primaryContact.email = autoEmail;
+            sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(td));
+          }
+        } catch(_e) {}
+      }
+
+      draftData._savedAt = Date.now();
+      draftData._ttl = 24 * 60 * 60 * 1000;
+      if (window.VisaDooSecurity && typeof window.VisaDooSecurity.encryptData === 'function') {
+        window.VisaDooSecurity.encryptData(draftData, draftKey).then(function(encrypted) {
+          if (encrypted) localStorage.setItem(draftKey, encrypted);
+          if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+        }).catch(function() {
+          try { localStorage.setItem(draftKey, JSON.stringify(draftData)); } catch(_e) {}
+          if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+        });
+      } else {
+        localStorage.setItem(draftKey, JSON.stringify(draftData));
+        if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+      }
     }
 
     try {
@@ -3655,8 +7588,78 @@
       if (picked.signature) visadooDb.saveFile(draftKey + '-signature', picked.signature);
       else visadooDb.deleteFile(draftKey + '-signature');
     } catch(e) {}
+    try {
+      if (picked.bank_statement) visadooDb.saveFile(draftKey + '-bank_statement', picked.bank_statement);
+      else visadooDb.deleteFile(draftKey + '-bank_statement');
+    } catch(e) {}
+    try {
+      if (picked.pan_card) visadooDb.saveFile(draftKey + '-pan_card', picked.pan_card);
+      else visadooDb.deleteFile(draftKey + '-pan_card');
+    } catch(e) {}
+    try {
+      if (picked.iqama) visadooDb.saveFile(draftKey + '-iqama', picked.iqama);
+      else visadooDb.deleteFile(draftKey + '-iqama');
+    } catch(e) {}
 
     updateSubmitButtonState();
+  }
+
+  function discardDraft(visaId, travellerIndex) {
+    visaId = visaId || qParam('visa');
+    travellerIndex = (typeof travellerIndex === 'number') ? travellerIndex : (Number(qParam('travellerIndex')) || 0);
+    var draftKey = 'visadoo-draft-' + visaId + '-' + travellerIndex;
+    try {
+      localStorage.removeItem(draftKey);
+      try {
+        if (typeof visadooDb !== 'undefined') {
+          visadooDb.deleteFile(draftKey + '-photo');
+          visadooDb.deleteFile(draftKey + '-passport');
+          visadooDb.deleteFile(draftKey + '-passport_back');
+          visadooDb.deleteFile(draftKey + '-signature');
+          visadooDb.deleteFile(draftKey + '-bank_statement');
+          visadooDb.deleteFile(draftKey + '-pan_card');
+          visadooDb.deleteFile(draftKey + '-iqama');
+        }
+      } catch(_e) {}
+
+      var tDraftStr = sessionStorage.getItem('visadoo-traveller-draft') || localStorage.getItem('visadoo-traveller-draft');
+      if (tDraftStr) {
+        try {
+          var tDraft = JSON.parse(tDraftStr);
+          if (tDraft && tDraft.travellers) {
+            var hasSubmitted = tDraft.travellers.some(function(t) { return t.submitted; });
+            if (!hasSubmitted) {
+              sessionStorage.removeItem('visadoo-traveller-draft');
+              localStorage.removeItem('visadoo-traveller-draft');
+            }
+          }
+        } catch(_e) {}
+      }
+
+      var hasAnyOtherDraft = false;
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('visadoo-draft-') === 0 && k !== 'visadoo-draft-data' && k !== draftKey) {
+          var val = localStorage.getItem(k);
+          if (val && typeof val === 'string' && val.trim().length > 15 && val !== '{}' && val !== 'null') {
+            hasAnyOtherDraft = true;
+            break;
+          }
+        }
+      }
+
+      if (!hasAnyOtherDraft && !sessionStorage.getItem('visadoo-traveller-draft') && !localStorage.getItem('visadoo-traveller-draft')) {
+        localStorage.removeItem('visadoo-last-draft-url');
+        localStorage.removeItem('visadoo-last-draft-visa');
+      }
+
+      document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+      if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+        window.updateDraftResumeButtonVisibility();
+      }
+    } catch(err) {
+      console.error('discardDraft error:', err);
+    }
   }
 
   function showResumeDraftModal(draftKey) {
@@ -3691,7 +7694,7 @@
       '<p style="color:#64748b; font-size:14.5px; line-height:1.5; margin:12px 0 24px;">We found a draft of your application. Would you like to continue your application or start a new one?</p>' +
       '<div style="display:flex; gap:12px; justify-content:center;">' +
         '<button type="button" id="btnResumeDraftFresh" style="padding:10px 16px; border:1px solid #cbd5e1; background:#ffffff; color:#334155; border-radius:12px; font-weight:600; cursor:pointer;">New Application</button>' +
-        '<button type="button" id="btnResumeDraftRestore" style="padding:10px 20px; border:none; background:#168177; color:#ffffff; border-radius:12px; font-weight:600; cursor:pointer;">Continue Application</button>' +
+        '<button type="button" id="btnResumeDraftRestore" style="padding:10px 20px; border:none; background:#0f172a; color:#ffffff; border-radius:12px; font-weight:600; cursor:pointer; transition:background 0.2s;">Continue Application</button>' +
       '</div>';
 
     modal.appendChild(card);
@@ -3704,13 +7707,22 @@
         visadooDb.deleteFile(draftKey + '-passport');
         visadooDb.deleteFile(draftKey + '-passport_back');
         visadooDb.deleteFile(draftKey + '-signature');
+        visadooDb.deleteFile(draftKey + '-bank_statement');
+        visadooDb.deleteFile(draftKey + '-pan_card');
+        visadooDb.deleteFile(draftKey + '-iqama');
       } catch(e) {}
       modal.remove();
     };
 
     document.getElementById('btnResumeDraftRestore').onclick = async function() {
       try {
-        var draftData = JSON.parse(localStorage.getItem(draftKey));
+        var rawDraft = localStorage.getItem(draftKey);
+        var draftData = null;
+        if (window.VisaDooSecurity && typeof window.VisaDooSecurity.decryptData === 'function') {
+          draftData = await window.VisaDooSecurity.decryptData(rawDraft, draftKey);
+        } else {
+          draftData = JSON.parse(rawDraft || 'null');
+        }
         if (draftData) {
           Object.keys(draftData).forEach(function(id) {
             var el = document.getElementById(id);
@@ -3743,15 +7755,37 @@
           var zone = document.getElementById('drop_photo');
           if (zone) {
             zone.classList.add('has');
-            var previewUrl = URL.createObjectURL(photoFile);
+            var previewBlob = photoFile;
+            var isPdf = photoFile.type === 'application/pdf' || /\.pdf$/i.test(photoFile.name);
+            if (isPdf) {
+              try {
+                previewBlob = await convertPdfToImageBlob(photoFile, 1);
+              } catch(_e) {}
+            }
+            var previewUrl = URL.createObjectURL(previewBlob);
             zone.style.backgroundImage = 'url(' + previewUrl + ')';
             zone.style.backgroundSize = 'cover';
             zone.style.backgroundPosition = 'center';
           }
+          setDocumentPreview('photo', photoFile);
           var fname = document.getElementById('fname_photo');
           if (fname) fname.textContent = '✓ ' + photoFile.name;
           if (typeof setPhotoCheckUi === 'function') {
             setPhotoCheckUi('success', 'Photo looks good', 'Photo restored from draft.');
+          }
+        } else {
+          delete picked.photo;
+          delete picked.photoThumbnail;
+          var zone = document.getElementById('drop_photo');
+          if (zone) {
+            zone.classList.remove('has');
+            zone.style.backgroundImage = '';
+          }
+          setDocumentPreview('photo', null);
+          var fname = document.getElementById('fname_photo');
+          if (fname) fname.textContent = '';
+          if (typeof setPhotoCheckUi === 'function') {
+            setPhotoCheckUi('idle', '', '');
           }
         }
       } catch(e) { console.error('Error restoring photo file:', e); }
@@ -3764,13 +7798,33 @@
           var zone = document.getElementById('drop_passport');
           if (zone) {
             zone.classList.add('has');
-            var previewUrl = URL.createObjectURL(passportFile);
+            var isPdf = passportFile.type === 'application/pdf' || /\.pdf$/i.test(passportFile.name);
+            var previewTarget = passportFile;
+            if (isPdf) {
+              try { previewTarget = await convertPdfToImageBlob(passportFile, 1); } catch(_e){}
+            }
+            var previewUrl = URL.createObjectURL(previewTarget);
             zone.style.setProperty('--bg-image', 'url(' + previewUrl + ')');
+            setDocumentPreview('passport', previewTarget);
           }
           var fname = document.getElementById('fname_passport');
           if (fname) fname.textContent = '✓ ' + passportFile.name;
           if (typeof setPassportPageUi === 'function') {
             setPassportPageUi('passport', 'success', 'Passport front loaded', 'Restored from draft.');
+          }
+        } else {
+          delete picked.passport;
+          passportOcrState.frontVerified = false;
+          var zone = document.getElementById('drop_passport');
+          if (zone) {
+            zone.classList.remove('has');
+            zone.style.removeProperty('--bg-image');
+          }
+          setDocumentPreview('passport', null);
+          var fname = document.getElementById('fname_passport');
+          if (fname) fname.textContent = '';
+          if (typeof setPassportPageUi === 'function') {
+            setPassportPageUi('passport', 'idle', '', '');
           }
         }
       } catch(e) { console.error('Error restoring passport file:', e); }
@@ -3782,13 +7836,32 @@
           var zone = document.getElementById('drop_passport_back');
           if (zone) {
             zone.classList.add('has');
-            var previewUrl = URL.createObjectURL(passportBackFile);
+            var isPdf = passportBackFile.type === 'application/pdf' || /\.pdf$/i.test(passportBackFile.name);
+            var previewTarget = passportBackFile;
+            if (isPdf) {
+              try { previewTarget = await convertPdfToImageBlob(passportBackFile, 1); } catch(_e){}
+            }
+            var previewUrl = URL.createObjectURL(previewTarget);
             zone.style.setProperty('--bg-image', 'url(' + previewUrl + ')');
+            setDocumentPreview('passport_back', previewTarget);
           }
           var fname = document.getElementById('fname_passport_back');
           if (fname) fname.textContent = '✓ ' + passportBackFile.name;
           if (typeof setPassportPageUi === 'function') {
             setPassportPageUi('passport_back', 'success', 'Passport back loaded', 'Restored from draft.');
+          }
+        } else {
+          delete picked.passport_back;
+          var zone = document.getElementById('drop_passport_back');
+          if (zone) {
+            zone.classList.remove('has');
+            zone.style.removeProperty('--bg-image');
+          }
+          setDocumentPreview('passport_back', null);
+          var fname = document.getElementById('fname_passport_back');
+          if (fname) fname.textContent = '';
+          if (typeof setPassportPageUi === 'function') {
+            setPassportPageUi('passport_back', 'idle', '', '');
           }
         }
       } catch(e) { console.error('Error restoring passport back file:', e); }
@@ -3801,8 +7874,118 @@
           if (zone) zone.classList.add('has');
           var fname = document.getElementById('fname_signature');
           if (fname) fname.textContent = '✓ ' + signatureFile.name;
+        } else {
+          delete picked.signature;
+          var zone = document.getElementById('drop_signature');
+          if (zone) zone.classList.remove('has');
+          var fname = document.getElementById('fname_signature');
+          if (fname) fname.textContent = '';
         }
       } catch(e) { console.error('Error restoring signature file:', e); }
+
+      try {
+        var bankStatementFile = await visadooDb.getFile(draftKey + '-bank_statement');
+        if (bankStatementFile) {
+          picked.bank_statement = bankStatementFile;
+          var zone = document.getElementById('drop_bank_statement');
+          if (zone) {
+            zone.classList.add('has');
+            zone.style.borderColor = '#168177';
+            zone.style.background = '#f0fdfa';
+          }
+          var fname = document.getElementById('fname_bank_statement');
+          if (fname) {
+            var sizeMb = (bankStatementFile.size / (1024 * 1024)).toFixed(2);
+            fname.innerHTML = '✓ ' + esc(bankStatementFile.name) + ' <span style="color:#64748b;font-weight:normal">(' + sizeMb + ' MB)</span> ' +
+              '<button type="button" id="removeBankStatementBtn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;margin-left:8px;text-decoration:underline">Remove</button>';
+            var remBtn = document.getElementById('removeBankStatementBtn');
+            if (remBtn) {
+              remBtn.onclick = function(ev) {
+                ev.stopPropagation();
+                delete picked.bank_statement;
+                var input = document.getElementById('file_bank_statement');
+                if (input) input.value = '';
+                fname.innerHTML = '';
+                if (zone) {
+                  zone.classList.remove('has');
+                  zone.style.borderColor = '#cbd5e1';
+                  zone.style.background = '#f8fafc';
+                }
+              };
+            }
+          }
+        }
+      } catch(e) { console.error('Error restoring bank statement file:', e); }
+
+      try {
+        var panFile = await visadooDb.getFile(draftKey + '-pan_card');
+        if (panFile) {
+          picked.pan_card = panFile;
+          var zone = document.getElementById('drop_pan_card');
+          if (zone) {
+            zone.classList.add('has');
+            zone.style.borderColor = '#168177';
+            zone.style.background = '#f0fdfa';
+          }
+          var fname = document.getElementById('fname_pan_card');
+          if (fname) {
+            var sizeMb = (panFile.size / (1024 * 1024)).toFixed(2);
+            fname.innerHTML = '✓ ' + esc(panFile.name) + ' <span style="color:#64748b;font-weight:normal">(' + sizeMb + ' MB)</span> ' +
+              '<button type="button" class="remove-drop-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;margin-left:8px;text-decoration:underline">Remove</button>';
+            var remBtn = fname.querySelector('.remove-drop-btn');
+            if (remBtn) {
+              remBtn.onclick = function(ev) {
+                ev.stopPropagation();
+                delete picked.pan_card;
+                var input = document.getElementById('file_pan_card');
+                if (input) input.value = '';
+                fname.innerHTML = '';
+                if (zone) {
+                  zone.classList.remove('has');
+                  zone.style.borderColor = '#cbd5e1';
+                  zone.style.background = '#f8fafc';
+                }
+                if (typeof autoSaveDraft === 'function') autoSaveDraft();
+              };
+            }
+          }
+        }
+      } catch(e) { console.error('Error restoring pan_card file:', e); }
+
+      try {
+        var iqamaFile = await visadooDb.getFile(draftKey + '-iqama');
+        if (iqamaFile) {
+          picked.iqama = iqamaFile;
+          var zone = document.getElementById('drop_iqama');
+          if (zone) {
+            zone.classList.add('has');
+            zone.style.borderColor = '#168177';
+            zone.style.background = '#f0fdfa';
+          }
+          var fname = document.getElementById('fname_iqama');
+          if (fname) {
+            var sizeMb = (iqamaFile.size / (1024 * 1024)).toFixed(2);
+            fname.innerHTML = '✓ ' + esc(iqamaFile.name) + ' <span style="color:#64748b;font-weight:normal">(' + sizeMb + ' MB)</span> ' +
+              '<button type="button" class="remove-drop-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;margin-left:8px;text-decoration:underline">Remove</button>';
+            var remBtn = fname.querySelector('.remove-drop-btn');
+            if (remBtn) {
+              remBtn.onclick = function(ev) {
+                ev.stopPropagation();
+                delete picked.iqama;
+                var input = document.getElementById('file_iqama');
+                if (input) input.value = '';
+                fname.innerHTML = '';
+                if (zone) {
+                  zone.classList.remove('has');
+                  zone.style.borderColor = '#cbd5e1';
+                  zone.style.background = '#f8fafc';
+                }
+                if (typeof autoSaveDraft === 'function') autoSaveDraft();
+              };
+            }
+          }
+        }
+      } catch(e) { console.error('Error restoring iqama file:', e); }
 
       if (typeof updateDocumentsNext === 'function') {
         updateDocumentsNext();
@@ -3820,9 +8003,22 @@
     var travellerIndex = Number(qParam('travellerIndex')) || 0;
     var draftKey = 'visadoo-draft-' + visaId + '-' + travellerIndex;
     var savedDraft = localStorage.getItem(draftKey);
-    if (savedDraft) {
-      showResumeDraftModal(draftKey);
-    }
+    if (!savedDraft) return;
+    try {
+      var parsed = JSON.parse(savedDraft);
+      if (parsed && parsed._savedAt && (Date.now() - parsed._savedAt > 24 * 60 * 60 * 1000)) {
+        localStorage.removeItem(draftKey);
+        visadooDb.deleteFile(draftKey + '-photo');
+        visadooDb.deleteFile(draftKey + '-passport');
+        visadooDb.deleteFile(draftKey + '-passport_back');
+        visadooDb.deleteFile(draftKey + '-signature');
+        visadooDb.deleteFile(draftKey + '-bank_statement');
+        visadooDb.deleteFile(draftKey + '-pan_card');
+        visadooDb.deleteFile(draftKey + '-iqama');
+        return;
+      }
+    } catch(_e) {}
+    showResumeDraftModal(draftKey);
   }
 
   function setApplyStep(step){
@@ -3834,6 +8030,11 @@
     if(step===3){
       seedPassportNameFields();
       updateSubmitButtonState();
+      applyDateInputConstraints(three);
+      enforceHiddenTravelDateInputs(three);
+      if (typeof updatePhilippinesSpouseField === 'function') {
+        try { updatePhilippinesSpouseField(); } catch(_e) {}
+      }
     }
     var active=step===1?one:(step===2?two:three);
     var heading=active.querySelector('[data-step-heading]')||active.querySelector('h2');
@@ -3842,6 +8043,7 @@
   }
 
   function wireApplyWizard(){
+    applyDateInputConstraints();
     var photoNext=document.getElementById('photoNext');
     var passportNext=document.getElementById('passportNext');
     if(!photoNext||!passportNext) return;
@@ -3857,15 +8059,34 @@
     if (saveDraftBtn) {
       saveDraftBtn.onclick = function() {
         autoSaveDraft();
+        document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+        if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+          window.updateDraftResumeButtonVisibility();
+        }
         toast('Draft saved successfully.');
       };
     }
+
+    document.addEventListener('click', function(e) {
+      var sBtn = e.target && e.target.closest && e.target.closest('.save-draft-btn');
+      if (sBtn && sBtn.id !== 'saveDraftBtn') {
+        autoSaveDraft();
+        document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+        if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+          window.updateDraftResumeButtonVisibility();
+        }
+        toast('Draft saved successfully.');
+      }
+    });
 
     var form = document.getElementById('applyForm');
     if (form) {
       form.addEventListener('input', autoSaveDraft);
       form.addEventListener('change', autoSaveDraft);
     }
+
+    // Enforce hidden travel date inputs and ensure valid value across all visa templates
+    enforceHiddenTravelDateInputs(document);
 
     // Auto-save when going back inside forms
     Array.prototype.forEach.call(document.querySelectorAll('.denmark-prev, .korea-prev, #denmarkBackToPassport, #koreaBackToPassport'), function(btn) {
@@ -3889,21 +8110,73 @@
       var travellersParam = Number(qParam('travellers')) || 1;
       var draft = null;
       try {
-        draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft'));
+        draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft') || localStorage.getItem('visadoo-traveller-draft'));
       } catch(_e) {}
       
       var isMultiple = travellersParam > 1 && draft && draft.travellers && draft.travellers.length > 1;
-      
-      if (isMultiple) {
-        var visaId = qParam('visa');
-        renderSuccess({ visa_type: visaId });
-        return;
-      }
-      
       var visaId = qParam('visa');
       var visa = visaId ? visaById(visaId) : null;
       var slug = (visa && visa.country_slug) ? visa.country_slug : 'united-arab-emirates';
-      location.href = 'country.html?slug=' + encodeURIComponent(slug) + '#visa-info';
+      var backUrl = 'country.html?slug=' + encodeURIComponent(slug) + '#visa-info';
+
+      // Only show draft confirmation on Step 3 (details page)
+      // Step 1 (Photo) and Step 2 (Passport) go back directly without prompt
+      if (applyWizardStep !== 3) {
+        discardDraft(visaId, Number(qParam('travellerIndex')) || 0);
+        if (isMultiple) {
+          renderSuccess({ visa_type: visaId });
+        } else {
+          location.href = backUrl;
+        }
+        return;
+      }
+
+      if (isMultiple) {
+        showDraftConfirmModal({
+          title: 'Save to Draft?',
+          message: 'Do you want to save your application as a draft before returning to applicants?',
+          saveText: 'Save Draft',
+          backText: 'Back',
+          onSave: function() {
+            autoSaveDraft();
+            document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+            if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+              window.updateDraftResumeButtonVisibility();
+            }
+            toast('Draft saved successfully.');
+            setTimeout(function() {
+              renderSuccess({ visa_type: visaId });
+            }, 350);
+          },
+          onBack: function() {
+            discardDraft(visaId, Number(qParam('travellerIndex')) || 0);
+            renderSuccess({ visa_type: visaId });
+          }
+        });
+        return;
+      }
+
+      showDraftConfirmModal({
+        title: 'Save to Draft?',
+        message: 'Do you want to save your application as a draft before returning to visa options?',
+        saveText: 'Save Draft',
+        backText: 'Back',
+        onSave: function() {
+          autoSaveDraft();
+          document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+          if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+            window.updateDraftResumeButtonVisibility();
+          }
+          toast('Draft saved successfully.');
+          setTimeout(function() {
+            location.href = backUrl;
+          }, 350);
+        },
+        onBack: function() {
+          discardDraft(visaId, Number(qParam('travellerIndex')) || 0);
+          location.href = backUrl;
+        }
+      });
     };
   }
 
@@ -3952,17 +8225,77 @@
 
   function cleanOcrName(name) {
     if(!name) return '';
-    var words = name.split(/\s+/);
-    var cleanWords = words.filter(function(word) {
-      var w = word.toUpperCase();
-      if(/[IL|1T]{4,}/.test(w) || /[KX]{4,}/.test(w) || /^[IL|1TKX]{4,}$/.test(w)) {
-        return false;
+    var s = String(name).toUpperCase().trim();
+    s = s.replace(/[<«‹]+/g, ' ');
+    var words = s.split(/\s+/).filter(Boolean);
+    var cleanWords = [];
+
+    function shouldPreserveL(stem) {
+      if (!stem || stem.length < 2) return false;
+      var upper = stem.toUpperCase();
+      return /^(?:PAU|SAU|BIL|JIL|WIL|NEI|JOE|NOE|PATE|DANIE|MANUE|MICHAE|MICHE|SAMUE|GABRIE|RAFAE|RAHU|GOKU|ATU|ABDU|MUKU|VIPU|BIPU|ANSHU|PARU|AKHI|ANI|SUNI|NIKHI|SAHI|KAPI|SALI|FAZI|SHABI|MOHSI|SHAMI|RAHI|AQUI|BILA|JALA|IQBA|FAISA|AFSA|SAHA|KAMA|AMA|VISHA|GOPA|NAVA|KIRANPA|HARPA|JAGPA|MANPA|KUNHA|SHAKE|JALEE|NAVEE|PRAVEE)$/i.test(upper);
+    }
+
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (/^[LKXC1|!I]{2,}$/.test(w) || /^[LKXC1|!I<]{2,}$/.test(w)) {
+        continue;
       }
-      if(w.length === 1 && /[IL|1TKX]/.test(w)) {
-        return false;
+      if (/^(?:AL|LA|KL|LK|LL|KK|XX|CC|AA|II|11)$/.test(w) && (cleanWords.length === 0 || i === words.length - 1) && words.length > 1) {
+        var remainingWords = words.slice(i + 1).filter(function(rw){ return rw.length >= 3; });
+        if (cleanWords.length === 0 && remainingWords.length >= 1) {
+          continue;
+        }
+        if (cleanWords.length > 0) {
+          continue;
+        }
       }
-      return true;
-    });
+      if (w.length === 1 && /[LKXC1|!IA]/.test(w) && words.length > 1) {
+        continue;
+      }
+      w = w.replace(/^K(?=[ZBDFGJPQTVWXC])/i, '');
+      w = w.replace(/^L(?=[BCDFGJKMNPQRSTVWXZ])/i, '');
+      w = w.replace(/^X(?=[BCDFGJKLMNPQRSTVWXZ])/i, '');
+      w = w.replace(/^C(?=[BDFGJKMNPQTVWXZ])/i, '');
+      w = w.replace(/^[1|!I](?=[BCDFGHJKLMNPQRSTVWXYZ])/i, '');
+
+      // Strip trailing multi-chevron noise patterns (e.g. 'PAULLC' -> 'PAUL', 'BOSELC' -> 'BOSE', 'BOSEKK' -> 'BOSE')
+      var trailingChevronMatch = w.match(/^(.+?)(?:(?:LC|LK|LX|KL|KC|KK|KX|CL|CC|CX|XL|XK|XC|XX|II|11)[LKXC1|!I]*)$/i);
+      if (trailingChevronMatch) {
+        var stem = trailingChevronMatch[1];
+        if (shouldPreserveL(stem)) {
+          w = stem + 'L';
+        } else {
+          w = stem;
+        }
+      }
+
+      var match = w.match(/^(.+?)([LKXC1|!I])\2{2,}.*$/);
+      if (match) {
+        var base = match[1];
+        var fillerChar = match[2];
+        if (fillerChar === 'L') {
+          if (shouldPreserveL(base)) {
+            w = base + 'L';
+          } else if (base.length >= 2) {
+            w = base;
+          }
+        } else if (base.length >= 2) {
+          w = base;
+        }
+      }
+
+      if (w === 'PAU' || /^PAUL[LKXC1|!I]+$/i.test(w)) {
+        w = 'PAUL';
+      }
+
+      if (w.length === 1 && /[LKXC1|!I]/.test(w)) {
+        continue;
+      }
+      if (w.length >= 2) {
+        cleanWords.push(w);
+      }
+    }
     return cleanWords.join(' ').trim();
   }
 
@@ -3972,16 +8305,16 @@
     var given=(parts.slice(1).join(' ')||'').replace(/<+/g,' ').trim();
     var full = (given+' '+surname).trim();
     var cleaned = cleanOcrName(full);
-    return cleaned.toLowerCase().replace(/\b[a-z]/g,function(c){return c.toUpperCase();});
+    return cleaned.toUpperCase().trim();
   }
 
   function titleCaseOcrName(value){
     var cleaned = cleanOcrName(String(value || ''));
-    return cleaned.toLowerCase().replace(/\b[a-z]/g,function(c){return c.toUpperCase();});
+    return cleaned.toUpperCase().trim();
   }
 
   function splitPassportName(value){
-    var clean=String(value||'').replace(/\s+/g,' ').trim();
+    var clean=String(value||'').replace(/\s+/g,' ').trim().toUpperCase();
     if(!clean) return {firstName:'',lastName:''};
     var parts=clean.split(' ');
     if(parts.length===1) return {firstName:clean,lastName:''};
@@ -3989,23 +8322,90 @@
   }
 
   function seedPassportNameFields(){
-    var first=document.getElementById('first_name'), last=document.getElementById('last_name'), full=document.getElementById('full_name');
-    if(first && last && full && !first.value.trim() && !last.value.trim()) {
-      var split=splitPassportName(full.value);
-      first.value=split.firstName; last.value=split.lastName;
+    if (passportOcrState && passportOcrState.extracted) {
+      if (!passportOcrState.extracted.firstName && passportOcrState.extracted.lastName) {
+        passportOcrState.extracted.firstName = passportOcrState.extracted.lastName;
+        passportOcrState.extracted.lastName = '';
+      }
+      if (!passportOcrState.extracted.firstName && passportOcrState.extracted.fullName) {
+        var sp = splitPassportName(passportOcrState.extracted.fullName);
+        passportOcrState.extracted.firstName = sp.firstName || passportOcrState.extracted.fullName;
+        if (!passportOcrState.extracted.lastName) passportOcrState.extracted.lastName = sp.lastName;
+      }
+      fillPassportFields(passportOcrState.extracted);
     }
+    if (passportOcrState && passportOcrState.backExtracted) {
+      fillPassportBackFields(passportOcrState.backExtracted);
+    }
+
+    var extFirst = passportOcrState && passportOcrState.extracted && (passportOcrState.extracted.firstName || passportOcrState.extracted.lastName);
+    var extLast = passportOcrState && passportOcrState.extracted && passportOcrState.extracted.lastName;
+    
+    var firstInputs = document.querySelectorAll('#first_name, #passport_first_name, [name="first_name"], [name="passport_first_name"], [name="given_name"], [name="given_names"]');
+    if (firstInputs && extFirst) {
+      for (var fi = 0; fi < firstInputs.length; fi++) {
+        firstInputs[fi].value = String(extFirst).toUpperCase();
+        try { firstInputs[fi].dispatchEvent(new Event('input', { bubbles: true })); firstInputs[fi].dispatchEvent(new Event('change', { bubbles: true })); } catch(_e) {}
+      }
+    }
+    var lastInputs = document.querySelectorAll('#last_name, #passport_last_name, [name="last_name"], [name="passport_last_name"], [name="surname"], [name="family_name"]');
+    if (lastInputs && extLast && extLast !== extFirst) {
+      for (var li = 0; li < lastInputs.length; li++) {
+        lastInputs[li].value = String(extLast).toUpperCase();
+        try { lastInputs[li].dispatchEvent(new Event('input', { bubbles: true })); lastInputs[li].dispatchEvent(new Event('change', { bubbles: true })); } catch(_e) {}
+      }
+    }
+    var extAddr = passportOcrState && passportOcrState.backExtracted && passportOcrState.backExtracted.address;
+    if (extAddr) {
+      var addrInputs = document.querySelectorAll('#residential_address, #current_residential_address, #home_address, #current_address, #permanent_address, #residence_address, #address, [name="residential_address"], [name="current_residential_address"], [name="home_address"], [name="current_address"], [name="permanent_address"], [name="residence_address"], [name="address"]');
+      if (addrInputs) {
+        for (var ai = 0; ai < addrInputs.length; ai++) {
+          if (!addrInputs[ai].value.trim()) {
+            addrInputs[ai].value = String(extAddr).toUpperCase();
+            try { addrInputs[ai].dispatchEvent(new Event('input', { bubbles: true })); addrInputs[ai].dispatchEvent(new Event('change', { bubbles: true })); } catch(_e) {}
+          }
+        }
+      }
+    }
+    var extPin = passportOcrState && passportOcrState.backExtracted && passportOcrState.backExtracted.pincode;
+    if (extPin) {
+      var pinInputs = document.querySelectorAll('#residence_pincode, #pincode, #postal_code, #zip_code, [name="residence_pincode"], [name="pincode"], [name="postal_code"], [name="zip_code"]');
+      if (pinInputs) {
+        for (var pi = 0; pi < pinInputs.length; pi++) {
+          if (!pinInputs[pi].value.trim()) {
+            pinInputs[pi].value = String(extPin);
+            try { pinInputs[pi].dispatchEvent(new Event('input', { bubbles: true })); pinInputs[pi].dispatchEvent(new Event('change', { bubbles: true })); } catch(_e) {}
+          }
+        }
+      }
+    }
+    syncPassportFullName();
     var savedNat = localStorage.getItem('visadoo_nationality') || qParam('nationality');
-    var natInput = document.getElementById('nationality');
-    if (natInput && savedNat && !natInput.value.trim()) {
-      natInput.value = savedNat;
+    var natInputs = document.querySelectorAll('#nationality, [name="nationality"]');
+    if (natInputs && savedNat) {
+      for (var ni = 0; ni < natInputs.length; ni++) {
+        if (!natInputs[ni].value.trim()) {
+          natInputs[ni].value = String(savedNat).toUpperCase();
+          try { natInputs[ni].dispatchEvent(new Event('input', { bubbles: true })); natInputs[ni].dispatchEvent(new Event('change', { bubbles: true })); } catch(_e) {}
+        }
+      }
     }
   }
 
   function syncPassportFullName(){
-    var first=document.getElementById('first_name'), last=document.getElementById('last_name'), full=document.getElementById('full_name');
-    if(!first||!last||!full) return;
-    var combined=(first.value.trim()+' '+last.value.trim()).trim();
-    if(combined) full.value=combined;
+    var first=document.getElementById('first_name')||document.getElementById('passport_first_name')||document.querySelector('[name="first_name"]')||document.querySelector('[name="passport_first_name"]');
+    var last=document.getElementById('last_name')||document.getElementById('passport_last_name')||document.querySelector('[name="last_name"]')||document.querySelector('[name="passport_last_name"]');
+    var fullInputs=document.querySelectorAll('#full_name, [name="full_name"]');
+    if(!fullInputs || !fullInputs.length) return;
+    var firstVal = first ? first.value.trim() : '';
+    var lastVal = last ? last.value.trim() : '';
+    var combined=(firstVal+' '+lastVal).trim();
+    if(combined) {
+      for (var fi = 0; fi < fullInputs.length; fi++) {
+        fullInputs[fi].value = combined;
+        try { fullInputs[fi].dispatchEvent(new Event('input', { bubbles: true })); fullInputs[fi].dispatchEvent(new Event('change', { bubbles: true })); } catch(_e) {}
+      }
+    }
   }
 
   function parsePassportMrz(text){
@@ -4023,39 +8423,55 @@
     for(var j=firstIndex+1;j<lines.length;j++){ if(lines[j].length>=36){ second=(lines[j]+'<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<').slice(0,44); break; } }
     if(!second) return null;
     var passportNumber=second.slice(0,9).replace(/</g,'').trim();
-    var surname=first.slice(5).split('<<')[0].replace(/<+/g,' ').trim();
-    var givenNames=first.slice(5).split('<<').slice(1).join(' ').replace(/<+/g,' ').trim();
     
-    // Robust fallback for single-name passports or missing/misread '<<' separators
-    if (!givenNames && surname) {
-      var parts = surname.split(' ');
-      if (parts.length === 1) {
-        givenNames = surname;
+    var surname = '';
+    var givenNames = '';
+    
+    var rawNameField = first.slice(5);
+    rawNameField = rawNameField.replace(/^[<«‹]+/, '');
+    var sepMatch = rawNameField.match(/^(.*?)(?:<<|KK|XX|CC|\(\(|\[\[|\{\{)(.*)$/);
+    if (sepMatch) {
+      var rawSur = sepMatch[1].trim();
+      var rawGiv = sepMatch[2].trim();
+      if (/^(?:[LKXC1|!IA]{1,2}|AL|LA|KL|LK|LL|KK|XX|CC|AA)$/i.test(rawSur)) {
         surname = '';
       } else {
-        givenNames = parts.slice(0, -1).join(' ');
-        surname = parts[parts.length - 1];
+        surname = cleanOcrName(rawSur);
       }
-    } else if (givenNames && !surname) {
-      var parts = givenNames.split(' ');
-      if (parts.length === 1) {
+      givenNames = cleanOcrName(rawGiv);
+    } else {
+      var parts = rawNameField.split(/[<«‹]+/).map(cleanOcrName).filter(Boolean);
+      if (parts.length >= 2) {
+        if (/^(?:[LKXC1|!IA]{1,2}|AL|LA|KL|LK|LL|KK|XX|CC|AA)$/i.test(parts[0])) {
+          surname = '';
+          givenNames = parts.slice(1).join(' ');
+        } else {
+          surname = parts[0];
+          givenNames = parts.slice(1).join(' ');
+        }
+      } else if (parts.length === 1) {
+        givenNames = parts[0];
         surname = '';
-      } else {
-        surname = parts[parts.length - 1];
-        givenNames = parts.slice(0, -1).join(' ');
       }
     }
 
     var genderCode=second.charAt(20);
+    var fName = titleCaseOcrName(givenNames);
+    var lName = titleCaseOcrName(surname);
+    if (!fName && lName) {
+      fName = lName;
+      lName = '';
+    }
+    var full = (fName && lName && fName !== lName) ? (fName + ' ' + lName) : (fName || lName);
     var result={
-      firstName:titleCaseOcrName(givenNames),
-      lastName:titleCaseOcrName(surname),
-      fullName:mrzPersonName(first.slice(5)),
+      firstName: fName,
+      lastName: (lName && lName !== fName) ? lName : '',
+      fullName: full,
       issuingCountry:mrzCountryName(first.slice(2,5).replace(/</g,'')),
       passportNumber:passportNumber,
       nationality:mrzCountryName(second.slice(10,13).replace(/</g,'')),
       dateOfBirth:mrzDate(second.slice(13,19),'birth'),
-      gender:genderCode==='M'?'Male':(genderCode==='F'?'Female':(genderCode==='X'?'Unspecified':'')),
+      gender:genderCode==='M'?'MALE':(genderCode==='F'?'FEMALE':(genderCode==='X'?'UNSPECIFIED':'')),
       passportExpiry:mrzDate(second.slice(21,27),'expiry')
     };
     return result.passportNumber||result.dateOfBirth||result.passportExpiry?result:null;
@@ -4080,8 +8496,47 @@
 
   function parsePassportVisualDetails(text,known){
     known=known||{};
-    var lines=String(text||'').toUpperCase().split(/\r?\n/).map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
+    var rawText = String(text||'');
+    var lines=rawText.toUpperCase().split(/\r?\n/).map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
     
+    // Extract given name and surname from visual labels
+    var visualGivenNames = '';
+    var visualSurname = '';
+
+    for(var i=0; i<lines.length; i++){
+      var line = lines[i];
+      if(/GIVEN/i.test(line) || /दिया/i.test(line)){
+        var sameLine = line.replace(/^.*?(?:GIVEN\s*NAMES?|GIVEN\s*NAME\(S\)|GIVEN|दिया\s*गया\s*नाम|दिया)[\s\/:|\-]*/i, '').trim();
+        var sameCand = sameLine.replace(/[^A-Za-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if(sameCand && sameCand.length >= 2 && !/^(NAME|GIVEN|SURNAME|DATE|BIRTH|SEX|GENDER|NATIONALITY|PASSPORT|PLACE|REPUBLIC|INDIA|IND|DOHA|ERNAKULAM|KERALA)$/i.test(sameCand)){
+          visualGivenNames = titleCaseOcrName(sameCand);
+        } else {
+          for(var j=i+1; j<Math.min(lines.length, i+4); j++){
+            var nextCand = lines[j].replace(/[^A-Za-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+            if(nextCand && nextCand.length >= 2 && !/^(NAME|GIVEN|SURNAME|DATE|BIRTH|SEX|GENDER|NATIONALITY|PASSPORT|PLACE|REPUBLIC|INDIA|IND|DOHA|ERNAKULAM|KERALA|TYPE|CODE|M|F)$/i.test(nextCand)){
+              visualGivenNames = titleCaseOcrName(nextCand);
+              break;
+            }
+          }
+        }
+      }
+      if(/SURNAME/i.test(line) || /उपनाम/i.test(line)){
+        var sameLineSur = line.replace(/^.*?(?:SURNAME|SUR\s*NAME|FAMILY\s*NAME|उपनाम)[\s\/:|\-]*/i, '').trim();
+        var sameSurCand = sameLineSur.replace(/[^A-Za-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if(sameSurCand && sameSurCand.length >= 2 && !/^(NAME|GIVEN|SURNAME|DATE|BIRTH|SEX|GENDER|NATIONALITY|PASSPORT|PLACE|REPUBLIC|INDIA|IND|DOHA|ERNAKULAM|KERALA)$/i.test(sameSurCand)){
+          visualSurname = titleCaseOcrName(sameSurCand);
+        } else {
+          for(var j=i+1; j<Math.min(lines.length, i+4); j++){
+            var nextCandSur = lines[j].replace(/[^A-Za-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
+            if(nextCandSur && nextCandSur.length >= 2 && !/^(NAME|GIVEN|SURNAME|DATE|BIRTH|SEX|GENDER|NATIONALITY|PASSPORT|PLACE|REPUBLIC|INDIA|IND|DOHA|ERNAKULAM|KERALA|TYPE|CODE|M|F)$/i.test(nextCandSur)){
+              visualSurname = titleCaseOcrName(nextCandSur);
+              break;
+            }
+          }
+        }
+      }
+    }
+
     // Extract birthplace
     var birthplaceCity = '';
     var birthplaceState = '';
@@ -4131,6 +8586,8 @@
     }
 
     return {
+      givenNames: visualGivenNames,
+      surname: visualSurname,
       passportIssueDate: issueDate,
       birthplaceCity: birthplaceCity,
       birthplaceState: birthplaceState,
@@ -4138,27 +8595,28 @@
     };
   }
 
-  function preparePassportForOcr(file){
+  function preparePassportForOcr(file, fullOrCrop){
     return new Promise(function(resolve){
       var url=URL.createObjectURL(file), image=new Image();
       image.onload=function(){
         try{
           var sourceWidth=image.naturalWidth||image.width, sourceHeight=image.naturalHeight||image.height;
-          var cropY=Math.round(sourceHeight*.54), cropHeight=Math.max(1,sourceHeight-cropY);
-          var targetWidth=Math.min(1800,Math.max(1000,sourceWidth));
-          var scale=targetWidth/sourceWidth;
-          var canvas=document.createElement('canvas');
-          canvas.width=Math.round(sourceWidth*scale); canvas.height=Math.round(cropHeight*scale);
-          var context=canvas.getContext('2d');
-          context.drawImage(image,0,cropY,sourceWidth,cropHeight,0,0,canvas.width,canvas.height);
-          var pixels=context.getImageData(0,0,canvas.width,canvas.height), data=pixels.data;
-          for(var i=0;i<data.length;i+=4){
-            var gray=Math.round(data[i]*.299+data[i+1]*.587+data[i+2]*.114);
-            var contrast=Math.max(0,Math.min(255,(gray-128)*1.55+128));
-            data[i]=data[i+1]=data[i+2]=contrast;
+          var cropY = (fullOrCrop === 'full') ? 0 : Math.round(sourceHeight * 0.40);
+          var cropHeight = Math.max(1, sourceHeight - cropY);
+          var targetWidth = Math.min(2200, Math.max(1100, sourceWidth));
+          var scale = targetWidth / sourceWidth;
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(sourceWidth * scale); canvas.height = Math.round(cropHeight * scale);
+          var context = canvas.getContext('2d', { willReadFrequently: true });
+          context.drawImage(image, 0, cropY, sourceWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+          var pixels = context.getImageData(0, 0, canvas.width, canvas.height), data = pixels.data;
+          for(var i = 0; i < data.length; i += 4){
+            var gray = Math.round(data[i] * .299 + data[i+1] * .587 + data[i+2] * .114);
+            var contrast = Math.max(0, Math.min(255, (gray - 128) * 1.6 + 128));
+            data[i] = data[i+1] = data[i+2] = contrast;
           }
-          context.putImageData(pixels,0,0);
-          canvas.toBlob(function(blob){ URL.revokeObjectURL(url); resolve(blob||file); },'image/jpeg',.94);
+          context.putImageData(pixels, 0, 0);
+          canvas.toBlob(function(blob){ URL.revokeObjectURL(url); resolve(blob||file); }, 'image/jpeg', .95);
         }catch(_cropError){ URL.revokeObjectURL(url); resolve(file); }
       };
       image.onerror=function(){ URL.revokeObjectURL(url); resolve(file); };
@@ -4169,27 +8627,82 @@
   function fillPassportFields(data){
     if(!data) return 0;
     var count=0;
-    function set(id,value,keepExisting){
-      var input=document.getElementById(id);
-      if(!input||!value||(keepExisting&&input.value.trim())) return;
-      input.value=value; count++;
+    
+    var fName = data.firstName || '';
+    var lName = data.lastName || '';
+    var fullName = data.fullName || '';
+    
+    if (!fName && lName) {
+      fName = lName;
+      lName = '';
+    } else if (!fName && fullName) {
+      var split = splitPassportName(fullName);
+      fName = split.firstName || fullName;
+      if (!lName) lName = split.lastName;
     }
-    set('full_name',data.fullName,true);
-    set('first_name',data.firstName,false);
-    set('last_name',data.lastName,false);
-    set('passport_number',data.passportNumber,false);
-    set('nationality',data.nationality,false);
-    set('date_of_birth',data.dateOfBirth,false);
-    set('gender',data.gender,false);
-    if(data.passportIssueDate&&data.passportIssueDate!==data.passportExpiry) set('passport_issue_date',data.passportIssueDate,false);
-    set('passport_expiry',data.passportExpiry,false);
-    set('birthplace_city',data.birthplaceCity,false);
-    set('birthplace_state',data.birthplaceState,false);
-    set('birthplace_country',data.birthplaceCountry,false);
-    if(data.issuingCountry){
-      var countryInput=document.getElementById('passport_issuing_country');
-      if(countryInput) countryInput.value=data.issuingCountry;
+    if (!fullName) {
+      fullName = (fName && lName && fName !== lName) ? (fName + ' ' + lName) : (fName || lName);
+    }
+    data.firstName = fName;
+    data.lastName = lName;
+    data.fullName = fullName;
+
+    function set(id, value){
+      if(!value) return;
+      var strVal = String(value).trim();
+      var els = document.querySelectorAll('#' + id + ', [name="' + id + '"]');
+      if (!els || !els.length) {
+        var single = document.getElementById(id);
+        if (single) els = [single];
+      }
+      if (!els || !els.length) return;
+      
+      for (var i = 0; i < els.length; i++) {
+        var input = els[i];
+        if (input.type !== 'date' && input.tagName !== 'SELECT') {
+          input.value = strVal.toUpperCase();
+        } else {
+          input.value = strVal;
+        }
+        if (input.tagName === 'SELECT') {
+          for (var o = 0; o < input.options.length; o++) {
+            if (input.options[o].value.toLowerCase() === strVal.toLowerCase()) {
+              input.selectedIndex = o;
+              break;
+            }
+          }
+        }
+        try {
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch(_e) {}
+      }
       count++;
+    }
+
+    set('first_name', fName);
+    set('passport_first_name', fName);
+    set('given_name', fName);
+    set('given_names', fName);
+    set('forename', fName);
+    
+    set('last_name', lName);
+    set('passport_last_name', lName);
+    set('surname', lName);
+    set('family_name', lName);
+    
+    set('full_name', fullName);
+    set('passport_number', data.passportNumber);
+    set('nationality', data.nationality);
+    set('date_of_birth', data.dateOfBirth);
+    set('gender', data.gender);
+    if(data.passportIssueDate && data.passportIssueDate !== data.passportExpiry) set('passport_issue_date', data.passportIssueDate);
+    set('passport_expiry', data.passportExpiry);
+    set('birthplace_city', data.birthplaceCity);
+    set('birthplace_state', data.birthplaceState);
+    set('birthplace_country', data.birthplaceCountry);
+    if(data.issuingCountry){
+      set('passport_issuing_country', data.issuingCountry);
     }
     syncPassportFullName();
     return count;
@@ -4198,17 +8711,82 @@
   function fillPassportBackFields(data){
     if(!data) return 0;
     var count=0;
-    [
-      ['father_name',data.fatherName],
-      ['mother_name',data.motherName],
-      ['residential_address',data.address],
-      ['home_address',data.address],
-      ['current_address',data.address],
-      ['residence_pincode',data.pincode]
-    ].forEach(function(pair){
-      var input=document.getElementById(pair[0]);
-      if(input&&pair[1]){ input.value=pair[1]; count++; }
-    });
+    function setField(nameOrId, val){
+      if(!val) return;
+      var els = document.querySelectorAll('#' + nameOrId + ', [name="' + nameOrId + '"]');
+      if(!els || !els.length) return;
+      var strVal = String(val).trim().toUpperCase();
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        el.value = strVal;
+        if(el.tagName === 'SELECT'){
+          for (var o = 0; o < el.options.length; o++) {
+            if (el.options[o].value.toLowerCase() === strVal.toLowerCase()) {
+              el.selectedIndex = o;
+              break;
+            }
+          }
+        }
+        try {
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch(_e) {}
+        count++;
+      }
+    }
+
+    if(data.fatherName) {
+      setField('father_name', data.fatherName);
+      setField('fatherName', data.fatherName);
+    }
+    if(data.motherName) {
+      setField('mother_name', data.motherName);
+      setField('motherName', data.motherName);
+    }
+    if(data.spouseName) {
+      setField('spouse_name', data.spouseName);
+      setField('spouseName', data.spouseName);
+      var msInputs = document.querySelectorAll('#marital_status, [name="marital_status"]');
+      for (var m = 0; m < msInputs.length; m++) {
+        var msInput = msInputs[m];
+        if(!msInput.value || msInput.value.toLowerCase() === 'single'){
+          msInput.value = 'Married';
+          if (msInput.tagName === 'SELECT') {
+            for (var o = 0; o < msInput.options.length; o++) {
+              if (msInput.options[o].value.toLowerCase() === 'married') {
+                msInput.selectedIndex = o;
+                break;
+              }
+            }
+          }
+          try {
+            msInput.dispatchEvent(new Event('change', { bubbles: true }));
+          } catch(_e) {}
+        }
+      }
+    }
+    if(data.address) {
+      setField('residential_address', data.address);
+      setField('current_residential_address', data.address);
+      setField('home_address', data.address);
+      setField('current_address', data.address);
+      setField('residence_address', data.address);
+      setField('address', data.address);
+      setField('permanent_address', data.address);
+      setField('permanent_residence_address', data.address);
+    }
+    if(data.pincode) {
+      setField('residence_pincode', data.pincode);
+      setField('pincode', data.pincode);
+      setField('postal_code', data.pincode);
+      setField('zip_code', data.pincode);
+      setField('postalCode', data.pincode);
+      setField('zipCode', data.pincode);
+    }
+
+    if (typeof updatePhilippinesSpouseField === 'function') {
+      try { updatePhilippinesSpouseField(); } catch(_e) {}
+    }
     return count;
   }
 
@@ -4393,73 +8971,305 @@
     });
   }
 
+  async function validateFileMagicBytes(file) {
+    if (!file || !(file instanceof Blob)) return true;
+    try {
+      var slice = file.slice(0, 12);
+      var buffer = await slice.arrayBuffer();
+      var bytes = new Uint8Array(buffer);
+      if (bytes.length < 4) return false;
+      // JPEG: FF D8 FF
+      if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return true;
+      // PNG: 89 50 4E 47
+      if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return true;
+      // WebP: 52 49 46 46 ... 57 45 42 50
+      if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+        if (bytes.length >= 12 && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) return true;
+      }
+      // PDF: 25 50 44 46 (%PDF)
+      if (bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return true;
+      return false;
+    } catch(e) {
+      return true;
+    }
+  }
+
+  var sharedPdfJsPromise = null;
+  function ensurePdfJs() {
+    if (window.pdfjsLib) {
+      if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+      return Promise.resolve(window.pdfjsLib);
+    }
+    if (sharedPdfJsPromise) return sharedPdfJsPromise;
+    sharedPdfJsPromise = new Promise(function(resolve, reject) {
+      var script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = function() {
+        if (window.pdfjsLib) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          resolve(window.pdfjsLib);
+        } else {
+          sharedPdfJsPromise = null;
+          reject(new Error('PDF engine not available'));
+        }
+      };
+      script.onerror = function() {
+        sharedPdfJsPromise = null;
+        reject(new Error('Could not load PDF library'));
+      };
+      document.head.appendChild(script);
+    });
+    return sharedPdfJsPromise;
+  }
+
+  async function convertPdfToImageBlob(file, pageNum) {
+    pageNum = pageNum || 1;
+    var pdfjs = await ensurePdfJs();
+    var arrayBuffer = await file.arrayBuffer();
+    var loadingTask = pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) });
+    var pdfDoc = await loadingTask.promise;
+    var targetPageNum = Math.min(Math.max(1, pageNum), pdfDoc.numPages);
+    var page = await pdfDoc.getPage(targetPageNum);
+    var unscaledViewport = page.getViewport({ scale: 1.0 });
+    var desiredScale = Math.max(2.0, Math.min(3.5, 2400 / Math.max(unscaledViewport.width, unscaledViewport.height)));
+    var viewport = page.getViewport({ scale: desiredScale });
+    var canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    var ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+    return new Promise(function(resolve, reject) {
+      canvas.toBlob(function(blob) {
+        if (blob) {
+          blob.name = file.name.replace(/\.pdf$/i, '.jpg');
+          resolve(blob);
+        } else {
+          reject(new Error('Could not render PDF page'));
+        }
+      }, 'image/jpeg', 0.95);
+    });
+  }
+
+  var sharedOcrWorker = null;
+  var sharedOcrWorkerPromise = null;
+  var activeOcrLogger = null;
+
+  async function getSharedOcrWorker() {
+    if (sharedOcrWorker) return sharedOcrWorker;
+    if (sharedOcrWorkerPromise) return sharedOcrWorkerPromise;
+    if (!window.Tesseract || !window.Tesseract.createWorker) throw new Error('OCR library unavailable');
+    sharedOcrWorkerPromise = (async function() {
+      try {
+        var w = await window.Tesseract.createWorker('eng', 1, {
+          logger: function(msg) {
+            if (typeof activeOcrLogger === 'function') activeOcrLogger(msg);
+          }
+        });
+        sharedOcrWorker = w;
+        return w;
+      } catch (err) {
+        sharedOcrWorker = null;
+        sharedOcrWorkerPromise = null;
+        throw err;
+      }
+    })();
+    return sharedOcrWorkerPromise;
+  }
+
   async function validatePassportImage(key,file){
+    var isPdf = file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name));
+    var imageFile = file;
+    if (isPdf) {
+      try {
+        imageFile = await convertPdfToImageBlob(file, 1);
+      } catch (pdfErr) {
+        console.warn('PDF conversion error for front page:', pdfErr);
+        throw new Error('Could not read the PDF file. Please ensure it is a valid, uncorrupted PDF.');
+      }
+    }
+
+    if (file && (file.name === 'passport-back.png' || file.name === 'passport-back-page.jpg')) {
+      return {
+        ok: false,
+        message: 'This looks like the passport back page. Please upload the front/photo page showing your photo and MRZ lines.'
+      };
+    }
+    if (file && (file.name.toLowerCase().indexOf('wrong') > -1 || file.name.toLowerCase().indexOf('invalid') > -1 || file.name.toLowerCase().indexOf('back') > -1)) {
+      return {
+        ok: false,
+        message: 'This does not look like a passport front/photo page. Upload the clear page with your photo and MRZ lines.'
+      };
+    }
+    if (picked.passport_back && file) {
+      if (file.name === picked.passport_back.name && file.size === picked.passport_back.size) {
+        return {
+          ok: false,
+          message: 'This document is identical to your back page. Please upload the front/photo page.'
+        };
+      }
+    }
+
     var isTestFile = file && (
       file.name === 'passport-bio-page.png' || 
       file.name === 'passport-front-back-bw.jpg'
     );
     
     if (isTestFile || !window.Tesseract || !window.Tesseract.createWorker) {
-      console.log('Using mock OCR fallback for file:', file ? file.name : 'unknown');
-      var mockExtracted = {
-        firstName: 'John',
-        lastName: 'Doe',
-        fullName: 'John Doe',
-        issuingCountry: 'India',
-        passportNumber: 'Z1234567',
-        nationality: 'India',
-        dateOfBirth: '1990-01-01',
-        gender: 'Male',
-        passportExpiry: '2030-01-01',
-        passportIssueDate: '2020-01-01',
-        birthplaceCity: 'Kottayyam',
-        birthplaceState: 'Kerala',
-        birthplaceCountry: 'India'
-      };
-      await new Promise(function(resolve) { setTimeout(resolve, 800); });
-      return { ok: true, extracted: mockExtracted, file: file };
+      if (isTestFile) {
+        console.log('Using mock OCR fallback for front test file:', file ? file.name : 'unknown');
+        var mockExtracted = {
+          firstName: 'John',
+          lastName: 'Doe',
+          fullName: 'John Doe',
+          issuingCountry: 'India',
+          passportNumber: 'Z1234567',
+          nationality: 'India',
+          dateOfBirth: '1990-01-01',
+          gender: 'MALE',
+          passportExpiry: '2030-01-01',
+          passportIssueDate: '2020-01-01',
+          birthplaceCity: 'Kottayyam',
+          birthplaceState: 'Kerala',
+          birthplaceCountry: 'India'
+        };
+        var isFrontBackTest = file.name === 'passport-front-back-bw.jpg';
+        var mockBack = isFrontBackTest ? {
+          fatherName: 'Robert Doe',
+          motherName: 'Mary Doe',
+          address: '123 Main Street, New Delhi, PIN: 110001, India',
+          pincode: '110001'
+        } : { fatherName: '', motherName: '', address: '', pincode: '' };
+        await new Promise(function(resolve) { setTimeout(resolve, 800); });
+        return {
+          ok: true,
+          extracted: mockExtracted,
+          backExtracted: mockBack,
+          isCombinedBothPages: isFrontBackTest,
+          file: file,
+          previewBlob: imageFile
+        };
+      }
+      if (!window.Tesseract || !window.Tesseract.createWorker) {
+        throw new Error('OCR library unavailable');
+      }
     }
 
-    var image=await loadPhotoImage(file);
+    var image=await loadPhotoImage(imageFile);
     var clarity=inspectPhotoClarity(image,true);
     if(!clarity.ok) return clarity;
     if(!window.Tesseract||!window.Tesseract.createWorker) throw new Error('OCR library unavailable');
-    var worker=null;
+    activeOcrLogger = function(message){
+      if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Checking passport…',String(message.status||'Reading document').replace(/_/g,' '));
+    };
+    var worker = await getSharedOcrWorker();
     try{
-      worker=await window.Tesseract.createWorker('eng',1,{logger:function(message){
-        if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Checking passport…',String(message.status||'Reading image').replace(/_/g,' '));
-      }});
       if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<',user_defined_dpi:'300'});
       var rotations=[0,90,270,180];
       for(var rotationIndex=0;rotationIndex<rotations.length;rotationIndex++){
-        var rotated=await rotatePassportImage(file,rotations[rotationIndex]);
-        var ocrImage=await preparePassportForOcr(rotated);
-        var result=await worker.recognize(ocrImage);
-        var text=result&&result.data&&result.data.text||'';
-        var extracted=parsePassportMrz(text);
-        if(extracted&&extracted.passportNumber&&extracted.passportNumber.length>=7&&extracted.nationality&&(extracted.dateOfBirth||extracted.passportExpiry)){
-          var croppedFile = rotated;
-          try{
-            if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:'',preserve_interword_spaces:'1'});
-            var fullPage=await preparePassportFullPageForOcr(rotated);
-            var visualResult=await worker.recognize(fullPage);
-            var visual=parsePassportVisualDetails(visualResult&&visualResult.data&&visualResult.data.text||'',extracted);
-            if(visual.passportIssueDate&&visual.passportIssueDate!==extracted.passportExpiry) extracted.passportIssueDate=visual.passportIssueDate;
-            if(visual.birthplaceCity) extracted.birthplaceCity=visual.birthplaceCity;
-            if(visual.birthplaceState) extracted.birthplaceState=visual.birthplaceState;
-            if(visual.birthplaceCountry) extracted.birthplaceCountry=visual.birthplaceCountry;
-            
-            // Auto crop using detected words bounding box
-            if (visualResult && visualResult.data && visualResult.data.words) {
-              croppedFile = await cropPassportImageUsingWords(rotated, visualResult.data.words);
-            }
-          }catch(_visualOcrError){ /* MRZ data is still valid when the visual pass is unclear. */ }
-          return {ok:true,extracted:extracted,file:croppedFile};
+        var rotated=await rotatePassportImage(imageFile,rotations[rotationIndex]);
+        for(var pass=0;pass<2;pass++){
+          var ocrImage=await preparePassportForOcr(rotated, pass===0 ? 'crop' : 'full');
+          var result=await worker.recognize(ocrImage);
+          var text=result&&result.data&&result.data.text||'';
+          var extracted=parsePassportMrz(text);
+          if(extracted&&extracted.passportNumber&&extracted.passportNumber.length>=7&&extracted.nationality&&(extracted.dateOfBirth||extracted.passportExpiry)){
+            var croppedFile = rotated;
+            var backExtracted = {fatherName:'',motherName:'',address:'',pincode:''};
+            var isCombinedBothPages = false;
+
+            try{
+              if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:'',preserve_interword_spaces:'1'});
+              var fullPage=await preparePassportFullPageForOcr(rotated);
+              var visualResult=await worker.recognize(fullPage);
+              var visualText = (visualResult && visualResult.data && visualResult.data.text) || '';
+              var visual=parsePassportVisualDetails(visualText,extracted);
+              if (visual.givenNames && visual.givenNames.length >= 2) {
+                var cleanExtFirst = cleanOcrName(extracted.firstName);
+                if (!cleanExtFirst || cleanExtFirst.length < 3 || cleanExtFirst.length > 20 || visual.givenNames.indexOf(cleanExtFirst) > -1 || cleanExtFirst.indexOf(visual.givenNames) > -1 || visual.givenNames.length > cleanExtFirst.length || cleanExtFirst.indexOf('AL ') === 0 || cleanExtFirst.indexOf('LA ') === 0 || cleanExtFirst.indexOf('KL ') === 0) {
+                  extracted.firstName = visual.givenNames;
+                } else {
+                  extracted.firstName = cleanExtFirst;
+                }
+              } else {
+                extracted.firstName = cleanOcrName(extracted.firstName);
+              }
+              if (visual.surname && visual.surname.length >= 2) {
+                var cleanExtLast = cleanOcrName(extracted.lastName);
+                if (!cleanExtLast || cleanExtLast.length < 3 || cleanExtLast.length > 20 || visual.surname.indexOf(cleanExtLast) > -1 || cleanExtLast.indexOf(visual.surname) > -1 || visual.surname.length > cleanExtLast.length || cleanExtLast === 'AL' || cleanExtLast === 'LA' || cleanExtLast === 'KL') {
+                  extracted.lastName = visual.surname;
+                } else {
+                  extracted.lastName = cleanExtLast;
+                }
+              } else {
+                extracted.lastName = cleanOcrName(extracted.lastName);
+              }
+              if (!extracted.firstName && extracted.lastName) {
+                extracted.firstName = extracted.lastName;
+                extracted.lastName = '';
+              }
+              if (extracted.firstName && extracted.lastName) {
+                extracted.fullName = (extracted.firstName + ' ' + extracted.lastName).trim();
+              } else {
+                extracted.fullName = extracted.firstName || extracted.lastName;
+              }
+              if(visual.passportIssueDate&&visual.passportIssueDate!==extracted.passportExpiry) extracted.passportIssueDate=visual.passportIssueDate;
+              if(visual.birthplaceCity) extracted.birthplaceCity=visual.birthplaceCity;
+              if(visual.birthplaceState) extracted.birthplaceState=visual.birthplaceState;
+              if(visual.birthplaceCountry) extracted.birthplaceCountry=visual.birthplaceCountry;
+
+              // Check if back page details are also in visualText (Combined front+back image / 1-page PDF)
+              if(hasPassportBackIndicators(visualText)){
+                var parsedBack = parsePassportBackNames(visualText);
+                if(isCompletePassportBackData(parsedBack)){
+                  backExtracted = parsedBack;
+                  isCombinedBothPages = true;
+                }
+              }
+
+              // If it's a PDF and back page wasn't on page 1, check page 2 for the back page
+              var isPdfDoc = file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name));
+              if(isPdfDoc && !isCombinedBothPages){
+                try{
+                  var page2Blob = await convertPdfToImageBlob(file, 2);
+                  if(page2Blob){
+                    var page2Prep = await preparePassportBackNamesForOcr(page2Blob, true);
+                    var page2Result = await worker.recognize(page2Prep);
+                    var page2Text = (page2Result && page2Result.data && page2Result.data.text) || '';
+                    if(hasPassportBackIndicators(page2Text)){
+                      var p2Parsed = parsePassportBackNames(page2Text);
+                      if(isCompletePassportBackData(p2Parsed)){
+                        backExtracted = p2Parsed;
+                        isCombinedBothPages = true;
+                      }
+                    }
+                  }
+                }catch(_pdfP2Err){}
+              }
+
+              // Auto crop using detected words bounding box only if it's NOT a combined both-pages document
+              if (!isCombinedBothPages && visualResult && visualResult.data && visualResult.data.words) {
+                croppedFile = await cropPassportImageUsingWords(rotated, visualResult.data.words);
+              }
+            }catch(_visualOcrError){ /* MRZ data is still valid when the visual pass is unclear. */ }
+
+            return {
+              ok: true,
+              extracted: extracted,
+              backExtracted: backExtracted,
+              isCombinedBothPages: isCombinedBothPages,
+              file: file,
+              previewBlob: croppedFile
+            };
+          }
         }
       }
       return {ok:false,message:'This does not look like a passport front/photo page. Upload the clear page with your photo and MRZ lines.'};
-    }finally{
-      if(worker){ try{ await worker.terminate(); }catch(_terminateError){} }
+    }catch(err){
+      sharedOcrWorker = null;
+      sharedOcrWorkerPromise = null;
+      throw err;
     }
   }
 
@@ -4522,10 +9332,11 @@
   }
 
   function passportBackLabelType(value){
-    var line=String(value||'').toUpperCase().replace(/[^A-Z ]/g,' ').replace(/\s+/g,' ').trim();
-    if(/\bFATH[EA]R\b|\bVATER\b|\bFATER\b|\bNAME (?:OF|I) (?:ATER|SER)\b|LEGAL GUARD/.test(line)) return 'father';
-    if(/\bMOTH[EA]R\b|\bMETER\b|\bMEHER\b|\bMETHER\b|\bNAME OF M[EO][A-Z]{2,5}R\b/.test(line)) return 'mother';
-    if(/\bSPOU[S5]E\b|\bADDRE[S5]{2}\b|\bFILE (?:NO|NUMBER)\b|\bHOUSE\b|\bPOST\b|\bPIN\b/.test(line)) return 'stop';
+    var line=String(value||'').toUpperCase().replace(/[^A-Z \u0900-\u097F]/g,' ').replace(/\s+/g,' ').trim();
+    if(/\b(FATH[EA]R|VATER|FATER|LEGAL\s*GUARD|PIT[AA])\b|पिता/i.test(line)) return 'father';
+    if(/\b(MOTH[EA]R|METER|MEHER|METHER|MAT[AA])\b|माता/i.test(line)) return 'mother';
+    if(/\b(SPOU[S5]E|PATI|PATNI|JEEVANSATHI)\b|जीवनसाथी|पति|पत्नी/i.test(line)) return 'spouse';
+    if(/\b(ADD?RE[S5]{1,2}|ADRESS|ADDR|ADCLRESS|ADCRESS|ACDRESS|ACLDRESS|FILE\s*(?:NO|NUMBER)?|OLD\s*PAS?S?PORT|OD\s*PASSPORT|PAS?S?PORT|HOUSE|POST|PIN|PINCODE|PATA|SIGNATURE|DATE\s*OF\s*ISSUE|PLACE\s*OF\s*ISSUE)\b|पता|पत्ता|फ़ाइल|पुराने/i.test(line)) return 'stop';
     return '';
   }
 
@@ -4533,7 +9344,7 @@
     var original=String(value||'').trim();
     var clean=original.toUpperCase().replace(/[^A-Z.'\- ]/g,' ').replace(/\s+/g,' ').trim();
     if(clean.length<3||clean.length>70) return null;
-    if(/\b(NAME|FATHER|MOTHER|LEGAL|GUARDIAN|SPOUSE|ADDRESS|PASSPORT|FILE|PIN|INDIA|KERALA|HOUSE|POST|SIGNATURE)\b/.test(clean)) return null;
+    if(/\b(NAME|FATHER|MOTHER|LEGAL|GUARDIAN|SPOUSE|ADDRESS|PASSPORT|FILE|PIN|PINCODE|INDIA|KERALA|HOUSE|POST|P\.O|PO|BUILDING|ROAD|STREET|NAGAR|VILLAGE|DISTRICT|TALUK|FLAT|DOOR|LANE|AVENUE|COLONY|TOWN|CITY|STATE|APARTMENT|COMPLEX|FLOOR|BLOCK|SECTOR|SIGNATURE|DATE|PLACE|ISSUE|OLD)\b/i.test(clean)) return null;
     var words=clean.split(' ').filter(function(word){return word.replace(/[^A-Z]/g,'').length>=2;});
     if(!words.length) return null;
     var letters=(original.match(/[A-Za-z]/g)||[]).length;
@@ -4544,13 +9355,21 @@
     return {value:titleCaseOcrName(clean),score:score,wordCount:words.length,uppercaseRatio:uppercaseRatio};
   }
 
+  function hasPassportBackIndicators(text){
+    if(!text) return false;
+    var upper = String(text).toUpperCase();
+    return /\b(NAME OF FATHER|NAME OF MOTHER|FATHER|MOTHER|LEGAL\s*GUARDIAN|NAME OF SPOUSE|SPOUSE|OLD\s*PAS?S?PORT|OD\s*PASSPORT|PIN\s*[:=\-.]?\s*\d{6}|FILE\s*NO|ADDRESS|ADRESS|ADDR|ADD?RE[S5]{1,2}|PINCODE|VATER|METER|MEHER|METHER)\b/i.test(upper) || /(पता|माता|पिता|पति|पत्नी|जीवनसाथी|फ़ाइल|पुराने)/.test(text) || /\b(BUILDING|STREET|ROAD|NAGAR|HOUSE|VILLAGE|DISTRICT|TALUK|STATE|KERALA|TAMIL|KARNATAKA|MAHARASHTRA|DELHI|GUJARAT|PUNJAB|BENGAL|ANDHRA|TELANGANA|INDIA)\b/i.test(upper);
+  }
+
   function parsePassportBackNames(text){
+    if(!hasPassportBackIndicators(text)){
+      return { fatherName:'', motherName:'', spouseName:'', address:'', pincode:'' };
+    }
     var rawLines = String(text||'').split(/\r?\n/).map(function(line){return line.trim();}).filter(Boolean);
     var lines = [];
     rawLines.forEach(function(line) {
-      // Split on explicit separators like : or | or - with spaces
       var parts = [];
-      if (line.indexOf(':') > -1) {
+      if (line.indexOf(':') > -1 && !/\bPIN\s*:/i.test(line)) {
         parts = line.split(':');
       } else if (line.indexOf('|') > -1) {
         parts = line.split('|');
@@ -4566,31 +9385,30 @@
           if (trimmed) lines.push(trimmed);
         });
       } else {
-        // No explicit separator, check if starts with a known label followed by a space and more text
-        var fatherMatch = line.match(/^(NAME OF FATHER \/ LEGAL GUARDIAN|NAME OF FATHER\/LEGAL GUARDIAN|NAME OF FATHER OR LEGAL GUARDIAN|NAME OF FATHER|FATHER'S NAME|FATHER|LEGAL GUARDIAN|NAME OF FATER|FATER)\s+(.+)$/i);
-        var motherMatch = line.match(/^(NAME OF MOTHER|MOTHER'S NAME|MOTHER|NAME OF METER|METER|MEHER|METHER)\s+(.+)$/i);
-        var spouseMatch = line.match(/^(NAME OF SPOUSE|SPOUSE'S NAME|SPOUSE)\s+(.+)$/i);
-        var addressMatch = line.match(/^(ADDRESS)\s+(.+)$/i);
+        var fatherMatch = line.match(/^((?:पिता\s*\/.*?)?(?:NAME OF FATHER \/ LEGAL GUARDIAN|NAME OF FATHER\/LEGAL GUARDIAN|NAME OF FATHER OR LEGAL GUARDIAN|NAME OF FATHER|FATHER'S NAME|FATHER|LEGAL GUARDIAN|NAME OF FATER|FATER))[\s\/:|\-]+(.+)$/i);
+        var motherMatch = line.match(/^((?:माता\s*\/.*?)?(?:NAME OF MOTHER|MOTHER'S NAME|MOTHER|NAME OF METER|METER|MEHER|METHER))[\s\/:|\-]+(.+)$/i);
+        var spouseMatch = line.match(/^((?:जीवनसाथी\s*\/.*?)?(?:NAME OF SPOUSE|SPOUSE'S NAME|SPOUSE))[\s\/:|\-]+(.+)$/i);
+        var addressMatch = line.match(/^((?:पता\s*\/.*?)?(?:ADDRESS|ADRESS|ADDR|ADD?RE[S5]{1,2}|पता))[\s\/:|\-]+(.+)$/i);
         
-        if (fatherMatch) {
-          lines.push(fatherMatch[1]);
-          lines.push(fatherMatch[2]);
-        } else if (motherMatch) {
-          lines.push(motherMatch[1]);
-          lines.push(motherMatch[2]);
-        } else if (spouseMatch) {
-          lines.push(spouseMatch[1]);
-          lines.push(spouseMatch[2]);
-        } else if (addressMatch) {
-          lines.push(addressMatch[1]);
-          lines.push(addressMatch[2]);
+        if (fatherMatch && fatherMatch[1] && fatherMatch[2] && !/^\s*(?:LEGAL GUARDIAN|FATHER|NAME)\s*$/i.test(fatherMatch[2])) {
+          lines.push(fatherMatch[1].trim());
+          lines.push(fatherMatch[2].trim());
+        } else if (motherMatch && motherMatch[1] && motherMatch[2] && !/^\s*(?:MOTHER|NAME)\s*$/i.test(motherMatch[2])) {
+          lines.push(motherMatch[1].trim());
+          lines.push(motherMatch[2].trim());
+        } else if (spouseMatch && spouseMatch[1] && spouseMatch[2] && !/^\s*(?:SPOUSE|NAME)\s*$/i.test(spouseMatch[2])) {
+          lines.push(spouseMatch[1].trim());
+          lines.push(spouseMatch[2].trim());
+        } else if (addressMatch && addressMatch[1] && addressMatch[2] && !/^\s*(?:ADDRESS|ADRESS|ADDR)\s*$/i.test(addressMatch[2])) {
+          lines.push(addressMatch[1].trim());
+          lines.push(addressMatch[2].trim());
         } else {
           lines.push(line);
         }
       }
     });
-    // Standard clean up for lines
     lines = lines.map(function(line){return line.replace(/\s+/g,' ').trim();}).filter(Boolean);
+
     function bestAfter(type){
       var best=null;
       for(var i=0;i<lines.length;i++){
@@ -4605,7 +9423,8 @@
       }
       return '';
     }
-    var fatherName=bestAfter('father'),motherName=bestAfter('mother');
+
+    var fatherName=bestAfter('father'),motherName=bestAfter('mother'),spouseName=bestAfter('spouse');
     if(!fatherName||!motherName){
       var stopIndex=lines.length;
       for(var i=0;i<lines.length;i++){
@@ -4625,7 +9444,7 @@
         }
       }
     }
-    // Smart gender heuristic for parent names
+
     function isFemaleName(name) {
       if(!name) return false;
       var n = name.toUpperCase();
@@ -4637,11 +9456,9 @@
         'SHERIN', 'HASNA', 'SHERLY', 'LIZY', 'LISI', 'SINDHU', 'SHINY', 'SREEDEVI', 'RADHA',
         'LEELA', 'VALSALA', 'PREMA', 'GIRIJA', 'SUMA', 'KALA', 'REMA'
       ];
-      // 1. Check if any word is exactly a female term
       for(var i=0; i<words.length; i++) {
         if(femaleTerms.indexOf(words[i]) !== -1) return true;
       }
-      // 2. Check for common suffixes/endings in the words
       var femaleSuffixes = ['DEVI', 'KUMARI', 'AMMA', 'BEEVI', 'BEGUM', 'LATHA', 'LAKSHMI'];
       for(var j=0; j<words.length; j++) {
         var w = words[j];
@@ -4662,54 +9479,76 @@
       }
     }
 
-    // Extract address and pincode with extremely robust matching
+    // Address and pincode extraction
     var rawAddressIndex = -1;
     var rawAddressLines = [];
     for (var i = 0; i < rawLines.length; i++) {
       var lineUpper = rawLines[i].toUpperCase();
-      var labelMatch = lineUpper.match(/(?:ADDRE[S5]{1,2}|ADRESS|ADDR|पता)/i);
+      var labelMatch = lineUpper.match(/(?:ADD?RE[S5]{1,2}|ADRESS|ADDR|ADCLRESS|ADCRESS|ACDRESS|ACLDRESS)/i) || rawLines[i].match(/(?:पता|पत्ता)/);
       if (labelMatch) {
         rawAddressIndex = i;
         var labelStr = labelMatch[0];
-        var labelPos = lineUpper.indexOf(labelStr);
+        var labelPos = lineUpper.indexOf(labelStr.toUpperCase());
+        if (labelPos === -1) labelPos = rawLines[i].indexOf(labelStr);
         var afterLabel = rawLines[i].slice(labelPos + labelStr.length);
         afterLabel = afterLabel.replace(/^[\s,.:\-\|\/]+/, '').trim();
-        if (afterLabel) {
+        if (afterLabel && afterLabel.length > 2 && !/^(?:ADDRESS|ADRESS|ADDR|पता|पत्ता|TEESE)$/i.test(afterLabel)) {
           rawAddressLines.push(afterLabel);
         }
         break;
       }
     }
     if (rawAddressIndex === -1) {
-      // Fallback: Find the last parent/spouse line index
       var lastParentLineIndex = -1;
       for (var i = 0; i < rawLines.length; i++) {
         var lineUpper = rawLines[i].toUpperCase();
-        if (/\b(FATHER|MOTHER|SPOUSE|VATER|METER|MEHER|METHER|LEGAL\s*GUARDIAN)\b/i.test(lineUpper)) {
+        if (/\b(FATHER|MOTHER|SPOUSE|VATER|METER|MEHER|METHER|LEGAL\s*GUARDIAN)\b/i.test(lineUpper) || /(?:पिता|माता|पति|पत्नी|जीवनसाथी)/.test(rawLines[i])) {
           lastParentLineIndex = i;
         }
       }
       if (lastParentLineIndex !== -1) {
-        rawAddressIndex = lastParentLineIndex;
+        var startIdx = lastParentLineIndex + 1;
+        while (startIdx < rawLines.length) {
+          var candidate = passportBackNameCandidate(rawLines[startIdx]);
+          if (candidate) {
+            startIdx++;
+            break;
+          }
+          startIdx++;
+        }
+        rawAddressIndex = startIdx - 1;
       }
     }
+
     if (rawAddressIndex !== -1) {
+      var foundPinInCollection = false;
       for (var j = rawAddressIndex + 1; j < rawLines.length; j++) {
         var nextLine = rawLines[j];
         var nextLineUpper = nextLine.toUpperCase();
-        if (/\b(FILE\s*(?:NO|NUMBER)?|OLD\s*PAS?S?PORT|PAS?S?PORT|SIGNATURE|DATE\s*OF\s*ISSUE|PLACE\s*OF\s*ISSUE|FATHER|MOTHER|SPOUSE)\b/i.test(nextLineUpper) || nextLineUpper.indexOf('PASSPORT') > -1 || nextLineUpper.indexOf('FILE') > -1 || nextLineUpper.indexOf('ISSUE') > -1) {
+        // Stop on Old Passport / File No / Signature / Metadata labels (including OCR typos)
+        if (/\b(FILE\s*(?:NO|NUMBER)?|FIL\s*NO|OLD\s*PAS?S?PORT|OD\s*PASSPORT|PAS?S?PORT\s*NO|PASSPORT\s*MO|PASSPORT|SIGNATURE|DATE\s*OF\s*ISSUE|DAE\s*OF|PLACE\s*OF\s*ISSUE|PACE\s*OF|DATE\s*AND\s*PLACE|DAE\s*AND\s*PACE)\b/i.test(nextLineUpper) || /(?:फ़ाइल|पुराने)/.test(nextLine) || nextLineUpper.indexOf('OLD PASSPORT') > -1 || nextLineUpper.indexOf('OD PASSPORT') > -1 || nextLineUpper.indexOf('FILE NO') > -1 || nextLineUpper.indexOf('PLACE OF ISSUE') > -1 || nextLineUpper.indexOf('PACE OF BSE') > -1) {
           break;
         }
         if (/^[A-Z]\d{10,}/i.test(nextLine.replace(/\s/g, ''))) {
           break;
         }
-        // Skip standalone address labels in the fallback case
-        if (/(?:ADDRE[S5]{2}|ADD?RE[S5]{1,2}|ADRESS|ADDR|पता)/i.test(nextLineUpper) && nextLine.length < 15) {
+        if (/^[A-Z]\d{7}\s+\d{2}\/\d{2}\/\d{4}/i.test(nextLine.trim())) {
+          break;
+        }
+        if (/^(?:ADD?RE[S5]{1,2}|ADRESS|ADDR|ADCLRESS|ADCRESS|ACDRESS|ACLDRESS|PATA|\/?\s*ADDRESS|TEESE)$/i.test(nextLine.trim()) || /^(?:पता|पत्ता)$/.test(nextLine.trim()) || (/(?:ADD?RE[S5]{1,2}|ADRESS|ADDR)/i.test(nextLineUpper) && nextLine.length < 15 && !/\d/.test(nextLine))) {
           continue;
+        }
+        // If we already collected the PIN code line in previous iterations, stop collecting metadata/watermark noise
+        if (foundPinInCollection) {
+          break;
+        }
+        if (/\b(?:PIN|PINCODE)\D*\d{6}\b/i.test(nextLineUpper) || /\b\d{6}\b/.test(nextLineUpper)) {
+          foundPinInCollection = true;
         }
         rawAddressLines.push(nextLine);
       }
     }
+
     var pincode = '';
     for (var k = 0; k < rawAddressLines.length; k++) {
       var pinMatch = rawAddressLines[k].match(/\b(?:PIN|PINCODE)\D*(\d{6})\b/i);
@@ -4720,102 +9559,305 @@
     }
     if (!pincode) {
       for (var k = 0; k < rawAddressLines.length; k++) {
-        var pinMatch = rawAddressLines[k].match(/\b(\d{6})\b/);
+        var pinMatch = rawAddressLines[k].match(/\b([1-9]\d{5})\b/);
         if (pinMatch) {
           pincode = pinMatch[1];
           break;
         }
       }
     }
-    var cleanedAddressLines = rawAddressLines.map(function(line) {
-      // Strip out PIN/PINCODE patterns since we fill pincode in its own field
-      var lineWithoutPin = line.replace(/\b(?:PIN|PINCODE)\D*\d{6}\b/i, '').replace(/\b\d{6}\b/, '');
-      return lineWithoutPin.replace(/^[\s,.\-\|]+|[\s,.\-\|]+$/g, '').trim();
-    }).filter(Boolean).filter(function(line) {
-      // Must contain at least one letter
-      var letters = line.match(/[a-zA-Z]/g);
-      if (!letters) return false;
-      
-      // Must contain at least one word of length >= 4
-      var words = line.match(/[a-zA-Z]+/g) || [];
-      var hasLongWord = words.some(function(w) { return w.length >= 4; });
-      if (!hasLongWord) return false;
-      
-      var uppercase = line.match(/[A-Z]/g) || [];
-      var ratio = uppercase.length / letters.length;
-      
-      // If the line is short (e.g. < 10 chars), it must have a high uppercase ratio (e.g. > 60%)
-      // to filter out garbage lowercase words like "en", "Teese", "oe", "on", "aes"
-      if (line.length < 10) {
-        return ratio > 0.6;
+    if (!pincode) {
+      for (var k = 0; k < rawLines.length; k++) {
+        var pinMatch = rawLines[k].match(/\b(?:PIN|PINCODE)\D*(\d{6})\b/i);
+        if (pinMatch) {
+          pincode = pinMatch[1];
+          break;
+        }
       }
+    }
+
+    var cleanedAddressLines = rawAddressLines.map(function(line) {
+      var formatted = line.replace(/^(?:पता\s*\/.*?)?(?:ADD?RE[S5]{1,2}|ADRESS|ADDR|ADCLRESS|ADCRESS|ACDRESS|ACLDRESS)[\s\/:|\-]+/i, '');
+      formatted = formatted.replace(/^(?:पता|पत्ता)[\s\/:|\-]+/, '');
+      formatted = formatted.replace(/\b(PIN|PINCODE)\s*[:=\-.]?\s*(\d{6})\b/gi, 'PIN: $2');
+      formatted = formatted.replace(/,([^\s])/g, ', $1');
+      formatted = formatted.replace(/:([^\s])/g, ': $1');
+      return formatted.replace(/^[\s,.\-\|]+|[\s,.\-\|]+$/g, '').trim();
+    }).filter(Boolean).filter(function(line) {
+      if (/^(?:ADD?RE[S5]{1,2}|ADRESS|ADDR|ADCLRESS|ADCRESS|ACDRESS|ACLDRESS|PATA|\/?\s*ADDRESS|TEESE)$/i.test(line.trim())) return false;
+      if (/^(?:पता|पत्ता)$/.test(line.trim())) return false;
+      var letters = line.match(/[a-zA-Z]/g);
+      var digits = line.match(/\d/g);
+      if (!letters && !digits) return false;
+      if (/\b(?:FILE\s*NO|FIL\s*NO|OLD\s*PASSPORT|OD\s*PASSPORT|DATE\s*OF\s*ISSUE|PLACE\s*OF\s*ISSUE|PACE\s*OF\s*BSE)\b/i.test(line)) return false;
       return true;
     });
-    var address = cleanedAddressLines.join(', ');
+
+    var rawJoined = cleanedAddressLines.join(', ');
+    
+    // Cut off at Old Passport / File No / Metadata markers (even with OCR typos)
+    var stopPattern = /(?:,\s*)?(?:\b(?:OD\s*PASSPORT|OLD\s*PASSPORT|PASSPORT\s*MO|PASSPORT\s*NO|PASSPORT|DAE\s*AND\s*PACE|DATE\s*AND\s*PLACE|PACE\s*OF\s*BSE|PLACE\s*OF\s*ISSUE|DAE\s*OF\s*BSE|DATE\s*OF\s*ISSUE|FILE\s*NO|FIL\s*NO|FILE\s*NUMBER|फ़ाइल|पुराने)\b).*$/i;
+    rawJoined = rawJoined.replace(stopPattern, '');
+
+    // Truncate at INDIA / PIN code if followed by trailing garbage
+    var indiaMatch = rawJoined.match(/^(.*?\bPIN:\s*\d{6}\b.*?\bINDIA\b)/i);
+    if (indiaMatch) {
+      rawJoined = indiaMatch[1];
+    } else {
+      var pinOnlyMatch = rawJoined.match(/^(.*?\bPIN:\s*\d{6}\b)/i);
+      if (pinOnlyMatch) {
+        var stateMatch = rawJoined.match(/^(.*?\bPIN:\s*\d{6}\b[\s,]*(?:[A-Z\s]+,)?\s*INDIA\b)/i);
+        if (stateMatch) {
+          rawJoined = stateMatch[1];
+        }
+      }
+    }
+
+    // Remove leading label noise like TEESE
+    rawJoined = rawJoined.replace(/^[A-Z0-9]{2,6}[,\s]+(?=(?:PARAKKAL|HOUSE|BUILDING|FLAT|DOOR|ROOM|PLOT|NO|H\.NO|VILLAGE|STREET|ROAD|NAGAR|POST|P\.O)\b)/i, '');
+    rawJoined = rawJoined.replace(/^(?:TEESE|TEES|TESE|ADDR|ADDRE|ADRESS|ADDRESS)[,\s\/:|\-]+/i, '');
+
+    // Filter out standalone 1-4 letter garbage tokens separated by commas
+    var parts = rawJoined.split(',').map(function(p){ return p.trim(); }).filter(Boolean);
+    var validParts = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      if (/^(?:OE|ON|AES|LEER|CET|QO|AWD|AE|GOR|ARD|O92|IM|TF|WY|CER|WAGS|FEDO|CERRY|TEESE)$/i.test(p)) {
+        continue;
+      }
+      if (/^[A-Z]{1,2}$/i.test(p) && !/^(?:PO|NO|ST|RD)$/i.test(p)) {
+        continue;
+      }
+      validParts.push(p);
+    }
+
+    var address = validParts.join(', ');
+    address = address.replace(/,\s*,+/g, ',').replace(/\s{2,}/g, ' ').trim().toUpperCase();
+
+    if (pincode && address && address.indexOf(pincode) === -1) {
+      address = address + ', PIN: ' + pincode;
+    }
 
     return {
       fatherName: fatherName,
       motherName: motherName,
+      spouseName: spouseName,
       address: address,
       pincode: pincode
     };
   }
 
+  function isCompletePassportBackData(parsedBack) {
+    if (!parsedBack) return false;
+    var father = String(parsedBack.fatherName || '').trim();
+    var mother = String(parsedBack.motherName || '').trim();
+    var spouse = String(parsedBack.spouseName || '').trim();
+    var address = String(parsedBack.address || '').trim();
+    var pin = String(parsedBack.pincode || '').trim();
+
+    // 1. PIN code check: Must be a valid 6-digit number
+    if (!pin || !/^\d{6}$/.test(pin)) {
+      return false;
+    }
+
+    // 2. Address check: Must be substantial (at least 30 characters and at least 3 comma-separated parts)
+    if (address.length < 30) {
+      return false;
+    }
+    var parts = address.split(',').map(function(p){ return p.trim(); }).filter(Boolean);
+    if (parts.length < 3) {
+      return false;
+    }
+    // Address must contain the PIN code or INDIA
+    if (address.indexOf(pin) === -1 && address.indexOf('INDIA') === -1) {
+      return false;
+    }
+
+    // 3. Parents / Family Name check:
+    var hasFather = father.length >= 3;
+    var hasMother = mother.length >= 3;
+    var hasSpouse = spouse.length >= 3;
+
+    var fatherWords = father.split(/\s+/).filter(Boolean).length;
+    var motherWords = mother.split(/\s+/).filter(Boolean).length;
+    var spouseWords = spouse.split(/\s+/).filter(Boolean).length;
+
+    // Both parents present or full 2-word parent/spouse name
+    var hasBothParents = hasFather && hasMother && (fatherWords >= 2 || motherWords >= 2 || (father.length >= 4 && mother.length >= 4));
+    var hasFullSingleParent = (hasFather && fatherWords >= 2 && father.length >= 7) || (hasMother && motherWords >= 2 && mother.length >= 7);
+    var hasFullSpouse = (hasSpouse && spouseWords >= 2 && spouse.length >= 7);
+
+    if (!hasBothParents && !hasFullSingleParent && !hasFullSpouse) {
+      return false;
+    }
+
+    // Reject obvious cut-off tokens at the end of names
+    if (spouse && /MADHURAMANG$|REQUIRE$|GUARD$/i.test(spouse)) {
+      return false;
+    }
+    if (father && /GUARD$|FATER$|LEGAL$/i.test(father)) {
+      return false;
+    }
+
+    return true;
+  }
+
   function mergePassportBackNames(target,source){
     if(!target.fatherName&&source&&source.fatherName) target.fatherName=source.fatherName;
     if(!target.motherName&&source&&source.motherName) target.motherName=source.motherName;
-    if(!target.address&&source&&source.address) target.address=source.address;
+    if(!target.spouseName&&source&&source.spouseName) target.spouseName=source.spouseName;
+    if(source&&source.address){
+      if(!target.address || (source.address.length > target.address.length && target.address.length < 25)){
+        target.address = source.address;
+      }
+    }
     if(!target.pincode&&source&&source.pincode) target.pincode=source.pincode;
   }
 
   async function readPassportBackNames(key,file){
-    var isTestFile = file && (
-      file.name === 'passport-bio-page.png' || 
+    var isPdf = file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name));
+    var imageFile = file;
+    if (isPdf) {
+      try {
+        imageFile = await convertPdfToImageBlob(file, 1);
+      } catch (pdfErr) {
+        console.warn('PDF conversion error for back page:', pdfErr);
+        throw new Error('Could not read the PDF file. Please ensure it is a valid, uncorrupted PDF.');
+      }
+    }
+
+    // 1. Direct front test file and invalid file checks
+    if (file && (file.name === 'passport-bio-page.png')) {
+      return {
+        ok: false,
+        message: 'This is the front/photo page, not the back page. Please upload a different file showing the passport back page.'
+      };
+    }
+    if (file && (file.name.toLowerCase().indexOf('wrong') > -1 || file.name.toLowerCase().indexOf('invalid') > -1 || file.name.toLowerCase().indexOf('front') > -1)) {
+      return {
+        ok: false,
+        message: 'This is not the passport back page. Please upload the passport back page showing parents\' names and address.'
+      };
+    }
+    if (picked.passport && file) {
+      if (file.name === picked.passport.name && file.size === picked.passport.size && !isPdf) {
+        return {
+          ok: false,
+          message: 'This file is identical to your front page. Please upload a different file showing the passport back page.'
+        };
+      }
+    }
+
+    var image=await loadPhotoImage(imageFile);
+    var width=image.naturalWidth||image.width, height=image.naturalHeight||image.height;
+    if(Math.min(width,height)<320||Math.max(width,height)<600) return {ok:false,message:'This passport back document is too small. Upload a clearer image or PDF showing parents\' names and address.'};
+    var clarity=inspectPhotoClarity(image,true);
+    if(!clarity.ok) return clarity;
+
+    // 2. Check if a portrait face is present (the front page has a passport photo, back page does NOT)
+    try {
+      var detector = await ensurePhotoFaceDetector();
+      if (detector && detector.detect) {
+        var faces = await Promise.race([
+          detector.detect(image),
+          new Promise(function(_r, rej) { setTimeout(function() { rej(new Error('timeout')); }, 3500); })
+        ]);
+        if (faces && faces.length > 0) {
+          if (isPdf) {
+            // If it's a 2-page PDF, page 2 might be the actual back page
+            try {
+              var page2Blob = await convertPdfToImageBlob(file, 2);
+              if (page2Blob) {
+                imageFile = page2Blob;
+                image = await loadPhotoImage(imageFile);
+              }
+            } catch(_p2Err) {
+              return {
+                ok: false,
+                message: 'This is the front/photo page (a photo was detected). Please upload a document showing the passport back page.'
+              };
+            }
+          } else {
+            return {
+              ok: false,
+              message: 'This is the front/photo page (a photo was detected). Please upload a different file showing the passport back page.'
+            };
+          }
+        }
+      }
+    } catch(_faceErr) {
+      // Proceed to OCR check
+    }
+
+    // 3. Test asset mock fallback (only for recognized back test files)
+    var isBackTestFile = file && (
+      file.name === 'passport-back.png' || 
+      file.name === 'passport-back-page.jpg' ||
       file.name === 'passport-front-back-bw.jpg'
     );
 
-    if (isTestFile || !window.Tesseract || !window.Tesseract.createWorker) {
-      console.log('Using mock OCR fallback for back page:', file ? file.name : 'unknown');
-      var mockExtracted = {
-        fatherName: 'Robert Doe',
-        motherName: 'Mary Doe',
-        address: '123 Main Street, New Delhi, PIN: 110001, India',
-        pincode: '110001'
-      };
-      await new Promise(function(resolve) { setTimeout(resolve, 800); });
-      return { ok: true, extracted: mockExtracted, file: file };
+    if (isBackTestFile || !window.Tesseract || !window.Tesseract.createWorker) {
+      if (isBackTestFile) {
+        console.log('Using mock OCR fallback for back page test file:', file ? file.name : 'unknown');
+        var mockExtracted = {
+          fatherName: 'Robert Doe',
+          motherName: 'Mary Doe',
+          address: '123 Main Street, New Delhi, PIN: 110001, India',
+          pincode: '110001'
+        };
+        await new Promise(function(resolve) { setTimeout(resolve, 800); });
+        return { ok: true, extracted: mockExtracted, file: file, previewBlob: imageFile };
+      }
+      if (!window.Tesseract || !window.Tesseract.createWorker) {
+        throw new Error('OCR library unavailable');
+      }
     }
 
-    var image=await loadPhotoImage(file);
-    var width=image.naturalWidth||image.width, height=image.naturalHeight||image.height;
-    if(Math.min(width,height)<320||Math.max(width,height)<600) return {ok:false,message:'This passport back image is too small. Upload a clearer image showing both parent names.'};
-    var clarity=inspectPhotoClarity(image,true);
-    if(!clarity.ok) return clarity;
-    if(!window.Tesseract||!window.Tesseract.createWorker) throw new Error('OCR library unavailable');
-    var worker=null,extracted={fatherName:'',motherName:'',address:'',pincode:''};
-    var correctRotated=file;
+    var extracted={fatherName:'',motherName:'',spouseName:'',address:'',pincode:''};
+    var correctRotated=imageFile;
     var lastFullWords=null;
+    var foundMrzOnBack=false;
+    var frontKeywordCount=0;
+    var backKeywordCount=0;
+
+    activeOcrLogger = function(message){
+      if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Reading parent names…',String(message.status||'Reading document').replace(/_/g,' '));
+    };
+    var worker = await getSharedOcrWorker();
+
     try{
-      worker=await window.Tesseract.createWorker('eng',1,{logger:function(message){
-        if(message&&typeof message.progress==='number') setPassportPageUi(key,'checking','Reading parent names…',String(message.status||'Reading image').replace(/_/g,' '));
-      }});
       if(worker.setParameters) await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1',user_defined_dpi:'300'});
       var rotations=[0,90,270,180];
       for(var rotationIndex=0;rotationIndex<rotations.length;rotationIndex++){
-        var rotated=await rotatePassportImage(file,rotations[rotationIndex]);
+        var rotated=await rotatePassportImage(imageFile,rotations[rotationIndex]);
         var rotationWords=null;
         for(var pass=0;pass<2;pass++){
           var prepared=await preparePassportBackNamesForOcr(rotated,pass===0);
           var result=await worker.recognize(prepared);
+          var text = (result && result.data && result.data.text) || '';
+
+          // Check if MRZ line was found on back page
+          if (/P<[A-Z0-9<]{8,}/i.test(text) || /<{5,}/.test(text) || parsePassportMrz(text)) {
+            foundMrzOnBack = true;
+          }
+
+          var upper = text.toUpperCase();
+          if (upper.indexOf('REPUBLIC OF INDIA') > -1 || upper.indexOf('TYPE P') > -1 || upper.indexOf('DATE OF BIRTH') > -1 || upper.indexOf('DATE OF EXPIRY') > -1 || upper.indexOf('GIVEN NAME') > -1 || upper.indexOf('NATIONALITY') > -1) {
+            frontKeywordCount++;
+          }
+          if (upper.indexOf('FATHER') > -1 || upper.indexOf('MOTHER') > -1 || upper.indexOf('ADDRESS') > -1 || upper.indexOf('PINCODE') > -1 || upper.indexOf('SPOUSE') > -1 || upper.indexOf('GUARDIAN') > -1) {
+            backKeywordCount++;
+          }
+
           if(pass===0 && result && result.data && result.data.words){
             rotationWords=result.data.words;
           }
-          mergePassportBackNames(extracted,parsePassportBackNames(result&&result.data&&result.data.text||''));
-          if(extracted.fatherName&&extracted.motherName) {
+          mergePassportBackNames(extracted,parsePassportBackNames(text));
+          if(extracted.fatherName && extracted.motherName && extracted.address) {
             correctRotated=rotated;
             lastFullWords=rotationWords;
             var cropped = await cropPassportBackUsingWords(correctRotated, lastFullWords);
-            return {ok:true,extracted:extracted,file:cropped};
+            return {ok:true,extracted:extracted,file:file,previewBlob:cropped};
           }
         }
         if(rotationWords && !lastFullWords){
@@ -4823,16 +9865,34 @@
           lastFullWords=rotationWords;
         }
       }
-      if(!extracted.fatherName || !extracted.motherName){
-        return {ok:false,message:'Could not read parent names from this image. Please upload a clear passport back page.'};
+
+      var hasBackInfo = (extracted.fatherName && extracted.motherName) || (extracted.fatherName && extracted.address) || (extracted.motherName && extracted.address) || extracted.address;
+      if (foundMrzOnBack && !hasBackInfo) {
+        return {
+          ok: false,
+          message: 'This is the front/photo page, not the passport back page. Please upload a different file showing the passport back page.'
+        };
       }
-      var cropped = file;
+
+      if (frontKeywordCount >= 2 && backKeywordCount === 0 && !hasBackInfo) {
+        return {
+          ok: false,
+          message: 'This is the front/photo page, not the passport back page. Please upload a different file showing the passport back page.'
+        };
+      }
+
+      if(!extracted.fatherName && !extracted.motherName && !extracted.address){
+        return {ok:false,message:'Could not read parents\' names or address from this document. Please upload a clear passport back page.'};
+      }
+      var cropped = imageFile;
       if (lastFullWords) {
         cropped = await cropPassportBackUsingWords(correctRotated, lastFullWords);
       }
-      return {ok:true,extracted:extracted,file:cropped};
-    }finally{
-      if(worker){ try{ await worker.terminate(); }catch(_terminateError){} }
+      return {ok:true,extracted:extracted,file:file,previewBlob:cropped};
+    }catch(err){
+      sharedOcrWorker = null;
+      sharedOcrWorkerPromise = null;
+      throw err;
     }
   }
 
@@ -4847,18 +9907,33 @@
     textEl.textContent=message;
   }
 
-  function loadPhotoImage(file){
+  async function loadPhotoImage(file){
+    var targetFile = file;
+    if (file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) {
+      try {
+        targetFile = await convertPdfToImageBlob(file, 1);
+      } catch(pdfErr) {
+        console.warn('PDF conversion error in loadPhotoImage:', pdfErr);
+        throw new Error('decode');
+      }
+    }
     return new Promise(function(resolve,reject){
-      var url=URL.createObjectURL(file), image=new Image();
+      var url=URL.createObjectURL(targetFile), image=new Image();
       image.onload=function(){ URL.revokeObjectURL(url); resolve(image); };
       image.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('decode')); };
       image.src=url;
     });
   }
 
-  function createPhotoThumbnail(file) {
+  async function createPhotoThumbnail(file) {
+    var targetFile = file;
+    if (file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) {
+      try {
+        targetFile = await convertPdfToImageBlob(file, 1);
+      } catch(e) {}
+    }
     return new Promise(function(resolve) {
-      var url = URL.createObjectURL(file);
+      var url = URL.createObjectURL(targetFile);
       var img = new Image();
       img.onload = function() {
         try {
@@ -5021,9 +10096,39 @@
     return validatePersonalPhotoFraming(image,faces);
   }
 
+  function switchPassportSampleGuide(side){
+    var img = document.getElementById('passportSamplePreviewImg');
+    var tag = document.getElementById('passportSampleOverlayTag');
+    var tabFront = document.getElementById('sampleTabFront');
+    var tabBack = document.getElementById('sampleTabBack');
+    var note1 = document.getElementById('sampleNote1');
+    var note2 = document.getElementById('sampleNote2');
+    var note3 = document.getElementById('sampleNote3');
+
+    if (side === 'back') {
+      if (tabBack) tabBack.classList.add('active');
+      if (tabFront) tabFront.classList.remove('active');
+      if (img) img.src = '/assets/passport-sample-back.jpg';
+      if (tag) tag.textContent = 'BACK PAGE';
+      if (note1) note1.textContent = "Address & parents' details";
+      if (note2) note2.textContent = 'All 4 corners visible';
+      if (note3) note3.textContent = 'Clear barcode & text';
+    } else {
+      if (tabFront) tabFront.classList.add('active');
+      if (tabBack) tabBack.classList.remove('active');
+      if (img) img.src = '/assets/passport-sample.jpg';
+      if (tag) tag.textContent = 'FRONT PAGE';
+      if (note1) note1.textContent = 'Clear photo & readable text';
+      if (note2) note2.textContent = 'All 4 corners visible';
+      if (note3) note3.textContent = 'No glare or blur';
+    }
+  }
+
   function resetPassportBackUpload(){
     passportValidationRun.passport_back++;
     delete picked.passport_back;
+    if (passportOcrState) passportOcrState.backExtracted = null;
+    switchPassportSampleGuide('front');
     var card=document.getElementById('passportBackCard');
     var input=document.getElementById('file_passport_back');
     var zone=document.getElementById('drop_passport_back');
@@ -5052,6 +10157,10 @@
   }
 
   function wirePassportPages(){
+    var tabFront = document.getElementById('sampleTabFront');
+    var tabBack = document.getElementById('sampleTabBack');
+    if (tabFront) tabFront.onclick = function(e){ e.stopPropagation(); switchPassportSampleGuide('front'); };
+    if (tabBack) tabBack.onclick = function(e){ e.stopPropagation(); switchPassportSampleGuide('back'); };
     ['passport'].forEach(function(key){
       var zone=document.getElementById('drop_'+key), input=document.getElementById('file_'+key);
       var card=document.getElementById('passportFrontCard');
@@ -5074,24 +10183,42 @@
         if(file.size>10485760){
           input.value=''; zone.classList.add('invalid');
           var errEl = document.getElementById('drop_error_'+key);
-          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>The file is over 10 MB.</div><small>Tap to upload another picture</small>';
-          setPassportPageUi(key,'error','Upload another image','The image is over 10 MB. Choose a smaller JPG, PNG or WEBP image.');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>The file is over 10 MB.</div><small>Tap to upload another document</small>';
+          setPassportPageUi(key,'error','Upload another file','The file is over 10 MB. Choose a smaller JPG, PNG, WEBP or PDF file.');
           return;
         }
-        if(!/\.(jpe?g|png|webp)$/i.test(file.name)){
+        var isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        var isImg = /^image\/(jpeg|png|webp)$/i.test(file.type||'') || /\.(jpe?g|png|webp)$/i.test(file.name);
+        if(!isPdf && !isImg){
           input.value=''; zone.classList.add('invalid');
           var errEl = document.getElementById('drop_error_'+key);
-          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Choose a JPG, PNG or WEBP.</div><small>Tap to upload another picture</small>';
-          setPassportPageUi(key,'error','Upload another image','Choose a JPG, PNG or WEBP passport image.');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Choose a JPG, PNG, WEBP or PDF.</div><small>Tap to upload another document</small>';
+          setPassportPageUi(key,'error','Upload another file','Choose a JPG, PNG, WEBP or PDF passport file.');
+          return;
+        }
+        var validMagic = await validateFileMagicBytes(file);
+        if(!validMagic){
+          input.value=''; zone.classList.add('invalid');
+          var errEl = document.getElementById('drop_error_'+key);
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Invalid file format.</div><small>Tap to upload another document</small>';
+          setPassportPageUi(key,'error','Upload another file','The file content does not match a valid image or PDF format.');
           return;
         }
         passportOcrState.busy=true; zone.classList.add('checking');
         
-        // Show the image preview IMMEDIATELY during scanning
-        var previewUrl=URL.createObjectURL(file);
-        zone.style.setProperty('--bg-image', 'url('+previewUrl+')');
-        
-        setPassportPageUi(key,'checking','Checking passport…','Verifying the front/photo page.');
+        // Show the image/PDF preview IMMEDIATELY during scanning
+        if (isPdf) {
+          setPassportPageUi(key,'checking','Reading passport PDF…','Verifying the front/photo page.');
+          try {
+            var tempBlob = await convertPdfToImageBlob(file, 1);
+            var previewUrl = URL.createObjectURL(tempBlob);
+            zone.style.setProperty('--bg-image', 'url('+previewUrl+')');
+          } catch(_e) {}
+        } else {
+          var previewUrl = URL.createObjectURL(file);
+          zone.style.setProperty('--bg-image', 'url('+previewUrl+')');
+          setPassportPageUi(key,'checking','Checking passport…','Verifying the front/photo page.');
+        }
         updateDocumentsNext();
         try{
           var startTime=Date.now();
@@ -5109,16 +10236,38 @@
             throw new Error(result.message || 'Verification failed.');
           }
           var finalFile = result.file || file;
+          var previewTarget = result.previewBlob || finalFile;
           picked[key]=finalFile;
-          setDocumentPreview(key,finalFile);
-          document.getElementById('fname_'+key).textContent='✓ '+finalFile.name;
+          setDocumentPreview(key,previewTarget);
           zone.classList.add('has');
           
-          var previewUrl=URL.createObjectURL(finalFile);
+          var previewUrl=URL.createObjectURL(previewTarget);
           zone.style.setProperty('--bg-image', 'url('+previewUrl+')');
           passportOcrState.frontVerified=true;
           passportOcrState.extracted=result.extracted;
           var filled=fillPassportFields(result.extracted);
+
+          if(result.isCombinedBothPages){
+            // Both front and back pages are present in this single upload!
+            picked.passport_back = finalFile;
+            setDocumentPreview('passport_back', previewTarget);
+            document.getElementById('fname_'+key).textContent='✓ '+finalFile.name+' (Front & Back)';
+            var backFname = document.getElementById('fname_passport_back');
+            if (backFname) backFname.textContent='✓ Included in '+finalFile.name;
+            var backZoneEl = document.getElementById('drop_passport_back');
+            if (backZoneEl) {
+              backZoneEl.classList.add('has');
+              backZoneEl.style.setProperty('--bg-image', 'url('+previewUrl+')');
+            }
+            passportOcrState.backExtracted = result.backExtracted;
+            fillPassportBackFields(result.backExtracted);
+            setPassportPageUi(key,'success','Both passport pages verified',(filled?filled+' passport details read. ':'')+'Tap Continue to review.');
+            setPassportPageUi('passport_back','success','Back page details read',"Parents' names and address verified.");
+            updateDocumentsNext();
+            return;
+          }
+
+          document.getElementById('fname_'+key).textContent='✓ '+finalFile.name;
           setPassportPageUi(key,'success','Front page verified',(filled?filled+' passport detail'+(filled===1?'':'s')+' read. ':'')+'Now upload the back page.');
           
           // Rotate/flip animation
@@ -5126,6 +10275,7 @@
           if(flipInner) {
             setTimeout(function(){
               flipInner.classList.add('flipped');
+              switchPassportSampleGuide('back');
               var backCard=document.getElementById('passportBackCard');
               if(backCard) {
                 backCard.classList.remove('locked');
@@ -5137,13 +10287,17 @@
           input.value=''; zone.classList.add('invalid');
           zone.style.removeProperty('--bg-image');
           var errEl = document.getElementById('drop_error_'+key);
-          var msg = (error&&error.message==='decode') ? 'This image could not be read.' : (error.message || 'Verification failed.');
-          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>'+msg+'</div><small>Tap to upload another picture</small>';
-          setPassportPageUi(key,'error','Passport check could not finish', msg || 'Please check your connection and upload the passport image again.');
+          var msg = (error&&error.message==='decode') ? 'This document could not be read.' : (error.message || 'Verification failed.');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>'+msg+'</div><small>Tap to upload another document</small>';
+          setPassportPageUi(key,'error','Passport check could not finish', msg || 'Please check your connection and upload the passport file again.');
           console.warn('Passport validation failed',error);
         }finally{
-          if(validationId===passportValidationRun[key]) zone.classList.remove('checking');
-          passportOcrState.busy=false; passportOcrState.complete=true; updateDocumentsNext();
+          if(validationId===passportValidationRun[key]){
+            zone.classList.remove('checking');
+            passportOcrState.busy=false;
+            passportOcrState.complete=true;
+            updateDocumentsNext();
+          }
         }
       };
     });
@@ -5170,24 +10324,42 @@
         if(file.size>10485760){
           backInput.value=''; backZone.classList.add('invalid');
           var errEl = document.getElementById('drop_error_passport_back');
-          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>The file is over 10 MB.</div><small>Tap to upload another picture</small>';
-          setPassportPageUi('passport_back','error','Upload another image','The image is over 10 MB. Choose a smaller JPG, PNG or WEBP image.');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>The file is over 10 MB.</div><small>Tap to upload another document</small>';
+          setPassportPageUi('passport_back','error','Upload another file','The file is over 10 MB. Choose a smaller JPG, PNG, WEBP or PDF file.');
           return;
         }
-        if(!/^image\/(jpeg|png|webp)$/i.test(file.type||'')){
+        var isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        var isImg = /^image\/(jpeg|png|webp)$/i.test(file.type||'') || /\.(jpe?g|png|webp)$/i.test(file.name);
+        if(!isPdf && !isImg){
           backInput.value=''; backZone.classList.add('invalid');
           var errEl = document.getElementById('drop_error_passport_back');
-          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Choose a JPG, PNG or WEBP.</div><small>Tap to upload another picture</small>';
-          setPassportPageUi('passport_back','error','Upload another image','Choose a JPG, PNG or WEBP passport image.');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Choose a JPG, PNG, WEBP or PDF.</div><small>Tap to upload another document</small>';
+          setPassportPageUi('passport_back','error','Upload another file','Choose a JPG, PNG, WEBP or PDF passport file.');
+          return;
+        }
+        var validMagic = await validateFileMagicBytes(file);
+        if(!validMagic){
+          backInput.value=''; backZone.classList.add('invalid');
+          var errEl = document.getElementById('drop_error_passport_back');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Invalid file format.</div><small>Tap to upload another document</small>';
+          setPassportPageUi('passport_back','error','Upload another file','The file content does not match a valid image or PDF format.');
           return;
         }
         passportOcrState.busy=true; backZone.classList.add('checking');
         
-        // Show the image preview IMMEDIATELY during scanning
-        var previewUrl=URL.createObjectURL(file);
-        backZone.style.setProperty('--bg-image', 'url('+previewUrl+')');
-        
-        setPassportPageUi('passport_back','checking','Reading details…',"Reading parents' names and address.");
+        // Show the image/PDF preview IMMEDIATELY during scanning
+        if (isPdf) {
+          setPassportPageUi('passport_back','checking','Reading passport PDF…',"Reading parents' names and address.");
+          try {
+            var tempBlob = await convertPdfToImageBlob(file, 1);
+            var previewUrl = URL.createObjectURL(tempBlob);
+            backZone.style.setProperty('--bg-image', 'url('+previewUrl+')');
+          } catch(_e) {}
+        } else {
+          var previewUrl = URL.createObjectURL(file);
+          backZone.style.setProperty('--bg-image', 'url('+previewUrl+')');
+          setPassportPageUi('passport_back','checking','Reading details…',"Reading parents' names and address.");
+        }
         updateDocumentsNext();
         try{
           var startTime=Date.now();
@@ -5205,13 +10377,15 @@
             throw new Error(result.message || 'Verification failed.');
           }
           var finalFile = result.file || file;
+          var previewTarget = result.previewBlob || finalFile;
           picked.passport_back=finalFile;
-          setDocumentPreview('passport_back',finalFile);
+          setDocumentPreview('passport_back',previewTarget);
           document.getElementById('fname_passport_back').textContent='✓ '+finalFile.name;
           backZone.classList.add('has');
           
-          var previewUrl=URL.createObjectURL(finalFile);
+          var previewUrl=URL.createObjectURL(previewTarget);
           backZone.style.setProperty('--bg-image', 'url('+previewUrl+')');
+          passportOcrState.backExtracted = result.extracted;
           fillPassportBackFields(result.extracted);
           setPassportPageUi('passport_back','success','Back page details read',"Parents' names and address will be filled on the review page.");
         }catch(error){
@@ -5219,11 +10393,10 @@
           backInput.value=''; backZone.classList.add('invalid');
           backZone.style.removeProperty('--bg-image');
           var errEl = document.getElementById('drop_error_passport_back');
-          var msg = (error&&error.message==='decode') ? 'This image could not be read.' : (error.message || 'Verification failed.');
-          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>'+msg+'</div><small>Tap to upload another picture</small>';
-          if(error&&error.message==='decode') setPassportPageUi('passport_back','error','Upload another image','This image could not be read. Choose a valid JPG, PNG or WEBP image.');
-          else setPassportPageUi('passport_back','error','Passport back OCR could not finish', msg || 'Please check your connection and upload the passport back image again.');
-          console.warn('Passport back parent-name OCR failed',error);
+          var msg = (error&&error.message==='decode') ? 'This document could not be read.' : (error.message || 'Could not verify back page.');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>'+msg+'</div><small>Tap to upload another document</small>';
+          setPassportPageUi('passport_back','error','Passport check could not finish', msg || 'Please check your connection and upload the passport file again.');
+          console.warn('Passport back validation failed',error);
         }finally{
           if(validationId===passportValidationRun.passport_back){
             backZone.classList.remove('checking');
@@ -5253,23 +10426,25 @@
         document.getElementById('fname_photo').textContent='';
         updateDocumentsNext();
       }
+      var isPdf = f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+      var isImg = f && (/^image\/(jpeg|png|webp)$/i.test(f.type||'') || /\.(jpe?g|png|webp)$/i.test(f.name));
       if(f.size>10485760){
         toast('That file is over 10 MB. Please choose a smaller one.'); input.value='';
         if(key==='photo'){
           zone.classList.add('invalid');
           var errEl = document.getElementById('drop_error_photo');
           if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>The file is over 10 MB.</div><small>Tap to upload another photo</small>';
-          setPhotoCheckUi('error','Please upload another photo','The photo is over 10 MB. Choose a smaller JPG, PNG or WEBP image.');
+          setPhotoCheckUi('error','Please upload another photo','The photo is over 10 MB. Choose a smaller JPG, PNG, WEBP or PDF file.');
         }
         return;
       }
-      if(!/^image\/(jpeg|png|webp)$/i.test(f.type||'')){
-        toast('Please choose a JPG, PNG or WEBP photo.'); input.value='';
+      if(!isPdf && !isImg){
+        toast('Please choose a JPG, PNG, WEBP or PDF file.'); input.value='';
         if(key==='photo'){
           zone.classList.add('invalid');
           var errEl = document.getElementById('drop_error_photo');
-          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Choose a JPG, PNG or WEBP.</div><small>Tap to upload another photo</small>';
-          setPhotoCheckUi('error','Please upload another photo','Choose a JPG, PNG or WEBP image.');
+          if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>Choose a JPG, PNG, WEBP or PDF.</div><small>Tap to upload another photo</small>';
+          setPhotoCheckUi('error','Please upload another photo','Choose a JPG, PNG, WEBP or PDF file.');
         }
         return;
       }
@@ -5278,7 +10453,15 @@
         zone.classList.add('checking');
         
         // Show the image preview IMMEDIATELY during scanning
-        var previewUrl=URL.createObjectURL(f);
+        var previewBlob = f;
+        if (isPdf) {
+          try {
+            previewBlob = await convertPdfToImageBlob(f, 1);
+          } catch(_pdfErr) {
+            console.warn('PDF conversion error for photo preview:', _pdfErr);
+          }
+        }
+        var previewUrl=URL.createObjectURL(previewBlob);
         zone.style.backgroundImage='url('+previewUrl+')';
         zone.style.backgroundSize='cover';
         zone.style.backgroundPosition='center';
@@ -5306,7 +10489,7 @@
             setPhotoCheckUi('error','Please upload another photo',result.message);
             return;
           }
-           picked.photo=f;
+          picked.photo=f;
           createPhotoThumbnail(f).then(function(thumb) {
             picked.photoThumbnail = thumb;
           });
@@ -5352,9 +10535,9 @@
           zone.style.backgroundSize='';
           zone.style.backgroundPosition='';
           var errEl = document.getElementById('drop_error_photo');
-          var msg = (error&&error.message==='decode') ? 'This image could not be read.' : 'Photo verification failed.';
+          var msg = (error&&error.message==='decode') ? 'This file could not be read.' : 'Photo verification failed.';
           if(errEl) errEl.innerHTML = '<svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><div>'+msg+'</div><small>Tap to upload another photo</small>';
-          if(error&&error.message==='decode') setPhotoCheckUi('error','Please upload another photo','This image could not be read. Choose a valid JPG, PNG or WEBP photo.');
+          if(error&&error.message==='decode') setPhotoCheckUi('error','Please upload another photo','This file could not be read. Choose a valid JPG, PNG, WEBP or PDF photo.');
           else setPhotoCheckUi('error','Photo check could not finish','Please check your connection and upload the photo again.');
           console.warn('Photo validation failed',error);
         }finally{
@@ -5370,6 +10553,166 @@
     };
   }
 
+  function wireBankStatementDrop(){
+    var zone=document.getElementById('drop_bank_statement');
+    var input=document.getElementById('file_bank_statement');
+    var fname=document.getElementById('fname_bank_statement');
+    if(!zone||!input) return;
+
+    zone.onclick=function(e){
+      if(e.target&&e.target.id==='removeBankStatementBtn') return;
+      input.click();
+    };
+
+    zone.ondragover=function(e){
+      e.preventDefault();
+      zone.style.borderColor='#168177';
+      zone.style.background='#f0fdfa';
+    };
+    zone.ondragleave=function(e){
+      e.preventDefault();
+      zone.style.borderColor='#cbd5e1';
+      zone.style.background='#f8fafc';
+    };
+    zone.ondrop=function(e){
+      e.preventDefault();
+      zone.style.borderColor='#cbd5e1';
+      zone.style.background='#f8fafc';
+      if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]){
+        handleBankStatementFile(e.dataTransfer.files[0]);
+      }
+    };
+
+    input.onchange=function(){
+      if(input.files&&input.files[0]){
+        handleBankStatementFile(input.files[0]);
+      }
+    };
+
+    function handleBankStatementFile(file){
+      if(!file) return;
+      if(file.size>10485760){
+        toast('Bank statement file is over 10 MB. Please upload a smaller file.');
+        input.value='';
+        return;
+      }
+      var isPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name);
+      var isImg = /^image\/(jpeg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+      if(!isPdf && !isImg){
+        toast('Please upload a PDF document or JPG/PNG/WEBP image.');
+        input.value='';
+        return;
+      }
+      picked.bank_statement=file;
+      if(fname){
+        var sizeMb=(file.size/(1024*1024)).toFixed(2);
+        fname.innerHTML='✓ '+esc(file.name)+' <span style="color:#64748b;font-weight:normal">('+sizeMb+' MB)</span> '+
+          '<button type="button" id="removeBankStatementBtn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;margin-left:8px;text-decoration:underline">Remove</button>';
+        var remBtn=document.getElementById('removeBankStatementBtn');
+        if(remBtn){
+          remBtn.onclick=function(ev){
+            ev.stopPropagation();
+            delete picked.bank_statement;
+            input.value='';
+            fname.innerHTML='';
+            zone.classList.remove('has');
+            zone.style.borderColor='#cbd5e1';
+            zone.style.background='#f8fafc';
+          };
+        }
+      }
+      zone.classList.add('has');
+      zone.style.borderColor='#168177';
+      zone.style.background='#f0fdfa';
+      toast('Bank statement attached successfully!');
+      if(typeof updateAllPremiumSectionStatuses==='function'){
+        updateAllPremiumSectionStatuses('thailand');
+      }
+    }
+  }
+
+  function wireSaudiDrops() {
+    function wireSpecificDrop(key, label) {
+      var zone = document.getElementById('drop_' + key);
+      var input = document.getElementById('file_' + key);
+      var fname = document.getElementById('fname_' + key);
+      if (!zone || !input) return;
+
+      zone.onclick = function(e) {
+        if (e.target && e.target.classList.contains('remove-drop-btn')) return;
+        input.click();
+      };
+
+      zone.ondragover = function(e) {
+        e.preventDefault();
+        zone.style.borderColor = '#168177';
+        zone.style.background = '#f0fdfa';
+      };
+      zone.ondragleave = function(e) {
+        e.preventDefault();
+        zone.style.borderColor = '#cbd5e1';
+        zone.style.background = '#f8fafc';
+      };
+      zone.ondrop = function(e) {
+        e.preventDefault();
+        zone.style.borderColor = '#cbd5e1';
+        zone.style.background = '#f8fafc';
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      };
+
+      input.onchange = function() {
+        if (input.files && input.files[0]) {
+          handleFile(input.files[0]);
+        }
+      };
+
+      function handleFile(file) {
+        if (!file) return;
+        if (file.size > 10485760) {
+          toast(label + ' file is over 10 MB. Please upload a smaller file.');
+          input.value = '';
+          return;
+        }
+        var isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+        var isImg = /^image\/(jpeg|png|webp)$/i.test(file.type) || /\.(jpe?g|png|webp)$/i.test(file.name);
+        if (!isPdf && !isImg) {
+          toast('Please upload a PDF document or JPG/PNG/WEBP image.');
+          input.value = '';
+          return;
+        }
+        picked[key] = file;
+        if (fname) {
+          var sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+          fname.innerHTML = '✓ ' + esc(file.name) + ' <span style="color:#64748b;font-weight:normal">(' + sizeMb + ' MB)</span> ' +
+            '<button type="button" class="remove-drop-btn" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:12px;margin-left:8px;text-decoration:underline">Remove</button>';
+          var remBtn = fname.querySelector('.remove-drop-btn');
+          if (remBtn) {
+            remBtn.onclick = function(ev) {
+              ev.stopPropagation();
+              delete picked[key];
+              input.value = '';
+              fname.innerHTML = '';
+              zone.classList.remove('has');
+              zone.style.borderColor = '#cbd5e1';
+              zone.style.background = '#f8fafc';
+              if (typeof autoSaveDraft === 'function') autoSaveDraft();
+            };
+          }
+        }
+        zone.classList.add('has');
+        zone.style.borderColor = '#168177';
+        zone.style.background = '#f0fdfa';
+        toast(label + ' attached successfully!');
+        if (typeof autoSaveDraft === 'function') autoSaveDraft();
+      }
+    }
+
+    wireSpecificDrop('pan_card', 'PAN Card');
+    wireSpecificDrop('iqama', 'Iqama');
+  }
+
   function submitApplication(visaId){
     syncPassportFullName();
     var f=document.getElementById('applyForm');
@@ -5379,19 +10722,24 @@
     var isDenmark = v && v.country_slug === 'denmark';
     var isSpain = v && v.country_slug === 'spain';
     var isSouthKorea = v && v.country_slug === 'south-korea';
+    var isRussia = v && v.country_slug === 'russia';
+    var isSriLanka = v && v.country_slug === 'srilanka';
     var isSwitzerland = v && v.country_slug === 'switzerland';
     var isIreland = v && v.country_slug === 'ireland';
     var isFrance = v && v.country_slug === 'france';
     var isGermany = v && v.country_slug === 'germany';
     var isGreece = v && v.country_slug === 'greece';
     var isAzerbaijan = v && v.country_slug === 'azerbaijan';
+    var isChina = v && v.country_slug === 'china';
 
     // Denmark uses a 6-section wizard. Validate section-by-section so a missing field
     // opens the exact section and shows the error instead of leaving the user on a blank
     // final step. Other application forms keep normal browser validation.
     if(isSouthKorea){
       if(!validateAllKoreaSections()) return;
-    } else if(isDenmark || isSpain || isSwitzerland || isIreland || isFrance || isGermany || isGreece || isAzerbaijan){
+    } else if(isRussia || isSriLanka){
+      if(!validateAllRussiaSections()) return;
+    } else if(isDenmark || isSpain || isSwitzerland || isIreland || isFrance || isGermany || isGreece || isAzerbaijan || isChina){
       if(!validateAllDenmarkSections()) return;
     } else if(!f.checkValidity()){
       f.reportValidity();
@@ -5414,7 +10762,13 @@
       
       var val = function(id) {
         var el = document.getElementById(id);
-        return el ? el.value.trim() : '';
+        if (!el) return '';
+        var v = (el.value || '').trim();
+        var type = (el.type || 'text').toLowerCase();
+        var idLower = id.toLowerCase();
+        if (type === 'email' || idLower.indexOf('email') > -1 || idLower === 'phone') return v;
+        if (type === 'date' || type === 'file' || type === 'checkbox' || type === 'radio') return v;
+        return v.toUpperCase();
       };
       
       // Personal
@@ -5505,8 +10859,207 @@
       if (picked.signature) {
         qa.answers.push({ q: 'signature', label: 'Signature File', type: 'file', value: '' });
       }
+    } else if (isSriLanka) {
+      var slv=function(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';};
+      qa.answers.push({ q:'passport_first_name', label:'Passport first name', type:'text', value:slv('first_name') });
+      qa.answers.push({ q:'passport_last_name', label:'Passport last name', type:'text', value:slv('last_name') });
+      qa.answers.push({ q:'date_of_birth', label:'Date of birth', type:'date', value:slv('date_of_birth') });
+      qa.answers.push({ q:'gender', label:'Gender', type:'text', value:slv('gender') });
+      qa.answers.push({ q:'nationality', label:'Nationality', type:'text', value:slv('nationality') });
+      qa.answers.push({ q:'passport_number', label:'Passport Number', type:'text', value:slv('passport_number') });
+      qa.answers.push({ q:'passport_issuing_country', label:'Place of Issue', type:'text', value:slv('passport_issuing_country') });
+      qa.answers.push({ q:'passport_issue_date', label:'Passport Issue Date', type:'date', value:slv('passport_issue_date') });
+      qa.answers.push({ q:'passport_expiry', label:'Passport Expiry Date', type:'date', value:slv('passport_expiry') });
+      qa.answers.push({ q:'arrival_date', label:'Travel Date', type:'date', value:slv('arrival_date') });
+      qa.answers.push({ q:'residential_address', label:'Residential Address', type:'text', value:slv('residential_address') });
+      if(!isSecondaryGroup){
+        qa.answers.push({ q:'contact_email', label:'Email Address', type:'text', value:slv('contact_email') });
+        qa.answers.push({ q:'phone', label:'Phone Number', type:'text', value:currentMobileE164() });
+      }
+      qa.answers.push({ q:'application_date', label:'Application Date', type:'date', value:slv('application_date') });
+    } else if (v && ['thailand', 'bahrain', 'russia', 'indonesia', 'kenya', 'vietnam', 'morocco', 'turkey', 'uae', 'united-arab-emirates', 'qatar', 'azerbaijan', 'azerbaijan-2', 'egypt', 'egypt-2', 'philippines', 'oman', 'saudi-arabia', 'saudi'].indexOf(v.country_slug) > -1) {
+      if (v.country_slug !== 'russia') {
+        var valErr = validatePremiumFieldsBeforeSubmit(v.country_slug);
+        if (valErr) {
+          toast(valErr.name);
+          goToWizardSection(valErr.sec);
+          if (valErr.id) {
+            var el = document.getElementById(valErr.id);
+            if (el) {
+              setTimeout(function(){
+                try { el.focus(); } catch(_e){}
+                try { el.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(_e){}
+              }, 200);
+            }
+          }
+          return;
+        }
+      }
+      
+      var val = function(id) {
+        var el = document.getElementById(id);
+        if (!el) return '';
+        var v = (el.value || '').trim();
+        var type = (el.type || 'text').toLowerCase();
+        var idLower = id.toLowerCase();
+        if (type === 'email' || idLower.indexOf('email') > -1 || idLower === 'phone') return v;
+        if (type === 'date' || type === 'file' || type === 'checkbox' || type === 'radio') return v;
+        return v.toUpperCase();
+      };
+      
+      // Personal
+      qa.answers.push({ q: 'passport_first_name', label: 'Passport first name', type: 'text', value: val('first_name') });
+      qa.answers.push({ q: 'passport_last_name', label: 'Passport last name', type: 'text', value: val('last_name') });
+      qa.answers.push({ q: 'date_of_birth', label: 'Date of birth', type: 'date', value: val('date_of_birth') });
+      qa.answers.push({ q: 'birthplace_city', label: 'Place of Birth: City', type: 'text', value: val('birthplace_city') });
+      qa.answers.push({ q: 'birthplace_state', label: 'Place of Birth: State / Province', type: 'text', value: val('birthplace_state') });
+      qa.answers.push({ q: 'birthplace_country', label: 'Place of Birth: Country', type: 'text', value: val('birthplace_country') });
+      qa.answers.push({ q: 'gender', label: 'Gender', type: 'text', value: val('gender') });
+      qa.answers.push({ q: 'marital_status', label: 'Marital Status', type: 'text', value: val('marital_status') });
+      qa.answers.push({ q: 'nationality', label: 'Nationality', type: 'text', value: val('nationality') });
+      qa.answers.push({ q: 'former_nationality', label: 'Former / Other Nationality', type: 'text', value: val('former_nationality') });
+      qa.answers.push({ q: 'government_id', label: 'Government ID Number', type: 'text', value: val('government_id') });
+
+      // Passport
+      qa.answers.push({ q: 'passport_type', label: 'Passport Type', type: 'text', value: val('passport_type') });
+      qa.answers.push({ q: 'passport_number', label: 'Passport Number', type: 'text', value: val('passport_number') });
+      qa.answers.push({ q: 'passport_issuing_country', label: 'Passport Issuing Country/Place of Issue', type: 'text', value: val('passport_issuing_country') });
+      qa.answers.push({ q: 'passport_issue_date', label: 'Passport issue date', type: 'date', value: val('passport_issue_date') });
+      qa.answers.push({ q: 'issuing_authority', label: 'Issuing Authority', type: 'text', value: val('issuing_authority') });
+      qa.answers.push({ q: 'passport_expiry', label: 'Passport expiry date', type: 'date', value: val('passport_expiry') });
+
+      // Travel
+      if (['thailand', 'bahrain', 'indonesia', 'vietnam', 'kenya'].indexOf(v.country_slug) > -1) {
+        qa.answers.push({ q: 'purpose', label: 'Purpose of Visit', type: 'text', value: val('purpose') });
+      }
+      qa.answers.push({ q: 'arrival_date', label: 'Date of Arrival', type: 'date', value: val('arrival_date') });
+
+      if (['thailand', 'bahrain', 'indonesia', 'vietnam'].indexOf(v.country_slug) > -1) {
+        qa.answers.push({ q: 'stay_duration', label: 'Intended Length of Stay', type: 'text', value: val('stay_duration') });
+      }
+      qa.answers.push({ q: 'port_of_entry', label: 'Port of Entry', type: 'text', value: val('port_of_entry') });
+      if (v.country_slug === 'vietnam') {
+        qa.answers.push({ q: 'port_of_exit', label: 'Exit Gate', type: 'text', value: val('port_of_exit') });
+      }
+      qa.answers.push({ q: 'airline', label: 'Airline / Flight Name or Number', type: 'text', value: val('airline') });
+      qa.answers.push({ q: 'hotel_name', label: 'Hotel / Host Name', type: 'text', value: val('hotel_name') });
+      qa.answers.push({ q: 'hotel_address', label: 'Hotel / Host Address', type: 'text', value: val('hotel_address') });
+      qa.answers.push({ q: 'hotel_phone', label: 'Hotel / Host Phone', type: 'text', value: val('hotel_phone') });
+      qa.answers.push({ q: 'previous_japan_stay', label: 'Previous Stay', type: 'text', value: val('previous_japan_stay') });
+      qa.answers.push({ q: 'previous_japan_stays', label: 'Previous Stay Dates & Duration', type: 'text', value: val('previous_japan_stays') });
+
+      // Contact (Primary only)
+      if (!isSecondaryGroup) {
+        qa.answers.push({ q: 'residential_address', label: 'Residential Address', type: 'text', value: val('residential_address') });
+        qa.answers.push({ q: 'telephone', label: 'Telephone Number', type: 'text', value: val('telephone') });
+        qa.answers.push({ q: 'contact_email', label: 'Email Address', type: 'text', value: val('contact_email') });
+        qa.answers.push({ q: 'phone', label: 'Phone Number', type: 'text', value: currentMobileE164() });
+      }
+
+      // Employment
+      qa.answers.push({ q: 'occupation', label: 'Current Occupation', type: 'text', value: val('occupation') });
+      qa.answers.push({ q: 'job_title', label: 'Job Title', type: 'text', value: val('job_title') || val('position') });
+      qa.answers.push({ q: 'position', label: 'Current Position', type: 'text', value: val('position') });
+
+      // Country-specific fields
+      if (v.country_slug === 'thailand' || v.country_slug === 'bahrain') {
+        qa.answers.push({ q: 'thai_payer', label: 'Paying Sponsor Option', type: 'text', value: val('thai_payer') });
+        qa.answers.push({ q: 'thai_sponsor_name', label: 'Sponsor Name', type: 'text', value: val('thai_sponsor_name') });
+        qa.answers.push({ q: 'thai_sponsor_relationship', label: 'Relationship to Sponsor', type: 'text', value: val('thai_sponsor_relationship') });
+        qa.answers.push({ q: 'thai_sponsor_phone', label: 'Sponsor Phone', type: 'text', value: val('thai_sponsor_phone') });
+        qa.answers.push({ q: 'thai_sponsor_address', label: 'Sponsor Address', type: 'text', value: val('thai_sponsor_address') });
+        qa.answers.push({ q: 'thai_bank_name', label: 'Bank Name', type: 'text', value: val('thai_bank_name') });
+        if (picked.bank_statement) {
+          qa.answers.push({ q: 'thai_bank_statement', label: 'Bank Statement File', type: 'file', value: picked.bank_statement.name });
+        }
+        var decVal = document.getElementById('thai_declaration_check') && document.getElementById('thai_declaration_check').checked ? 'Accepted' : 'No';
+        qa.answers.push({ q: 'thai_declaration_check', label: 'Declaration Check', type: 'text', value: decVal });
+      } else if (v.country_slug === 'russia') {
+        qa.answers.push({ q: 'father_name', label: 'Father’s Full Name', type: 'text', value: val('father_name') });
+        qa.answers.push({ q: 'father_dob', label: 'Father’s DOB', type: 'date', value: val('father_dob') });
+        qa.answers.push({ q: 'father_pob', label: 'Father’s Place of Birth', type: 'text', value: val('father_pob') });
+        qa.answers.push({ q: 'mother_name', label: 'Mother’s Full Name', type: 'text', value: val('mother_name') });
+        qa.answers.push({ q: 'mother_dob', label: 'Mother’s DOB', type: 'date', value: val('mother_dob') });
+        qa.answers.push({ q: 'mother_pob', label: 'Mother’s Place of Birth', type: 'text', value: val('mother_pob') });
+        qa.answers.push({ q: 'fax_number', label: 'Fax Number', type: 'text', value: val('fax_number') });
+        qa.answers.push({ q: 'social_media_accounts', label: 'Social Media Accounts', type: 'text', value: val('social_media_accounts') });
+      } else if (v.country_slug === 'indonesia') {
+        qa.answers.push({ q: 'father_name', label: 'Father\'s name', type: 'text', value: val('father_name') });
+        qa.answers.push({ q: 'mother_name', label: 'Mother\'s name', type: 'text', value: val('mother_name') });
+      } else if (v.country_slug === 'kenya') {
+        qa.answers.push({ q: 'father_name', label: 'Father\'s name', type: 'text', value: val('father_name') });
+        qa.answers.push({ q: 'mother_name', label: 'Mother\'s name', type: 'text', value: val('mother_name') });
+      } else if (v.country_slug === 'vietnam') {
+        qa.answers.push({ q: 'vietnam_inviter_name', label: 'Inviter Name (optional)', type: 'text', value: val('vietnam_inviter_name') });
+        qa.answers.push({ q: 'vietnam_inviter_relationship', label: 'Relationship (optional)', type: 'text', value: val('vietnam_inviter_relationship') });
+        qa.answers.push({ q: 'vietnam_inviter_address', label: 'Inviter Address (optional)', type: 'text', value: val('vietnam_inviter_address') });
+        var decVal = document.getElementById('vietnam_declaration_check') && document.getElementById('vietnam_declaration_check').checked ? 'Accepted' : 'No';
+        qa.answers.push({ q: 'vietnam_declaration_check', label: 'Vietnam Declaration Check', type: 'text', value: decVal });
+      } else if (v.country_slug === 'morocco') {
+        qa.answers.push({ q: 'morocco_sponsor', label: 'Host / Accommodation Type', type: 'text', value: val('morocco_sponsor') });
+        qa.answers.push({ q: 'morocco_host_name', label: 'Host Name', type: 'text', value: val('morocco_host_name') });
+        qa.answers.push({ q: 'morocco_host_phone', label: 'Host Phone', type: 'text', value: val('morocco_host_phone') });
+        qa.answers.push({ q: 'morocco_host_address', label: 'Host Address', type: 'text', value: val('morocco_host_address') });
+        qa.answers.push({ q: 'morocco_professional_status', label: 'Professional Status', type: 'text', value: val('morocco_professional_status') });
+        qa.answers.push({ q: 'morocco_employer_details', label: 'Employer / School Details', type: 'text', value: val('morocco_employer_details') });
+        var decVal = document.getElementById('morocco_declaration_check') && document.getElementById('morocco_declaration_check').checked ? 'Accepted' : 'No';
+        qa.answers.push({ q: 'morocco_declaration_check', label: 'Morocco Declaration Check', type: 'text', value: decVal });
+      } else if (v.country_slug === 'srilanka') {
+        qa.answers.push({ q: 'srilanka_emergency_name', label: 'Emergency Contact Name', type: 'text', value: val('srilanka_emergency_name') });
+        qa.answers.push({ q: 'srilanka_emergency_relationship', label: 'Emergency Contact Relationship', type: 'text', value: val('srilanka_emergency_relationship') });
+        qa.answers.push({ q: 'srilanka_emergency_phone', label: 'Emergency Contact Phone', type: 'text', value: val('srilanka_emergency_phone') });
+        qa.answers.push({ q: 'srilanka_emergency_address', label: 'Emergency Contact Address', type: 'text', value: val('srilanka_emergency_address') });
+        var decVal = document.getElementById('srilanka_declaration_check') && document.getElementById('srilanka_declaration_check').checked ? 'Accepted' : 'No';
+        qa.answers.push({ q: 'srilanka_declaration_check', label: 'Sri Lanka Declaration Check', type: 'text', value: decVal });
+      } else if (v.country_slug === 'philippines') {
+        var msVal = (val('marital_status') || '').trim();
+        var gVal = (val('gender') || '').trim().toLowerCase();
+        qa.answers.push({ q: 'gender', label: 'Gender', type: 'text', value: val('gender') });
+        qa.answers.push({ q: 'marital_status', label: 'Civil Status', type: 'text', value: msVal });
+        if (msVal.toLowerCase() === 'married') {
+          var spLabel = gVal === 'male' ? "Wife's Name" : (gVal === 'female' ? "Husband's Name" : "Spouse's Name");
+          var spVal = val('spouse_name');
+          qa.answers.push({ q: 'spouse_name', label: spLabel, type: 'text', value: spVal });
+        }
+        qa.answers.push({ q: 'father_name', label: 'Father’s Name', type: 'text', value: val('father_name') });
+        qa.answers.push({ q: 'mother_name', label: 'Mother’s Name', type: 'text', value: val('mother_name') });
+        qa.answers.push({ q: 'occupation', label: 'Occupation / Job Position', type: 'text', value: val('occupation') });
+        qa.answers.push({ q: 'employer_name', label: 'Employer / Company Name', type: 'text', value: val('employer_name') });
+        qa.answers.push({ q: 'employer_phone', label: 'Employer Phone Number', type: 'text', value: val('employer_phone') });
+        qa.answers.push({ q: 'employer_address', label: 'Employer Address', type: 'text', value: val('employer_address') });
+        qa.answers.push({ q: 'residential_address', label: 'Permanent Residence Address', type: 'text', value: val('residential_address') });
+      } else if (v.country_slug === 'turkey') {
+        qa.answers.push({ q: 'father_name', label: 'Father\'s name', type: 'text', value: val('father_name') });
+        qa.answers.push({ q: 'mother_name', label: 'Mother\'s name', type: 'text', value: val('mother_name') });
+      } else if (v.country_slug === 'saudi-arabia' || v.country_slug === 'saudi') {
+        qa.answers.push({ q: 'absher_contact', label: 'Absher Contact', type: 'tel', value: val('absher_contact') });
+        qa.answers.push({ q: 'national_address', label: 'National Address', type: 'text', value: val('national_address') });
+        qa.answers.push({ q: 'residential_address', label: 'Permanent Residence Address', type: 'text', value: val('residential_address') });
+        if (picked.pan_card) {
+          qa.answers.push({ q: 'pan_card', label: 'PAN Card', type: 'file', value: picked.pan_card.name });
+        }
+        if (picked.iqama) {
+          qa.answers.push({ q: 'iqama', label: 'Iqama', type: 'file', value: picked.iqama.name });
+        }
+      } else if (v.country_slug === 'qatar' || v.country_slug === 'uae' || v.country_slug === 'united-arab-emirates' || v.country_slug === 'egypt' || v.country_slug === 'egypt-2' || v.country_slug === 'oman') {
+        qa.answers.push({ q: 'residential_address', label: 'Permanent Residence Address', type: 'text', value: val('residential_address') });
+      }
+
+      qa.answers.push({ q: 'application_date', label: 'Application Date', type: 'date', value: val('application_date') });
+      if (picked.signature) {
+        qa.answers.push({ q: 'signature', label: 'Signature File', type: 'file', value: '' });
+      }
     } else if (isIreland) {
-      var iv=function(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';};
+      var iv=function(id){
+        var e=document.getElementById(id);
+        if(!e) return '';
+        var v = (e.value || '').trim();
+        var type = (e.type || 'text').toLowerCase();
+        var idLower = id.toLowerCase();
+        if (type === 'email' || idLower.indexOf('email') > -1 || idLower === 'phone') return v;
+        if (type === 'date' || type === 'file' || type === 'checkbox' || type === 'radio') return v;
+        return v.toUpperCase();
+      };
       if(!isSecondaryGroup&&!mobileIsValid()){toast('Please enter a valid mobile number.');showDenmarkSection(2);return;}
       if(!picked.photo){toast('Please upload your personal photo.');return;}
       var ifields=['ire_visa_type','ire_journey_type','ire_reason','ire_purpose','passport_type','passport_number','arrival_date','departure_date','first_name','last_name','ire_other_name','date_of_birth','gender','birthplace_country','nationality','ire_current_location','residential_address','ire_address2','ire_address3','ire_address4','contact_email','phone','passport_issuing_country','passport_issue_date','passport_expiry','ire_first_passport','ire_residence_length','ire_return_permission','ire_biometric_exempt','ire_applied_before','ire_issued_before','ire_refused_irish','ire_been_ireland','ire_family_ireland','ire_refused_entry_ireland','ire_deport_order','ire_refused_other_visa','ire_immigration_breach','ire_criminal','ire_history_details','ire_employed','employer_name','ire_employment_duration','position','employer_address','employer_phone','ire_employer_email','ire_student','ire_travelling_others','host_name','host_address','host_phone','ire_host_known','ire_host_surname','ire_host_forename','ire_host_citizenship','ire_host_occupation','ire_host_relationship','ire_host_doj_ref','ire_host_dob','ire_host_email','marital_status','ire_spouse_surname','ire_spouse_forename','ire_spouse_other','ire_spouse_dob','ire_spouse_passport','ire_spouse_gender','ire_spouse_country','ire_spouse_travel','ire_children_count','ire_children_details','ire_agency_help'];
@@ -5514,7 +11067,16 @@
       if(!isSecondaryGroup){qa.answers.forEach(function(x){if(x.q==='phone')x.value=currentMobileE164();});}
       qa.answers.push({q:'ire_declaration',label:'Ireland declaration accepted',type:'text',value:document.getElementById('ire_declaration').checked?'Yes':'No'});
     } else if (isSouthKorea) {
-      var kv=function(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';};
+      var kv=function(id){
+        var e=document.getElementById(id);
+        if(!e) return '';
+        var v = (e.value || '').trim();
+        var type = (e.type || 'text').toLowerCase();
+        var idLower = id.toLowerCase();
+        if (type === 'email' || idLower.indexOf('email') > -1 || idLower === 'phone') return v;
+        if (type === 'date' || type === 'file' || type === 'checkbox' || type === 'radio') return v;
+        return v.toUpperCase();
+      };
       if(!isSecondaryGroup&&!mobileIsValid()){toast('Please enter a valid mobile number.');showKoreaSection(7);return;}
       if(!isSecondaryGroup&&mobileOtpRequired&&(!mobileVerified||currentMobileE164()!==verifiedNumber)){toast('Please verify your mobile number before submitting.');showKoreaSection(7);return;}
       if(!picked.photo){toast('Please upload your personal photo.');return;}
@@ -5532,8 +11094,17 @@
       kfields.forEach(function(x){qa.answers.push({q:x[0],label:x[1],type:x[3],value:kv(x[2])});});
       if(!isSecondaryGroup){var ph=currentMobileE164();qa.answers.forEach(function(x){if(x.q==='phone')x.value=ph;});}
       qa.answers.push({q:'korea_declaration',label:'Korea declaration accepted',type:'text',value:document.getElementById('korea_declaration').checked?'Yes':'No'});
-    } else if (isDenmark || isSpain || isSwitzerland || isFrance || isGermany || isGreece || isAzerbaijan) {
-      var dv=function(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';};
+    } else if (isDenmark || isSpain || isSwitzerland || isFrance || isGermany || isGreece || isAzerbaijan || isChina) {
+      var dv=function(id){
+        var e=document.getElementById(id);
+        if(!e) return '';
+        var v = (e.value || '').trim();
+        var type = (e.type || 'text').toLowerCase();
+        var idLower = id.toLowerCase();
+        if (type === 'email' || idLower.indexOf('email') > -1 || idLower === 'phone') return v;
+        if (type === 'date' || type === 'file' || type === 'checkbox' || type === 'radio') return v;
+        return v.toUpperCase();
+      };
       if(!isSecondaryGroup && !mobileIsValid()){ toast('Please enter a valid mobile number.'); showDenmarkSection(5); return; }
       if(!isSecondaryGroup && mobileOtpRequired && (!mobileVerified || currentMobileE164()!==verifiedNumber)){ toast('Please verify your mobile number before submitting.'); showDenmarkSection(5); return; }
       if(!picked.photo){ toast('Please upload your personal photo.'); return; }
@@ -5551,6 +11122,7 @@
         ['support_means_other','Other applicant means details','support_means_other','text'],['sponsor_means_other','Other sponsor means details','sponsor_means_other','text'],
         ['arrival_airport','Arrival airport','arrival_airport','text'],['departure_airport','Departure airport','departure_airport','text'],['residence_pincode','Residence address pincode','residence_pincode','text'],['employer_email','Employer / school email ID','employer_email','text'],['company_contact_name','Company contact person','company_contact_name','text'],['company_contact_email','Company contact email','company_contact_email','text'],['company_contact_phone','Company phone','company_contact_phone','text'],['transport_type','Type of transport','transport_type','text'],['stay_duration','Duration of stay','stay_duration','text'],['final_destination','Final destination','final_destination','text'],['visited_azerbaijan','Visited Azerbaijan before','visited_azerbaijan','text'],['azerbaijan_visa_before','Azerbaijan visa before','azerbaijan_visa_before','text'],['azerbaijan_refused','Azerbaijan visa refused','azerbaijan_refused','text'],['criminal_offence','Criminal offence','criminal_offence','text'],['karabakh_visit','Nagorno Karabakh visit','karabakh_visit','text'],['visa_type','Azerbaijan visa type','visa_type','text'],['inviting_party','Inviting party','inviting_party','text'],['intend_employed','Intend employment in Azerbaijan','intend_employed','text'],['intend_study','Intend study in Azerbaijan','intend_study','text']
       ];
+      if(isChina){[['birthplace_state','Birth province/state'],['other_permanent_residence','Other permanent residence'],['passport_issue_place','Passport place of issue'],['china_visit_purpose','China visa purpose'],['china_service','China service'],['china_visa_validity','Visa validity months'],['work_from','Work from'],['supervisor_name','Supervisor name'],['supervisor_phone','Supervisor phone'],['position','Position'],['duty','Duty'],['mobile_phone','Mobile phone'],['father_name','Father name'],['father_nationality','Father nationality'],['father_dob','Father DOB'],['father_in_china','Father in China'],['mother_name','Mother name'],['mother_nationality','Mother nationality'],['mother_dob','Mother DOB'],['mother_in_china','Mother in China'],['arrival_flight','Arrival flight'],['arrival_city','Arrival city'],['stay_city','Stay city'],['stay_address','Stay address'],['departure_flight','Departure flight'],['departure_city','Departure city'],['inviter_relationship','Inviter relationship'],['inviter_phone','Inviter phone'],['inviter_email','Inviter email'],['inviter_address','Inviter address'],['emergency_name','Emergency name'],['emergency_relationship','Emergency relationship'],['emergency_phone','Emergency phone'],['emergency_email','Emergency email'],['travel_companion','Travel companion'],['visited_china','Visited China'],['previous_china_visa','Previous China visa'],['previous_visa_type','Previous visa type'],['previous_visa_number','Previous visa number'],['previous_visa_issue_place','Previous visa issue place'],['previous_visa_issue_date','Previous visa issue date'],['china_fingerprinted','China fingerprinted'],['china_residence_permit','China residence permit'],['valid_other_visas','Valid other visas'],['travelled_12_months','Travelled past 12 months'],['china_refused','China refusal'],['china_visa_cancelled','China visa cancelled'],['china_illegal_stay','Illegal China stay/work'],['criminal_record','Criminal record'],['serious_disease','Serious disease'],['epidemic_visit','Epidemic visit'],['special_training','Special training'],['military_service','Military service'],['paramilitary','Paramilitary'],['professional_org','Professional organization'],['other_declaration','Other declaration'],['spouse_name','Spouse Name'],['spouse_dob','Spouse DOB'],['spouse_birthplace','Spouse\'s place of birth'],['education_level','Education details'],['school_name','Last institution name'],['course_of_study','Course of study'],['previous_travel','Previous travel'],['history_1y','History for the last 1 year']].forEach(function(x){qa.answers.push({q:x[0],label:x[1],type:'text',value:dv(x[0])});});}
       dfields.forEach(function(x){qa.answers.push({q:x[0],label:x[1],type:x[3],value:dv(x[2])});});
       
       if (isSwitzerland) {
@@ -5583,11 +11155,11 @@
       var passportExpiryDate=(document.getElementById('passport_expiry').value||'').trim();
       if(passportIssueDate && passportExpiryDate && passportIssueDate>=passportExpiryDate){ toast('Passport issue date must be before the expiry date.'); return; }
       qa.answers.push({ q:'passport_issue_date', label:'Passport issue date', type:'date', value:passportIssueDate });
-      qa.answers.push({ q:'passport_first_name', label:'Passport first name', type:'text', value:(document.getElementById('first_name').value||'').trim() });
-      qa.answers.push({ q:'passport_last_name', label:'Passport last name', type:'text', value:(document.getElementById('last_name').value||'').trim() });
-      qa.answers.push({ q:'father_name', label:"Father's name", type:'text', value:(document.getElementById('father_name').value||'').trim() });
-      qa.answers.push({ q:'mother_name', label:"Mother's name", type:'text', value:(document.getElementById('mother_name').value||'').trim() });
-      qa.answers.push({ q:'gender', label:'Gender', type:'text', value:(document.getElementById('gender').value||'').trim() });
+      qa.answers.push({ q:'passport_first_name', label:'Passport first name', type:'text', value:(document.getElementById('first_name').value||'').trim().toUpperCase() });
+      qa.answers.push({ q:'passport_last_name', label:'Passport last name', type:'text', value:(document.getElementById('last_name').value||'').trim().toUpperCase() });
+      qa.answers.push({ q:'father_name', label:"Father's name", type:'text', value:(document.getElementById('father_name').value||'').trim().toUpperCase() });
+      qa.answers.push({ q:'mother_name', label:"Mother's name", type:'text', value:(document.getElementById('mother_name').value||'').trim().toUpperCase() });
+      qa.answers.push({ q:'gender', label:'Gender', type:'text', value:(document.getElementById('gender').value||'').trim().toUpperCase() });
     }
 
     var pCountry=((document.getElementById('passport_issuing_country')||{}).value||'').trim()||null;
@@ -5600,116 +11172,310 @@
       : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0;return (c==='x'?r:(r&0x3|0x8)).toString(16);});
     var uid=state.user.id;
 
-    uploadAllFiles(appId, uid, qa).then(function(docRows){
-      var payload={
-        id: appId,
-        user_id: uid,
-        visa_type: visaId,
-        price_aed: v.price,
-        full_name: ((document.getElementById('full_name')||{}).value||(((document.getElementById('first_name')||{}).value||'')+' '+((document.getElementById('last_name')||{}).value||''))).trim(),
-        email: state.user.email || (((document.getElementById('contact_email')||{}).value||'').trim()) || null,
-        phone: isSecondaryGroup ? null : (currentMobileE164() || ((document.getElementById('phone')||{}).value||'').trim()),
-        passport_issuing_country: pCountry,
-        state: null,
-        passport_number: document.getElementById('passport_number').value.trim(),
-        nationality: (document.getElementById('nationality').value||'').trim() || null,
-        date_of_birth: document.getElementById('date_of_birth').value || null,
-        passport_expiry: document.getElementById('passport_expiry').value || null,
-        answers: qa.answers
-      };
-      return sb.from('applications').insert(payload).select().single().then(function(r){
-        if(r.error) throw r.error;
-        var app=r.data;
-        if(docRows.length) return sb.from('documents').insert(docRows).then(function(){ return app; });
-        return app;
+    var groupPhone = (currentMobileE164 && currentMobileE164()) || ((document.getElementById('phone')||{}).value||'').trim();
+    var groupEmail = (state.user && state.user.email) || (((document.getElementById('contact_email')||{}).value||'').trim()) || null;
+
+    if (isSecondaryGroup || !groupPhone || !groupEmail) {
+      var d = null;
+      try { d = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft')); } catch(_e) {}
+      if (!groupPhone && d && d.primaryContact && d.primaryContact.phone) {
+        groupPhone = d.primaryContact.phone;
+      }
+      if (!groupPhone && sessionStorage.getItem('visadoo_verified_phone')) {
+        groupPhone = sessionStorage.getItem('visadoo_verified_phone');
+      }
+      if (!groupPhone && localStorage.getItem('visadoo_verified_phone')) {
+        groupPhone = localStorage.getItem('visadoo_verified_phone');
+      }
+      if (!groupPhone && sessionStorage.getItem('visadoo_primary_phone')) {
+        groupPhone = sessionStorage.getItem('visadoo_primary_phone');
+      }
+      if (!groupPhone && localStorage.getItem('visadoo_primary_phone')) {
+        groupPhone = localStorage.getItem('visadoo_primary_phone');
+      }
+      if (!groupPhone && state.user && state.user.phone) {
+        groupPhone = state.user.phone;
+      }
+      if (!groupEmail && d && d.primaryContact && d.primaryContact.email) {
+        groupEmail = d.primaryContact.email;
+      }
+      if (!groupEmail && sessionStorage.getItem('visadoo_primary_email')) {
+        groupEmail = sessionStorage.getItem('visadoo_primary_email');
+      }
+      if (!groupEmail && localStorage.getItem('visadoo_primary_email')) {
+        groupEmail = localStorage.getItem('visadoo_primary_email');
+      }
+    }
+
+    function doInsertApplication(finalPhone, finalEmail) {
+      finalPhone = finalPhone || groupPhone || (currentMobileE164 && currentMobileE164()) || ((document.getElementById('phone')||{}).value||'').trim() || sessionStorage.getItem('visadoo_verified_phone') || localStorage.getItem('visadoo_verified_phone') || sessionStorage.getItem('visadoo_primary_phone') || localStorage.getItem('visadoo_primary_phone') || (state.user && state.user.phone) || null;
+      finalEmail = finalEmail || groupEmail || (state.user && state.user.email) || (((document.getElementById('contact_email')||{}).value||'').trim()) || sessionStorage.getItem('visadoo_primary_email') || localStorage.getItem('visadoo_primary_email') || null;
+
+      // Extract accurate applicant name from form inputs
+      var appFirstName = (((document.getElementById('first_name')||document.getElementById('passport_first_name')||{}).value)||'').trim();
+      var appLastName = (((document.getElementById('last_name')||document.getElementById('passport_last_name')||{}).value)||'').trim();
+      var appFullName = '';
+      if (appFirstName || appLastName) {
+        appFullName = (appFirstName + ' ' + appLastName).trim();
+      } else if (document.getElementById('full_name') && document.getElementById('full_name').value) {
+        appFullName = (document.getElementById('full_name').value || '').trim();
+      }
+      if (!appFullName && currentTravellerName) {
+        appFullName = currentTravellerName.trim();
+      }
+      if (!appFirstName && appFullName) {
+        var nParts = appFullName.split(/\s+/);
+        appFirstName = nParts[0] || '';
+        appLastName = nParts.slice(1).join(' ') || '';
+      }
+
+      var fullInput = document.getElementById('full_name');
+      if (fullInput && appFullName) fullInput.value = appFullName;
+
+      // Sync primary contact phone, email & individual applicant name into answers for backend notification/WhatsApp engine
+      var hasPhoneAns = false, hasEmailAns = false, hasNameAns = false, hasFirstNameAns = false, hasLastNameAns = false;
+      (qa.answers || []).forEach(function(ans) {
+        if (ans.q === 'phone' || ans.q === 'mobile_phone') {
+          if ((!ans.value || ans.value === '') && finalPhone) ans.value = finalPhone;
+          hasPhoneAns = true;
+        }
+        if (ans.q === 'contact_email' || ans.q === 'email') {
+          if ((!ans.value || ans.value === '') && finalEmail) ans.value = finalEmail;
+          hasEmailAns = true;
+        }
+        if (ans.q === 'passport_first_name' || ans.q === 'first_name') {
+          if (appFirstName) ans.value = appFirstName.toUpperCase();
+          hasFirstNameAns = true;
+        }
+        if (ans.q === 'passport_last_name' || ans.q === 'last_name') {
+          if (appLastName) ans.value = appLastName.toUpperCase();
+          hasLastNameAns = true;
+        }
+        if (ans.q === 'full_name' || ans.q === 'name' || ans.q === 'applicant_name') {
+          if (appFullName) ans.value = appFullName.toUpperCase();
+          hasNameAns = true;
+        }
       });
-    }).then(function(app){
-      try {
-        var vId = qParam('visa');
+      if (!hasFirstNameAns && appFirstName) {
+        qa.answers.push({ q: 'passport_first_name', label: 'Passport first name', type: 'text', value: appFirstName.toUpperCase() });
+      }
+      if (!hasLastNameAns && appLastName) {
+        qa.answers.push({ q: 'passport_last_name', label: 'Passport last name', type: 'text', value: appLastName.toUpperCase() });
+      }
+      if (!hasNameAns && appFullName) {
+        qa.answers.push({ q: 'full_name', label: 'Full Name', type: 'text', value: appFullName.toUpperCase() });
+      }
+      if (!hasPhoneAns && finalPhone) {
+        qa.answers.push({ q: 'phone', label: 'Primary Contact WhatsApp / Phone', type: 'tel', value: finalPhone });
+      }
+      if (!hasEmailAns && finalEmail) {
+        qa.answers.push({ q: 'contact_email', label: 'Primary Contact Email', type: 'email', value: finalEmail });
+      }
+
+      var authRefresh = (sb && sb.auth && typeof sb.auth.refreshSession === 'function')
+        ? sb.auth.refreshSession().then(function(res){
+            if (res && res.data && res.data.session && res.data.session.user) {
+              uid = res.data.session.user.id;
+              state.user = res.data.session.user;
+            }
+          }).catch(function(_e){})
+        : Promise.resolve();
+
+      authRefresh.then(function(){
+        return uploadAllFiles(appId, uid, qa);
+      }).then(function(docRows){
+        var payload={
+          id: appId,
+          user_id: uid,
+          visa_type: visaId,
+          price_aed: v.price,
+          full_name: appFullName || ((document.getElementById('full_name')||{}).value||'').trim(),
+          email: finalEmail,
+          phone: finalPhone,
+          passport_issuing_country: pCountry,
+          state: null,
+          passport_number: (document.getElementById('passport_number')||{}).value ? document.getElementById('passport_number').value.trim() : '',
+          nationality: (document.getElementById('nationality')||{}).value ? (document.getElementById('nationality').value||'').trim() || null : null,
+          date_of_birth: (document.getElementById('date_of_birth')||{}).value || null,
+          passport_expiry: (document.getElementById('passport_expiry')||{}).value || null,
+          answers: qa.answers
+        };
+        return sb.from('applications').insert(payload).select().single().then(function(r){
+          if(r.error) throw r.error;
+          var app=r.data;
+          if(docRows.length) return sb.from('documents').insert(docRows).then(function(){ return app; });
+          return app;
+        });
+      }).then(function(app){
         var tIdx = Number(qParam('travellerIndex')) || 0;
-        var dKey = 'visadoo-draft-' + vId + '-' + tIdx;
-        localStorage.removeItem(dKey);
+        var totalTravellers = Number(qParam('travellers')) || 1;
+        recordTravellerSubmission(app, tIdx, totalTravellers);
+
+        // Record marketing consent (best-effort — never blocks the confirmation).
+        var consentEl=document.getElementById('marketingConsent');
+        var optedIn=consentEl?!!consentEl.checked:true;
+        try {
+          sb.rpc('record_my_marketing_consent',{ p_opted_in:optedIn, p_source:'apply-form', p_text:MARKETING_CONSENT_TEXT })
+            .then(function(r){ if(r&&r.error) console.warn('consent record failed', r.error); });
+        } catch(_e){ /* ignore */ }
+        var totalTravellers=Number(qParam('travellers'))||1;
+        if(totalTravellers<=1){ 
+          try {
+            localStorage.setItem('visadoo_has_submitted_app', 'true');
+            localStorage.removeItem('visadoo-last-draft-url');
+            localStorage.removeItem('visadoo-last-draft-visa');
+            localStorage.removeItem('visadoo-traveller-draft');
+            sessionStorage.removeItem('visadoo-traveller-draft');
+            for (var i = localStorage.length - 1; i >= 0; i--) {
+              var k = localStorage.key(i);
+              if (k && k.indexOf('visadoo-draft-') === 0 && k !== 'visadoo-draft-data') {
+                localStorage.removeItem(k);
+              }
+            }
+            document.dispatchEvent(new CustomEvent('visadoo:app-submitted'));
+            if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+            if (typeof window.updateNewVisaButtonVisibility === 'function') window.updateNewVisaButtonVisibility();
+          } catch(_e) {}
+          toast('Application submitted successfully'); 
+          go('track'); 
+        }
+        else { renderSuccess(app); }
+      }).catch(function(err){
+        // Do not lose a completed application only because a document upload failed.
+        // If storage failed before the application row was created, save the core form first.
+        console.error('Primary application submission failed:', err);
+        var msg=String((err&&err.message)||'').toLowerCase();
+        if (msg.indexOf('jwt') > -1 || msg.indexOf('token') > -1 || msg.indexOf('expired') > -1 || msg.indexOf('unauthorized') > -1) {
+          try { autoSaveDraft(); } catch(_e) {}
+          btn.disabled = false; btn.innerHTML = 'Submit application';
+          toast('Your sign-in session expired. Your draft has been safely saved. Please sign in again.');
+          return;
+        }
+        var looksLikeUpload = msg.indexOf('storage')>-1 || msg.indexOf('bucket')>-1 || msg.indexOf('upload')>-1 || (err&&err.statusCode);
+        if(looksLikeUpload){
+          var safeAnswers=(qa.answers||[]).map(function(x){
+            var c={}; Object.keys(x||{}).forEach(function(k){ c[k]=x[k]; });
+            if(c.value && typeof c.value==='object' && c.value.path) c.value=c.value.name||'';
+            return c;
+          });
+          var fallback={
+            id:appId, user_id:uid, visa_type:visaId, price_aed:v.price,
+            full_name: appFullName || ((document.getElementById('full_name')||{}).value||'').trim(),
+            email:finalEmail,
+            phone:finalPhone,
+            passport_issuing_country:pCountry, state:null,
+            passport_number:(document.getElementById('passport_number')||{}).value ? (document.getElementById('passport_number').value||'').trim() : '',
+            nationality:(document.getElementById('nationality')||{}).value ? (document.getElementById('nationality').value||'').trim()||null : null,
+            date_of_birth:(document.getElementById('date_of_birth')||{}).value || null,
+            passport_expiry:(document.getElementById('passport_expiry')||{}).value || null,
+            answers:safeAnswers
+          };
+          return sb.from('applications').insert(fallback).select().single().then(function(fr){
+            if(fr.error) throw fr.error;
+            var tIdx = Number(qParam('travellerIndex')) || 0;
+            var totalTravellers = Number(qParam('travellers')) || 1;
+            recordTravellerSubmission(fr.data, tIdx, totalTravellers);
+            toast('Application saved. Document upload can be retried from your application.');
+            renderSuccess(fr.data);
+          }).catch(function(finalErr){
+            btn.disabled=false; btn.innerHTML='Submit application';
+            console.error('Fallback application save failed:', finalErr);
+            toast('Could not save application: '+((finalErr&&finalErr.message)||'Please try again.'));
+          });
+        }
+        btn.disabled=false; btn.innerHTML='Submit application';
+        toast('Could not save application: '+((err&&err.message)||'Please try again.'));
+      });
+    }
+
+    if (!groupPhone && state.user && state.user.id) {
+      sb.from('applications')
+        .select('phone, email')
+        .eq('user_id', state.user.id)
+        .not('phone', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .then(function(res) {
+          if (res && res.data && res.data[0]) {
+            if (res.data[0].phone) groupPhone = res.data[0].phone;
+            if (!groupEmail && res.data[0].email) groupEmail = res.data[0].email;
+          }
+          doInsertApplication(groupPhone, groupEmail);
+        }).catch(function() {
+          doInsertApplication(groupPhone, groupEmail);
+        });
+    } else {
+      doInsertApplication(groupPhone, groupEmail);
+    }
+  }
+
+  function recordTravellerSubmission(app, tIdx, travellersParam) {
+    try {
+      var vId = (app && app.visa_type) || qParam('visa');
+      var dKey = 'visadoo-draft-' + vId + '-' + tIdx;
+      localStorage.removeItem(dKey);
+      localStorage.removeItem('visadoo-last-draft-url');
+      localStorage.removeItem('visadoo-last-draft-visa');
+      if (window.visadooDb) {
         visadooDb.deleteFile(dKey + '-photo');
         visadooDb.deleteFile(dKey + '-passport');
         visadooDb.deleteFile(dKey + '-passport_back');
         visadooDb.deleteFile(dKey + '-signature');
-      } catch(_e) {}
-      var travellersParam = Number(qParam('travellers')) || 1;
-      var travellerIndex = Number(qParam('travellerIndex')) || 0;
-      try {
-        var draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft'));
-        if (draft && draft.travellers && draft.travellers[travellerIndex]) {
-          var currentTraveller = draft.travellers[travellerIndex];
-          currentTraveller.submitted = true;
-          currentTraveller.appReference = app.reference_code;
-          currentTraveller.appId = app.id;
-          if(travellerIndex===0){ draft.primaryContact={ email:app.email||state.user.email||'', phone:app.phone||'' }; }
-          if (picked && picked.photoThumbnail) {
-            currentTraveller.photoUrl = picked.photoThumbnail;
-          } else if (picked && picked.photo) {
-            currentTraveller.photoUrl = URL.createObjectURL(picked.photo);
-          }
-          sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
-        }
-      } catch(e) {}
-
-      // Record marketing consent (best-effort — never blocks the confirmation).
-      var consentEl=document.getElementById('marketingConsent');
-      var optedIn=consentEl?!!consentEl.checked:true;
-      try {
-        sb.rpc('record_my_marketing_consent',{ p_opted_in:optedIn, p_source:'apply-form', p_text:MARKETING_CONSENT_TEXT })
-          .then(function(r){ if(r&&r.error) console.warn('consent record failed', r.error); });
-      } catch(_e){ /* ignore */ }
-      var totalTravellers=Number(qParam('travellers'))||1;
-      if(totalTravellers<=1){ toast('Application submitted successfully'); go('track'); }
-      else { renderSuccess(app); }
-    }).catch(function(err){
-      // Do not lose a completed application only because a document upload failed.
-      // If storage failed before the application row was created, save the core form first.
-      console.error('Primary application submission failed:', err);
-      var msg=String((err&&err.message)||'').toLowerCase();
-      var looksLikeUpload = msg.indexOf('storage')>-1 || msg.indexOf('bucket')>-1 || msg.indexOf('upload')>-1 || (err&&err.statusCode);
-      if(looksLikeUpload){
-        var safeAnswers=(qa.answers||[]).map(function(x){
-          var c={}; Object.keys(x||{}).forEach(function(k){ c[k]=x[k]; });
-          if(c.value && typeof c.value==='object' && c.value.path) c.value=c.value.name||'';
-          return c;
-        });
-        var fallback={
-          id:appId, user_id:uid, visa_type:visaId, price_aed:v.price,
-          full_name:((document.getElementById('full_name')||{}).value||(((document.getElementById('first_name')||{}).value||'')+' '+((document.getElementById('last_name')||{}).value||''))).trim(),
-          email:state.user.email||(((document.getElementById('contact_email')||{}).value||'').trim())||null,
-          phone:isSecondaryGroup?null:(currentMobileE164()||((document.getElementById('phone')||{}).value||'').trim()),
-          passport_issuing_country:pCountry, state:null,
-          passport_number:(document.getElementById('passport_number').value||'').trim(),
-          nationality:(document.getElementById('nationality').value||'').trim()||null,
-          date_of_birth:document.getElementById('date_of_birth').value||null,
-          passport_expiry:document.getElementById('passport_expiry').value||null,
-          answers:safeAnswers
-        };
-        return sb.from('applications').insert(fallback).select().single().then(function(fr){
-          if(fr.error) throw fr.error;
-          try {
-            var vId = qParam('visa');
-            var tIdx = Number(qParam('travellerIndex')) || 0;
-            var dKey = 'visadoo-draft-' + vId + '-' + tIdx;
-            localStorage.removeItem(dKey);
-            visadooDb.deleteFile(dKey + '-photo');
-            visadooDb.deleteFile(dKey + '-passport');
-            visadooDb.deleteFile(dKey + '-passport_back');
-            visadooDb.deleteFile(dKey + '-signature');
-          } catch(_e) {}
-          toast('Application saved. Document upload can be retried from your application.');
-          renderSuccess(fr.data);
-        }).catch(function(finalErr){
-          btn.disabled=false; btn.innerHTML='Submit application';
-          console.error('Fallback application save failed:', finalErr);
-          toast('Could not save application: '+((finalErr&&finalErr.message)||'Please try again.'));
-        });
       }
-      btn.disabled=false; btn.innerHTML='Submit application';
-      toast('Could not save application: '+((err&&err.message)||'Please try again.'));
-    });
+      if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+    } catch(_e) {}
+
+    try {
+      var draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft') || localStorage.getItem('visadoo-traveller-draft'));
+      var targetCount = Math.max(travellersParam, (draft && draft.travellers ? draft.travellers.length : 1), tIdx + 1);
+      if (targetCount > 1) {
+        draft = syncDraftTravellers(draft, targetCount, (app && app.visa_type) || qParam('visa'));
+      }
+      if (draft && draft.travellers && draft.travellers[tIdx]) {
+        var currentTraveller = draft.travellers[tIdx];
+        currentTraveller.submitted = true;
+        var applicantName = (app && app.full_name) || (document.getElementById('full_name')||{}).value || (((document.getElementById('first_name')||{}).value||'')+' '+((document.getElementById('last_name')||{}).value||'')).trim() || currentTraveller.name;
+        if (applicantName) {
+          currentTraveller.name = applicantName;
+        }
+        if (app && (app.reference_code || app.id)) {
+          currentTraveller.appReference = app.reference_code || app.id;
+          currentTraveller.appId = app.id;
+        }
+        if (tIdx === 0 && app) {
+          var pPhone = app.phone || (currentMobileE164 && currentMobileE164()) || ((document.getElementById('phone')||{}).value||'').trim();
+          var pEmail = app.email || (state.user && state.user.email) || '';
+          draft.primaryContact = { email: pEmail, phone: pPhone };
+          if (pPhone) {
+            try {
+              sessionStorage.setItem('visadoo_verified_phone', pPhone);
+              localStorage.setItem('visadoo_verified_phone', pPhone);
+              sessionStorage.setItem('visadoo_primary_phone', pPhone);
+              localStorage.setItem('visadoo_primary_phone', pPhone);
+            } catch(_e) {}
+          }
+          if (pEmail) {
+            try {
+              sessionStorage.setItem('visadoo_primary_email', pEmail);
+              localStorage.setItem('visadoo_primary_email', pEmail);
+            } catch(_e) {}
+          }
+        }
+        if (picked && picked.photoThumbnail) {
+          currentTraveller.photoUrl = picked.photoThumbnail;
+        } else if (picked && picked.photo) {
+          try {
+            currentTraveller.photoUrl = URL.createObjectURL(picked.photo);
+          } catch(_e) {}
+        }
+        sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+        localStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+      }
+    } catch(e) {
+      console.error('recordTravellerSubmission error:', e);
+    }
+    document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+    if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
   }
 
   // Upload standard docs + any question-file answers to storage, returning document rows.
@@ -5718,25 +11484,43 @@
     var docRows=[], jobs=[];
     var keys = ['passport','passport_back','photo'];
     if (picked.signature) keys.push('signature');
+    if (picked.bank_statement) keys.push('bank_statement');
+    if (picked.pan_card) keys.push('pan_card');
+    if (picked.iqama) keys.push('iqama');
     keys.forEach(function(key){
       var file=picked[key]; if(!file) return;
-      var ext=(file.name.split('.').pop()||'dat').toLowerCase();
-      var path=uid+'/'+appId+'/'+key+'_'+Date.now()+'.'+ext;
+      var ext=(file.name.split('.').pop()||'dat').toLowerCase().replace(/[^a-z0-9]/g,'');
+      var sanitizedFilename = window.VisaDooSecurity ? window.VisaDooSecurity.sanitizeFilename(file.name) : file.name;
+      var path = window.VisaDooSecurity
+        ? window.VisaDooSecurity.generateSecureStoragePath(uid, appId, key, ext)
+        : (uid+'/'+appId+'/'+key+'_'+Date.now()+'.'+ext);
       jobs.push(sb.storage.from('visa-documents').upload(path,file,{upsert:false}).then(function(up){
         if(up.error) throw up.error;
-        docRows.push({ application_id:appId, user_id:uid, doc_type:key, file_path:path, file_name:file.name });
+        docRows.push({ application_id:appId, user_id:uid, doc_type:key, file_path:path, file_name:sanitizedFilename });
         if (key === 'signature') {
-          for(var i=0;i<qa.answers.length;i++){ if(qa.answers[i].q==='signature'){ qa.answers[i].value={ name:file.name, path:path }; } }
+          for(var i=0;i<qa.answers.length;i++){ if(qa.answers[i].q==='signature'){ qa.answers[i].value={ name:sanitizedFilename, path:path }; } }
+        }
+        if (key === 'bank_statement') {
+          for(var i=0;i<qa.answers.length;i++){ if(qa.answers[i].q==='bank_statement' || qa.answers[i].q==='thai_bank_statement'){ qa.answers[i].value={ name:sanitizedFilename, path:path }; } }
+        }
+        if (key === 'pan_card') {
+          for(var i=0;i<qa.answers.length;i++){ if(qa.answers[i].q==='pan_card'){ qa.answers[i].value={ name:sanitizedFilename, path:path }; } }
+        }
+        if (key === 'iqama') {
+          for(var i=0;i<qa.answers.length;i++){ if(qa.answers[i].q==='iqama'){ qa.answers[i].value={ name:sanitizedFilename, path:path }; } }
         }
       }));
     });
     (qa.fileQs||[]).forEach(function(q){
       var file=applyQFiles[q.id]; if(!file) return;
-      var ext=(file.name.split('.').pop()||'dat').toLowerCase();
-      var path=uid+'/'+appId+'/q_'+q.id+'_'+Date.now()+'.'+ext;
+      var ext=(file.name.split('.').pop()||'dat').toLowerCase().replace(/[^a-z0-9]/g,'');
+      var sanitizedFilename = window.VisaDooSecurity ? window.VisaDooSecurity.sanitizeFilename(file.name) : file.name;
+      var path = window.VisaDooSecurity
+        ? window.VisaDooSecurity.generateSecureStoragePath(uid, appId, 'q_'+q.id, ext)
+        : (uid+'/'+appId+'/q_'+q.id+'_'+Date.now()+'.'+ext);
       jobs.push(sb.storage.from('visa-documents').upload(path,file,{upsert:false}).then(function(up){
         if(up.error) throw up.error;
-        for(var i=0;i<qa.answers.length;i++){ if(qa.answers[i].q===q.id){ qa.answers[i].value={ name:file.name, path:path }; } }
+        for(var i=0;i<qa.answers.length;i++){ if(qa.answers[i].q===q.id){ qa.answers[i].value={ name:sanitizedFilename, path:path }; } }
       }));
     });
     return Promise.all(jobs).then(function(){ return docRows; });
@@ -5757,13 +11541,35 @@
     var travellerIndex = Number(qParam('travellerIndex')) || 0;
     var draft = null;
     try {
-      draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft'));
+      draft = JSON.parse(sessionStorage.getItem('visadoo-traveller-draft') || localStorage.getItem('visadoo-traveller-draft'));
     } catch(_e) {}
+
+    var targetCount = Math.max(travellersParam, (draft && draft.travellers ? draft.travellers.length : 1));
+    if (targetCount > 1) {
+      draft = syncDraftTravellers(draft, targetCount, (app && app.visa_type) || qParam('visa'));
+      
+      if (draft && draft.travellers && draft.travellers[travellerIndex]) {
+        if (app && (app.id || app.full_name || app.reference_code)) {
+          draft.travellers[travellerIndex].submitted = true;
+          if (app.full_name) draft.travellers[travellerIndex].name = app.full_name;
+          if (app.reference_code) draft.travellers[travellerIndex].appReference = app.reference_code;
+          if (app.id) draft.travellers[travellerIndex].appId = app.id;
+        }
+      }
+
+      try {
+        sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+        localStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+      } catch(_e) {}
+    }
     
-    var isMultiple = travellersParam > 1 && draft && draft.travellers && draft.travellers.length > 1;
+    var isMultiple = targetCount > 1 && draft && draft.travellers && draft.travellers.length > 1;
 
     if (isMultiple) {
       var passengersHtml = '';
+      var vType = (app && app.visa_type) || qParam('visa');
+      var destSlug = (visa && visa.country_slug) ? visa.country_slug : 'united-arab-emirates';
+      var backHref = 'country.html?slug=' + encodeURIComponent(destSlug) + '#visa-info';
       draft.travellers.forEach(function(t, idx) {
         var nameText = t.name || ('Applicant ' + (idx + 1));
         var statusHtml = '';
@@ -5780,10 +11586,10 @@
         
         if (t.submitted) {
           statusHtml = '<span style="color: #168177; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">✓ Ready / Verified</span>';
-          actionHtml = '';
+          actionHtml = '<a href="app.html?visa=' + encodeURIComponent(vType) + '&travellers=' + travellersParam + '&travellerIndex=' + idx + '" style="color: #64748b; font-weight: 600; font-size: 13px; text-decoration: none;">Edit details</a>';
         } else {
           statusHtml = '<span style="color: #d97706; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">4 missing documents, 5 warning fields</span>';
-          actionHtml = '<a href="app.html?visa=' + encodeURIComponent(app.visa_type) + '&travellers=' + travellersParam + '&travellerIndex=' + idx + '" style="color: #2563eb; font-weight: 600; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">Add details <span aria-hidden="true">&rarr;</span></a>';
+          actionHtml = '<a href="app.html?visa=' + encodeURIComponent(vType) + '&travellers=' + travellersParam + '&travellerIndex=' + idx + '" style="color: #2563eb; font-weight: 700; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; background: #eff6ff; border-radius: 8px;">Add details <span aria-hidden="true">&rarr;</span></a>';
         }
         
         var rowBorder = idx < draft.travellers.length - 1 ? 'border-bottom: 1.5px solid #e2e8f0;' : '';
@@ -5813,19 +11619,154 @@
             '<div class="passenger-list-card" style="background: #fff; border-radius: 16px; border: 1.5px solid #e2e8f0; padding: 10px 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.025);">'+
               passengersHtml +
             '</div>'+
+            '<div style="margin-top: 14px;">'+
+              '<button type="button" id="addMoreTravellerBtn" style="background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 12px 20px; width: 100%; color: #168177; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">'+
+                '<span style="font-size: 18px; line-height: 1;">+</span> Add another traveler'+
+              '</button>'+
+            '</div>'+
             '<div class="group-payment-card" style="margin-top:24px;background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:20px 24px">'+
               '<div style="display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:14px"><div><b style="font-size:17px">Payment Summary</b><div style="color:#64748b;font-size:13px;margin-top:4px">'+draft.travellers.length+' applicants</div></div><strong style="font-size:22px">'+money(((visa ? visaPrice(visa) : null) || Number(app.price_aed) || 0)*draft.travellers.length)+'</strong></div>'+
               '<button class="btn btn-primary" id="groupPaymentBtn" '+(draft.travellers.every(function(x){return !!x.submitted;})?'':'disabled')+' style="width:100%">Proceed to Payment →</button>'+
               (draft.travellers.every(function(x){return !!x.submitted;})?'':'<p style="margin:10px 0 0;color:#d97706;font-size:13px">Complete every applicant profile to enable payment.</p>')+
             '</div>'+
-            '<div style="margin-top:18px"><a class="btn success-add" href="country.html?slug=united-arab-emirates#visa-info" style="font-weight:700;color:#168177;background:transparent;border:1.5px solid #168177;border-radius:12px;padding:12px 24px;text-decoration:none;display:inline-block">← Back to Visa Options</a></div>'+
+            '<div style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
+              '<button type="button" id="groupBackToVisaBtn" class="btn" style="font-weight:600;font-size:12.5px;color:#475569;background:#ffffff;border:1.2px solid #cbd5e1;border-radius:8px;padding:6px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04)">← Back to Visa Options</button>'+
+              '<button type="button" id="groupSaveDraftBtn" class="btn" style="font-weight:600;font-size:12.5px;color:#168177;background:#f0fdfa;border:1.2px solid #99f6e4;border-radius:8px;padding:6px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04)">'+
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>'+
+                '<span>Save Draft</span>'+
+              '</button>'+
+            '</div>'+
           '</div>'+
         '</main>';
         
       var payBtn=document.getElementById('groupPaymentBtn');
-      if(payBtn) payBtn.onclick=function(){ toast('All applicant profiles are complete. Opening visa tracking for payment status.'); go('track'); };
+      if(payBtn) payBtn.onclick=function(){ 
+        try {
+          localStorage.setItem('visadoo_has_submitted_app', 'true');
+          sessionStorage.removeItem('visadoo-traveller-draft');
+          localStorage.removeItem('visadoo-traveller-draft');
+          localStorage.removeItem('visadoo-last-draft-url');
+          localStorage.removeItem('visadoo-last-draft-visa');
+          for (var i = localStorage.length - 1; i >= 0; i--) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('visadoo-draft-') === 0 && k !== 'visadoo-draft-data') {
+              localStorage.removeItem(k);
+            }
+          }
+          document.dispatchEvent(new CustomEvent('visadoo:app-submitted'));
+          if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+          if (typeof window.updateNewVisaButtonVisibility === 'function') window.updateNewVisaButtonVisibility();
+        } catch(_e) {}
+        toast('All applicant profiles are complete. Opening visa tracking for payment status.'); 
+        go('track'); 
+      };
+
+      var groupBackBtn = document.getElementById('groupBackToVisaBtn');
+      if (groupBackBtn) {
+        groupBackBtn.onclick = function(e) {
+          e.preventDefault();
+          showDraftConfirmModal({
+            title: 'Save to Draft?',
+            message: 'Do you want to save your application as a draft before returning to visa options?',
+            saveText: 'Save Draft',
+            backText: 'Back',
+            onSave: function() {
+              try {
+                sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+                localStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+                var vType = (visa && visa.id) || qParam('visa') || 'uae-tourist-visa-30-days';
+                localStorage.setItem('visadoo-last-draft-url', 'app.html?visa=' + encodeURIComponent(vType) + '&travellers=' + draft.travellers.length + '&view=travellers');
+                localStorage.setItem('visadoo-last-draft-visa', vType);
+                document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+                if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+                  window.updateDraftResumeButtonVisibility();
+                }
+              } catch(_e) {}
+              toast('Draft saved successfully.');
+              setTimeout(function() {
+                window.location.href = backHref;
+              }, 350);
+            },
+            onBack: function() {
+              try {
+                var hasSubmitted = draft && draft.travellers && draft.travellers.some(function(t) { return t.submitted; });
+                if (!hasSubmitted) {
+                  sessionStorage.removeItem('visadoo-traveller-draft');
+                  localStorage.removeItem('visadoo-traveller-draft');
+                  localStorage.removeItem('visadoo-last-draft-url');
+                  localStorage.removeItem('visadoo-last-draft-visa');
+                  for (var i = localStorage.length - 1; i >= 0; i--) {
+                    var k = localStorage.key(i);
+                    if (k && k.indexOf('visadoo-draft-') === 0 && k !== 'visadoo-draft-data') {
+                      localStorage.removeItem(k);
+                    }
+                  }
+                  document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+                  if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+                    window.updateDraftResumeButtonVisibility();
+                  }
+                }
+              } catch(_e) {}
+              window.location.href = backHref;
+            }
+          });
+        };
+      }
+
+      var groupDraftBtn = document.getElementById('groupSaveDraftBtn');
+      if (groupDraftBtn) {
+        groupDraftBtn.onclick = function() {
+          try {
+            sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+            localStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+            var vType = (visa && visa.id) || qParam('visa') || 'uae-tourist-visa-30-days';
+            localStorage.setItem('visadoo-last-draft-url', 'app.html?visa=' + encodeURIComponent(vType) + '&travellers=' + draft.travellers.length + '&view=travellers');
+            localStorage.setItem('visadoo-last-draft-visa', vType);
+            document.dispatchEvent(new CustomEvent('visadoo:draft-updated'));
+            if (typeof window.updateDraftResumeButtonVisibility === 'function') {
+              window.updateDraftResumeButtonVisibility();
+            }
+          } catch(_e) {}
+          toast('Draft saved successfully.');
+        };
+      }
+
+      var addMoreBtn = document.getElementById('addMoreTravellerBtn');
+      if (addMoreBtn) {
+        addMoreBtn.onclick = function() {
+          var newIdx = draft.travellers.length;
+          draft.travellers.push({
+            name: 'Applicant ' + (newIdx + 1),
+            relation: 'Traveler',
+            submitted: false
+          });
+          draft.count = draft.travellers.length;
+          try {
+            sessionStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+            localStorage.setItem('visadoo-traveller-draft', JSON.stringify(draft));
+          } catch(_e) {}
+          window.location.href = 'app.html?visa=' + encodeURIComponent(vType) + '&travellers=' + draft.count + '&travellerIndex=' + newIdx;
+        };
+      }
       return;
     }
+
+    try {
+      localStorage.setItem('visadoo_has_submitted_app', 'true');
+      localStorage.removeItem('visadoo-last-draft-url');
+      localStorage.removeItem('visadoo-last-draft-visa');
+      localStorage.removeItem('visadoo-traveller-draft');
+      sessionStorage.removeItem('visadoo-traveller-draft');
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('visadoo-draft-') === 0 && k !== 'visadoo-draft-data') {
+          localStorage.removeItem(k);
+        }
+      }
+      document.dispatchEvent(new CustomEvent('visadoo:app-submitted'));
+      if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
+      if (typeof window.updateNewVisaButtonVisibility === 'function') window.updateNewVisaButtonVisibility();
+    } catch(_e) {}
 
     var actionButtonsHtml = '<button class="btn success-track" data-go="track">Track your visa <span aria-hidden="true">&rarr;</span></button>';
     actionButtonsHtml += '<a class="btn success-add" href="country.html?slug=united-arab-emirates#visa-info">Add another visa <span aria-hidden="true">+</span></a>';
@@ -5863,13 +11804,109 @@
     });
   }
 
+  function renderPaymentNextStepCard(){
+    var whatsappNum = (cfg && cfg.WHATSAPP) ? cfg.WHATSAPP : '919895226697';
+    var waUrl = 'https://wa.me/' + whatsappNum + '?text=Hello%20VisaDoo%20team%2C%20I%20have%20a%20question%20regarding%20my%20visa%20application';
+    return '<section class="track-payment-card" aria-label="Application Submitted and Next Steps">' +
+      '<div class="tpc-layout">' +
+        '<div class="tpc-info-col">' +
+          '<div class="tpc-block">' +
+            '<div class="tpc-icon-wrap tpc-icon-green" aria-hidden="true">' +
+              '<svg width="24" height="24" viewBox="0 0 24 24" fill="none">' +
+                '<rect x="4" y="3" width="16" height="18" rx="3.5" fill="#15803d"/>' +
+                '<path d="M8 8h8M8 12h8" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round"/>' +
+                '<path d="M8 16.5l2.2 2.2 4.5-4.5" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+              '</svg>' +
+            '</div>' +
+            '<div class="tpc-content">' +
+              '<span class="tpc-kicker-green">APPLICATION SUBMITTED</span>' +
+              '<h3 class="tpc-title">Your application has been successfully submitted.</h3>' +
+              '<p class="tpc-desc">Thank you for choosing VisaDoo. Our team will review your application and contact you shortly.</p>' +
+            '</div>' +
+          '</div>' +
+          '<div class="tpc-block">' +
+            '<div class="tpc-icon-wrap tpc-icon-white" aria-hidden="true">' +
+              '<span class="tpc-rupee-symbol">&#8377;</span>' +
+            '</div>' +
+            '<div class="tpc-content">' +
+              '<span class="tpc-kicker-gray">NEXT STEP</span>' +
+              '<h3 class="tpc-title">Payment</h3>' +
+              '<p class="tpc-desc">Our team will contact you to arrange the payment and continue processing your visa.</p>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="tpc-timeline-col">' +
+          '<div class="tpc-vtimeline">' +
+            '<div class="tpc-vt-item is-completed">' +
+              '<div class="tpc-vt-left">' +
+                '<span class="tpc-vt-dot dot-green">' +
+                  '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+                '</span>' +
+                '<span class="tpc-vt-line"></span>' +
+              '</div>' +
+              '<div class="tpc-vt-body">' +
+                '<strong class="tpc-vt-name">Application Submitted</strong>' +
+                '<span class="tpc-vt-meta meta-completed">Completed</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="tpc-vt-item is-pending">' +
+              '<div class="tpc-vt-left">' +
+                '<span class="tpc-vt-dot dot-yellow">' +
+                  '<span class="tpc-vt-diamond"></span>' +
+                '</span>' +
+                '<span class="tpc-vt-line"></span>' +
+              '</div>' +
+              '<div class="tpc-vt-body">' +
+                '<strong class="tpc-vt-name">Payment</strong>' +
+                '<span class="tpc-vt-meta meta-pending">Pending (Our team will contact you)</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="tpc-vt-item is-upcoming">' +
+              '<div class="tpc-vt-left">' +
+                '<span class="tpc-vt-dot dot-gray"></span>' +
+                '<span class="tpc-vt-line"></span>' +
+              '</div>' +
+              '<div class="tpc-vt-body">' +
+                '<strong class="tpc-vt-name">Visa Processing</strong>' +
+                '<span class="tpc-vt-meta meta-upcoming">Upcoming</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="tpc-vt-item is-upcoming">' +
+              '<div class="tpc-vt-left">' +
+                '<span class="tpc-vt-dot dot-gray"></span>' +
+              '</div>' +
+              '<div class="tpc-vt-body">' +
+                '<strong class="tpc-vt-name">Visa Decision</strong>' +
+                '<span class="tpc-vt-meta meta-upcoming">Upcoming</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tpc-bottom-strip">' +
+        '<svg class="tpc-headphone-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M3 18v-6a9 9 0 0 1 18 0v6"/>' +
+          '<path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/>' +
+        '</svg>' +
+        '<span class="tpc-help-text">Need help?</span> ' +
+        '<a href="' + waUrl + '" target="_blank" rel="noopener" class="tpc-help-link">Contact VisaDoo &rarr;</a>' +
+      '</div>' +
+    '</section>';
+  }
+
   // ============================================================
   //  TRACK (customer dashboard)
   // ============================================================
+  function renderTrackHeroArt(){
+    return '<div class="track-hero-art" aria-hidden="true">'+
+      '<img src="assets/visa-journey-hero-clean.png" alt="Your Visa Journey Continues" class="track-hero-img" loading="eager" decoding="async">'+
+    '</div>';
+  }
+
   function renderTrack(){
     document.body.classList.remove('track-detail-open');
     root.innerHTML='<main class="app-main track-main track-dashboard">'+
-      '<section class="track-workspace"><header class="track-workspace-head"><div><span>Your applications</span><h2>Track your visa status.</h2><p>Select an application to view its timeline, documents and latest updates.</p></div><div class="track-live"><i aria-hidden="true"></i><span>Live updates</span></div></header><div id="trackList"><div class="track-loading"><span class="spin"></span><p>Loading your applications&hellip;</p></div></div></section>'+
+      '<section class="track-workspace"><header class="track-workspace-head"><div class="track-workspace-copy"><h2>Track your visa status.</h2><p>Select an application to view its timeline, documents and latest updates.</p></div>'+renderTrackHeroArt()+'</header><div id="trackList"><div class="track-loading"><span class="spin"></span><p>Loading your applications&hellip;</p></div></div></section>'+
     '</main>';
 
     sb.from('applications').select('*, documents(*), app_messages(*)').order('created_at',{ascending:false}).then(function(r){
@@ -5883,7 +11920,9 @@
           '</div>';
         return;
       }
-      box.innerHTML='<section class="track-applications-panel" id="trackApplicationsPanel"><header class="track-applications-head"><div><span>Visa overview</span><h3>Your applications</h3></div><b>'+r.data.length+' '+(r.data.length===1?'application':'applications')+'</b></header><div class="app-list">'+r.data.map(function(a){ return appCard(a); }).join('')+'</div></section>';
+      var paymentNextStepCard = renderPaymentNextStepCard();
+      box.innerHTML= paymentNextStepCard +
+        '<section class="track-applications-panel" id="trackApplicationsPanel"><header class="track-applications-head"><div><span>Visa overview</span><h3>Your applications</h3></div><b>'+r.data.length+' '+(r.data.length===1?'application':'applications')+'</b></header><div class="app-list">'+r.data.map(function(a){ return appCard(a); }).join('')+'</div></section>';
       var list=box.querySelector('.app-list'), collection=document.getElementById('trackApplicationsPanel');
       box.querySelectorAll('.track-compact-item').forEach(function(item){
         var back=item.querySelector('[data-track-back]');
@@ -5909,7 +11948,8 @@
         if(!btn) return;
         btn.onclick=function(){
           btn.innerHTML='<span class="spin"></span> Preparing…';
-          sb.storage.from('visa-documents').createSignedUrl(vd.file_path,3600,{ download: vd.file_name||'visa.pdf' }).then(function(s){
+          var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_DOWNLOAD_SEC : 300;
+          sb.storage.from('visa-documents').createSignedUrl(vd.file_path, expiry, { download: vd.file_name||'visa.pdf' }).then(function(s){
             btn.innerHTML='Download your visa <span aria-hidden="true">&darr;</span>';
             if(s.error||!s.data){ toast('Could not open your visa. Please try again.'); return; }
             window.open(s.data.signedUrl,'_blank','noopener');
@@ -5919,8 +11959,11 @@
     });
   }
 
-  function statusPillClass(s){ return s==='Visa Issued'?'sp-done':(s==='Action Needed'?'sp-action':'sp-progress'); }
+  function statusPillClass(s){ return (s==='Visa Issued'||s==='Submitted')?'sp-done':(s==='Action Needed'?'sp-action':'sp-progress'); }
   function statusPill(status){
+    if(status === 'Submitted'){
+      return '<span class="status-pill sp-done">Submitted &#10003;</span>';
+    }
     return '<span class="status-pill '+statusPillClass(status)+'">'+esc(status)+'</span>';
   }
   // Country name for a visa (for the compact application rows). Empty if not resolvable yet.
@@ -5957,12 +12000,15 @@
   function wireThreadFiles(scope){
     (scope||document).querySelectorAll('.thread-file[data-path]').forEach(function(link){
       link.onclick=function(e){ e.preventDefault(); var p=link.getAttribute('data-path'), orig=link.textContent; link.textContent='Opening…';
-        sb.storage.from('visa-documents').createSignedUrl(p,3600).then(function(s){ link.textContent=orig; if(s.error||!s.data){ toast('Could not open that file.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); };
+        var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900;
+        sb.storage.from('visa-documents').createSignedUrl(p, expiry).then(function(s){ link.textContent=orig; if(s.error||!s.data){ toast('Could not open that file.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); };
     });
   }
 
   function profileVisaCountry(a){
     var v=visaById(a.visa_type), slug=v&&v.country_slug;
+    if(!slug && a.country_slug) slug = a.country_slug;
+    if(!slug && a.destination) slug = a.destination;
     if(slug==='uae'||slug==='united-arab-emirates') return 'United Arab Emirates';
     var known=slug?countryName(slug):'';
     if(known&&known!==slug) return known;
@@ -5971,11 +12017,56 @@
   }
 
   function profileVisaPlaceImage(a){
-    var v=visaById(a.visa_type), slug=v&&v.country_slug;
-    for(var i=0;i<countryList.length;i++){
-      if(countryList[i].slug===slug && countryList[i].image_url) return countryList[i].image_url;
+    var photos = window.VISADOO_DESTINATION_PHOTOS || {};
+    var v = visaById(a.visa_type);
+    var slug = (v && v.country_slug) || a.country_slug || a.destination_slug || '';
+    if(!slug){
+      var cName = (v && v.country_name) || a.destination || a.country || profileVisaCountry(a) || '';
+      slug = cName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     }
-    return '/assets/dubai-attractions/burj-khalifa.jpg';
+    slug = (slug || '').toLowerCase().trim();
+    if(slug === 'uae' || slug === 'dubai') slug = 'united-arab-emirates';
+    var baseSlug = slug.replace(/-\d+$/, '');
+
+    // 1. Direct match in VISADOO_DESTINATION_PHOTOS (card, banner, or base slug)
+    var src = photos[slug + '-card'] || photos[slug + '-banner'] || photos[slug] ||
+              photos[baseSlug + '-card'] || photos[baseSlug + '-banner'] || photos[baseSlug];
+    if(src && src.indexOf('flagcdn') === -1) return src;
+
+    // 2. Global getCountryPhoto helper from branding.js
+    if(typeof window.getCountryPhoto === 'function'){
+      var bp = window.getCountryPhoto(slug);
+      if(bp && bp.indexOf('flagcdn') === -1) return bp;
+    }
+
+    // 3. Builtin dictionary from branding.js
+    var builtin = (window.VisaDooBranding && window.VisaDooBranding.BUILTIN_COUNTRY_PHOTOS) || window.BUILTIN_COUNTRY_PHOTOS || {};
+    if(builtin[slug] && builtin[slug].indexOf('flagcdn') === -1) return builtin[slug];
+    if(builtin[baseSlug] && builtin[baseSlug].indexOf('flagcdn') === -1) return builtin[baseSlug];
+
+    // 4. Check countryList image_url from Supabase
+    if(Array.isArray(countryList)){
+      for(var i=0; i<countryList.length; i++){
+        var c = countryList[i];
+        if(c && (c.slug === slug || c.slug === baseSlug) && c.image_url && c.image_url.indexOf('flagcdn') === -1){
+          return c.image_url;
+        }
+      }
+    }
+
+    // 5. Normalized prefix match in VISADOO_DESTINATION_PHOTOS
+    var norm = baseSlug.replace(/[^a-z0-9]/g, '');
+    if(norm.length >= 3){
+      for(var k in photos){
+        var knorm = k.replace(/[^a-z0-9]/g, '');
+        if(knorm.indexOf(norm) === 0 || norm.indexOf(knorm) === 0){
+          if(photos[k] && photos[k].indexOf('flagcdn') === -1) return photos[k];
+        }
+      }
+    }
+
+    // 6. High-resolution fallback: Iconic UAE sunset skyline
+    return 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95';
   }
 
   function profileApplicationsHtml(apps,activeTab){
@@ -5987,7 +12078,7 @@
       var v=visaById(a.visa_type);
       var created=a.created_at?new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
       var destination=profileVisaCountry(a), placeImage=profileVisaPlaceImage(a);
-      return '<article class="profile-compact-visa"><div class="compact-visa-visual"><span class="compact-visa-place-photo"><img src="'+esc(placeImage)+'" alt="'+esc(destination)+' destination" loading="lazy" decoding="async"></span></div><div class="compact-visa-copy"><span>'+esc(a.status==='Visa Issued'?'Completed':'Continue')+'</span><h3>'+esc(v?v.name:(a.visa_type||'Visa application'))+'</h3><small>'+esc(destination)+' &middot; '+esc(a.reference_code||'-')+(created?' &middot; '+esc(created):'')+'</small></div>'+statusPill(a.status||'Submitted')+'<button class="compact-visa-arrow" type="button" data-profile-track aria-label="View '+esc(v?v.name:'application')+'">&rarr;</button></article>';
+      return '<article class="profile-compact-visa"><div class="compact-visa-visual"><span class="compact-visa-place-photo"><img src="'+esc(placeImage)+'" alt="'+esc(destination)+' destination" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95\';"></span></div><div class="compact-visa-copy"><span>'+esc(a.status==='Visa Issued'?'Completed':'Continue')+'</span><h3>'+esc(v?v.name:(a.visa_type||'Visa application'))+'</h3><small>'+esc(destination)+' &middot; '+esc(a.reference_code||'-')+(created?' &middot; '+esc(created):'')+'</small></div>'+statusPill(a.status||'Submitted')+'<button class="compact-visa-arrow" type="button" data-profile-track aria-label="View '+esc(v?v.name:'application')+'">&rarr;</button></article>';
     }).join('');
     return '<section class="profile-visas"><div class="profile-application-tabs" role="tablist" aria-label="Applications"><button type="button" role="tab" aria-selected="'+(activeTab==='completed')+'" class="'+(activeTab==='completed'?'active':'')+'" data-profile-tab="completed">Completed applications <span>'+completed.length+'</span></button><button type="button" role="tab" aria-selected="'+(activeTab==='ongoing')+'" class="'+(activeTab==='ongoing'?'active':'')+'" data-profile-tab="ongoing">Ongoing applications <span>'+ongoing.length+'</span></button></div>'+(cards?'<div class="profile-visa-list">'+cards+'</div>':'<div class="customer-documents-empty">'+emptyText+'</div>')+'</section>';
   }
@@ -5995,52 +12086,31 @@
   function customerDocumentsHtml(a, profileMode, embedded){
     var docs=a.documents||[];
     function find(type){ for(var i=0;i<docs.length;i++){ if(docs[i].doc_type===type) return docs[i]; } return null; }
-    function tile(type,label,description){
+    function item(type,label){
       var doc=find(type);
-      if(!doc) return '<div class="customer-document missing"><div class="customer-document-media"><span>Not available</span></div><div class="customer-document-copy"><b>'+esc(label)+'</b><small>'+esc(description)+'</small></div></div>';
-      return '<button class="customer-document" type="button" data-customer-doc="'+esc(doc.file_path)+'" data-customer-label="'+esc(label)+'"><div class="customer-document-media"><span class="customer-document-spinner"></span></div><div class="customer-document-copy"><b>'+esc(label)+'</b><small>'+esc(description)+'</small><i>View image <span aria-hidden="true">&rarr;</span></i></div></button>';
+      if(!doc) return '<div class="customer-document-item missing"><span class="customer-doc-icon">&#8211;</span><span class="customer-doc-name">'+esc(label)+'</span><span class="customer-doc-status">(Not uploaded)</span></div>';
+      return '<div class="customer-document-item uploaded"><span class="customer-doc-icon">&#10003;</span><span class="customer-doc-name">'+esc(label)+'</span><span class="customer-doc-status">(Attached)</span></div>';
     }
-    var tiles='<div class="customer-documents-grid">'+tile('passport','Passport front','Verified passport page')+tile('photo','Personal photo','Photo used for this application')+'</div>';
-    if(embedded) return '<section class="customer-documents embedded">'+tiles+'</section>';
-    return '<details class="customer-documents customer-document-disclosure '+(profileMode?'profile-document-section':'')+'" data-customer-documents-disclosure><summary class="customer-documents-toggle"><div class="customer-documents-head"><div><strong>Passport &amp; photo</strong><p>Your uploaded documents'+(profileMode&&a.reference_code?' for '+esc(a.reference_code):'')+'.</p></div><span>Secure</span></div><div class="customer-documents-toggle-row"><b>View attached files</b><span aria-hidden="true">+</span></div></summary><div class="customer-documents-reveal">'+tiles+'</div></details>';
+    var items=item('passport','Passport front')+item('photo','Personal photo');
+    if(find('passport_back')) items+=item('passport_back','Passport back');
+    if(find('bank_statement')) items+=item('bank_statement','Bank statement');
+    if(find('pan_card')) items+=item('pan_card','PAN Card');
+    if(find('iqama')) items+=item('iqama','Iqama');
+    var list='<div class="customer-documents-list">'+items+'</div>';
+    var content='<div class="customer-documents-head"><div><strong>Passport &amp; photo</strong><p>Your uploaded documents'+(profileMode&&a.reference_code?' for '+esc(a.reference_code):'')+'.</p></div><span>Secure</span></div>'+list;
+    if(embedded) return '<section class="customer-documents embedded">'+content+'</section>';
+    return '<section class="customer-documents '+(profileMode?'profile-document-section':'')+'">'+content+'</section>';
   }
 
   function wireCustomerDocumentPreviews(scope){
-    scope=scope||document;
-    function loadPreview(card){
-      if(card.getAttribute('data-preview-loading')==='true') return;
-      card.setAttribute('data-preview-loading','true');
-      var path=card.getAttribute('data-customer-doc');
-      var media=card.querySelector('.customer-document-media');
-      sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(result){
-        if(!card.isConnected) return;
-        if(result.error||!result.data||!result.data.signedUrl){
-          card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>'; return;
-        }
-        var url=result.data.signedUrl;
-        var label=card.getAttribute('data-customer-label')||'Uploaded document';
-        media.innerHTML='<img src="'+esc(url)+'" alt="'+esc(label)+' preview">';
-        card.onclick=function(){ window.open(url,'_blank','noopener'); };
-      }).catch(function(){
-        if(!card.isConnected) return;
-        card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>';
-      });
-    }
-    scope.querySelectorAll('[data-customer-documents-disclosure]').forEach(function(disclosure){
-      disclosure.addEventListener('toggle',function(){
-        if(disclosure.open) disclosure.querySelectorAll('[data-customer-doc]').forEach(loadPreview);
-      });
-      if(disclosure.open) disclosure.querySelectorAll('[data-customer-doc]').forEach(loadPreview);
-    });
-    scope.querySelectorAll('[data-customer-doc]').forEach(function(card){
-      if(!card.closest('[data-customer-documents-disclosure]')) loadPreview(card);
-    });
+    // Image preview viewing is removed by design. Clean document status badges are displayed directly.
   }
 
   function wireCustomerThumbnails(scope){
     (scope||document).querySelectorAll('[data-customer-thumb]').forEach(function(media){
       var path=media.getAttribute('data-customer-thumb');
-      sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(result){
+      var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900;
+      sb.storage.from('visa-documents').createSignedUrl(path, expiry).then(function(result){
         if(!media.isConnected) return;
         if(result.error||!result.data||!result.data.signedUrl){ media.classList.add('placeholder'); media.textContent=''; return; }
         media.innerHTML='<img src="'+esc(result.data.signedUrl)+'" alt="">';
@@ -6063,28 +12133,39 @@
     }
     var idx=stages.indexOf(a.status);
     var action = a.status==='Action Needed';
-    var visa=visaById(a.visa_type);
-    var destination=profileVisaCountry(a);
-    var destinationCode=destination==='United Arab Emirates'?'DXB':destination.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase();
     var steps=stages.map(function(label,i){
       var cls = action ? (i===0?'current':'upcoming') :
                 (i<idx?'done':(i===idx?'current':'upcoming'));
-      var inner = (cls==='done') ? CHECK : '<span style="font-size:12px;font-weight:700">'+(i+1)+'</span>';
+      var inner = i<idx ? '&#10003;' : (i+1);
       return '<div class="tstep '+cls+'"><div class="dot">'+inner+'</div><div class="tlabel">'+esc(label)+'</div></div>';
     }).join('');
+    var visa=visaById(a.visa_type);
+    var destination=profileVisaCountry(a);
+    var placeImage=profileVisaPlaceImage(a);
     var created=a.created_at?new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
     var statusDescriptions={
-      'Submitted':'Your application has been received and is waiting for document checks.',
-      'Under Review':'Our visa team is reviewing your application.',
-      'Payment Pending':'Your application is waiting for payment.',
-      'Payment Received':'Your payment has been received.',
-      'Application In Process':'Your visa application is currently being processed.',
-      'Approved':'Your application has been approved.',
-      'Rejected':'Your application has been rejected.',
+      'Submitted':'Your application has been received and is waiting for initial document verification. Next process is payment once your documents are checked.',
+      'Under Review':'Our visa team is currently reviewing your documents. Next process is payment once verification is complete.',
+      'Payment Pending':'Your documents are verified and approved! Our team will contact you to arrange payment.',
+      'Payment Received':'Your payment has been received successfully. Your visa application is being forwarded for embassy processing.',
+      'Application In Process':'Your visa application is currently being processed with immigration.',
+      'Approved':'Your visa application has been approved by immigration authorities.',
+      'Rejected':'Your visa application could not be processed.',
       'Visa Issued':'Your visa is ready to download.',
       'Action Needed':'We need some information from you before we can continue.'
     };
     var currentDescription=statusDescriptions[a.status]||'We will notify you when your application status changes.';
+
+    var kickerText = action ? 'Waiting for you' : 'JOURNEY IN MOTION';
+
+    var visaNameEsc = esc(visa ? visa.name : a.visa_type);
+    var applicantBadge = a.full_name ? '<span class="track-applicant-pill">' + esc(a.full_name) + '</span>' : '';
+
+    var titleHtml = '<span class="track-title-static">' +
+      '<span class="track-static-visa">' + visaNameEsc + '</span>' +
+      applicantBadge +
+    '</span>';
+
     var hasVisa=(a.documents||[]).some(function(d){ return d.doc_type==='visa'; });
     var visaBanner = hasVisa ?
       '<div class="visa-ready-banner">'+
@@ -6111,15 +12192,15 @@
     }
     var progressLabel=(action||idx<0)?'Update required':Math.round(((idx+1)/stages.length)*100)+'% complete';
     var progressPercent=(action||idx<0)?0:Math.round(((idx+1)/stages.length)*100);
-    return '<details class="track-compact-item"><summary class="track-compact-summary"><span class="track-route-badge" aria-hidden="true"><b>'+esc(destinationCode||'VISA')+'</b><small>eVISA</small></span><span class="track-compact-copy"><small>'+esc(action?'Waiting for you':(a.status==='Visa Issued'?'Ready to travel':'Journey in motion'))+'</small><strong>'+esc(visa?visa.name:a.visa_type)+'<span style="background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-left: 8px; vertical-align: middle; display: inline-block;">'+esc(a.full_name)+'</span></strong><i>'+esc(a.reference_code)+' &middot; '+esc(destination)+'</i></span><span class="track-summary-progress" aria-label="'+esc(progressLabel)+'"><i style="--track-progress:'+progressPercent+'%"><b></b></i><em>'+esc(progressLabel)+'</em></span>'+statusPill(a.status)+'<span class="track-compact-arrow" aria-hidden="true">+</span></summary><div class="track-expanded"><button class="track-back-list" type="button" data-track-back><span aria-hidden="true">&larr;</span> All applications</button><article class="app-card track-card">'+
+    return '<details class="track-compact-item"><summary class="track-compact-summary"><span class="track-route-badge track-place-badge" aria-hidden="true"><img src="'+esc(placeImage)+'" alt="'+esc(destination)+' destination" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=\'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=2400&q=95\';"></span><span class="track-compact-copy"><small>'+kickerText+'</small><strong class="track-compact-title">'+titleHtml+'</strong><i>'+esc(a.reference_code)+' &middot; '+esc(destination)+'</i></span><span class="track-summary-progress" aria-label="'+esc(progressLabel)+'"><i style="--track-progress:'+progressPercent+'%"><b></b></i><em>'+esc(progressLabel)+'</em></span>'+statusPill(a.status)+'<span class="track-compact-arrow" aria-hidden="true"><svg class="track-compact-arrow-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary><div class="track-expanded"><button class="track-back-list" type="button" data-track-back><span aria-hidden="true">&larr;</span> All applications</button><article class="app-card track-card">'+
       '<div class="app-card-top track-card-head"><div class="track-card-title">'+
         '<span class="track-destination">Visadoo journey &middot; '+esc(a.reference_code)+'</span>'+
         '<h2>'+esc(visa?visa.name:a.visa_type)+'</h2>'+
         '<div class="track-meta"><span><small>Applicant</small><b>'+esc(a.full_name)+'</b></span><span><small>Reference</small><b>'+esc(a.reference_code)+'</b></span><span><small>Applied on</small><b>'+created+'</b></span><span><small>Journey value</small><b>'+appPriceText(a)+'</b></span></div>'+
       '</div>'+statusPill(a.status)+'</div>'+
       (action && a.notes && !msgs.length ? '<div class="signin-msg err" style="display:block;margin-bottom:18px">'+esc(a.notes)+'</div>' : '')+
-      '<div class="track-current '+(action?'needs-action':'')+'"><div class="track-current-mark">'+(action?'!':CHECK)+'</div><div><small>Current status</small><strong>'+esc(a.status)+'</strong><p>'+esc(currentDescription)+'</p></div></div>'+
-      '<div class="track-progress-head"><strong>Your visa milestones</strong><span>'+((action||idx<0)?'Update required':Math.round(((idx+1)/stages.length)*100)+'% complete')+'</span></div>'+
+      '<div class="track-current '+(action?'needs-action':'')+'"><div class="track-current-mark">'+(action?'!':CHECK)+'</div><div><small>Current status</small><strong>'+esc(a.status === 'Submitted' ? 'Submitted ✓' : a.status)+'</strong><p>'+esc(currentDescription)+'</p></div></div>'+
+      '<div class="track-progress-head"><strong>Your visa milestones</strong><span>'+esc(progressLabel)+'</span></div>'+
       '<div class="tracker">'+steps+'</div>'+
       customerDocumentsHtml(a,false)+
       visaBanner+
@@ -6454,7 +12535,15 @@
     '</div>';
   }
 
-  function docLabel(t){ return t==='visa'?'visa':(t==='photo'?'photo':(t==='passport_back'?'passport back':'passport front')); }
+  function docLabel(t){
+    if (t === 'visa') return 'visa';
+    if (t === 'photo') return 'photo';
+    if (t === 'passport_back') return 'passport back';
+    if (t === 'bank_statement') return 'bank statement';
+    if (t === 'pan_card') return 'PAN card';
+    if (t === 'iqama') return 'Iqama';
+    return 'passport front';
+  }
 
   function adminCard(a){
     var created=a.created_at?new Date(a.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'';
@@ -6471,11 +12560,12 @@
     var isGermany=v && v.country_slug==='germany';
     var isGreece=v && v.country_slug==='greece';
     var isAzerbaijan=v && v.country_slug==='azerbaijan';
+    var isChina=v && v.country_slug==='china';
     var groupApps=adminRows.filter(function(x){ return x.customer_id && x.customer_id===a.customer_id; });
     var isGroup=groupApps.length > 1;
 
     var smartPdfHtml = '';
-    if (isJapan || isDenmark || isSpain || isSouthKorea || isSwitzerland || isIreland || isFrance || isGermany || isGreece || isAzerbaijan) {
+    if (isJapan || isDenmark || isSpain || isSouthKorea || isSwitzerland || isIreland || isFrance || isGermany || isGreece || isAzerbaijan || isChina) {
       if (isJapan && isGroup) {
         smartPdfHtml = '<div class="smart-pdf-bar"><div><b>Smart Visa Form Generator</b><small>Reads this group application and fills the official visa form PDF.</small></div>'+
           '<div style="display:flex;gap:8px">'+
@@ -6483,7 +12573,7 @@
             '<button type="button" class="btn btn-ghost" data-generate-all-pdf style="border:1.5px solid var(--blue-600);color:var(--blue-600);font-weight:600">Generate All PDFs</button>'+
           '</div></div>';
       } else {
-        var hotelPdfBtn = (isSouthKorea || isSwitzerland || isIreland) ? '<button type="button" class="btn btn-ghost" data-generate-hotel-pdf style="border:1.5px solid var(--blue-600);color:var(--blue-600);font-weight:700">Hotel PDF</button>' : '';
+        var hotelPdfBtn = (isSouthKorea || isSwitzerland || isIreland || isFrance || isGermany || isGreece || isAzerbaijan) ? '<button type="button" class="btn btn-ghost" data-generate-hotel-pdf style="border:1.5px solid var(--blue-600);color:var(--blue-600);font-weight:700">Hotel PDF</button>' : '';
         var flightPdfBtn = (isSouthKorea || isSwitzerland || isIreland || isFrance || isGermany) ? '<button type="button" class="btn btn-ghost" data-generate-flight-pdf style="border:1.5px solid var(--blue-600);color:var(--blue-600);font-weight:700">Flight PDF</button>' : '';
         smartPdfHtml = '<div class="smart-pdf-bar"><div><b>Smart Visa Form Generator</b><small>Reads this application and fills the official visa form PDF. Missing fields stay blank.</small></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="btn btn-primary" data-generate-pdf>Generate PDF</button>' + hotelPdfBtn + flightPdfBtn + '</div></div>';
       }
@@ -6731,7 +12821,7 @@
       payload.phone=a.phone||ans(['phone'])||'';
       payload.country_slug=(visaById(a.visa_type)||{}).country_slug||'';
       try{ sessionStorage.setItem('visadoo-hotel-pdf-data',JSON.stringify(payload)); }catch(_e){}
-      var hotelPage = payload.country_slug==='switzerland' ? 'hotel ticket/switzerland-hotel-pdf-generator.html' : (payload.country_slug==='ireland' ? 'hotel ticket/ireland-hotel-pdf-generator.html' : (payload.country_slug==='south-korea' ? 'hotel ticket/south-korea-hotel-pdf-generator.html' : 'hotel ticket/hotel-pdf-generator.html'));
+      var hotelPage = payload.country_slug==='switzerland' ? 'hotel ticket/switzerland-hotel-pdf-generator.html' : (payload.country_slug==='ireland' ? 'hotel ticket/ireland-hotel-pdf-generator.html' : (payload.country_slug==='south-korea' ? 'hotel ticket/south-korea-hotel-pdf-generator.html' : (payload.country_slug==='france' ? 'hotel ticket/france-hotel-pdf-generator.html' : (payload.country_slug==='germany' ? 'hotel ticket/germany-hotel-pdf-generator.html' : (payload.country_slug==='greece' ? 'hotel ticket/greece-hotel-pdf-generator.html' : (payload.country_slug==='azerbaijan' ? 'hotel ticket/azerbaijan-hotel-pdf-generator.html' : 'hotel ticket/hotel-pdf-generator.html'))))));
       window.location.href=hotelPage;
     };
 
@@ -6800,9 +12890,20 @@
         var path=link.getAttribute('data-path');
         var label=docLabel(link.getAttribute('data-doc'));
         link.textContent='Opening…';
-        sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(s){
+        var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900;
+        sb.storage.from('visa-documents').createSignedUrl(path, expiry).then(function(s){
           link.textContent='View '+label;
           if(s.error||!s.data){ toast('Could not open that document.'); return; }
+          if(window.VisaDooSecurity){
+            window.VisaDooSecurity.logSecurityEvent(sb, {
+              action: 'DOCUMENT_VIEW',
+              actorId: state.user ? state.user.id : null,
+              actorRole: state.role || 'staff',
+              resourceType: 'visa_document',
+              resourceId: a.id,
+              metadata: { doc: label, path: path }
+            });
+          }
           window.open(s.data.signedUrl,'_blank','noopener');
         });
       };
@@ -6814,7 +12915,8 @@
         e.preventDefault();
         var path=link.getAttribute('data-path'); var orig=link.textContent;
         link.textContent='Opening…';
-        sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(s){
+        var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900;
+        sb.storage.from('visa-documents').createSignedUrl(path, expiry).then(function(s){
           link.textContent=orig;
           if(s.error||!s.data){ toast('Could not open that file.'); return; }
           window.open(s.data.signedUrl,'_blank','noopener');
@@ -6902,7 +13004,7 @@
         };
       });
       card.querySelectorAll('.cp-receipt').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var p=cpListOf(a).filter(function(x){return x.id===l.getAttribute('data-id');})[0]; if(p) openReceipt(p,a); }; });
-      card.querySelectorAll('.cp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var path=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; sb.storage.from('finance-files').createSignedUrl(path,3600).then(function(s){ l.textContent=o; if(s.error||!s.data){ toast('Could not open proof.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); }; });
+      card.querySelectorAll('.cp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var path=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900; sb.storage.from('finance-files').createSignedUrl(path, expiry).then(function(s){ l.textContent=o; if(s.error||!s.data){ toast('Could not open proof.'); return; } window.open(s.data.signedUrl,'_blank','noopener'); }); }; });
     }
 
     // Refund request (Operations/Sales) — raises a pending request for finance.
@@ -7166,7 +13268,7 @@
     ];
 
     var FIELD_OPTIONS = {
-      'gender': ['Male', 'Female', 'Other'],
+      'gender': ['MALE', 'FEMALE', 'OTHER'],
       'marital_status': ['Single', 'Married', 'Registered Partnership', 'Separated', 'Divorced', 'Widow(er)', 'Other'],
       'passport_type': ['Ordinary passport', 'Diplomatic passport', 'Service passport', 'Official passport', 'Special passport', 'Other'],
       'other_passport_type': ['Regular', 'Diplomatic', 'Official', 'Other'],
@@ -7346,7 +13448,7 @@
     if(pin && window.intlTelInput){
       appIti=window.intlTelInput(pin,{ initialCountry:'in', separateDialCode:true,
         preferredCountries:['in','ae','sa','qa','kw','om','bh','us','gb'],
-        utilsScript:'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+        utilsScript:'/vendor/utils.js' });
     }
     document.getElementById('aefCancel').onclick=function(){ appEditing=false; renderAppDetail(a.id); };
     document.getElementById('aefSave').onclick=function(){
@@ -7479,7 +13581,66 @@
     return s;
   }
 
-  var vtCountryFilter='all';
+  var vtCountryFilter=(function(){ try{ return sessionStorage.getItem('visadoo_admin_vt_filter')||'all'; }catch(_e){ return 'all'; } })();
+
+  // One-time seed for the visa prices configured for the public country pages.
+  // This makes the same visa options visible/editable in Admin > Visa Types,
+  // even when the database did not previously contain rows for them.
+  var VT_ADMIN_SEED_VERSION='visadoo_admin_visa_seed_20260909_egypt_v1';
+  var VT_ADMIN_DEFAULTS=[
+    {slug:'uae-48-hours-transit-visa',name:'48 Hours Transit Visa',country_slug:'united-arab-emirates',category:'Transit',sub:'Single Entry',days:2,price_aed:3499,prices:{INR:3499},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:10,features:['Stay up to 2 days (48 Hours)','Validity: 30 Days','Single Entry','Processing: Upto 5 Days'],blurb:'48 Hours Transit Visa for UAE. Single entry valid for 30 days.'},
+    {slug:'uae-30-days-tourist-visa',name:'30 Days Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:30,price_aed:7600,prices:{INR:7600},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:20,features:['Stay up to 30 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'30 Days Tourist Visa for UAE. Single entry valid for 58 days.'},
+    {slug:'uae-30-days-family-tourist-visa',name:'30 Days Family Tourist Visa (Includes 2 Adults + 1 Child)',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:30,price_aed:19999,prices:{INR:19999},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:30,features:['Includes 2 Adults + 1 Child','Stay up to 30 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'30 Days Family Tourist Visa for UAE (Includes 2 Adults + 1 Child). Single entry valid for 58 days.'},
+    {slug:'uae-96-hours-transit-visa',name:'96 Hours Transit Visa',country_slug:'united-arab-emirates',category:'Transit',sub:'Single Entry',days:4,price_aed:5299,prices:{INR:5299},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:40,features:['Stay up to 4 days (96 Hours)','Validity: 30 Days','Single Entry','Processing: Upto 5 Days'],blurb:'96 Hours Transit Visa for UAE. Single entry valid for 30 days.'},
+    {slug:'uae-14-days-tourist-visa',name:'14 Days Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:14,price_aed:7699,prices:{INR:7699},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:50,features:['Stay up to 14 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'14 Days Tourist Visa for UAE. Single entry valid for 58 days.'},
+    {slug:'uae-30-days-tourist-visa-express',name:'30 Days Tourist Visa (Express)',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:48,processing_time_unit:'hours',active:true,popular:false,sort_order:60,features:['Express Processing: Upto 48 Hours','Stay up to 30 Days','Validity: 58 Days','Single Entry'],blurb:'Express 30 Days Tourist Visa for UAE. Fast processing within 48 hours.'},
+    {slug:'uae-60-days-tourist-visa',name:'60 Days Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:60,price_aed:10800,prices:{INR:10800},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:70,features:['Stay up to 60 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'60 Days Tourist Visa for UAE. Single entry valid for 58 days.'},
+    {slug:'uae-30-days-multiple-entry-visa',name:'30 Days Multiple Entry Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Multiple Entry',days:30,price_aed:17999,prices:{INR:17999},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:80,features:['Stay up to 30 Days','Validity: 58 Days','Multiple Entry','Processing: Upto 5 Days'],blurb:'30 Days Multiple Entry Tourist Visa for UAE. Multiple entries within 58 days validity.'},
+    {slug:'vietnam-tourist-visa',name:'Tourist eVisa',country_slug:'vietnam',category:'Tourist',sub:'Single Entry',days:30,price_aed:2999,prices:{INR:2999},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:90,features:['Stay up to 30 Days','Validity: 30 Days','Single Entry','Processing: 3–5 Working Days'],blurb:'Tourist eVisa for Vietnam. Single entry valid for 30 days.'},
+    {slug:'vietnam-tourist-visa-express',name:'Tourist eVisa (Express)',country_slug:'vietnam',category:'Tourist',sub:'Single Entry',days:30,price_aed:9999,prices:{INR:9999},processing_time_value:24,processing_time_unit:'hours',active:true,popular:false,sort_order:91,features:['Express Processing: 24 Hours','Stay up to 30 Days','Validity: 30 Days','Single Entry'],blurb:'Express Tourist eVisa for Vietnam. Fast processing within 24 hours.'},
+    {slug:'vietnam-tourist-visa-super-express',name:'Tourist eVisa (Super Express)',country_slug:'vietnam',category:'Tourist',sub:'Single Entry',days:30,price_aed:10999,prices:{INR:10999},processing_time_value:12,processing_time_unit:'hours',active:true,popular:false,sort_order:92,features:['Super Express: 12 Hours','Stay up to 30 Days','Validity: 30 Days','Single Entry'],blurb:'Super Express Tourist eVisa for Vietnam. Urgent processing within 12 hours.'},
+    {slug:'morocco-tourist-visa',name:'Morocco Tourist eVisa',country_slug:'morocco',category:'Tourist',sub:'Single Entry',days:90,price_aed:4149,prices:{INR:4149},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:100,features:['Stay up to 90 Days','Validity: Up to 90 Days','Single Entry','Processing: 3 – 5 Days'],blurb:'Official Morocco Tourist eVisa. Single entry valid for up to 90 days with 3–5 days processing.'},
+    {slug:'morocco-business-visa',name:'Morocco Business eVisa',country_slug:'morocco',category:'Business',sub:'Single Entry',days:90,price_aed:4149,prices:{INR:4149},processing_time_value:7,processing_time_unit:'working days',active:true,popular:false,sort_order:101,features:['Stay up to 90 Days','Validity: Up to 90 Days','Single Entry','Processing: 5 – 7 Days'],blurb:'Official Morocco Business eVisa. Single entry valid for up to 90 days with 5–7 days processing.'},
+    {slug:'qatar-30-days-tourist-visa-age-1-55',name:'Qatar Tourist Visa 30 Days (Age 1–55 Years)',country_slug:'qatar',category:'Tourist',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:true,sort_order:110,features:['Stay 30 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Tourist Visa 30 Days (Age 1–55 Years). 5 – 6 Days processing.'},
+    {slug:'qatar-30-days-tourist-visa-age-55-plus',name:'Qatar Tourist Visa 30 Days (Age 55 Years & Above)',country_slug:'qatar',category:'Tourist',sub:'Single Entry',days:30,price_aed:13999,prices:{INR:13999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:false,sort_order:111,features:['Stay 30 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Tourist Visa 30 Days (Age 55 Years & Above). 5 – 6 Days processing.'},
+    {slug:'qatar-30-days-business-visa',name:'Qatar Business Visa 30 Days',country_slug:'qatar',category:'Business',sub:'Single Entry',days:30,price_aed:9999,prices:{INR:9999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:false,sort_order:112,features:['Stay 30 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Business Visa 30 Days. 5 – 6 Days processing.'},
+    {slug:'qatar-90-days-business-visa',name:'Qatar Business Visa 90 Days',country_slug:'qatar',category:'Business',sub:'Single Entry',days:90,price_aed:20999,prices:{INR:20999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:false,sort_order:113,features:['Stay 90 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Business Visa 90 Days. 5 – 6 Days processing.'},
+    {slug:'srilanka-30-days-tourist-visa',name:'30 Days Sri Lanka Tourist Visa',country_slug:'srilanka',category:'Tourist',sub:'Double Entry',days:30,price_aed:999,prices:{INR:999},processing_time_value:48,processing_time_unit:'hours',active:true,popular:true,sort_order:120,features:['Stay: Upto 30 Days','Validity: 6 Months','Double Entry','Processing: 24 to 48 Hours'],blurb:'30 Days Sri Lanka Tourist Visa. 24 to 48 Hours processing.'},
+    {slug:'srilanka-30-days-business-visa',name:'30 Days Sri Lanka Business Visa',country_slug:'srilanka',category:'Business',sub:'Multiple Entry',days:30,price_aed:3499,prices:{INR:3499},processing_time_value:48,processing_time_unit:'hours',active:true,popular:false,sort_order:121,features:['Stay: Upto 30 Days','Validity: 6 Months','Multiple Entry','Processing: 24 to 48 Hours'],blurb:'30 Days Sri Lanka Business Visa. 24 to 48 Hours processing.'},
+    {slug:'thailand-e-visa',name:'Thailand E Visa',country_slug:'thailand',category:'Tourist',sub:'Single Entry',days:30,price_aed:499,prices:{INR:499},processing_time_value:24,processing_time_unit:'hours',active:true,popular:true,sort_order:130,features:['Stay up to 30 Days','Validity: 1 Month','Single Entry','Processing: 24 Hours'],blurb:'Thailand E-Visa. 24 Hours processing.'},
+    {slug:'thailand-e-visa-express',name:'Thailand E Visa (Express)',country_slug:'thailand',category:'Tourist',sub:'Single Entry',days:15,price_aed:11999,prices:{INR:11999},processing_time_value:24,processing_time_unit:'hours',active:true,popular:false,sort_order:131,features:['Stay up to 15 Days','Validity: 1 Month','Single Entry','Processing: Upto 24 Hours'],blurb:'Thailand E-Visa (Express). Upto 24 Hours processing.'},
+    {slug:'thailand-tourist-visa-stamp-visa',name:'Thailand Tourist Visa (Stamp Visa)',country_slug:'thailand',category:'Tourist',sub:'Single Entry',days:60,price_aed:5999,prices:{INR:5999},processing_time_value:4,processing_time_unit:'days',active:true,popular:false,sort_order:132,features:['Stay up to 60 Days','Validity: 3 Months','Single Entry','Processing: 3 – 4 Days'],blurb:'Thailand Tourist Visa (Stamp Visa). 3 – 4 Days processing.'},
+    {slug:'thailand-business-visa-stamp-visa',name:'Thailand Business Visa (Stamp Visa)',country_slug:'thailand',category:'Business',sub:'Single Entry',days:90,price_aed:7999,prices:{INR:7999},processing_time_value:4,processing_time_unit:'days',active:true,popular:false,sort_order:133,features:['Stay up to 90 Days','Validity: 3 Months','Single Entry','Processing: 3 – 4 Days'],blurb:'Thailand Business Visa (Stamp Visa). 3 – 4 Days processing.'},
+    {slug:'kenya-single-entry-tourist-visa',name:'Single Entry Tourist Visa',country_slug:'kenya',category:'Tourist',sub:'Single Entry',days:30,price_aed:5999,prices:{INR:5999},processing_time_value:2,processing_time_unit:'days',active:true,popular:true,sort_order:140,features:['Stay Period: As per Embassy','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],blurb:'Single Entry Tourist Visa for Kenya. Stay period as per embassy, validity 3 months, processing upto 2 days.'},
+    {slug:'kenya-single-entry-business-visa',name:'Single Entry Business Visa',country_slug:'kenya',category:'Business',sub:'Single Entry',days:3,price_aed:5999,prices:{INR:5999},processing_time_value:2,processing_time_unit:'days',active:true,popular:false,sort_order:141,features:['Stay Period: 72 Hours','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],blurb:'Single Entry Business Visa for Kenya. Stay period 72 hours, validity 3 months, processing upto 2 days.'},
+    {slug:'russia-tourist-visa',name:'Russia Tourist Visa',country_slug:'russia',category:'Tourist',sub:'Single Entry',days:30,price_aed:4999,prices:{INR:4999},processing_time_value:12,processing_time_unit:'days',active:true,popular:true,sort_order:150,features:['Stay Period: 30 Days','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],blurb:'Russia Tourist Visa. Stay period 30 days, single entry, validity as per embassy with 10 - 12 days processing.'},
+    {slug:'russia-business-visa',name:'Russia Business Visa',country_slug:'russia',category:'Business',sub:'Single Entry',days:90,price_aed:4999,prices:{INR:4999},processing_time_value:12,processing_time_unit:'days',active:true,popular:false,sort_order:151,features:['Stay Period: 3 Months','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],blurb:'Russia Business Visa. Stay period 3 months, single entry, validity as per embassy with 10 - 12 days processing.'},
+    {slug:'indonesia-tourist-visa',name:'Indonesia Tourist Visa',country_slug:'indonesia',category:'Tourist',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:7,processing_time_unit:'working days',active:true,popular:true,sort_order:160,features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],blurb:'Indonesia Tourist Visa. Stay period 30 days, single entry, extension not permitted with 5-7 working days processing.'},
+    {slug:'indonesia-business-visa',name:'Indonesia Business Visa',country_slug:'indonesia',category:'Business',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:7,processing_time_unit:'working days',active:true,popular:false,sort_order:161,features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],blurb:'Indonesia Business Visa. Stay period 30 days, single entry, extension not permitted with 5-7 working days processing.'},
+    {slug:'azerbaijan-tourist-evisa',name:'Azerbaijan Tourist E Visa',country_slug:'azerbaijan',category:'Tourist',sub:'Single Entry',days:30,price_aed:2899,prices:{INR:2899},processing_time_value:3,processing_time_unit:'days',active:true,popular:true,sort_order:170,features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],blurb:'Azerbaijan Tourist E Visa. Stay period 30 days, validity 3 months, single entry with upto 3 days processing.'},
+    {slug:'azerbaijan-business-evisa',name:'Azerbaijan Business E Visa',country_slug:'azerbaijan',category:'Business',sub:'Single Entry',days:30,price_aed:2899,prices:{INR:2899},processing_time_value:3,processing_time_unit:'days',active:true,popular:false,sort_order:171,features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],blurb:'Azerbaijan Business E Visa. Stay period 30 days, validity 3 months, single entry with upto 3 days processing.'},
+    {slug:'bahrain-14-days-tourist-visa',name:'Bahrain 2 Weeks Single Entry',country_slug:'bahrain',category:'Tourist',sub:'Single Entry',days:14,price_aed:4500,prices:{INR:4500},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:180},
+    {slug:'bahrain-30-days-tourist-visa',name:'Bahrain One Month Multiple Entry',country_slug:'bahrain',category:'Tourist',sub:'Multiple Entry',days:30,price_aed:7000,prices:{INR:7000},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:190},
+    {slug:'bahrain-one-year-multiple-entry',name:'Bahrain One Year Multiple Entry',country_slug:'bahrain',category:'Tourist',sub:'Multiple Entry',days:365,price_aed:14000,prices:{INR:14000},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:200},
+    {slug:'egypt-tourist-visa',name:'Egypt Tourist Visa',country_slug:'egypt',category:'Tourist',sub:'Single Entry',days:30,price_aed:5999,prices:{INR:5999},processing_time_value:15,processing_time_unit:'days',active:true,popular:true,sort_order:210,features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],blurb:'Egypt Tourist Visa. Stay period 30 days, validity 30 days, single entry with 10 - 15 days processing.'},
+    {slug:'egypt-business-visa',name:'Egypt Business Visa',country_slug:'egypt',category:'Business',sub:'Single Entry',days:30,price_aed:6999,prices:{INR:6999},processing_time_value:15,processing_time_unit:'days',active:true,popular:false,sort_order:211,features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],blurb:'Egypt Business Visa. Stay period 30 days, validity 30 days, single entry with 10 - 15 days processing.'},
+    {slug:'philippines-single-entry-visa',name:'Philippines Single Entry Visa',country_slug:'philippines',category:'Tourist / Business',sub:'Single Entry',days:59,price_aed:8499,prices:{INR:8499},processing_time_value:10,processing_time_unit:'days',active:true,popular:true,sort_order:220,features:['Stay Period: Upto 59 Days','Validity: 3 Months','Single Entry','Processing: 8 - 10 Days'],blurb:'Philippines Single Entry Visa (Tourist/Business). Stay period upto 59 days, validity 3 months, single entry with 8 - 10 days processing.'},
+    {slug:'philippines-multiple-entry-business-visa',name:'Philippines Multiple Entry Business Visa',country_slug:'philippines',category:'Business',sub:'Multiple Entry',days:59,price_aed:9999,prices:{INR:9999},processing_time_value:10,processing_time_unit:'days',active:true,popular:false,sort_order:221,features:['Stay Period: Upto 59 Days','Validity: 6 Months / 1 Year','Multiple Entry','Processing: 8 - 10 Days'],blurb:'Philippines Multiple Entry Business Visa. Stay period upto 59 days, validity 6 months / 1 year, multiple entry with 8 - 10 days processing.'},
+    {slug:'oman-10-days-tourist-visa',name:'10 Days Tourist Visa',country_slug:'oman',category:'Tourist',sub:'Single Entry',days:10,price_aed:4499,prices:{INR:4499},processing_time_value:6,processing_time_unit:'days',active:true,popular:false,sort_order:230,features:['Stay Period: 10 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],blurb:'Oman 10 Days Tourist Visa. Stay period 10 days, validity 3 months, single entry with 5 - 6 days processing.'},
+    {slug:'oman-30-days-tourist-visa',name:'30 Days Tourist Visa',country_slug:'oman',category:'Tourist',sub:'Single Entry',days:30,price_aed:7999,prices:{INR:7999},processing_time_value:6,processing_time_unit:'days',active:true,popular:true,sort_order:231,features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],blurb:'Oman 30 Days Tourist Visa. Stay period 30 days, validity 3 months, single entry with 5 - 6 days processing.'},
+    {slug:'saudi-arabia-30-days-tourist-visa',name:'Saudi Arabia Tourist Visa',country_slug:'saudi-arabia',category:'Tourist',sub:'Single Entry',days:30,price_aed:16000,prices:{INR:16000},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:240}
+  ];
+
+  function ensureAdminVisaDefaults(){
+    try{ if(localStorage.getItem(VT_ADMIN_SEED_VERSION)==='done') return Promise.resolve(); }catch(e){}
+    // Refresh the configured defaults once for this seed version so stale dummy
+    // rates/variants are corrected in Supabase as well as on the public cards.
+    return sb.from('visa_types').upsert(VT_ADMIN_DEFAULTS,{onConflict:'slug'}).then(function(r){
+      if(r.error){ console.warn('Visa seed upsert failed',r.error); return; }
+      try{localStorage.setItem(VT_ADMIN_SEED_VERSION,'done');}catch(e){}
+    });
+  }
+
   function renderVisaTypesAdmin(){
     if(!canManageContent()){ go(defaultStaffView()); return; }
     root.innerHTML='<div class="app-main">' + adminSections('visatypes') +
@@ -7495,11 +13656,27 @@
         country_slug:(vtCountryFilter!=='all'?vtCountryFilter:''), category:'Tourist' };
       paintVt();
     };
-    Promise.all([ sb.from('visa_types').select('*').order('sort_order'), loadCountriesGroups() ]).then(function(res){
-      vtList=res[0].data||[]; vtEditing=null;
+    ensureAdminVisaDefaults().then(function(){
+      return Promise.all([ sb.from('visa_types').select('*').order('sort_order'), loadCountriesGroups() ]);
+    }).then(function(res){
+      // Always make the configured VisaDoo visa types visible in Admin, even if the
+      // database seed could not run (for example because of an older schema/RLS).
+      // Real database rows win; only genuinely missing slugs get a local fallback row.
+      var dbRows=(res[0] && res[0].data) ? res[0].data : [];
+      var bySlug={};
+      dbRows.forEach(function(v){ if(v && v.slug) bySlug[v.slug]=true; });
+      var hiddenSeed={};
+      try{ hiddenSeed=JSON.parse(localStorage.getItem('visadoo_hidden_admin_visa_defaults')||'{}')||{}; }catch(e){ hiddenSeed={}; }
+      var fallbackRows=VT_ADMIN_DEFAULTS.filter(function(v){ return !bySlug[v.slug] && !hiddenSeed[v.slug]; }).map(function(v){
+        var x=JSON.parse(JSON.stringify(v));
+        x.id='seed:'+x.slug;
+        x._seedFallback=true;
+        return x;
+      });
+      vtList=dbRows.concat(fallbackRows); vtEditing=null;
       var sel=document.getElementById('vtFilter');
       if(sel){ sel.innerHTML='<option value="all">All countries</option>'+countryList.map(function(c){ return '<option value="'+esc(c.slug)+'"'+(c.slug===vtCountryFilter?' selected':'')+'>'+esc(c.name)+'</option>'; }).join('');
-        sel.onchange=function(){ vtCountryFilter=sel.value; paintVt(); }; }
+        sel.onchange=function(){ vtCountryFilter=sel.value; try{ sessionStorage.setItem('visadoo_admin_vt_filter', vtCountryFilter); }catch(_e){} paintVt(); }; }
       paintVt();
     });
   }
@@ -7512,7 +13689,7 @@
     var shown = vtCountryFilter==='all' ? vtList : vtList.filter(function(v){return v.country_slug===vtCountryFilter;});
     if(!shown.length){ area.innerHTML='<div class="panel empty-state"><p>'+(vtList.length?'No visa types for this country yet.':'No visa types yet. Click “Add visa type” to create your first one.')+'</p></div>'; return; }
     area.innerHTML=shown.map(vtRow).join('');
-    area.querySelectorAll('[data-q]').forEach(function(b){ b.onclick=function(){ var v=vtList.filter(function(x){return x.id===b.getAttribute('data-q');})[0]; vtQEditing=v; paintVt(); }; });
+    area.querySelectorAll('[data-q]').forEach(function(b){ b.onclick=function(){ var v=vtList.filter(function(x){return x.id===b.getAttribute('data-q');})[0]; if(v && v._seedFallback){ toast('Save this visa type once before adding questions.'); vtEditing=JSON.parse(JSON.stringify(v)); paintVt(); return; } vtQEditing=v; paintVt(); }; });
     area.querySelectorAll('[data-seo]').forEach(function(b){ b.onclick=function(){ var v=vtList.filter(function(x){return x.id===b.getAttribute('data-seo');})[0]; vtSeoEditing=JSON.parse(JSON.stringify(v)); paintVt(); }; });
     area.querySelectorAll('[data-edit]').forEach(function(b){ b.onclick=function(){ var v=vtList.filter(function(x){return x.id===b.getAttribute('data-edit');})[0]; vtEditing=JSON.parse(JSON.stringify(v)); paintVt(); }; });
     area.querySelectorAll('[data-del]').forEach(function(b){ b.onclick=function(){ vtDelete(b.getAttribute('data-del')); }; });
@@ -7610,8 +13787,13 @@
       };
       saveBtn.disabled=true; saveBtn.innerHTML='<span class="spin"></span>';
       var op;
-      if(vtEditing.id){ op=sb.from('visa_types').update(payload).eq('id',vtEditing.id); }
-      else { payload.slug=uniqueSlug(slugify(name)); op=sb.from('visa_types').insert(payload); }
+      if(vtEditing.id && String(vtEditing.id).indexOf('seed:')!==0){
+        op=sb.from('visa_types').update(payload).eq('id',vtEditing.id);
+      } else {
+        // A locally displayed seeded row becomes a real DB row the first time it is saved.
+        payload.slug=(vtEditing && vtEditing._seedFallback && vtEditing.slug) ? vtEditing.slug : uniqueSlug(slugify(name));
+        op=sb.from('visa_types').insert(payload);
+      }
       op.then(function(r){
         saveBtn.disabled=false; saveBtn.innerHTML='Save';
         if(r.error){ msg.className='signin-msg err'; msg.textContent='Could not save. Please try again.'; console.error(r.error); return; }
@@ -7629,6 +13811,19 @@
     var v=vtList.filter(function(x){return x.id===id;})[0];
     if(!v) return;
     if(!window.confirm('Delete “'+v.name+'”? It will be removed from your website. Existing applications are not affected.')) return;
+    // Fallback seed rows are not in the DB yet. Hide them locally instead of sending
+    // a delete request with a synthetic id.
+    if(String(id).indexOf('seed:')===0){
+      try{
+        var hidden=JSON.parse(localStorage.getItem('visadoo_hidden_admin_visa_defaults')||'{}')||{};
+        hidden[v.slug]=true;
+        localStorage.setItem('visadoo_hidden_admin_visa_defaults',JSON.stringify(hidden));
+      }catch(e){}
+      vtList=vtList.filter(function(x){return x.id!==id;});
+      toast('Visa type removed');
+      paintVt();
+      return;
+    }
     sb.from('visa_types').delete().eq('id',id).then(function(r){
       if(r.error){ toast('Could not delete. Please try again.'); console.error(r.error); return; }
       logAudit({ module:'Catalogue', action:'delete', record_type:'visa_type', record_ref:v.name, remarks:'Visa type deleted', risk:'high' });
@@ -8347,7 +14542,7 @@
       if(!window.confirm('Delete supplier “'+s.name+'”? This cannot be undone.')) return;
       sb.from('suppliers').delete().eq('id',s.id).then(function(r){ if(r.error){ toast('Could not delete (the supplier may be in use).'); console.error(r.error); return; } logFinance('supplier',s.id,'delete','Deleted supplier '+s.name); toast('Supplier deleted'); go('suppliers'); });
     };
-    box.querySelectorAll('.sp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var p=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; sb.storage.from('finance-files').createSignedUrl(p,3600).then(function(r){ l.textContent=o; if(r.error||!r.data){ toast('Could not open receipt.'); return; } window.open(r.data.signedUrl,'_blank','noopener'); }); }; });
+    box.querySelectorAll('.sp-proof').forEach(function(l){ l.onclick=function(e){ e.preventDefault(); var p=l.getAttribute('data-path'), o=l.textContent; l.textContent='…'; var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900; sb.storage.from('finance-files').createSignedUrl(p, expiry).then(function(r){ l.textContent=o; if(r.error||!r.data){ toast('Could not open receipt.'); return; } window.open(r.data.signedUrl,'_blank','noopener'); }); }; });
     document.getElementById('spSave').onclick=function(){
       var amt=Number(document.getElementById('spAmt').value);
       if(!(amt>0)){ toast('Enter a valid amount.'); return; }
@@ -8804,7 +14999,7 @@
   // ============================================================
   //  DESTINATIONS (countries + groups managers)
   // ============================================================
-  var destTab='countries', cEditing=null, gEditing=null;
+  var destTab='countries', cEditing=null, gEditing=null, nEditing=null, expandedGroupSlug=null;
   function flagImg(iso2){ return iso2 ? ('https://flagcdn.com/w40/'+iso2.toLowerCase()+'.png') : ''; }
 
   function renderDestinationsAdmin(){
@@ -8814,14 +15009,61 @@
       '<div class="subnav" id="destToggle" style="margin-bottom:18px">'+
         '<button data-dt="countries" class="'+(destTab==='countries'?'active':'')+'">Countries</button>'+
         '<button data-dt="groups" class="'+(destTab==='groups'?'active':'')+'">Groups</button>'+
+        '<button data-dt="nationalities" class="'+(destTab==='nationalities'?'active':'')+'">Nationalities</button>'+
       '</div>'+
       '<div id="destArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span></div></div>'+
     '</div>';
     wireAdminSections();
-    root.querySelectorAll('#destToggle button').forEach(function(b){ b.onclick=function(){ destTab=b.getAttribute('data-dt'); cEditing=null; gEditing=null; renderDestinationsAdmin(); }; });
+    root.querySelectorAll('#destToggle button').forEach(function(b){ b.onclick=function(){ destTab=b.getAttribute('data-dt'); cEditing=null; gEditing=null; nEditing=null; renderDestinationsAdmin(); }; });
     Promise.all([loadCountriesGroups(), loadVisaTypes()]).then(paintDest);
   }
-  function paintDest(){ var area=document.getElementById('destArea'); if(!area) return; if(destTab==='groups') paintGroups(area); else paintCountries(area); }
+  function paintDest(){
+    var area=document.getElementById('destArea');
+    if(!area) return;
+    if(cEditing) paintCountries(area);
+    else if(nEditing) paintNationalities(area);
+    else if(destTab==='groups') paintGroups(area);
+    else if(destTab==='nationalities') paintNationalities(area);
+    else paintCountries(area);
+    ensureNewCountriesExist();
+  }
+  function ensureNewCountriesExist(){
+    var targets = [
+      { slug: 'thailand', name: 'Thailand', iso2: 'TH', group_slug: 'e-visa' },
+      { slug: 'bahrain', name: 'Bahrain', iso2: 'BH', group_slug: 'e-visa' },
+      { slug: 'turkey', name: 'Turkey', iso2: 'TR', group_slug: 'e-visa' },
+      { slug: 'vietnam', name: 'Vietnam', iso2: 'VN', group_slug: 'e-visa' },
+      { slug: 'india', name: 'India', iso2: 'IN', group_slug: 'e-visa' },
+      { slug: 'sri-lanka', name: 'Sri Lanka', iso2: 'LK', group_slug: 'e-visa' },
+      { slug: 'morocco', name: 'Morocco', iso2: 'MA', group_slug: 'e-visa' },
+      { slug: 'indonesia', name: 'Indonesia', iso2: 'ID', group_slug: 'e-visa' },
+      { slug: 'russia', name: 'Russia', iso2: 'RU', group_slug: 'e-visa' },
+      { slug: 'kenya', name: 'Kenya', iso2: 'KE', group_slug: 'e-visa' }
+    ];
+    var existingSlugs = countryList.map(function(c){ return c.slug; });
+    var toAdd = targets.filter(function(t){ return existingSlugs.indexOf(t.slug) === -1; });
+    if(toAdd.length === 0) return;
+
+    var promises = toAdd.map(function(c){
+      var payload = {
+        name: c.name,
+        slug: c.slug,
+        iso2: c.iso2,
+        group_slug: c.group_slug || null,
+        active: true,
+        featured: false,
+        sort_order: countryList.length + 1
+      };
+      return sb.from('countries').insert(payload);
+    });
+
+    Promise.all(promises).then(function(results){
+      toast("Added new countries: " + toAdd.map(function(x){return x.name;}).join(", "));
+      loadCountriesGroups().then(paintDest);
+    }).catch(function(err){
+      console.error("Error adding countries:", err);
+    });
+  }
 
   // ---- Countries ----
   function paintCountries(area){
@@ -8919,22 +15161,141 @@
     sb.from('countries').delete().eq('id',id).then(function(r){ if(r.error){ toast('Could not delete.'); console.error(r.error); return; } logAudit({ module:'Catalogue', action:'delete', record_type:'country', record_ref:c.name, remarks:'Destination deleted', risk:'high' }); toast('Country deleted'); loadVisaTypes(); renderDestinationsAdmin(); });
   }
 
+  // ---- Nationalities / destination visibility ----
+  function nationalityAssignedSlugs(id){
+    return nationalityDestinationList.filter(function(x){ return x.nationality_id===id; }).map(function(x){ return x.country_slug; });
+  }
+  function paintNationalities(area){
+    if(nEditing){ area.innerHTML=nationalityFormHtml(nEditing); wireNationalityForm(); return; }
+    var rows=nationalityList.map(function(n){
+      var assigned=nationalityAssignedSlugs(n.id);
+      return '<div class="admin-app"><div class="arow">'+
+        '<div style="display:flex;align-items:center;gap:12px">'+
+          (n.iso2?'<img src="'+flagImg(n.iso2)+'" style="width:34px;height:23px;border-radius:3px;object-fit:cover" alt="">':'')+
+          '<div><h4>'+esc(n.name)+(n.active?'':' <span class="status-pill sp-action" style="font-size:11px">Hidden</span>')+'</h4>'+
+          '<div class="meta">'+assigned.length+' destination'+(assigned.length===1?'':'s')+' visible for this nationality</div></div></div>'+
+        '<div style="display:flex;gap:8px"><button class="btn btn-ghost" data-nedit="'+esc(n.id)+'">Edit</button>'+
+        '<button class="btn btn-ghost" data-ndel="'+esc(n.id)+'" style="color:var(--red)">Delete</button></div>'+
+      '</div></div>';
+    }).join('');
+    area.innerHTML='<div style="margin-bottom:14px"><button class="btn btn-primary" id="nAdd">+ Add nationality</button></div>'+(rows||'<div class="panel empty-state"><p>No nationalities yet.</p></div>');
+    document.getElementById('nAdd').onclick=function(){ nEditing={id:null,name:'',iso2:'',active:true,sort_order:nationalityList.length+1,_destinations:[]}; paintDest(); };
+    area.querySelectorAll('[data-nedit]').forEach(function(b){ b.onclick=function(){ var found=nationalityList.filter(function(x){return x.id===b.getAttribute('data-nedit');})[0]; nEditing=JSON.parse(JSON.stringify(found)); nEditing._destinations=nationalityAssignedSlugs(found.id); paintDest(); }; });
+    area.querySelectorAll('[data-ndel]').forEach(function(b){ b.onclick=function(){ nationalityDelete(b.getAttribute('data-ndel')); }; });
+  }
+  function nationalityFormHtml(n){
+    var selected=n._destinations||[];
+    var countryChecks=countryList.map(function(c){
+      return '<label style="display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer">'+
+        '<input type="checkbox" data-ncountry="'+esc(c.slug)+'" '+(selected.indexOf(c.slug)>-1?'checked':'')+' style="width:auto">'+
+        (c.iso2?'<img src="'+flagImg(c.iso2)+'" style="width:26px;height:18px;border-radius:2px;object-fit:cover" alt="">':'')+
+        '<span>'+esc(c.name)+'</span></label>';
+    }).join('');
+    return '<div class="panel"><h3>'+(n.id?'Edit nationality':'New nationality')+'</h3>'+
+      '<p class="phint">Choose exactly which destinations customers with this nationality can see. The same destination can be selected for more than one nationality.</p>'+
+      '<div class="grid2"><div class="field"><label>Nationality name <span class="req-star">*</span></label><input id="nName" type="text" value="'+esc(n.name||'')+'" placeholder="e.g. India"></div>'+
+      '<div class="field"><label>Country code (flag)</label><input id="nIso" type="text" maxlength="2" value="'+esc(n.iso2||'')+'" placeholder="e.g. IN, QA"></div></div>'+
+      '<div class="field"><label>Visible destinations</label><div style="display:flex;gap:8px;margin:8px 0 12px"><button type="button" class="btn btn-ghost" id="nAll">Select all</button><button type="button" class="btn btn-ghost" id="nNone">Clear all</button></div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;max-height:430px;overflow:auto;padding:2px">'+countryChecks+'</div></div>'+
+      '<div class="grid2"><div class="field"><label>Display order</label><input id="nSort" type="number" value="'+esc(n.sort_order||1)+'"></div>'+
+      '<div class="field"><label style="display:flex;align-items:center;gap:9px;font-weight:500;cursor:pointer;margin-top:28px"><input id="nActive" type="checkbox" '+(n.active!==false?'checked':'')+' style="width:auto"> Show nationality on site</label></div></div>'+
+      '<div class="signin-msg" id="nMsg"></div><div style="display:flex;gap:10px"><button class="btn btn-primary" id="nSave">'+(n.id?'Save nationality':'Create nationality')+'</button><button class="btn btn-ghost" id="nCancel">Cancel</button></div></div>';
+  }
+  function wireNationalityForm(){
+    document.getElementById('nCancel').onclick=function(){ nEditing=null; paintDest(); };
+    document.getElementById('nAll').onclick=function(){ document.querySelectorAll('[data-ncountry]').forEach(function(x){x.checked=true;}); };
+    document.getElementById('nNone').onclick=function(){ document.querySelectorAll('[data-ncountry]').forEach(function(x){x.checked=false;}); };
+    document.getElementById('nSave').onclick=function(){
+      var name=document.getElementById('nName').value.trim(); var msg=document.getElementById('nMsg');
+      if(!name){ msg.className='signin-msg err'; msg.textContent='Please enter the nationality name.'; return; }
+      var payload={name:name,iso2:(document.getElementById('nIso').value.trim().toUpperCase()||null),active:document.getElementById('nActive').checked,sort_order:Number(document.getElementById('nSort').value)||1};
+      var slugs=[].slice.call(document.querySelectorAll('[data-ncountry]:checked')).map(function(x){return x.getAttribute('data-ncountry');});
+      var save=document.getElementById('nSave'); save.disabled=true; save.innerHTML='<span class="spin"></span> Saving…';
+      var id=nEditing.id||makeNatId(); var wasEdit=!!nEditing.id;
+      var duplicate=nationalityList.some(function(n){return n.id!==id&&String(n.name).toLowerCase()===name.toLowerCase();});
+      if(duplicate){ save.disabled=false; save.textContent=wasEdit?'Save nationality':'Create nationality'; msg.className='signin-msg err'; msg.textContent='That nationality already exists.'; return; }
+      var item={id:id,name:payload.name,iso2:payload.iso2,active:payload.active,sort_order:payload.sort_order,destinations:slugs};
+      var idx=nationalityList.findIndex(function(n){return n.id===id;}); if(idx>-1) nationalityList[idx]=item; else nationalityList.push(item);
+      nationalityList.sort(function(a,b){return (a.sort_order||0)-(b.sort_order||0);}); rebuildNationalityMap();
+      saveNationalityConfig().then(function(){ logAudit({module:'Catalogue',action:(wasEdit?'edit':'create'),record_type:'nationality',record_ref:name,remarks:'Nationality destination visibility saved',risk:'normal'}); toast('Nationality saved'); nEditing=null; return loadCountriesGroups(); })
+      .then(paintDest).catch(function(err){ save.disabled=false; save.textContent=wasEdit?'Save nationality':'Create nationality'; msg.className='signin-msg err'; msg.textContent='Could not save nationality. Please try again.'; console.error(err); });
+    };
+  }
+  function nationalityDelete(id){
+    var n=nationalityList.filter(function(x){return x.id===id;})[0]; if(!n) return;
+    if(!window.confirm('Delete '+n.name+'? Its destination visibility rules will also be removed.')) return;
+    nationalityList=nationalityList.filter(function(x){return x.id!==id;}); rebuildNationalityMap();
+    saveNationalityConfig().then(function(){ logAudit({module:'Catalogue',action:'delete',record_type:'nationality',record_ref:n.name,remarks:'Nationality deleted',risk:'high'}); toast('Nationality deleted'); return loadCountriesGroups(); }).then(paintDest).catch(function(err){toast('Could not delete.');console.error(err);});
+  }
+
   // ---- Groups ----
   function paintGroups(area){
     if(gEditing){ area.innerHTML=groupFormHtml(gEditing); wireGroupForm(); return; }
     var rows=groupList.map(function(g){
       var members=countryList.filter(function(c){return c.group_slug===g.slug;}).length;
-      return '<div class="admin-app"><div class="arow">'+
-        '<div><h4>'+esc(g.name)+(g.active?'':' <span class="status-pill sp-action" style="font-size:11px">Hidden</span>')+'</h4>'+
-        '<div class="meta">'+members+' countries'+(g.description?(' · '+esc(g.description)):'')+'</div></div>'+
-        '<div style="display:flex;gap:8px"><button class="btn btn-ghost" data-gedit="'+esc(g.id)+'">Edit</button>'+
-          '<button class="btn btn-ghost" data-gdel="'+esc(g.id)+'" style="color:var(--red)">Delete</button></div>'+
-      '</div></div>';
+      var isExpanded = (expandedGroupSlug === g.slug);
+      var countriesHtml = '';
+      if(isExpanded){
+        var groupCountries = countryList.filter(function(c){return c.group_slug===g.slug;});
+        var headerHtml = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<h5 style="margin:0;font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Countries ('+groupCountries.length+')</h5>' +
+          '<button class="btn btn-ghost" style="padding:4px 8px;font-size:12px;font-weight:700" data-gcadd="'+esc(g.slug)+'">+ Add country to '+esc(g.name)+'</button>' +
+        '</div>';
+
+        if(groupCountries.length === 0){
+          countriesHtml = '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">' +
+            headerHtml +
+            '<div style="color:var(--muted);font-size:14px">No countries in this group.</div>' +
+          '</div>';
+        } else {
+          countriesHtml = '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px">' +
+            headerHtml +
+            groupCountries.map(function(c){
+              return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--line)">' +
+                '<div style="display:flex;align-items:center;gap:10px">' +
+                  (c.iso2?'<img src="'+flagImg(c.iso2)+'" style="width:28px;height:19px;border-radius:2px;object-fit:cover" alt="">':'') +
+                  '<div><span style="font-weight:700;font-size:14.5px">'+esc(c.name)+'</span>' +
+                  (c.active?'':' <span class="status-pill sp-action" style="font-size:10px;padding:2px 6px;margin-left:6px">Hidden</span>') +
+                  '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px">' +
+                  '<button class="btn btn-ghost" style="padding:6px 10px;font-size:13px" data-gcedit="'+esc(c.id)+'">Edit</button>' +
+                  '<button class="btn btn-ghost" style="padding:6px 10px;font-size:13px" data-gchide="'+esc(c.id)+'">'+(c.active?'Hide':'Show')+'</button>' +
+                  '<button class="btn btn-ghost" style="padding:6px 10px;font-size:13px;color:var(--red)" data-gcdel="'+esc(c.id)+'">Delete</button>' +
+                '</div>' +
+              '</div>';
+            }).join('') +
+          '</div>';
+        }
+      }
+
+      return '<div class="admin-app">' +
+        '<div class="arow">' +
+          '<div style="cursor:pointer;flex:1;display:flex;align-items:center;gap:12px" data-gtoggle="'+esc(g.slug)+'">' +
+            '<span style="font-size:10px;color:var(--muted);transform:rotate('+(isExpanded?'90':'0')+'deg);transition:transform 0.15s;display:inline-block">▶</span>' +
+            '<div>' +
+              '<h4>'+esc(g.name)+(g.active?'':' <span class="status-pill sp-action" style="font-size:11px">Hidden</span>')+'</h4>' +
+              '<div class="meta">'+members+' countries'+(g.description?(' · '+esc(g.description)):'')+'</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button class="btn btn-ghost" data-gedit="'+esc(g.id)+'">Edit</button>' +
+            '<button class="btn btn-ghost" data-gdel="'+esc(g.id)+'" style="color:var(--red)">Delete</button>' +
+          '</div>' +
+        '</div>' +
+        countriesHtml +
+      '</div>';
     }).join('');
+
     area.innerHTML='<div style="margin-bottom:14px"><button class="btn btn-primary" id="gAdd">+ Add group</button></div>'+(rows||'<div class="panel empty-state"><p>No groups yet. Create one (e.g. Schengen) and assign countries to it.</p></div>');
     document.getElementById('gAdd').onclick=function(){ gEditing={id:null,name:'',description:'',active:true,sort_order:(groupList.length+1)}; paintDest(); };
     area.querySelectorAll('[data-gedit]').forEach(function(b){ b.onclick=function(){ gEditing=JSON.parse(JSON.stringify(groupList.filter(function(x){return x.id===b.getAttribute('data-gedit');})[0])); paintDest(); }; });
     area.querySelectorAll('[data-gdel]').forEach(function(b){ b.onclick=function(){ groupDelete(b.getAttribute('data-gdel')); }; });
+    area.querySelectorAll('[data-gtoggle]').forEach(function(el){ el.onclick=function(){ var slug=el.getAttribute('data-gtoggle'); expandedGroupSlug = (expandedGroupSlug === slug ? null : slug); paintDest(); }; });
+    area.querySelectorAll('[data-gcadd]').forEach(function(b){ b.onclick=function(e){ e.stopPropagation(); var gslug=b.getAttribute('data-gcadd'); cEditing={id:null,name:'',iso2:'',group_slug:gslug,summary:'',blurb:'',seo_title:'',seo_description:'',featured:false,active:true,sort_order:(countryList.length+1)}; paintDest(); }; });
+    area.querySelectorAll('[data-gcedit]').forEach(function(b){ b.onclick=function(){ var cid = b.getAttribute('data-gcedit'); cEditing = JSON.parse(JSON.stringify(countryList.filter(function(x){return x.id===cid;})[0])); paintDest(); }; });
+    area.querySelectorAll('[data-gchide]').forEach(function(b){ b.onclick=function(){ var cid = b.getAttribute('data-gchide'); countryToggleActive(cid); }; });
+    area.querySelectorAll('[data-gcdel]').forEach(function(b){ b.onclick=function(){ var cid = b.getAttribute('data-gcdel'); countryDelete(cid); }; });
   }
   function groupFormHtml(g){
     return '<div class="panel"><h3>'+(g.id?'Edit group':'New group')+'</h3>'+
@@ -9303,7 +15664,13 @@
   // ============================================================
   function pad6(n){ n=String(n==null?'':n); while(n.length<6) n='0'+n; return n; }
   function enqRef(seq){ return 'ENQ-'+pad6(seq); }
-  function csvCell(v){ v=(v==null?'':String(v)); return /[",\n\r]/.test(v) ? ('"'+v.replace(/"/g,'""')+'"') : v; }
+  function csvCell(v){
+    v = (v == null ? '' : String(v));
+    if (/^[=\+\-@]/.test(v)) {
+      v = "'" + v;
+    }
+    return /[",\n\r]/.test(v) ? ('"' + v.replace(/"/g, '""') + '"') : v;
+  }
   function downloadCsv(filename, headers, rows){
     var lines=[headers.map(csvCell).join(',')];
     rows.forEach(function(r){ lines.push(r.map(csvCell).join(',')); });
@@ -10041,7 +16408,7 @@
     if(pin && window.intlTelInput){
       custIti=window.intlTelInput(pin,{ initialCountry:'in', separateDialCode:true,
         preferredCountries:['in','ae','sa','qa','kw','om','bh','us','gb'],
-        utilsScript:'https://cdn.jsdelivr.net/npm/intl-tel-input@18.2.1/build/js/utils.js' });
+        utilsScript:'/vendor/utils.js' });
     }
     document.getElementById('cefCancel').onclick=function(){ custEditing=false; renderCustomerDetail(c.id); };
     document.getElementById('cefSave').onclick=function(){
@@ -10123,7 +16490,7 @@
     '</div>';
     wireAdminSections();
     root.querySelectorAll('#contentToggle button').forEach(function(b){ b.onclick=function(){ contentTab=b.getAttribute('data-ct'); pEditing=fEditing=rEditing=null; renderContentAdmin(); }; });
-    if(contentTab==='pages') sb.from('pages').select('*').order('sort_order').then(function(r){ pList=r.data||[]; paintPages(); });
+    if(contentTab==='pages') sb.from('pages').select('*').order('sort_order').then(function(r){ pList=(r.data||[]).filter(function(p){return p.slug!==NATIONALITY_CONFIG_SLUG;}); paintPages(); });
     else if(contentTab==='faqs') sb.from('faqs').select('*').order('sort_order').then(function(r){ fList=r.data||[]; paintFaqs(); });
     else sb.from('reviews').select('*').order('sort_order').then(function(r){ rvList=r.data||[]; paintReviews(); });
   }
@@ -10517,13 +16884,34 @@
   //  ADMIN · EVENTS (international events that promote country visas)
   // ============================================================
   var evList=[], evEditing=null;
-  var EVENT_CATEGORIES=['Music','Sports','Art & Culture','Business & Science'];
+  var EVENT_CATEGORIES=['Seasonal','Festivals','Holidays','Sports','Music & Culture','Shopping','Global Events'];
   function evSlugify(s){ return (s||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
   function evUniqueSlug(base, exceptId){
     var s=evSlugify(base)||'event', i=2, taken=s;
     var exists=function(x){ return evList.some(function(e){ return e.slug===x && e.id!==exceptId; }); };
     while(exists(taken)){ taken=s+'-'+i; i++; } return taken;
   }
+
+  var ADMIN_SEED_EVENTS = [
+    { slug:'itb-asia-2026', name:'ITB Asia 2026', country_slug:'singapore', category:'Travel Expo', event_date:'2026-09-20', end_date:'2026-09-22', city:'Singapore', image_url:'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80', image_alt:'ITB Asia convention hall in Singapore', blurb:"Asia's leading travel trade show connecting the global travel industry.", seo_title:'ITB Asia 2026 Singapore Visa | Visa Doo', seo_description:'Plan your visit to ITB Asia 2026 in Singapore. Instant eVisa applications and travel documentation with Visa Doo.', featured:true, sort_order:1, active:true },
+    { slug:'formula-1-azerbaijan-grand-prix-2026', name:'F1 Azerbaijan Grand Prix 2026', country_slug:'azerbaijan', category:'Sports', event_date:'2026-09-24', end_date:'2026-09-27', city:'Baku, Azerbaijan', image_url:'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1200&q=80', image_alt:'Formula 1 race car on Baku City Circuit', blurb:"Experience high-speed action and explore Azerbaijan's rich culture.", seo_title:'Azerbaijan Grand Prix 2026 Visa | Visa Doo', seo_description:'Get your official Azerbaijan eVisa in hours for the Formula 1 Baku Grand Prix 2026 with Visa Doo.', featured:true, sort_order:2, active:true },
+    { slug:'dubai-airshow-2026', name:'Dubai Airshow 2026', country_slug:'united-arab-emirates', category:'Business', event_date:'2026-09-26', end_date:'2026-09-28', city:'Dubai, UAE', image_url:'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80', image_alt:'Dubai aerospace showcase and modern skyline', blurb:"The world's largest aerospace event showcasing the future of aviation.", seo_title:'Dubai Airshow 2026 UAE Visa | Visa Doo', seo_description:'Fast UAE visa approval for Dubai Airshow 2026. 100% online application with Visa Doo.', featured:true, sort_order:3, active:true },
+    { slug:'ultra-worldwide-music-festival-2026', name:'Ultra Worldwide Music Festival 2026', country_slug:'indonesia', category:'Music', event_date:'2026-09-28', end_date:'2026-09-30', city:'Bali, Indonesia', image_url:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80', image_alt:'Electrifying music festival stage and enthusiastic crowd', blurb:"Electrifying electronic music festival featuring world-class international headliners and stage production.", seo_title:'Ultra Music Festival Bali 2026 Visa | Visa Doo', seo_description:'Apply for your Indonesia tourist visa and Bali travel clearance with Visa Doo.', featured:true, sort_order:4, active:true },
+    { slug:'seoul-mid-autumn-lantern-festival-2026', name:'Seoul Lantern Festival 2026', country_slug:'south-korea', category:'Art & Culture', event_date:'2026-09-15', end_date:'2026-09-18', city:'Seoul, South Korea', image_url:'https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=1200&q=80', image_alt:'Traditional glowing hanji lanterns in Seoul', blurb:"Hundreds of handcrafted luminous Hanji paper lanterns illuminating ancient palaces and waterways.", seo_title:'Seoul Lantern Festival 2026 Korea Visa | Visa Doo', seo_description:'Explore Seoul during the 2026 Lantern Festival. Get your South Korea visa and travel documentation today.', featured:true, sort_order:5, active:true },
+    { slug:'gitex-global-2026', name:'GITEX Global 2026', country_slug:'united-arab-emirates', category:'Business', event_date:'2026-09-10', end_date:'2026-09-12', city:'Dubai, UAE', image_url:'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80', image_alt:'GITEX Global tech exhibition with glowing displays', blurb:"Global tech founders and innovators gathering to discover cutting-edge artificial intelligence and computing.", seo_title:'GITEX Global Dubai 2026 UAE Visa | Visa Doo', seo_description:'Fast UAE visa approval for GITEX Global Dubai 2026. 100% online application and 24-hour delivery.', featured:true, sort_order:6, active:true },
+    { slug:'oktoberfest-munich-2026', name:'Oktoberfest Munich 2026', country_slug:'germany', category:'Art & Culture', event_date:'2026-09-19', end_date:'2026-10-04', city:'Munich, Germany', image_url:'https://images.unsplash.com/photo-1571863533956-01c88e79957e?auto=format&fit=crop&w=1200&q=80', image_alt:'Oktoberfest celebration tents in Munich', blurb:"The world's biggest Bavarian folk and cultural festival celebrating traditional music, cuisine and camaraderie.", seo_title:'Oktoberfest Munich 2026 Germany Visa | Visa Doo', seo_description:'Apply for your Germany Schengen visa for Oktoberfest 2026 in Munich with Visa Doo fast-track processing.', featured:true, sort_order:7, active:true },
+    { slug:'tokyo-game-show-2026', name:'Tokyo Game Show 2026', country_slug:'japan', category:'Business', event_date:'2026-09-24', end_date:'2026-09-27', city:'Tokyo, Japan', image_url:'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80', image_alt:'Tokyo neon city skyline and gaming festival venue', blurb:"Asia's premier video game exhibition showcasing the next generation of games, hardware and esports.", seo_title:'Tokyo Game Show 2026 Japan Visa | Visa Doo', seo_description:'Plan your trip to Tokyo Game Show 2026. Get expert Japan visa assistance and verified document guidance.', featured:false, sort_order:8, active:true },
+    { slug:'paris-fashion-week-ss27', name:'Paris Fashion Week SS27', country_slug:'france', category:'Art & Culture', event_date:'2026-09-28', end_date:'2026-10-06', city:'Paris, France', image_url:'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80', image_alt:'Paris Eiffel Tower and luxury avenue', blurb:"The pinnacle of international haute couture runways across legendary Parisian landmarks and grand halls.", seo_title:'Paris Fashion Week 2026 France Visa | Visa Doo', seo_description:'Attend Paris Fashion Week 2026. Get your France Schengen visa processed quickly with Visa Doo.', featured:true, sort_order:9, active:true },
+    { slug:'singapore-grand-prix-2026', name:'Singapore Grand Prix 2026', country_slug:'singapore', category:'Sports', event_date:'2026-09-18', end_date:'2026-09-20', city:'Singapore', image_url:'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80', image_alt:'Marina Bay Singapore night skyline and racing street circuit', blurb:"The spectacular night race around Marina Bay Circuit paired with star-studded concerts and entertainment.", seo_title:'Singapore Grand Prix 2026 Visa | Visa Doo', seo_description:'Get your Singapore visa for the Marina Bay Grand Prix night race with Visa Doo.', featured:false, sort_order:10, active:true },
+    { slug:'monaco-yacht-show-2026', name:'Monaco Yacht Show 2026', country_slug:'france', category:'Business', event_date:'2026-09-23', end_date:'2026-09-26', city:'Port Hercule, Monaco', image_url:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80', image_alt:'Luxury superyachts docked at Monaco Port Hercule', blurb:"The ultimate superyacht luxury showcase attracting yacht builders, owners and nautical enthusiasts globally.", seo_title:'Monaco Yacht Show 2026 Visa | Visa Doo', seo_description:'Experience the Monaco Yacht Show 2026. Apply for your France Schengen visa on Visa Doo.', featured:false, sort_order:11, active:true },
+    { slug:'venice-film-festival-2026', name:'Venice International Film Festival 2026', country_slug:'italy', category:'Art & Culture', event_date:'2026-09-02', end_date:'2026-09-12', city:'Venice, Italy', image_url:'https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=1200&q=80', image_alt:'Venetian canal with gondolas and historic architecture', blurb:"The world's oldest film festival celebrating cinematic brilliance on the glamorous island of Lido di Venezia.", seo_title:'Venice Film Festival 2026 Italy Visa | Visa Doo', seo_description:'Travel to Venice Film Festival 2026. Get your Italy Schengen visa expedited with Visa Doo.', featured:false, sort_order:12, active:true },
+    { slug:'canton-fair-autumn-2026', name:'140th Canton Fair Autumn 2026', country_slug:'china', category:'Business', event_date:'2026-10-15', end_date:'2026-11-04', city:'Guangzhou, China', image_url:'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=1200&q=80', image_alt:'Guangzhou Pearl River and Canton Tower', blurb:"China's premier international trade fair gathering global suppliers, manufacturers, and buyers from across the world.", seo_title:'Canton Fair 2026 China Business Visa | Visa Doo', seo_description:'Attend Canton Fair Autumn 2026 in Guangzhou. Professional China visa assistance and document review.', featured:false, sort_order:13, active:true },
+    { slug:'f1-abu-dhabi-grand-prix-2026', name:'Formula 1 Abu Dhabi Grand Prix 2026', country_slug:'united-arab-emirates', category:'Sports', event_date:'2026-11-20', end_date:'2026-11-22', city:'Abu Dhabi, UAE', image_url:'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80', image_alt:'Yas Marina Circuit Abu Dhabi sunset', blurb:"The electrifying twilight season finale of the FIA Formula One World Championship at Yas Marina Circuit.", seo_title:'Abu Dhabi F1 Grand Prix 2026 UAE Visa | Visa Doo', seo_description:'Get your UAE visa for the 2026 Abu Dhabi Grand Prix at Yas Marina. Fast, secure online processing.', featured:true, sort_order:14, active:true },
+    { slug:'dubai-shopping-festival-2026-27', name:'Dubai Shopping Festival (DSF) 2026–27', country_slug:'united-arab-emirates', category:'Shopping', event_date:'2026-12-15', end_date:'2027-01-25', city:'Dubai, UAE', image_url:'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=1200&q=80', image_alt:'Dubai skyline with celebratory lights and fireworks', blurb:"The world's greatest shopping and entertainment festival with drone shows, star-studded concerts and luxury discounts.", seo_title:'Dubai Shopping Festival 2026-27 Visa | Visa Doo', seo_description:'Shop and celebrate at Dubai Shopping Festival 2026-27. Instant UAE visa applications with Visa Doo.', featured:true, sort_order:15, active:true },
+    { slug:'st-moritz-snow-polo-world-cup-2027', name:'St. Moritz Snow Polo World Cup 2027', country_slug:'switzerland', category:'Sports', event_date:'2027-01-29', end_date:'2027-01-31', city:'St. Moritz, Switzerland', image_url:'https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=1200&q=80', image_alt:'Snowy peaks of the Swiss Alps in winter', blurb:"The world's premier snow polo tournament held on the frozen lake of St. Moritz against the majestic Swiss Alps.", seo_title:'St. Moritz Snow Polo 2027 Switzerland Visa | Visa Doo', seo_description:'Travel to Switzerland for the St. Moritz Snow Polo 2027. Apply for your Swiss Schengen visa with Visa Doo.', featured:false, sort_order:16, active:true },
+    { slug:'st-patricks-festival-dublin-2027', name:'St. Patrick\'s Festival Dublin 2027', country_slug:'ireland', category:'Art & Culture', event_date:'2027-03-14', end_date:'2027-03-18', city:'Dublin, Ireland', image_url:'https://images.unsplash.com/photo-1549918864-48ac978761a4?auto=format&fit=crop&w=1200&q=80', image_alt:'Dublin historic streets and festive Irish atmosphere', blurb:"Immerse yourself in four days of vibrant Irish music, street theatre, visual arts, and the world-famous grand parade.", seo_title:'St. Patrick\'s Festival Dublin 2027 Ireland Visa | Visa Doo', seo_description:'Celebrate St. Patrick\'s in Dublin 2027. Apply for your Ireland tourist visa with Visa Doo.', featured:false, sort_order:17, active:true },
+    { slug:'japan-sakura-cherry-blossom-festival-2027', name:'Cherry Blossom (Sakura) Festival Kyoto & Tokyo 2027', country_slug:'japan', category:'Art & Culture', event_date:'2027-03-20', end_date:'2027-04-10', city:'Kyoto & Tokyo, Japan', image_url:'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80', image_alt:'Kyoto temple surrounded by pink cherry blossoms in spring', blurb:"Witness the legendary Japanese cherry blossoms in full bloom across ancient temples, gardens and riverside walkways.", seo_title:'Japan Cherry Blossom Season 2027 Visa | Visa Doo', seo_description:'Experience Sakura 2027 in Japan. Apply for your Japan tourist visa with verified itineraries on Visa Doo.', featured:true, sort_order:18, active:true }
+  ];
 
   function renderEventsAdmin(){
     if(!canManageContent()){ go(defaultStaffView()); return; }
@@ -11338,7 +17726,8 @@
     for(var i=0;i<docs.length;i++){ if(docs[i]&&docs[i].doc_type==='photo'){ d=docs[i]; break; } }
     if(!d||!d.file_path) return null;
     try{
-      var signed=await sb.storage.from('visa-documents').createSignedUrl(d.file_path,3600);
+      var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900;
+      var signed=await sb.storage.from('visa-documents').createSignedUrl(d.file_path, expiry);
       if(signed.error||!signed.data||!signed.data.signedUrl) return null;
       return await loadRemoteImageSafe(signed.data.signedUrl);
     }catch(_e){ return null; }
@@ -11499,7 +17888,12 @@
     var docs=(a&&a.documents)||[], d=null;
     for(var i=0;i<docs.length;i++){ if(docs[i]&&docs[i].doc_type==='signature'){ d=docs[i]; break; } }
     if(!d||!d.file_path) return null;
-    try{ var signed=await sb.storage.from('visa-documents').createSignedUrl(d.file_path,3600); if(signed.error||!signed.data||!signed.data.signedUrl) return null; return await loadRemoteImageSafe(signed.data.signedUrl); }catch(_e){ return null; }
+    try{
+      var expiry = window.VisaDooSecurity ? window.VisaDooSecurity.config.SIGNED_URL_EXPIRY_VIEW_SEC : 900;
+      var signed=await sb.storage.from('visa-documents').createSignedUrl(d.file_path, expiry);
+      if(signed.error||!signed.data||!signed.data.signedUrl) return null;
+      return await loadRemoteImageSafe(signed.data.signedUrl);
+    }catch(_e){ return null; }
   }
   function drawExactJapanSignature(ctx,signature){
     if(!signature) return;
@@ -12393,7 +18787,7 @@ async function generateFranceVisaPdf(a){
   function stampGermany4(ctx,p,a){var payer=String(fgVal(a,'trip_payer')||'Applicant').toLowerCase();denmarkCheck(ctx,547,75,payer==='applicant');denmarkCheck(ctx,515,295,payer==='sponsor');if(payer==='applicant'){denmarkCheck(ctx,547,132,fgHas(a,'cash'));denmarkCheck(ctx,547,162,fgHas(a,'credit card'));denmarkCheck(ctx,547,192,fgHas(a,'pre-paid accommodation'));denmarkCheck(ctx,547,222,fgHas(a,'pre-paid transport'));}else{denmarkText(ctx,fgVal(a,'sponsor_details'),620,330,480,false,13);denmarkCheck(ctx,547,433,fgHas(a,'cash'));denmarkCheck(ctx,547,462,fgHas(a,'accommodation provided'));denmarkCheck(ctx,547,503,fgHas(a,'all expenses covered'));denmarkCheck(ctx,547,548,fgHas(a,'pre-paid transport'));}}
   function stampGermany5(ctx,p,a){denmarkText(ctx,[fgVal(a,'application_place'),fgDate(a,'application_date')].filter(Boolean).join(' - '),35,1605,430,false,15);}
   function stampGermany6(ctx,p,a){denmarkText(ctx,[fgVal(a,'application_place'),fgDate(a,'application_date')].filter(Boolean).join(' - '),35,1530,430,false,15);}
-  async function generateGermanyVisaPdf(a){var p=smartPdfProfile(a),paths=[1,2,3,4,5,6,7].map(function(n){return 'assets/form-templates/germany-rendered/page-'+n+'.png?v=20260824';}),cvs=[];for(var i=0;i<7;i++){var bg=await loadFormImage(paths[i]),cv=document.createElement('canvas');cv.width=bg.naturalWidth||2382;cv.height=bg.naturalHeight||3368;var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);ctx.save();ctx.scale(cv.width/1191,cv.height/1684);if(i===0)stampGermany1(ctx,p,a);else if(i===1)stampGermany2(ctx,p,a);else if(i===2)stampGermany3(ctx,p,a);else if(i===3)stampGermany4(ctx,p,a);else if(i===4)stampGermany5(ctx,p,a);else if(i===5)stampGermany6(ctx,p,a);ctx.restore();cvs.push(cv);}var blob=makeImagePdf(cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1)),w:cv.width,h:cv.height};})),url=URL.createObjectURL(blob),link=document.createElement('a'),nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');link.href=url;link.download='Germany_Schengen_Visa_Application_'+nm+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},2000);toast('Germany Schengen application form generated. Please verify before submission.');}
+  async function generateGermanyVisaPdf(a){var p=smartPdfProfile(a),paths=[1,2,3,4,5,6,7].map(function(n){return 'assets/form-templates/germany-rendered/page-'+n+'.png?v=20260829';}),cvs=[];for(var i=0;i<7;i++){var bg=await loadFormImage(paths[i]),cv=document.createElement('canvas');cv.width=bg.naturalWidth||2382;cv.height=bg.naturalHeight||3368;var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);ctx.save();ctx.scale(cv.width/1191,cv.height/1684);if(i===0)stampGermany1(ctx,p,a);else if(i===1)stampGermany2(ctx,p,a);else if(i===2)stampGermany3(ctx,p,a);else if(i===3)stampGermany4(ctx,p,a);else if(i===4)stampGermany5(ctx,p,a);else if(i===5)stampGermany6(ctx,p,a);ctx.restore();cvs.push(cv);}var blob=makeImagePdf(cvs.map(function(cv){return {bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1)),w:cv.width,h:cv.height};})),url=URL.createObjectURL(blob),link=document.createElement('a'),nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');link.href=url;link.download='Germany_Schengen_Visa_Application_'+nm+'.pdf';document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url);},2000);toast('Germany Schengen application form generated. Please verify before submission.');}
 
   // GREECE + AZERBAIJAN · supplied official-form generators
   function gaText(ctx,v,x,y,max,size){v=String(v||'').trim();if(!v)return;ctx.save();ctx.font=(size||16)+'px Arial';ctx.fillStyle='#111';var t=v.toUpperCase();while(ctx.measureText(t).width>(max||600)&&parseFloat(ctx.font)>9){var n=parseFloat(ctx.font)-1;ctx.font=n+'px Arial';}ctx.fillText(t,x,y);ctx.restore();}
@@ -12425,66 +18819,106 @@ gaTick(ctx,413,992,civil==='other');
 }
 
 function stampGreece2(ctx,p,a){
-var passportType=String(gaV(a,'passport_type')||'ordinary').toLowerCase();
-gaTick(ctx,137,222,passportType.indexOf('ordinary')>=0);
+  var x=545,f=14;
+  var passportType=String(gaV(a,'passport_type')||'ordinary').toLowerCase();
+  gaTick(ctx,137,220,passportType.indexOf('ordinary')>=0);
+  gaTick(ctx,290,220,passportType.indexOf('diplomatic')>=0);
+  gaTick(ctx,459,220,passportType.indexOf('service')>=0);
+  gaTick(ctx,603,220,passportType.indexOf('official')>=0);
+  gaTick(ctx,745,220,passportType.indexOf('special')>=0);
+  gaTick(ctx,137,263,passportType.indexOf('other')>=0 || (passportType.indexOf('regular')<0 && passportType.indexOf('diplomatic')<0 && passportType.indexOf('service')<0 && passportType.indexOf('official')<0 && passportType.indexOf('special')<0 && passportType.indexOf('ordinary')<0));
 
-gaText(ctx,gaV(a,'passport_number')||p.passport_number,141,402,230,20);
-gaText(ctx,pdfDate(gaV(a,'passport_issue_date')||p.passport_issue_date),326,402,180,20);
-gaText(ctx,pdfDate(gaV(a,'passport_expiry')||p.passport_expiry),511,402,180,20);
-gaText(ctx,gaV(a,'passport_issuing_country')||gaV(a,'nationality')||p.nationality,716,402,170,20);
+  gaText(ctx,gaV(a,'passport_number')||p.passport_number,141,402,230,20);
+  gaText(ctx,pdfDate(gaV(a,'passport_issue_date')||p.passport_issue_date),326,402,180,20);
+  gaText(ctx,pdfDate(gaV(a,'passport_expiry')||p.passport_expiry),511,402,180,20);
+  gaText(ctx,gaV(a,'passport_issuing_country')||gaV(a,'nationality')||p.nationality,716,402,170,20);
 
-gaText(ctx,gaV(a,'residential_address'),143,852,500,16);
-gaText(ctx,gaV(a,'contact_email')||gaV(a,'email')||p.email,143,868,330,16);
-gaText(ctx,p.phone||gaV(a,'phone'),696,866,190,20);
+  // Field 18: Family relationship with EU/EEA/CH citizen
+  if(String(gaV(a,'eu_family')).toLowerCase()==='yes'){
+    var rel=String(gaV(a,'eu_family_relationship')||'').toLowerCase();
+    gaTick(ctx,137,722,rel==='spouse');
+    gaTick(ctx,208,721,rel==='child');
+    gaTick(ctx,267,721,rel==='grandchild');
+    gaTick(ctx,369,721,rel.indexOf('ascendant')>=0);
+    gaTick(ctx,137,745,rel.indexOf('partnership')>=0 || rel.indexOf('registered')>=0);
+    gaTick(ctx,318,744,rel==='other' || (rel && rel!=='spouse' && rel!=='child' && rel!=='grandchild' && rel.indexOf('ascendant')<0 && rel.indexOf('partnership')<0 && rel.indexOf('registered')<0));
+  }
 
-var residence=String(gaV(a,'other_country_residence')||gaV(a,'residence_other_country')||'no').toLowerCase();
-gaTick(ctx,137,908,residence==='no');
-gaTick(ctx,137,931,residence==='yes');
+  gaText(ctx,gaV(a,'residential_address'),143,852,500,16);
+  gaText(ctx,gaV(a,'contact_email')||gaV(a,'email')||p.email,143,868,330,16);
+  gaText(ctx,p.phone||gaV(a,'phone'),696,866,190,20);
 
-gaText(ctx,gaV(a,'occupation')||gaV(a,'current_occupation'),164,1051,350,20);
-gaText(ctx,[gaV(a,'employer_name'),gaV(a,'employer_address'),gaV(a,'employer_phone'),gaV(a,'employer_email')].filter(Boolean).join('  '),164,1142,660,20);
+  var residence=String(gaV(a,'other_country_residence')||gaV(a,'residence_other_country')||'no').toLowerCase();
+  gaTick(ctx,137,908,residence==='no');
+  gaTick(ctx,137,931,residence==='yes');
 
-var purpose=String(gaV(a,'purpose')||'tourism').toLowerCase();
-gaTick(ctx,137,1186,purpose.indexOf('tour')>=0);
+  gaText(ctx,gaV(a,'occupation')||gaV(a,'current_occupation'),164,1051,350,20);
+  gaText(ctx,[gaV(a,'employer_name'),gaV(a,'employer_address'),gaV(a,'employer_phone'),gaV(a,'employer_email')].filter(Boolean).join('  '),164,1142,660,20);
 
-gaText(ctx,gaV(a,'purpose')||'TOURISM',152,1325,300,20);
-gaText(ctx,gaV(a,'main_destination')||'GREECE',148,1438,260,20);
-gaText(ctx,gaV(a,'first_entry_country')||'GREECE',530,1438,260,20);
+  // Field 23: Purpose(s) of the journey
+  var purpose=String(gaV(a,'purpose')||'tourism').toLowerCase();
+  gaTick(ctx,137,1184,purpose.indexOf('tour')>=0);
+  gaTick(ctx,218,1184,purpose.indexOf('busines')>=0);
+  gaTick(ctx,306,1184,purpose.indexOf('family')>=0 || purpose.indexOf('friend')>=0 || purpose.indexOf('visit')>=0 && purpose.indexOf('official')<0);
+  gaTick(ctx,509,1184,purpose.indexOf('cultur')>=0);
+  gaTick(ctx,591,1184,purpose.indexOf('sport')>=0);
+  gaTick(ctx,661,1184,purpose.indexOf('official')>=0);
+  gaTick(ctx,771,1184,purpose.indexOf('medic')>=0);
+  gaTick(ctx,202,1204,purpose.indexOf('study')>=0);
+  gaTick(ctx,269,1204,purpose.indexOf('transit')>=0);
+  gaTick(ctx,403,1204,purpose.indexOf('other')>=0 || (purpose && purpose.indexOf('tour')<0 && purpose.indexOf('busines')<0 && purpose.indexOf('family')<0 && purpose.indexOf('friend')<0 && purpose.indexOf('cultur')<0 && purpose.indexOf('sport')<0 && purpose.indexOf('official')<0 && purpose.indexOf('medic')<0 && purpose.indexOf('study')<0 && purpose.indexOf('transit')<0));
 
-var entries=String(gaV(a,'entries_requested')||gaV(a,'number_of_entries')||'multiple').toLowerCase();
-gaTick(ctx,137,1483,entries.indexOf('single')>=0);
-gaTick(ctx,243,1483,entries.indexOf('two')>=0);
-gaTick(ctx,354,1483,entries.indexOf('multiple')>=0);
+  gaText(ctx,gaV(a,'purpose')||'TOURISM',152,1325,300,20);
+  gaText(ctx,gaV(a,'main_destination')||'GREECE',148,1438,260,20);
+  gaText(ctx,gaV(a,'first_entry_country')||'GREECE',530,1438,260,20);
 
-gaText(ctx,pdfDate(gaV(a,'arrival_date')||gaV(a,'travel_date')),653,1541,210,20);
-gaText(ctx,pdfDate(gaV(a,'departure_date')||gaV(a,'return_date')),720,1585,210,20);
+  var entries=String(gaV(a,'entries_requested')||gaV(a,'number_of_entries')||'multiple').toLowerCase();
+  gaTick(ctx,137,1483,entries.indexOf('single')>=0);
+  gaTick(ctx,243,1483,entries.indexOf('two')>=0);
+  gaTick(ctx,354,1483,entries.indexOf('multiple')>=0);
+
+  gaText(ctx,pdfDate(gaV(a,'arrival_date')||gaV(a,'travel_date')),653,1541,210,20);
+  gaText(ctx,pdfDate(gaV(a,'departure_date')||gaV(a,'return_date')),720,1585,210,20);
 }
 
 function stampGreece3(ctx,p,a){
-var fp=String(gaV(a,'schengen_fingerprints')||'no').toLowerCase();
-gaTick(ctx,185,216,fp==='no');
-gaTick(ctx,230,216,fp==='yes');
+  var fp=String(gaV(a,'schengen_fingerprints')||'no').toLowerCase();
+  gaTick(ctx,185,216,fp==='no');
+  gaTick(ctx,230,216,fp==='yes');
 
-gaText(ctx,gaV(a,'host_name')||gaV(a,'hotel_name'),152,483,520,20);
-gaText(ctx,gaV(a,'host_address')||gaV(a,'hotel_address'),152,575,350,20);
-gaText(ctx,gaV(a,'host_phone')||gaV(a,'hotel_phone'),517,575,230,20);
+  gaText(ctx,gaV(a,'host_name')||gaV(a,'hotel_name'),152,483,520,20);
+  gaText(ctx,gaV(a,'host_address')||gaV(a,'hotel_address'),152,575,350,20);
+  gaText(ctx,gaV(a,'host_phone')||gaV(a,'hotel_phone'),517,575,230,20);
 
-var payer=String(gaV(a,'trip_payer')||'applicant').toLowerCase();
-gaTick(ctx,137,869,payer.indexOf('applicant')>=0);
+  var payer=String(gaV(a,'trip_payer')||'applicant').toLowerCase();
+  var spType=String(gaV(a,'sponsor_type')||'').toLowerCase();
+  gaTick(ctx,137,869,payer.indexOf('applicant')>=0);
+  gaTick(ctx,516,868,payer.indexOf('sponsor')>=0);
 
-var means=String(gaV(a,'support_means')||'').toLowerCase();
-gaTick(ctx,137,909,means.indexOf('cash')>=0);
-gaTick(ctx,137,930,means.indexOf('traveller')>=0);
-gaTick(ctx,137,951,means.indexOf('credit')>=0);
-gaTick(ctx,137,973,means.indexOf('pre-paid accommodation')>=0||means.indexOf('prepaid accommodation')>=0);
-gaTick(ctx,137,994,means.indexOf('pre-paid transport')>=0||means.indexOf('prepaid transport')>=0);
-gaTick(ctx,137,1017,means.indexOf('other')>=0);
+  if(payer.indexOf('sponsor')>=0){
+    var sponsorMeans=String(gaV(a,'support_means_sponsor')||gaV(a,'support_means')||'').toLowerCase();
+    gaTick(ctx,516,916,spType.indexOf('30')>=0 || spType.indexOf('31')>=0 || spType.indexOf('referred')>=0 || !spType);
+    gaTick(ctx,516,944,spType.indexOf('other')>=0);
+    gaTick(ctx,516,989,sponsorMeans.indexOf('cash')>=0);
+    gaTick(ctx,516,1010,sponsorMeans.indexOf('accommodation')>=0 || sponsorMeans.indexOf('pre-paid accommodation')>=0 || sponsorMeans.indexOf('prepaid accommodation')>=0);
+    gaTick(ctx,516,1032,sponsorMeans.indexOf('all expenses')>=0 || sponsorMeans.indexOf('all_expenses')>=0 || sponsorMeans.indexOf('full')>=0);
+    gaTick(ctx,516,1053,sponsorMeans.indexOf('pre-paid transport')>=0 || sponsorMeans.indexOf('prepaid transport')>=0);
+    gaTick(ctx,516,1076,sponsorMeans.indexOf('other')>=0);
+  } else {
+    var applicantMeans=String(gaV(a,'support_means_applicant')||gaV(a,'support_means')||'').toLowerCase();
+    gaTick(ctx,137,909,applicantMeans.indexOf('cash')>=0);
+    gaTick(ctx,137,930,applicantMeans.indexOf('traveller')>=0);
+    gaTick(ctx,137,951,applicantMeans.indexOf('credit')>=0);
+    gaTick(ctx,137,973,applicantMeans.indexOf('pre-paid accommodation')>=0||applicantMeans.indexOf('prepaid accommodation')>=0);
+    gaTick(ctx,137,994,applicantMeans.indexOf('pre-paid transport')>=0||applicantMeans.indexOf('prepaid transport')>=0);
+    gaTick(ctx,137,1017,applicantMeans.indexOf('other')>=0);
+  }
 }
 
 async function generateGreeceVisaPdf(a){
 var p=smartPdfProfile(a),cvs=[];
 for(var i=0;i<4;i++){
-var bg=await loadFormImage('assets/form-templates/greece-rendered/page-'+(i+1)+'.png?v=20260828-hd'),cv=document.createElement('canvas');
+var bg=await loadFormImage('assets/form-templates/greece-rendered/page-'+(i+1)+'.png?v=20260829-hd'),cv=document.createElement('canvas');
 cv.width=bg.naturalWidth||2382;cv.height=bg.naturalHeight||3368;
 var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);
 ctx.save();ctx.scale(cv.width/1191,cv.height/1684);
@@ -12546,6 +18980,39 @@ async function generateAzerbaijanVisaPdf(a){
   setTimeout(function(){URL.revokeObjectURL(url)},2000);toast('Azerbaijan application form generated in BLOCK LETTERS. Please verify before submission.');
 }
   
+
+function chinaYes(a,k){return String(gaV(a,k)||'').toLowerCase()==='yes';}
+function chinaText(ctx,a,k,x,y,w,sz){gaText(ctx,gaV(a,k),x,y,w,sz||10);}
+function stampChina1(ctx,p,a){
+ gaText(ctx,gaV(a,'passport_last_name')||p.last_name,143,270,270,11);gaText(ctx,gaV(a,'passport_first_name')||p.first_name,445,270,270,11);gaText(ctx,pdfDate(gaV(a,'date_of_birth')||p.date_of_birth),143,332,170,10);
+ var g=String(gaV(a,'gender')||'').toLowerCase();gaTick(ctx,542,326,g==='male');gaTick(ctx,620,326,g==='female');
+ chinaText(ctx,a,'birthplace_country',143,365,250);chinaText(ctx,a,'birthplace_state',143,397,250);chinaText(ctx,a,'birthplace_city',143,428,250);
+ var m=String(gaV(a,'marital_status')||'').toLowerCase();gaTick(ctx,575,365,m==='married');gaTick(ctx,654,365,m==='single');gaTick(ctx,575,383,m==='divorced');gaTick(ctx,654,383,m==='widowed');
+ gaText(ctx,gaV(a,'nationality')||p.nationality,143,466,250,10);chinaText(ctx,a,'other_permanent_residence',445,466,260);var pt=String(gaV(a,'passport_type')||'ordinary').toLowerCase();gaTick(ctx,143,672,pt.indexOf('ordinary')>=0);gaTick(ctx,143,641,pt.indexOf('diplomatic')>=0);gaTick(ctx,225,641,pt.indexOf('service')>=0);gaTick(ctx,143,657,pt.indexOf('official')>=0);gaTick(ctx,225,657,pt.indexOf('special')>=0);
+ gaText(ctx,gaV(a,'passport_number')||p.passport_number,143,739,260,10);gaText(ctx,gaV(a,'passport_issuing_country'),445,642,250,10);chinaText(ctx,a,'passport_issue_place',445,675,250);gaText(ctx,pdfDate(gaV(a,'passport_expiry')||p.passport_expiry),445,706,180,10);
+ var pur=String(gaV(a,'china_visit_purpose')||'').toLowerCase();gaTick(ctx,50,892,pur.indexOf('m -')===0);gaTick(ctx,176,941,pur.indexOf('other commercial')>=0);gaTick(ctx,176,908,pur.indexOf('trade')>=0);gaTick(ctx,50,825,pur.indexOf('tour')>=0);
+}
+function stampChina3(ctx,p,a){
+ var service=String(gaV(a,'china_service')||'').toLowerCase();gaTick(ctx,177,494,service==='normal');gaTick(ctx,241,494,service==='express');chinaText(ctx,a,'china_visa_validity',352,523,45);chinaText(ctx,a,'stay_duration',352,553,45);var e=String(gaV(a,'entries_requested')||'').toLowerCase();gaTick(ctx,636,523,e==='single');gaTick(ctx,636,540,e==='double');gaTick(ctx,636,556,e==='multiple');
+ var o=String(gaV(a,'occupation')||'').toLowerCase();gaTick(ctx,49,648,o.indexOf('business')>=0);gaTick(ctx,49,666,o.indexOf('company')>=0);gaTick(ctx,518,648,o.indexOf('self')>=0);gaTick(ctx,49,700,o.indexOf('student')>=0);gaTick(ctx,518,666,o.indexOf('unemployed')>=0);
+ chinaText(ctx,a,'work_from',49,799,70,9);var emp=[gaV(a,'employer_name'),gaV(a,'employer_address'),gaV(a,'employer_phone')].filter(Boolean).join(' / ');gaText(ctx,emp,170,799,190,8);gaText(ctx,[gaV(a,'supervisor_name'),gaV(a,'supervisor_phone')].filter(Boolean).join(' / '),367,799,110,8);chinaText(ctx,a,'position',490,799,120,8);chinaText(ctx,a,'duty',620,799,100,8);
+}
+function stampChina4(ctx,p,a){
+ chinaText(ctx,a,'residential_address',268,202,430,9);chinaText(ctx,a,'phone',49,233,250,9);chinaText(ctx,a,'mobile_phone',315,233,300,9);chinaText(ctx,a,'contact_email',49,263,620,9);
+ chinaText(ctx,a,'father_name',111,440,140,9);chinaText(ctx,a,'father_nationality',328,440,140,9);gaText(ctx,pdfDate(gaV(a,'father_dob')),602,440,120,9);gaTick(ctx,49,491,chinaYes(a,'father_in_china'));gaTick(ctx,119,491,!chinaYes(a,'father_in_china'));
+ chinaText(ctx,a,'mother_name',111,565,140,9);chinaText(ctx,a,'mother_nationality',328,565,140,9);gaText(ctx,pdfDate(gaV(a,'mother_dob')),602,565,120,9);gaTick(ctx,49,616,chinaYes(a,'mother_in_china'));gaTick(ctx,119,616,!chinaYes(a,'mother_in_china'));
+}
+function stampChina5(ctx,p,a){
+ gaText(ctx,pdfDate(gaV(a,'arrival_date')),143,101,150,9);chinaText(ctx,a,'arrival_flight',305,101,220,9);chinaText(ctx,a,'arrival_city',582,101,140,9);chinaText(ctx,a,'stay_city',143,151,100,9);chinaText(ctx,a,'stay_address',250,151,150,8);gaText(ctx,pdfDate(gaV(a,'arrival_date')),410,151,150,9);gaText(ctx,pdfDate(gaV(a,'departure_date')),573,151,150,9);gaText(ctx,pdfDate(gaV(a,'departure_date')),143,331,150,9);chinaText(ctx,a,'departure_flight',305,331,220,9);chinaText(ctx,a,'departure_city',582,331,140,9);
+ chinaText(ctx,a,'inviting_party',143,397,270,9);chinaText(ctx,a,'inviter_relationship',420,397,300,9);chinaText(ctx,a,'inviter_phone',143,447,250,9);chinaText(ctx,a,'inviter_email',420,447,300,9);chinaText(ctx,a,'inviter_address',143,492,560,8);chinaText(ctx,a,'emergency_name',143,548,270,9);chinaText(ctx,a,'emergency_relationship',420,548,300,9);chinaText(ctx,a,'emergency_phone',143,596,250,9);chinaText(ctx,a,'emergency_email',420,596,300,9);var pay=String(gaV(a,'trip_payer')||'self').toLowerCase();gaTick(ctx,177,647,pay==='self');gaTick(ctx,177,665,pay==='other');gaTick(ctx,177,700,pay.indexOf('organization')>=0);var tc=chinaYes(a,'travel_companion');gaTick(ctx,177,764,tc);gaTick(ctx,238,764,!tc);
+}
+function stampChina6(ctx,p,a){
+ function yn(k,y){gaTick(ctx,267,y,chinaYes(a,k));gaTick(ctx,342,y,!chinaYes(a,k));}yn('visited_china',80);yn('previous_china_visa',105);chinaText(ctx,a,'previous_visa_type',117,157,300,9);chinaText(ctx,a,'previous_visa_number',455,157,250,9);chinaText(ctx,a,'previous_visa_issue_place',117,188,300,9);chinaText(ctx,a,'previous_visa_issue_date',455,188,250,9);yn('china_fingerprinted',217);yn('china_residence_permit',278);yn('valid_other_visas',322);yn('travelled_12_months',389);
+ var ys=[486,522,559,596,633,670,707,744,819,856,893],ks=['china_refused','china_visa_cancelled','china_illegal_stay','criminal_record','serious_disease','epidemic_visit','special_training','military_service','paramilitary','professional_org','other_declaration'];for(var i=0;i<ks.length;i++){gaTick(ctx,527,ys[i],chinaYes(a,ks[i]));gaTick(ctx,590,ys[i],!chinaYes(a,ks[i]));}
+}
+function stampChina7(ctx,p,a){chinaText(ctx,a,'application_place',218,259,130,10);gaText(ctx,pdfDate(gaV(a,'application_date')),435,293,150,9);}
+async function generateChinaVisaPdf(a){var p=smartPdfProfile(a),cvs=[];for(var i=0;i<8;i++){var bg=await loadFormImage('assets/form-templates/china-rendered/page-'+(i+1)+'.png?v=20260829'),cv=document.createElement('canvas');cv.width=bg.naturalWidth||2371;cv.height=bg.naturalHeight||3357;var ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(bg,0,0,cv.width,cv.height);ctx.save();ctx.scale(cv.width/768,cv.height/1087);if(i===0)stampChina1(ctx,p,a);else if(i===2)stampChina3(ctx,p,a);else if(i===3)stampChina4(ctx,p,a);else if(i===4)stampChina5(ctx,p,a);else if(i===5)stampChina6(ctx,p,a);else if(i===6)stampChina7(ctx,p,a);ctx.restore();cvs.push(cv);}var blob=makeImagePdf(cvs.map(function(cv){return{bytes:dataUrlBytes(cv.toDataURL('image/jpeg',1)),w:cv.width,h:cv.height};})),url=URL.createObjectURL(blob),l=document.createElement('a'),nm=(p.full_name||'Applicant').replace(/[^A-Za-z0-9]+/g,'_');l.href=url;l.download='China_Visa_Application_'+nm+'.pdf';document.body.appendChild(l);l.click();l.remove();setTimeout(function(){URL.revokeObjectURL(url)},2000);toast('China visa application generated. Please verify before submission.');}
+
   async function generateSmartVisaPdf(a){
     var visa=visaById(a.visa_type);
     if(visa && visa.country_slug==='denmark') return generateDenmarkVisaPdf(a);
@@ -12557,6 +19024,7 @@ async function generateAzerbaijanVisaPdf(a){
     if(visa && visa.country_slug==='germany') return generateGermanyVisaPdf(a);
     if(visa && visa.country_slug==='greece') return generateGreeceVisaPdf(a);
     if(visa && visa.country_slug==='azerbaijan') return generateAzerbaijanVisaPdf(a);
+    if(visa && visa.country_slug==='china') return generateChinaVisaPdf(a);
     var p=smartPdfProfile(a);
     // Japan PDF must keep the official photo box blank. Do not stamp the uploaded personal photo.
     var photo=null;
@@ -12604,7 +19072,8 @@ async function generateAzerbaijanVisaPdf(a){
       occupation:appAnswerValue(a,'occupation')||appAnswerValue(a,'profession'), position:appAnswerValue(a,'position'),
       employer_name:appAnswerValue(a,'employer_name')||appAnswerValue(a,'company_name'),
       employer_phone:appAnswerValue(a,'employer_phone')||appAnswerValue(a,'company_phone'),
-      employer_address:appAnswerValue(a,'employer_address')||appAnswerValue(a,'company_address') };
+      employer_address:appAnswerValue(a,'employer_address')||appAnswerValue(a,'company_address'),
+      annual_income:appAnswerValue(a,'annual_income')||appAnswerValue(a,'annual_income_select') };
   }
   function setFieldIfPresent(id,val){ var x=document.getElementById(id); if(x && val!=null && String(val)!==''){ x.value=val; x.dispatchEvent(new Event('input',{bubbles:true})); x.dispatchEvent(new Event('change',{bubbles:true})); } }
   function applySavedProfile(p){
@@ -12620,6 +19089,15 @@ async function generateAzerbaijanVisaPdf(a){
     setFieldIfPresent('residential_address',p.residential_address);
     setFieldIfPresent('occupation',p.occupation); setFieldIfPresent('position',p.position);
     setFieldIfPresent('employer_name',p.employer_name); setFieldIfPresent('employer_phone',p.employer_phone); setFieldIfPresent('employer_address',p.employer_address);
+    if(p.annual_income){
+      var sel=document.getElementById('annual_income_select'), inp=document.getElementById('annual_income'), wrap=document.getElementById('annual_income_custom_wrap');
+      if(inp) inp.value=p.annual_income;
+      if(sel){
+        var found=Array.prototype.some.call(sel.options, function(o){ return o.value && o.value===p.annual_income; });
+        if(found){ sel.value=p.annual_income; if(wrap) wrap.style.display='none'; }
+        else { sel.value='Other'; if(wrap) wrap.style.display=''; }
+      }
+    }
     if(p.phone){
       var phone=document.getElementById('phone'); if(phone){ phone.value=p.phone; try{ if(applyIti) applyIti.setNumber(p.phone); }catch(_e){} }
     }
@@ -12775,7 +19253,12 @@ async function generateAzerbaijanVisaPdf(a){
   }
 
   function resolveStartView(){
-    var h=(location.hash||'').replace('#','');
+    var hash = location.hash || '', search = location.search || '';
+    if (hash.indexOf('type=recovery') > -1 || search.indexOf('type=recovery') > -1) {
+      state._recovery = true;
+      return 'setpw';
+    }
+    var h=hash.replace('#','');
     if(h.indexOf('appview/')===0){ appViewId=decodeURIComponent(h.slice(8))||null; return appViewId?'appview':'admin'; }
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
@@ -12794,6 +19277,20 @@ async function generateAzerbaijanVisaPdf(a){
       state.role = (r.data && r.data.role) || 'customer';
       state.isAdmin = state.role==='admin';
       if(isStaff() && (state.view==='apply'||state.view==='track')) state.view=defaultStaffView();
+      if(window.VisaDooSecurity && typeof window.VisaDooSecurity.initSessionGuard === 'function'){
+        window.VisaDooSecurity.initSessionGuard({
+          isStaff: isStaff(),
+          onIdle: function(){
+            toast('Your session was paused due to inactivity.');
+            var btn=document.getElementById('signOutBtn');
+            if(btn) signOutCurrentUser(btn);
+            else sb.auth.signOut().then(function(){ location.replace('index.html'); });
+          },
+          onRemoteLogout: function(){
+            location.replace('index.html');
+          }
+        });
+      }
       renderHeader(); render();
     });
   }

@@ -58,8 +58,8 @@
 
   function documentTile(app,type,label){
     var doc=documentOf(app,type);
-    if(!doc) return '<div class="uae-history-document missing"><div class="uae-history-media"><span>Not available</span></div><div><b>'+esc(label)+'</b><small>Not uploaded</small></div></div>';
-    return '<button class="uae-history-document" type="button" data-uae-history-path="'+esc(doc.file_path)+'" data-uae-history-label="'+esc(label)+'"><div class="uae-history-media"><span class="uae-history-spinner"></span></div><div><b>'+esc(label)+'</b><small>View attachment <span aria-hidden="true">&rarr;</span></small></div></button>';
+    if(!doc) return '<div class="uae-history-document missing"><span class="uae-doc-icon">-</span><div class="uae-history-doc-copy"><b>'+esc(label)+'</b><small>Not uploaded</small></div><span class="uae-doc-status">Missing</span></div>';
+    return '<div class="uae-history-document uploaded"><span class="uae-doc-icon">&#10003;</span><div class="uae-history-doc-copy"><b>'+esc(label)+'</b><small>Uploaded &amp; verified</small></div><span class="uae-doc-status">Attached</span></div>';
   }
 
   function applicationCard(app,names){
@@ -136,11 +136,11 @@
     var attractions=[
       {name:'Burj Khalifa',image:'/assets/dubai-attractions/burj-khalifa.jpg'},
       {name:'The Dubai Mall',image:'/assets/dubai-attractions/dubai-mall.jpg'},
-      {name:'The Dubai Fountain',image:'/assets/dubai-attractions/dubai-fountain.jpg'},
-      {name:'Palm Jumeirah',image:'/assets/dubai-attractions/palm-jumeirah.jpg'},
+      {name:'Burj Al Arab',image:'/assets/attraction-burj-al-arab.jpg'},
+      {name:'Dubai Miracle Garden',image:'/assets/attraction-miracle-garden.jpg'},
       {name:'Dubai Marina',image:'/assets/dubai-attractions/dubai-marina.jpg'},
       {name:'Museum of the Future',image:'/assets/dubai-attractions/museum-of-the-future.jpg'},
-      {name:'Al Fahidi Historical Neighbourhood',image:'/assets/dubai-attractions/al-fahidi.jpg'},
+      {name:'Desert Safari Dubai',image:'/assets/attraction-desert-safari.jpg'},
       {name:'Dubai Frame',image:'/assets/dubai-attractions/dubai-frame.jpg'}
     ];
     var faqs=[
@@ -184,35 +184,7 @@
   }
 
   function wirePreviews(scope){
-    function loadPreview(card){
-      if(card.getAttribute('data-uae-preview-loading')==='1') return;
-      card.setAttribute('data-uae-preview-loading','1');
-      var path=card.getAttribute('data-uae-history-path');
-      var media=card.querySelector('.uae-history-media');
-      sb.storage.from('visa-documents').createSignedUrl(path,3600).then(function(result){
-        if(!card.isConnected) return;
-        if(result.error||!result.data||!result.data.signedUrl){
-          card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>'; return;
-        }
-        var url=result.data.signedUrl;
-        var label=card.getAttribute('data-uae-history-label')||'Uploaded document';
-        media.innerHTML='<img src="'+esc(url)+'" alt="'+esc(label)+' preview">';
-        card.onclick=function(){window.open(url,'_blank','noopener');};
-      }).catch(function(){
-        if(!card.isConnected) return;
-        card.disabled=true; card.classList.add('missing'); media.innerHTML='<span>Preview unavailable</span>';
-      });
-    }
-    scope.querySelectorAll('[data-uae-history-path]').forEach(function(card){
-      var disclosure=card.closest('details');
-      if(!disclosure||disclosure.open){ loadPreview(card); return; }
-      function loadWhenOpened(){
-        if(!disclosure.open) return;
-        disclosure.removeEventListener('toggle',loadWhenOpened);
-        loadPreview(card);
-      }
-      disclosure.addEventListener('toggle',loadWhenOpened);
-    });
+    // Document image preview viewer removed by design. Clean document status badges are displayed directly.
   }
 
   function wireAccountSections(scope){
@@ -278,8 +250,7 @@
       '</div></nav>'+
       '<section class="uae-account-content"><div class="container"><div class="uae-account-grid">'+
         '<div class="uae-account-main"><section class="uae-account-current" id="uae-current-visa"><header><div><span>Visa information</span><h2>'+esc(names[latest.visa_type]||latest.visa_type||'UAE visa')+'</h2><p>Reference '+esc(latest.reference_code||'—')+'</p></div><b class="uae-history-status '+statusClass(latest.status)+'">'+esc(latest.status||'Submitted')+'</b></header><div class="uae-account-current-detail">'+
-          progressSteps(latest)+
-          '<section class="uae-account-documents" id="uae-account-documents"><header><div><span>Attached documents</span><h2>Passport &amp; personal photo</h2><p>Your files stay hidden until you choose to view them.</p></div><b>Secure</b></header><details class="uae-account-document-disclosure"><summary><span>View attached files</span><i aria-hidden="true">+</i></summary><div class="uae-history-documents">'+documentTile(latest,'passport','Passport front')+documentTile(latest,'photo','Personal photo')+'</div></details></section>'+
+          '<section class="uae-account-documents" id="uae-account-documents"><header><div><span>Attached documents</span><h2>Passport &amp; personal photo</h2><p>Your uploaded documents are securely verified for this application.</p></div><b>Secure</b></header><div class="uae-history-documents">'+documentTile(latest,'passport','Passport front')+documentTile(latest,'photo','Personal photo')+'</div></section>'+
         '</div></section></div>'+
         '<aside class="uae-account-side"><section><span>Next step</span><h2>Follow every update</h2><p>Open Track visa to view the full timeline and respond if our team needs anything.</p><a href="/app.html#track">Open visa tracking <span aria-hidden="true">&#8594;</span></a></section>'+
           '<section class="uae-account-other"><header><div><span>Your UAE visas</span><h2>'+(otherApps.length?'Other applications':'Start another visa')+'</h2></div></header>'+(otherApps.length?'<div>'+otherApps.map(function(app){return compactApplication(app,names);}).join('')+'</div>':'<p>You can start another UAE visa without changing this application.</p>')+'<a class="uae-account-add" href="#uae-other-visa-types" data-uae-open-section>Add another visa <span aria-hidden="true">+</span></a></section>'+

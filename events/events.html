@@ -3,331 +3,1574 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>International Events — Get Your Visa On Time | Visa Doo</title>
-<meta name="description" content="Discover global music, sports, culture and business events, then plan the right visa before you travel.">
+<title>Travel Triggers — International Events & Visas | Visa Doo</title>
+<meta name="description" content="Discover global music, sports, culture and business events, and secure your travel visa on time with Visa Doo.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232563eb'/><path d='M50 22l24 38H26z' fill='white' transform='rotate(45 50 50)'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="../assets/events-market-original.jpg" type="image/jpeg" fetchpriority="high">
-<link rel="stylesheet" href="../styles.css?v=20260801-header-compact">
-<link rel="stylesheet" href="events.css?v=20260801-mobile-2col">
-<script src="../branding.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;850&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css?v=20260910-scroll-anim-v6">
+<link rel="stylesheet" href="events.css?v=20260912-search-capsule-v2">
+<script src="/vendor/lenis.min.js"></script>
+<script src="../branding.js?v=20260912-lenis-smooth-v1"></script>
 </head>
-<body class="home-page events-page events-discover-page" id="top">
+<body class="home-page events-page" id="top">
 
-<header class="header discover-header">
+<!-- Header Navigation -->
+<header class="header discover-header" id="mainHeader">
   <div class="container nav">
     <div class="nav-brand-cluster">
-      <a href="../index.html" class="brand">
-        <span class="logo">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg>
-        </span>
-        Visa<b>Doo</b>
+      <a href="../index.html" class="brand notranslate" translate="no">
+        <img src="/assets/logo_transparent.png" alt="Visa Doo" class="brand-logo-img">
       </a>
     </div>
+
     <nav class="nav-links" id="navLinks">
-      <a href="../index.html#destinations">Explore</a>
-      <a href="events.html" class="active">Events</a>
-      <a href="../articles/articles.html">Articles</a>
+      <a href="../index.html" class="nav-link">Home</a>
+      <a href="events.html" class="nav-link active">Travel Triggers</a>
     </nav>
+
     <div class="nav-actions">
-      <a href="../app.html#track" class="nav-track">Track visa</a>
-      <a href="../app.html#profile" class="nav-profile" aria-label="Profile" title="Profile"></a>
-      <button class="menu-btn" id="menuBtn" aria-label="Menu">
+      <!-- Nationality Dropdown -->
+      <div class="header-dropdown notranslate" translate="no" id="nationalityDropdown">
+        <button class="header-dropdown-trigger notranslate" translate="no" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <img src="https://flagcdn.com/w40/in.png" class="dropdown-flag notranslate" id="selectedNationalityFlag" alt="">
+          <span id="selectedNationalityText" class="notranslate" translate="no">India</span>
+          <span class="dropdown-chevron"></span>
+        </button>
+        <div class="header-dropdown-menu nat-luxury-modal notranslate" role="listbox">
+          <div class="nat-modal-top-bar">
+            <div class="nat-modal-header-text">
+              <h3 class="nat-modal-title">I’m from</h3>
+              <p class="nat-modal-sub">Choose a destination to see available visas.</p>
+            </div>
+            <button type="button" class="nat-modal-close" id="natModalClose" aria-label="Close">✕</button>
+          </div>
+          <div class="header-dropdown-search">
+            <input type="text" placeholder="Search destination..." class="dropdown-search-input nat-dest-search-input" id="nationalitySearchInput" autocomplete="off">
+          </div>
+          <div class="dropdown-options-list nat-feed-list nat-dest-list">
+            <!-- Populated by branding.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Language Selector -->
+      <div class="site-language-header-selector notranslate" translate="no">
+        <button class="site-language-trigger notranslate" translate="no" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16" class="globe-icon notranslate" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <path d="M2 12h20"/>
+          </svg>
+          <b data-language-header-name class="notranslate" translate="no">EN</b>
+        </button>
+        <div class="site-language-menu header-menu notranslate" translate="no" role="listbox" aria-label="Languages" style="display: none;">
+          <button type="button" role="option" data-language-option="en" class="notranslate" translate="no"><img src="https://flagcdn.com/w40/gb.png" alt="English flag" class="flag-icon notranslate" translate="no"><span class="notranslate" translate="no">English</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="ar" class="notranslate" translate="no"><img src="https://flagcdn.com/w40/sa.png" alt="Arabic flag" class="flag-icon notranslate" translate="no"><span class="notranslate" translate="no">العربية</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="fr" class="notranslate" translate="no"><img src="https://flagcdn.com/w40/fr.png" alt="French flag" class="flag-icon notranslate" translate="no"><span class="notranslate" translate="no">Français</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="es" class="notranslate" translate="no"><img src="https://flagcdn.com/w40/es.png" alt="Spanish flag" class="flag-icon notranslate" translate="no"><span class="notranslate" translate="no">Español</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="de" class="notranslate" translate="no"><img src="https://flagcdn.com/w40/de.png" alt="German flag" class="flag-icon notranslate" translate="no"><span class="notranslate" translate="no">Deutsch</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+          <button type="button" role="option" data-language-option="ru" class="notranslate" translate="no"><img src="https://flagcdn.com/w40/ru.png" alt="Russian flag" class="flag-icon notranslate" translate="no"><span class="notranslate" translate="no">Русский</span><i aria-hidden="true" style="margin-left: auto; display: none;">&#10003;</i></button>
+        </div>
+      </div>
+
+      <!-- Profile Icon Button -->
+      <a href="../app.html#profile" class="nav-profile" aria-label="Profile" title="Profile">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </a>
+
+      <!-- Mobile Menu Button -->
+      <button class="menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/></svg>
       </button>
     </div>
   </div>
 </header>
 
-<section class="events-hero events-hero--discover">
-  <div class="events-wordmark" aria-hidden="true">EVENTS</div>
-  <div class="events-hero-image" aria-hidden="true"></div>
-  <div class="container events-hero-main">
-    <div class="events-hero-copy">
-      <span class="route-kicker"><span></span> Events worth travelling for</span>
-      <h1>Find your next<br><span>reason to travel.</span></h1>
-      <p>Discover global music, sports, culture and business events—and plan the right visa before you go.</p>
+<!-- Main Page Content -->
+<main class="triggers-page-wrap">
+
+  <!-- 1. Top Search & Filters Bar -->
+  <section class="triggers-top-bar" aria-label="Events search and filters">
+    <div class="triggers-search-box">
+      <svg class="triggers-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input type="text" id="triggersSearchInput" class="northpeak-input" placeholder="Search events, countries or cities..." autocomplete="off" aria-label="Search events, countries or cities">
+      <button type="button" id="triggersClearSearch" class="triggers-clear-btn" aria-label="Clear search" style="display:none;">✕</button>
     </div>
-  </div>
-</section>
 
-<main>
-  <section class="events-list-section" id="events-list">
-    <div class="container events-board">
-      <div class="event-search-area">
-        <div class="event-search-dock" aria-label="Event search">
-          <div class="event-search-row">
-            <span class="event-search-icon" aria-hidden="true"></span>
-            <input id="eventSearch" type="text" placeholder="Search events, cities or categories" autocomplete="off" aria-label="Search events, cities or categories" aria-controls="eventSearchResults" aria-expanded="false">
-            <button type="button" id="eventSearchButton" aria-label="Search events" title="Search"><span aria-hidden="true"></span></button>
-          </div>
-          <div class="event-quick-suggestions" id="eventQuickSuggestions" aria-label="Popular event searches" hidden></div>
-          <div class="event-search-results" id="eventSearchResults" role="listbox" aria-label="Matching events" hidden></div>
+    <div class="triggers-filters-group">
+      <!-- Country Dropdown Filter -->
+      <div class="triggers-dropdown" id="countryDropdown">
+        <button type="button" class="dropdown-pill-btn" id="countryDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 21s-6-5.333-6-10a6 6 0 1 1 12 0c0 4.667-6 10-6 10z"/>
+            <circle cx="12" cy="11" r="2.5"/>
+          </svg>
+          <span class="pill-label" id="countryFilterLabel">All Countries</span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="triggers-dropdown-menu" id="countryDropdownMenu" role="listbox" aria-label="Filter by country">
+          <!-- Populated dynamically -->
         </div>
       </div>
 
-      <div class="events-board-heading">
-        <div>
-          <span class="board-kicker">Upcoming worldwide</span>
-          <h2>Choose your event</h2>
+      <!-- Year Dropdown Filter -->
+      <div class="triggers-dropdown" id="yearDropdown">
+        <button type="button" class="dropdown-pill-btn" id="yearDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="pill-label" id="yearFilterLabel">2026</span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="triggers-dropdown-menu" id="yearDropdownMenu" role="listbox" aria-label="Filter by year">
+          <button type="button" class="dropdown-menu-item active" data-year="2026">2026</button>
+          <button type="button" class="dropdown-menu-item" data-year="2027">2027</button>
+          <button type="button" class="dropdown-menu-item" data-year="all">All Years</button>
         </div>
-        <p><b id="eventCount">—</b> events available.</p>
       </div>
 
-      <div class="ev-wrap" id="eventsWrap">
-        <div class="events-loading"><span class="country-spinner" aria-hidden="true"></span><p>Finding upcoming events…</p></div>
+      <!-- Category Filter Dropdown -->
+      <div class="triggers-dropdown" id="categoryDropdown">
+        <button type="button" class="dropdown-pill-btn" id="categoryDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+          <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="21" x2="4" y2="14"/>
+            <line x1="4" y1="10" x2="4" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12" y2="3"/>
+            <line x1="20" y1="21" x2="20" y2="16"/>
+            <line x1="20" y1="12" x2="20" y2="3"/>
+            <line x1="1" y1="14" x2="7" y2="14"/>
+            <line x1="9" y1="8" x2="15" y2="8"/>
+            <line x1="17" y1="16" x2="23" y2="16"/>
+          </svg>
+          <span class="pill-label" id="categoryFilterLabel">Filter</span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="triggers-dropdown-menu" id="categoryDropdownMenu" role="listbox" aria-label="Filter by category">
+          <button type="button" class="dropdown-menu-item active" data-category="all">All Categories</button>
+          <button type="button" class="dropdown-menu-item" data-category="Seasonal">Seasonal</button>
+          <button type="button" class="dropdown-menu-item" data-category="Festivals">Festivals</button>
+          <button type="button" class="dropdown-menu-item" data-category="Holidays">Holidays</button>
+          <button type="button" class="dropdown-menu-item" data-category="Sports">Sports</button>
+          <button type="button" class="dropdown-menu-item" data-category="Music & Culture">Music & Culture</button>
+          <button type="button" class="dropdown-menu-item" data-category="Shopping">Shopping</button>
+          <button type="button" class="dropdown-menu-item" data-category="Global Events">Global Events</button>
+        </div>
       </div>
     </div>
   </section>
+
+  <!-- 2. Month Selector Carousel / Strip -->
+  <nav class="triggers-months-nav" aria-label="Filter events by month">
+    <button type="button" class="month-nav-arrow" id="monthPrevBtn" aria-label="Scroll months left">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="month-pills-track" id="monthPillsTrack">
+      <button type="button" class="month-pill" data-month="all">All</button>
+      <button type="button" class="month-pill" data-month="1">Jan</button>
+      <button type="button" class="month-pill" data-month="2">Feb</button>
+      <button type="button" class="month-pill" data-month="3">Mar</button>
+      <button type="button" class="month-pill" data-month="4">Apr</button>
+      <button type="button" class="month-pill" data-month="5">May</button>
+      <button type="button" class="month-pill" data-month="6">Jun</button>
+      <button type="button" class="month-pill" data-month="7">Jul</button>
+      <button type="button" class="month-pill" data-month="8">Aug</button>
+      <button type="button" class="month-pill active" data-month="9">Sep</button>
+      <button type="button" class="month-pill" data-month="10">Oct</button>
+      <button type="button" class="month-pill" data-month="11">Nov</button>
+      <button type="button" class="month-pill" data-month="12">Dec</button>
+    </div>
+    <button type="button" class="month-nav-arrow" id="monthNextBtn" aria-label="Scroll months right">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </nav>
+
+  <!-- 3. Section Meta Row -->
+  <section class="triggers-meta-row" aria-label="Events meta row">
+    <h1 class="triggers-meta-title">
+      <span id="headingMonthYear">September 2026</span>
+    </h1>
+
+    <div class="triggers-meta-actions">
+      <!-- Sort Dropdown -->
+      <div class="sort-dropdown-wrap" id="sortDropdownWrap">
+        <button type="button" class="sort-dropdown-btn" id="sortDropdownBtn" aria-haspopup="listbox" aria-expanded="false">
+          <span>Sort by: <b id="currentSortLabel">Date (Soonest)</b></span>
+          <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="triggers-dropdown-menu" id="sortDropdownMenu" role="listbox" aria-label="Sort options">
+          <button type="button" class="dropdown-menu-item active" data-sort="curated">Date (Soonest)</button>
+          <button type="button" class="dropdown-menu-item" data-sort="date-desc">Date (Latest)</button>
+          <button type="button" class="dropdown-menu-item" data-sort="popular">Most Popular</button>
+          <button type="button" class="dropdown-menu-item" data-sort="name">Name (A-Z)</button>
+        </div>
+      </div>
+
+      <!-- View Toggle Buttons -->
+      <div class="triggers-view-toggle">
+        <button type="button" class="view-toggle-btn active" id="viewGridBtn" aria-label="Grid view" title="Grid view">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        <button type="button" class="view-toggle-btn" id="viewListBtn" aria-label="List view" title="List view">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Events Cards Grid -->
+  <section class="triggers-grid" id="triggersGrid" aria-label="Events list">
+    <div class="triggers-loading">
+      <div class="triggers-spinner" aria-hidden="true"></div>
+      <p>Discovering upcoming events…</p>
+    </div>
+  </section>
+
 </main>
 
+<!-- Footer -->
 <footer class="footer home-footer">
   <div class="container">
-    <div class="footer-route-line" aria-hidden="true"><span></span></div>
     <div class="footer-grid footer-grid--expanded">
       <div class="footer-intro">
-        <a href="../index.html" class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5L21 16z" fill="currentColor"/></svg></span>Visa<b>Doo</b></a>
+        <a href="../index.html" class="brand notranslate" translate="no"><img src="/assets/logo_transparent.png" alt="Visa Doo" style="height:42px;width:auto;max-width:200px;display:block"></a>
         <p>Tourist &amp; business visas for destinations worldwide — applied for and tracked entirely online. We handle the paperwork so you can plan the trip.</p>
-        <div class="footer-assurances"><span>100% online</span><span>Secure &amp; tracked</span></div>
+        <div class="footer-social-links" id="socialLinks" aria-label="Social media links">
+          <a href="https://instagram.com/visadoo" target="_blank" rel="noopener" aria-label="Instagram" class="social-ico social-instagram">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="mailto:hello@visadoo.com" target="_blank" rel="noopener" aria-label="Email" class="social-ico social-email">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </a>
+          <a href="https://wa.me/919895226697" target="_blank" rel="noopener" aria-label="WhatsApp" class="social-ico social-whatsapp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </a>
+        </div>
+        <div class="footer-assurances">
+          <span>100% online</span>
+          <span>Secure &amp; tracked</span>
+        </div>
       </div>
       <div>
         <h5>Explore</h5>
         <ul>
-          <li><a href="../index.html#destinations">Destinations</a></li>
-          <li><a href="events.html">Events</a></li>
-          <li><a href="../index.html#how">How it works</a></li>
-          <li><a href="../articles/articles.html">Articles</a></li>
+          <li><a href="../index.html">Home</a></li>
+          <li><a href="events.html">Travel Triggers</a></li>
           <li><a href="../app.html#track">Track application</a></li>
         </ul>
       </div>
       <div>
         <h5>Company</h5>
-        <ul>
+        <ul id="footerCompany">
           <li><a href="../p/about">About Visa Doo</a></li>
           <li><a href="../p/privacy-policy">Privacy Policy</a></li>
           <li><a href="../p/terms">Terms &amp; Conditions</a></li>
-          <li><a href="../index.html#contact">Contact us</a></li>
+          <li><a href="../contact.html">Contact Us</a></li>
         </ul>
       </div>
       <div class="footer-contact">
         <h5>Contact</h5>
-             <li><a id="footWa" href="https://wa.me/919895226697?text=Hi%20Visa%20Doo%2C%20I%20have%20a%20question%20about%20a%20visa." target="_blank" rel="noopener"><svg class="icon-wa" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12.042 2C6.5 2 2 6.5 2 12.042c0 2.213.716 4.261 1.934 5.925L2.5 21.5l3.655-1.402A10.003 10.003 0 0 0 12.042 22C17.5 22 22 17.5 22 12.042 22 6.5 17.5 2 12.042 2zm0 18.2c-1.637 0-3.167-.442-4.49-1.213l-.322-.188-2.658 1.02.99-2.585-.205-.337A8.163 8.163 0 0 1 3.842 12.042C3.842 7.518 7.518 3.842 12.042 3.842c4.524 0 8.2 3.676 8.2 8.2 0 4.524-3.676 8.158-8.2 8.158zm4.512-6.143c-.247-.124-1.463-.723-1.69-.805-.226-.082-.39-.124-.555.124-.165.247-.638.805-.783.97-.144.165-.288.185-.535.062-.247-.124-1.043-.385-1.986-1.226-.734-.655-1.23-1.464-1.374-1.711-.144-.247-.015-.38.109-.503.111-.11.247-.288.371-.432.124-.144.165-.247.247-.412.082-.165.041-.309-.021-.432-.062-.124-.556-1.34-.761-1.833-.2-.481-.404-.416-.555-.424h-.474c-.165 0-.432.062-.659.309s-.866.845-.866 2.061c0 1.216.886 2.391 1.01 2.556.124.165 1.745 2.664 4.228 3.737.59.255 1.05.407 1.41.522.593.188 1.133.161 1.56.097.476-.071 1.463-.598 1.669-1.175.206-.577.206-1.072.144-1.175-.062-.103-.226-.165-.473-.288z"/></svg><div><span>WhatsApp</span><small>Chat with our visa team</small></div></a></li><li><a id="footEmail" href="mailto:hello@visadoo.com"><svg class="icon-email" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><div><span>hello@visadoo.com</span><small>Send us your questions</small></div></a></li>
+        <ul>
+          <li>
+            <a id="footWa" href="https://wa.me/919895226697?text=Hi%20Visa%20Doo%2C%20I%20have%20a%20question%20about%20a%20visa." target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#25d366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="contact-ico ico-wa"><path d="M12 2a10 10 0 0 0-8.5 15.3L2 22l4.8-1.4A10 10 0 1 0 12 2z"/><path d="M15.5 14.2c-.3-.15-1.7-.85-2-.95-.3-.1-.5-.15-.7.15-.2.3-.75 1-.9 1.15-.15.15-.3.2-.6.1-.3-.15-1.25-.45-2.4-1.5-.9-.8-1.5-1.75-1.7-2.05-.15-.3 0-.45.15-.6.15-.15.3-.35.45-.5.15-.15.2-.3.3-.5.1-.2.05-.35 0-.5-.05-.15-.7-1.65-.95-2.2-.25-.6-.5-.5-.7-.5h-.6c-.2 0-.55.05-.85.35s-1.1 1.05-1.1 2.55 1.1 2.95 1.25 3.15c.15.2 2.1 3.25 5.1 4.55.7.3 1.25.5 1.7.65.7.25 1.4.2 1.9.1.6-.1 1.8-.75 2-1.45.25-.7.25-1.3.15-1.45-.1-.15-.3-.2-.6-.35z" fill="#25d366" stroke="none"/></svg>
+              <div class="contact-text-block">
+                <span>WhatsApp</span>
+                <small>Chat with our visa team</small>
+              </div>
+            </a>
+          </li>
+          <li>
+            <a id="footEmail" href="mailto:hello@visadoo.com">
+              <svg class="contact-ico ico-email" viewBox="0 0 24 24" width="22" height="22"><path fill="#4285F4" d="M22.5 8.1v11.4c0 .8-.7 1.5-1.5 1.5h-3.5V12l-5.5 4.1L6.5 12V21H3c-.8 0-1.5-.7-1.5-1.5V8.1l5.5 4.1 5-3.8 5 3.8 5.5-4.1z"/><path fill="#34A853" d="M1.5 8.1V5.5C1.5 4.7 2.2 4 3 4h.9l8.1 6.1L20.1 4H21c.8 0 1.5.7 1.5 1.5v2.6l-10.5 7.9L1.5 8.1z"/><path fill="#EA4335" d="M1.5 5.5l10.5 7.9L22.5 5.5V5.5c0-.8-.7-1.5-1.5-1.5h-18c-.8 0-1.5.7-1.5 1.5v0z"/><path fill="#FBBC05" d="M17.5 4L12 8.1 6.5 4h11z"/></svg>
+              <div class="contact-text-block">
+                <span>Gmail</span>
+                <small>Chat with our visa team</small>
+              </div>
+            </a>
+          </li>
         </ul>
       </div>
     </div>
     <div class="footer-bottom">
       <span>© <span id="year"></span> Visa Doo. All rights reserved.</span>
       <span>Plan simply. Travel confidently.</span>
-      <div id="socialLinks" hidden></div>
     </div>
   </div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/vendor/supabase.min.js"></script>
 <script src="../config.js"></script>
 <script>
 (function(){
-  var y=document.getElementById('year');
-  if(y) y.textContent=new Date().getFullYear();
+  // Update footer year
+  var y = document.getElementById('year');
+  if(y) y.textContent = new Date().getFullYear();
 
-  var menuBtn=document.getElementById('menuBtn');
-  var navLinks=document.getElementById('navLinks');
-  if(menuBtn&&navLinks){
-    menuBtn.addEventListener('click',function(){navLinks.classList.toggle('open');});
+  // Mobile menu toggle
+  var menuBtn = document.getElementById('menuBtn');
+  var navLinks = document.getElementById('navLinks');
+  if(menuBtn && navLinks){
+    menuBtn.addEventListener('click', function(){ navLinks.classList.toggle('open'); });
     navLinks.querySelectorAll('a').forEach(function(link){
-      link.addEventListener('click',function(){navLinks.classList.remove('open');});
+      link.addEventListener('click', function(){ navLinks.classList.remove('open'); });
     });
   }
 
-  var cfg=window.VISADOO_CONFIG||{};
-  var wrap=document.getElementById('eventsWrap');
-  var searchInput=document.getElementById('eventSearch');
-  var searchButton=document.getElementById('eventSearchButton');
-  var searchResults=document.getElementById('eventSearchResults');
-  var quickSuggestions=document.getElementById('eventQuickSuggestions');
-  var eventCount=document.getElementById('eventCount');
-  var MONTHS=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+  // Month names dictionary
+  var MONTH_NAMES = [
+    'January','February','March','April','May','June',
+    'July','August','September','October','November','December'
+  ];
+  var MONTH_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
-  function fmtDate(d){
-    if(!d) return '';
-    var p=d.split('-');
-    return parseInt(p[2],10)+' '+MONTHS[parseInt(p[1],10)-1].slice(0,3)+' '+p[0];
-  }
-  function monthKey(d){return d.slice(0,7);}
-  function monthLabel(key){
-    var p=key.split('-');
-    return MONTHS[parseInt(p[1],10)-1]+' '+p[0];
-  }
+  // Avatar photos pool for social proof footer
+  var AVATARS = [
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&h=80&q=80',
+    'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&h=80&q=80',
+    'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=80&h=80&q=80',
+    'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=80&h=80&q=80'
+  ];
+
+  // 28 Verified Events covering all 7 official categories
+  var SEED_EVENTS = [
+    // 1. GLOBAL EVENTS
+    {
+      slug: 'itb-asia-2026',
+      name: 'ITB Asia 2026',
+      city: 'Singapore',
+      country: 'Singapore',
+      country_name: 'Singapore',
+      country_slug: 'singapore',
+      location: 'Singapore',
+      category: 'Global Events',
+      event_date: '2026-09-20',
+      end_date: '2026-09-22',
+      blurb: "Asia's leading travel trade show connecting the global travel industry.",
+      image_url: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.2K+ are interested',
+      interested_count: 1240,
+      sort_order: 1
+    },
+    {
+      slug: 'dubai-airshow-2026',
+      name: 'Dubai Airshow 2026',
+      city: 'Dubai',
+      country: 'UAE',
+      country_name: 'United Arab Emirates',
+      country_slug: 'united-arab-emirates',
+      location: 'Dubai, UAE',
+      category: 'Global Events',
+      event_date: '2026-09-26',
+      end_date: '2026-09-28',
+      blurb: "The world's largest aerospace event showcasing the future of aviation.",
+      image_url: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '950+ are interested',
+      interested_count: 950,
+      sort_order: 3
+    },
+    {
+      slug: 'gitex-global-2026',
+      name: 'GITEX Global 2026',
+      city: 'Dubai',
+      country: 'UAE',
+      country_name: 'United Arab Emirates',
+      country_slug: 'united-arab-emirates',
+      location: 'Dubai, UAE',
+      category: 'Global Events',
+      event_date: '2026-09-10',
+      end_date: '2026-09-12',
+      blurb: "Global tech founders and innovators gathering to discover cutting-edge artificial intelligence and computing.",
+      image_url: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.1K+ are interested',
+      interested_count: 2100,
+      sort_order: 6
+    },
+    {
+      slug: 'tokyo-game-show-2026',
+      name: 'Tokyo Game Show 2026',
+      city: 'Tokyo',
+      country: 'Japan',
+      country_name: 'Japan',
+      country_slug: 'japan',
+      location: 'Tokyo, Japan',
+      category: 'Global Events',
+      event_date: '2026-09-24',
+      end_date: '2026-09-27',
+      blurb: "Asia's premier video game exhibition showcasing the next generation of games, hardware and esports.",
+      image_url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.9K+ are interested',
+      interested_count: 1900,
+      sort_order: 8
+    },
+    {
+      slug: 'monaco-yacht-show-2026',
+      name: 'Monaco Yacht Show 2026',
+      city: 'Port Hercule',
+      country: 'Monaco',
+      country_name: 'Monaco',
+      country_slug: 'france',
+      location: 'Port Hercule, Monaco',
+      category: 'Global Events',
+      event_date: '2026-09-23',
+      end_date: '2026-09-26',
+      blurb: "The ultimate superyacht luxury showcase attracting yacht builders, owners and nautical enthusiasts globally.",
+      image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.5K+ are interested',
+      interested_count: 1500,
+      sort_order: 11
+    },
+    {
+      slug: 'canton-fair-autumn-2026',
+      name: '140th Canton Fair Autumn 2026',
+      city: 'Guangzhou',
+      country: 'China',
+      country_name: 'China',
+      country_slug: 'china',
+      location: 'Guangzhou, China',
+      category: 'Global Events',
+      event_date: '2026-10-15',
+      end_date: '2026-11-04',
+      blurb: "China's premier international trade fair gathering global suppliers, manufacturers, and buyers from across the world.",
+      image_url: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '3.1K+ are interested',
+      interested_count: 3100,
+      sort_order: 13
+    },
+
+    // 2. SPORTS
+    {
+      slug: 'formula-1-azerbaijan-grand-prix-2026',
+      name: 'F1 Azerbaijan Grand Prix 2026',
+      city: 'Baku',
+      country: 'Azerbaijan',
+      country_name: 'Azerbaijan',
+      country_slug: 'azerbaijan',
+      location: 'Baku, Azerbaijan',
+      category: 'Sports',
+      event_date: '2026-09-24',
+      end_date: '2026-09-27',
+      blurb: "Experience high-speed action and explore Azerbaijan's rich culture.",
+      image_url: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '785+ are interested',
+      interested_count: 785,
+      sort_order: 2
+    },
+    {
+      slug: 'singapore-grand-prix-2026',
+      name: 'Singapore Grand Prix 2026',
+      city: 'Singapore',
+      country: 'Singapore',
+      country_name: 'Singapore',
+      country_slug: 'singapore',
+      location: 'Singapore',
+      category: 'Sports',
+      event_date: '2026-09-18',
+      end_date: '2026-09-20',
+      blurb: "The spectacular night race around Marina Bay Circuit paired with star-studded concerts and entertainment.",
+      image_url: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.4K+ are interested',
+      interested_count: 2400,
+      sort_order: 10
+    },
+    {
+      slug: 'asian-games-aichi-nagoya-2026',
+      name: '20th Asian Games Aichi-Nagoya 2026',
+      city: 'Nagoya',
+      country: 'Japan',
+      country_name: 'Japan',
+      country_slug: 'japan',
+      location: 'Nagoya, Japan',
+      category: 'Sports',
+      event_date: '2026-09-19',
+      end_date: '2026-10-04',
+      blurb: "Asia's premier multi-sport celebration gathering Olympic athletes and thousands of international spectators.",
+      image_url: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '3.8K+ are interested',
+      interested_count: 3800,
+      sort_order: 7
+    },
+    {
+      slug: 'f1-abu-dhabi-grand-prix-2026',
+      name: 'Formula 1 Abu Dhabi Grand Prix 2026',
+      city: 'Abu Dhabi',
+      country: 'UAE',
+      country_name: 'United Arab Emirates',
+      country_slug: 'united-arab-emirates',
+      location: 'Abu Dhabi, UAE',
+      category: 'Sports',
+      event_date: '2026-11-20',
+      end_date: '2026-11-22',
+      blurb: "The electrifying twilight season finale of the FIA Formula One World Championship at Yas Marina Circuit.",
+      image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '4.2K+ are interested',
+      interested_count: 4200,
+      sort_order: 14
+    },
+
+    // 3. FESTIVALS
+    {
+      slug: 'seoul-mid-autumn-lantern-festival-2026',
+      name: 'Seoul Lantern Festival 2026',
+      city: 'Seoul',
+      country: 'South Korea',
+      country_name: 'South Korea',
+      country_slug: 'south-korea',
+      location: 'Seoul, South Korea',
+      category: 'Festivals',
+      event_date: '2026-09-15',
+      end_date: '2026-09-18',
+      blurb: "Hundreds of handcrafted luminous Hanji paper lanterns illuminating ancient palaces and waterways.",
+      image_url: 'https://images.unsplash.com/photo-1538485399081-7191377e8241?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '640+ are interested',
+      interested_count: 640,
+      sort_order: 5
+    },
+    {
+      slug: 'oktoberfest-munich-2026',
+      name: 'Oktoberfest Munich 2026',
+      city: 'Munich',
+      country: 'Germany',
+      country_name: 'Germany',
+      country_slug: 'germany',
+      location: 'Munich, Germany',
+      category: 'Festivals',
+      event_date: '2026-09-19',
+      end_date: '2026-10-04',
+      blurb: "The world's biggest Bavarian folk and cultural festival celebrating traditional music, cuisine and camaraderie.",
+      image_url: 'https://images.unsplash.com/photo-1571863533956-01c88e79957e?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '3.4K+ are interested',
+      interested_count: 3400,
+      sort_order: 7
+    },
+    {
+      slug: 'venice-film-festival-2026',
+      name: 'Venice International Film Festival 2026',
+      city: 'Venice',
+      country: 'Italy',
+      country_name: 'Italy',
+      country_slug: 'italy',
+      location: 'Venice, Italy',
+      category: 'Festivals',
+      event_date: '2026-09-02',
+      end_date: '2026-09-12',
+      blurb: "The world's oldest film festival celebrating cinematic brilliance on the glamorous island of Lido di Venezia.",
+      image_url: 'https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.7K+ are interested',
+      interested_count: 1700,
+      sort_order: 12
+    },
+    {
+      slug: 'st-patricks-festival-dublin-2027',
+      name: "St. Patrick's Festival Dublin 2027",
+      city: 'Dublin',
+      country: 'Ireland',
+      country_name: 'Ireland',
+      country_slug: 'ireland',
+      location: 'Dublin, Ireland',
+      category: 'Festivals',
+      event_date: '2027-03-14',
+      end_date: '2027-03-18',
+      blurb: "Immerse yourself in four days of vibrant Irish music, street theatre, visual arts, and the world-famous grand parade.",
+      image_url: 'https://images.unsplash.com/photo-1549918864-48ac978761a4?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.4K+ are interested',
+      interested_count: 1400,
+      sort_order: 17
+    },
+    {
+      slug: 'songkran-water-festival-2027',
+      name: 'Songkran Water Festival 2027',
+      city: 'Bangkok',
+      country: 'Thailand',
+      country_name: 'Thailand',
+      country_slug: 'thailand',
+      location: 'Bangkok, Thailand',
+      category: 'Festivals',
+      event_date: '2027-04-13',
+      end_date: '2027-04-15',
+      blurb: "Thailand's world-famous New Year celebration filled with lively water splashing, street parties and temple blessings.",
+      image_url: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.9K+ are interested',
+      interested_count: 2900,
+      sort_order: 19
+    },
+
+    // 4. MUSIC & CULTURE
+    {
+      slug: 'ultra-worldwide-music-festival-2026',
+      name: 'Ultra Worldwide Music Festival 2026',
+      city: 'Bali',
+      country: 'Indonesia',
+      country_name: 'Indonesia',
+      country_slug: 'indonesia',
+      location: 'Bali, Indonesia',
+      category: 'Music & Culture',
+      event_date: '2026-09-28',
+      end_date: '2026-09-30',
+      blurb: "Electrifying electronic music festival featuring world-class international headliners and stage production.",
+      image_url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.8K+ are interested',
+      interested_count: 1820,
+      sort_order: 4
+    },
+    {
+      slug: 'paris-fashion-week-ss27',
+      name: 'Paris Fashion Week SS27',
+      city: 'Paris',
+      country: 'France',
+      country_name: 'France',
+      country_slug: 'france',
+      location: 'Paris, France',
+      category: 'Music & Culture',
+      event_date: '2026-09-28',
+      end_date: '2026-10-06',
+      blurb: "The pinnacle of international haute couture runways across legendary Parisian landmarks and grand halls.",
+      image_url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.7K+ are interested',
+      interested_count: 2700,
+      sort_order: 9
+    },
+    {
+      slug: 'edinburgh-fringe-festival-2026',
+      name: 'Edinburgh International Fringe Festival 2026',
+      city: 'Edinburgh',
+      country: 'United Kingdom',
+      country_name: 'United Kingdom',
+      country_slug: 'united-kingdom',
+      location: 'Edinburgh, UK',
+      category: 'Music & Culture',
+      event_date: '2026-08-07',
+      end_date: '2026-08-31',
+      blurb: "The world's greatest celebration of arts and culture transforming the historic Scottish capital with thousands of performances.",
+      image_url: 'https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.1K+ are interested',
+      interested_count: 2100,
+      sort_order: 20
+    },
+
+    // 5. SEASONAL
+    {
+      slug: 'japan-sakura-cherry-blossom-festival-2027',
+      name: 'Cherry Blossom (Sakura) Festival 2027',
+      city: 'Kyoto & Tokyo',
+      country: 'Japan',
+      country_name: 'Japan',
+      country_slug: 'japan',
+      location: 'Kyoto & Tokyo, Japan',
+      category: 'Seasonal',
+      event_date: '2027-03-20',
+      end_date: '2027-04-10',
+      blurb: "Witness the legendary Japanese cherry blossoms in full bloom across ancient temples, gardens and riverside walkways.",
+      image_url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.8K+ are interested',
+      interested_count: 2800,
+      sort_order: 18
+    },
+    {
+      slug: 'st-moritz-snow-polo-world-cup-2027',
+      name: 'St. Moritz Snow Polo World Cup 2027',
+      city: 'St. Moritz',
+      country: 'Switzerland',
+      country_name: 'Switzerland',
+      country_slug: 'switzerland',
+      location: 'St. Moritz, Switzerland',
+      category: 'Seasonal',
+      event_date: '2027-01-29',
+      end_date: '2027-01-31',
+      blurb: "The world's premier snow polo tournament held on the frozen lake of St. Moritz against the majestic Swiss Alps.",
+      image_url: 'https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.1K+ are interested',
+      interested_count: 1100,
+      sort_order: 16
+    },
+    {
+      slug: 'bali-tropical-summer-2026',
+      name: 'Bali Tropical Summer & Surf Festival 2026',
+      city: 'Bali',
+      country: 'Indonesia',
+      country_name: 'Indonesia',
+      country_slug: 'indonesia',
+      location: 'Bali, Indonesia',
+      category: 'Seasonal',
+      event_date: '2026-07-15',
+      end_date: '2026-07-20',
+      blurb: "Celebrate peak tropical summer season in Bali with sunset beach sessions, world-class surfing, and cultural performances.",
+      image_url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.6K+ are interested',
+      interested_count: 1600,
+      sort_order: 21
+    },
+    {
+      slug: 'harbin-ice-snow-festival-2027',
+      name: 'Harbin International Ice & Snow Festival 2027',
+      city: 'Harbin',
+      country: 'China',
+      country_name: 'China',
+      country_slug: 'china',
+      location: 'Harbin, China',
+      category: 'Seasonal',
+      event_date: '2027-01-05',
+      end_date: '2027-02-28',
+      blurb: "The world's grandest winter wonderland showcasing colossal illuminated ice palaces and crystal ice sculptures.",
+      image_url: 'https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.5K+ are interested',
+      interested_count: 2500,
+      sort_order: 22
+    },
+
+    // 6. HOLIDAYS
+    {
+      slug: 'eid-in-dubai-2026',
+      name: 'Eid Celebrations & Grand Fireworks 2026',
+      city: 'Dubai',
+      country: 'UAE',
+      country_name: 'United Arab Emirates',
+      country_slug: 'united-arab-emirates',
+      location: 'Dubai, UAE',
+      category: 'Holidays',
+      event_date: '2026-06-16',
+      end_date: '2026-06-20',
+      blurb: "Spectacular Eid festivities across Dubai featuring dazzling fireworks along the waterfront, family shows, and feasts.",
+      image_url: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '3.6K+ are interested',
+      interested_count: 3600,
+      sort_order: 23
+    },
+    {
+      slug: 'paris-christmas-new-year-2026',
+      name: 'Paris Christmas & New Year Illuminations 2026',
+      city: 'Paris',
+      country: 'France',
+      country_name: 'France',
+      country_slug: 'france',
+      location: 'Paris, France',
+      category: 'Holidays',
+      event_date: '2026-12-20',
+      end_date: '2027-01-02',
+      blurb: "Enchanting winter holiday lights, festive markets on Champs-Élysées, and glamorous New Year Eve countdowns.",
+      image_url: 'https://images.unsplash.com/photo-1482517967863-00e15c9b44be?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '4.5K+ are interested',
+      interested_count: 4500,
+      sort_order: 24
+    },
+    {
+      slug: 'tokyo-golden-week-2027',
+      name: 'Tokyo Golden Week Matsuri 2027',
+      city: 'Tokyo',
+      country: 'Japan',
+      country_name: 'Japan',
+      country_slug: 'japan',
+      location: 'Tokyo, Japan',
+      category: 'Holidays',
+      event_date: '2027-04-29',
+      end_date: '2027-05-05',
+      blurb: "Japan's most anticipated national holiday week with colorful street parades, garden festivals, and cultural traditions.",
+      image_url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.3K+ are interested',
+      interested_count: 2300,
+      sort_order: 25
+    },
+
+    // 7. SHOPPING
+    {
+      slug: 'dubai-shopping-festival-2026-27',
+      name: 'Dubai Shopping Festival (DSF) 2026–27',
+      city: 'Dubai',
+      country: 'UAE',
+      country_name: 'United Arab Emirates',
+      country_slug: 'united-arab-emirates',
+      location: 'Dubai, UAE',
+      category: 'Shopping',
+      event_date: '2026-12-15',
+      end_date: '2027-01-25',
+      blurb: "The world's greatest shopping and entertainment festival with drone shows, star-studded concerts and luxury discounts.",
+      image_url: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '5.1K+ are interested',
+      interested_count: 5100,
+      sort_order: 15
+    },
+    {
+      slug: 'great-singapore-sale-2026',
+      name: 'The Great Singapore Sale (GSS) 2026',
+      city: 'Singapore',
+      country: 'Singapore',
+      country_name: 'Singapore',
+      country_slug: 'singapore',
+      location: 'Singapore',
+      category: 'Shopping',
+      event_date: '2026-06-12',
+      end_date: '2026-07-26',
+      blurb: "Nationwide retail extravaganza along Orchard Road featuring major discounts, gourmet dining, and duty-free shopping.",
+      image_url: 'https://images.unsplash.com/photo-1519451241324-20b4ea2c4220?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '1.9K+ are interested',
+      interested_count: 1900,
+      sort_order: 26
+    },
+    {
+      slug: 'london-winter-boxing-day-sales-2026',
+      name: 'London Boxing Day & Winter Sales 2026',
+      city: 'London',
+      country: 'United Kingdom',
+      country_name: 'United Kingdom',
+      country_slug: 'united-kingdom',
+      location: 'London, UK',
+      category: 'Shopping',
+      event_date: '2026-12-26',
+      end_date: '2027-01-15',
+      blurb: "Iconic shopping along Oxford Street, Regent Street, and Harrods with historic winter clearances and designer offers.",
+      image_url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80',
+      interested_text: '2.7K+ are interested',
+      interested_count: 2700,
+      sort_order: 27
+    }
+  ];
+
+  // DOM Elements
+  var grid = document.getElementById('triggersGrid');
+  var searchInput = document.getElementById('triggersSearchInput');
+  var clearSearchBtn = document.getElementById('triggersClearSearch');
+  var headingMonthYear = document.getElementById('headingMonthYear');
+  var headingEventCount = document.getElementById('headingEventCount');
+  var monthPillsTrack = document.getElementById('monthPillsTrack');
+  var monthPrevBtn = document.getElementById('monthPrevBtn');
+  var monthNextBtn = document.getElementById('monthNextBtn');
+
+  var countryDropdown = document.getElementById('countryDropdown');
+  var countryDropdownBtn = document.getElementById('countryDropdownBtn');
+  var countryDropdownMenu = document.getElementById('countryDropdownMenu');
+  var countryFilterLabel = document.getElementById('countryFilterLabel');
+
+  var yearDropdown = document.getElementById('yearDropdown');
+  var yearDropdownBtn = document.getElementById('yearDropdownBtn');
+  var yearDropdownMenu = document.getElementById('yearDropdownMenu');
+  var yearFilterLabel = document.getElementById('yearFilterLabel');
+
+  var categoryDropdown = document.getElementById('categoryDropdown');
+  var categoryDropdownBtn = document.getElementById('categoryDropdownBtn');
+  var categoryDropdownMenu = document.getElementById('categoryDropdownMenu');
+  var categoryFilterLabel = document.getElementById('categoryFilterLabel');
+
+  var sortDropdownWrap = document.getElementById('sortDropdownWrap');
+  var sortDropdownBtn = document.getElementById('sortDropdownBtn');
+  var sortDropdownMenu = document.getElementById('sortDropdownMenu');
+  var currentSortLabel = document.getElementById('currentSortLabel');
+
+  var viewGridBtn = document.getElementById('viewGridBtn');
+  var viewListBtn = document.getElementById('viewListBtn');
+
+  // State
+  var allEvents = [];
+  var selectedMonth = '9'; // Default to September 2026 (matching mockup)
+  var selectedYear = '2026'; // Default to 2026 (matching mockup)
+  var selectedCountry = 'all';
+  var selectedCategory = 'all';
+  var searchQuery = '';
+  var currentSort = 'curated'; // Curated sort order matches image media_1789198673127.png
+  var currentView = 'grid';
+
+  // Helpers
   function esc(s){
-    return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){
+    return (s == null ? '' : String(s)).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
+
   function eventHref(e){
-    var local=window.location.protocol==='file:'||window.location.hostname==='127.0.0.1'||window.location.hostname==='localhost';
-    return local?('event.html?slug='+encodeURIComponent(e.slug)):('/event/'+encodeURIComponent(e.slug));
-  }
-  function card(e){
-    var image=e.image_url||'';
-    var photo=image
-      ? '<span class="ev-photo" style="background-image:url(&quot;'+esc(image)+'&quot;)"></span>'
-      : '<span class="ev-photo ev-photo--empty"></span>';
-    var category=e.category||'Event';
-    var place=[e.city,e.country_name||e.country].filter(Boolean).join(', ');
-    var date=e.event_date?fmtDate(e.event_date):'Date coming soon';
-    var searchable=[e.name,category,place,date].filter(Boolean).join(' ').toLowerCase();
-    return '<a class="ev-card" href="'+eventHref(e)+'" data-cat="'+esc(e.category||'')+'" data-search="'+esc(searchable)+'">'+
-      photo+
-      '<span class="ev-date">'+esc(date)+'</span>'+
-      '<div class="ev-card-content">'+
-        '<span class="ev-category">'+esc(category)+'</span>'+
-        '<div class="ev-name">'+esc(e.name||'')+'</div>'+
-        (place?'<div class="ev-meta">'+esc(place)+'</div>':'')+
-        '<span class="ev-card-link">View event <b>→</b></span>'+
-      '</div>'+
-    '</a>';
-  }
-  function showLoadError(){
-    wrap.innerHTML='<div class="empty-state"><p>Events could not be loaded. Please check your connection and try again.</p></div>';
-    if(eventCount) eventCount.textContent='0';
+    var isLocal = window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    return isLocal ? ('event.html?slug=' + encodeURIComponent(e.slug)) : ('/event/' + encodeURIComponent(e.slug));
   }
 
-  if(!cfg.SUPABASE_URL||!window.supabase){
-    showLoadError();
-    return;
+  function parseDateBadge(startStr, endStr){
+    if(!startStr) return { month: 'TBD', days: 'TBD', year: '2026' };
+    var sp = startStr.split('-');
+    var mIdx = parseInt(sp[1], 10) - 1;
+    var month = MONTH_SHORT[mIdx] || 'TBD';
+    var startDay = parseInt(sp[2], 10);
+    var year = sp[0];
+
+    var days = String(startDay);
+    if(endStr){
+      var ep = endStr.split('-');
+      var endDay = parseInt(ep[2], 10);
+      if(ep[1] === sp[1]){
+        if(endDay !== startDay){
+          days = startDay + '-' + endDay;
+        }
+      } else {
+        days = startDay + '+';
+      }
+    }
+    return { month: month, days: days, year: year };
   }
 
-  var sb=window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
-  sb.from('events').select('*').eq('active',true).order('event_date',{ascending:true}).then(function(res){
-    if(res.error) throw res.error;
-    var events=res.data||[];
-    if(eventCount) eventCount.textContent=events.length;
-    if(!events.length){
-      wrap.innerHTML='<div class="empty-state"><p>New events are coming soon. <a href="index.html#destinations">Browse destinations</a> in the meantime.</p></div>';
+  function countryNameFromSlug(slug){
+    if(!slug) return '';
+    var map = {
+      'united-arab-emirates': 'United Arab Emirates',
+      'uae': 'United Arab Emirates',
+      'japan': 'Japan',
+      'singapore': 'Singapore',
+      'germany': 'Germany',
+      'france': 'France',
+      'italy': 'Italy',
+      'south-korea': 'South Korea',
+      'china': 'China',
+      'azerbaijan': 'Azerbaijan',
+      'azerbaijan-2': 'Azerbaijan',
+      'indonesia': 'Indonesia',
+      'switzerland': 'Switzerland',
+      'ireland': 'Ireland',
+      'spain': 'Spain',
+      'turkey': 'Türkiye',
+      'egypt': 'Egypt',
+      'egypt-2': 'Egypt',
+      'greece': 'Greece',
+      'vietnam': 'Vietnam',
+      'denmark': 'Denmark',
+      'qatar': 'Qatar',
+      'thailand': 'Thailand',
+      'india': 'India',
+      'bahrain': 'Bahrain',
+      'morocco': 'Morocco',
+      'sri-lanka': 'Sri Lanka',
+      'russia': 'Russia',
+      'kenya': 'Kenya',
+      'oman': 'Oman',
+      'saudi-arabia': 'Saudi Arabia',
+      'saudi': 'Saudi Arabia',
+      'philippines': 'Philippines',
+      'united-kingdom': 'United Kingdom',
+      'uk': 'United Kingdom',
+      'monaco': 'Monaco'
+    };
+    if(map[slug.toLowerCase()]) return map[slug.toLowerCase()];
+    return slug.split('-').map(function(w){
+      return w.charAt(0).toUpperCase() + w.slice(1);
+    }).join(' ');
+  }
+
+  function getCardLocation(e){
+    if(e.location) return e.location;
+    var c = (e.city || '').trim();
+    var co = (e.country_name || e.country || countryNameFromSlug(e.country_slug) || '').trim();
+    if(!c && !co) return 'Global';
+    if(!c) return co;
+    if(!co) return c;
+    if(c.toLowerCase().indexOf(co.toLowerCase()) !== -1) return c;
+    if((c.toLowerCase().indexOf('dubai') !== -1 || c.toLowerCase().indexOf('uae') !== -1 || c.toLowerCase().indexOf('abu dhabi') !== -1) &&
+       (co.toLowerCase().indexOf('emirates') !== -1 || co.toLowerCase() === 'uae')){
+      return c.toLowerCase().indexOf('uae') !== -1 ? c : (c + ', UAE');
+    }
+    return c + ', ' + co;
+  }
+
+  // Map any incoming or legacy event category to one of the 7 official categories
+  function mapEventCategory(rawCategory, eventSlug, eventName){
+    var c = (rawCategory || '').trim().toLowerCase();
+    var s = (eventSlug || '').toLowerCase();
+    var n = (eventName || '').toLowerCase();
+
+    // 1. Seasonal
+    if(s.indexOf('sakura') > -1 || s.indexOf('cherry-blossom') > -1 || s.indexOf('snow-polo') > -1 || s.indexOf('ice-snow') > -1 || s.indexOf('tropical-summer') > -1 || s.indexOf('foliage') > -1 || c === 'seasonal') {
+      return 'Seasonal';
+    }
+    // 2. Holidays
+    if(s.indexOf('eid') > -1 || s.indexOf('christmas') > -1 || s.indexOf('new-year') > -1 || s.indexOf('golden-week') > -1 || s.indexOf('diwali') > -1 || c === 'holidays' || c === 'holiday') {
+      return 'Holidays';
+    }
+    // 3. Festivals
+    if(s.indexOf('oktoberfest') > -1 || s.indexOf('lantern') > -1 || s.indexOf('patricks') > -1 || s.indexOf('songkran') > -1 || (s.indexOf('film') > -1 && s.indexOf('festival') > -1) || c === 'festivals' || c === 'festival') {
+      return 'Festivals';
+    }
+    // 4. Shopping
+    if(s.indexOf('shopping') > -1 || s.indexOf('singapore-sale') > -1 || s.indexOf('boxing-day') > -1 || s.indexOf('soldes') > -1 || c.indexOf('shop') > -1) {
+      return 'Shopping';
+    }
+    // 5. Sports
+    if(c.indexOf('sport') > -1 || s.indexOf('grand-prix') > -1 || s.indexOf('asian-games') > -1 || s.indexOf('f1-') > -1 || s.indexOf('formula-1') > -1) {
+      return 'Sports';
+    }
+    // 6. Music & Culture
+    if(c.indexOf('music') > -1 || s.indexOf('ultra') > -1 || s.indexOf('fashion-week') > -1 || s.indexOf('fringe') > -1 || c === 'music & culture' || c === 'art & culture') {
+      return 'Music & Culture';
+    }
+    // 7. Global Events
+    if(c.indexOf('expo') > -1 || c.indexOf('business') > -1 || s.indexOf('gitex') > -1 || s.indexOf('airshow') > -1 || s.indexOf('canton-fair') > -1 || s.indexOf('tokyo-game') > -1 || s.indexOf('yacht-show') > -1 || s.indexOf('itb') > -1 || c === 'global events') {
+      return 'Global Events';
+    }
+
+    return rawCategory || 'Global Events';
+  }
+
+  // Check if an event matches a selected category
+  function eventMatchesCategory(e, targetCat){
+    if(!targetCat || targetCat === 'all') return true;
+    var normCat = (e.category || '').trim().toLowerCase();
+    var t = targetCat.trim().toLowerCase();
+    if(normCat === t) return true;
+
+    var hay = [e.name, e.slug, e.category, e.blurb].filter(Boolean).join(' ').toLowerCase();
+
+    if(t === 'seasonal'){
+      return normCat === 'seasonal' || hay.indexOf('blossom') > -1 || hay.indexOf('sakura') > -1 || hay.indexOf('snow') > -1 || hay.indexOf('summer') > -1 || hay.indexOf('winter') > -1;
+    }
+    if(t === 'festivals'){
+      return normCat === 'festivals' || hay.indexOf('festival') > -1 || hay.indexOf('oktoberfest') > -1 || hay.indexOf('lantern') > -1 || hay.indexOf('carnival') > -1;
+    }
+    if(t === 'holidays'){
+      return normCat === 'holidays' || hay.indexOf('eid') > -1 || hay.indexOf('christmas') > -1 || hay.indexOf('new year') > -1 || hay.indexOf('golden week') > -1 || hay.indexOf('holiday') > -1;
+    }
+    if(t === 'sports'){
+      return normCat === 'sports' || hay.indexOf('grand prix') > -1 || hay.indexOf('f1') > -1 || hay.indexOf('asian games') > -1 || hay.indexOf('polo') > -1;
+    }
+    if(t === 'music & culture'){
+      return normCat === 'music & culture' || hay.indexOf('music') > -1 || hay.indexOf('culture') > -1 || hay.indexOf('fashion') > -1 || hay.indexOf('art') > -1;
+    }
+    if(t === 'shopping'){
+      return normCat === 'shopping' || hay.indexOf('shopping') > -1 || hay.indexOf('sale') > -1 || hay.indexOf('dsf') > -1 || hay.indexOf('discount') > -1;
+    }
+    if(t === 'global events'){
+      return normCat === 'global events' || hay.indexOf('global') > -1 || hay.indexOf('expo') > -1 || hay.indexOf('fair') > -1 || hay.indexOf('airshow') > -1 || hay.indexOf('trade') > -1;
+    }
+    return false;
+  }
+
+  function getCategoryBadgeClass(cat){
+    if(!cat) return '';
+    var c = cat.toLowerCase();
+    if(c.indexOf('season') > -1) return 'badge-seasonal';
+    if(c.indexOf('festival') > -1) return 'badge-festivals';
+    if(c.indexOf('holiday') > -1) return 'badge-holidays';
+    if(c.indexOf('sport') > -1 || c.indexOf('f1') > -1) return 'badge-sports';
+    if(c.indexOf('music') > -1 || c.indexOf('culture') > -1 || c.indexOf('art') > -1) return 'badge-music-culture';
+    if(c.indexOf('shop') > -1) return 'badge-shopping';
+    if(c.indexOf('global') > -1 || c.indexOf('expo') > -1 || c.indexOf('business') > -1) return 'badge-global-events';
+    return '';
+  }
+
+  function getAttendeeText(e, idx){
+    var raw = '';
+    if(e.interested_text) raw = e.interested_text;
+    else if(e.interested_count){
+      raw = (e.interested_count >= 1000 ? (e.interested_count / 1000).toFixed(1) + 'K+' : e.interested_count + '+') + ' are interested';
+    } else {
+      var defaults = ['1.2K+ are interested', '785+ are interested', '950+ are interested', '1.8K+ are interested', '640+ are interested', '2.1K+ are interested'];
+      raw = defaults[idx % defaults.length];
+    }
+    var parts = raw.split(' are interested');
+    if(parts.length > 1){
+      return '<b>' + esc(parts[0]) + '</b> are interested';
+    }
+    return esc(raw);
+  }
+
+  function getAvatars(idx){
+    var a1 = AVATARS[idx % AVATARS.length];
+    var a2 = AVATARS[(idx + 1) % AVATARS.length];
+    var a3 = AVATARS[(idx + 2) % AVATARS.length];
+    return '<div class="avatar-stack">' +
+      '<img src="' + esc(a1) + '" alt="" class="avatar">' +
+      '<img src="' + esc(a2) + '" alt="" class="avatar">' +
+      '<img src="' + esc(a3) + '" alt="" class="avatar">' +
+    '</div>';
+  }
+
+  // Render Card strictly according to current view mode
+  function renderCard(e, idx){
+    var href = eventHref(e);
+    var dateBadge = parseDateBadge(e.event_date, e.end_date);
+    var location = getCardLocation(e);
+    var category = e.category || 'Event';
+    var catClass = getCategoryBadgeClass(category);
+    var title = e.name || 'International Event';
+    var blurb = e.blurb || "Discover this premier global gathering and prepare your travel visa seamlessly.";
+    var imgUrl = e.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80';
+    var attendeeHtml = getAttendeeText(e, idx);
+    var avatarStackHtml = getAvatars(idx);
+
+    // List View Mode
+    if(currentView === 'list'){
+      return '<article class="trigger-card" data-slug="' + esc(e.slug) + '">' +
+        '<div class="trigger-card-visual">' +
+          '<img class="trigger-card-img" src="' + esc(imgUrl) + '" alt="' + esc(title) + '" loading="lazy">' +
+          '<div class="trigger-card-gradient"></div>' +
+          '<div class="trigger-date-badge">' +
+            '<span class="date-badge-month">' + esc(dateBadge.month) + '</span>' +
+            '<span class="date-badge-days">' + esc(dateBadge.days) + '</span>' +
+            '<span class="date-badge-year">' + esc(dateBadge.year) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="trigger-card-list-content">' +
+          '<div class="list-top">' +
+            '<div class="list-meta">' +
+              '<span class="trigger-category-badge ' + catClass + '" style="color:#0f172a;background:#f1f5f9;border:1px solid #e2e8f0;">' + esc(category) + '</span>' +
+              '<div class="list-location">' +
+                '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 21s-6-5.333-6-10a6 6 0 1 1 12 0c0 4.667-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>' +
+                '<span>' + esc(location) + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<h3 class="list-title"><a href="' + href + '">' + esc(title) + '</a></h3>' +
+            '<p class="list-blurb">' + esc(blurb) + '</p>' +
+          '</div>' +
+          '<div class="list-bottom">' +
+            '<div class="avatar-stack">' + avatarStackHtml + ' <span class="interested-text" style="margin-left:8px;">' + attendeeHtml + '</span></div>' +
+            '<a href="' + href + '" class="trigger-arrow-btn" aria-label="View ' + esc(title) + '">' +
+              '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
+            '</a>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+    }
+
+    // Grid View Mode (Strictly matching mockup media_1789198673127.png)
+    return '<article class="trigger-card" data-slug="' + esc(e.slug) + '">' +
+      '<div class="trigger-card-visual">' +
+        '<img class="trigger-card-img" src="' + esc(imgUrl) + '" alt="' + esc(title) + '" loading="lazy">' +
+        '<div class="trigger-card-gradient"></div>' +
+        '<div class="trigger-date-badge">' +
+          '<span class="date-badge-month">' + esc(dateBadge.month) + '</span>' +
+          '<span class="date-badge-days">' + esc(dateBadge.days) + '</span>' +
+          '<span class="date-badge-year">' + esc(dateBadge.year) + '</span>' +
+        '</div>' +
+        '<div class="trigger-card-overlay">' +
+          '<div class="trigger-location">' +
+            '<svg class="loc-pin" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 21s-6-5.333-6-10a6 6 0 1 1 12 0c0 4.667-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></svg>' +
+            '<span>' + esc(location) + '</span>' +
+          '</div>' +
+          '<h3 class="trigger-title">' + esc(title) + '</h3>' +
+          '<p class="trigger-blurb">' + esc(blurb) + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="trigger-card-social">' +
+        avatarStackHtml +
+        '<span class="interested-text">' + attendeeHtml + '</span>' +
+      '</div>' +
+    '</article>';
+  }
+
+  // Populate Countries Dropdown
+  function populateCountryDropdown(events){
+    var map = {};
+    events.forEach(function(e){
+      var cName = e.country_name || e.country;
+      if(cName) map[cName] = true;
+    });
+    var countries = Object.keys(map).sort();
+    var html = '<button type="button" class="dropdown-menu-item active" data-country="all">All Countries</button>';
+    countries.forEach(function(c){
+      html += '<button type="button" class="dropdown-menu-item" data-country="' + esc(c) + '">' + esc(c) + '</button>';
+    });
+    countryDropdownMenu.innerHTML = html;
+
+    countryDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        selectedCountry = this.getAttribute('data-country') || 'all';
+        countryDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(b){ b.classList.remove('active'); });
+        this.classList.add('active');
+        countryFilterLabel.textContent = selectedCountry === 'all' ? 'All Countries' : selectedCountry;
+        countryDropdown.classList.remove('open');
+        countryDropdownBtn.classList.remove('open');
+        render();
+      });
+    });
+  }
+
+  // Filter & Sort Logic
+  function getFilteredEvents(){
+    var list = allEvents.filter(function(e){
+      // 1. Month Filter
+      if(selectedMonth !== 'all'){
+        if(!e.event_date) return false;
+        var p = e.event_date.split('-');
+        var mNum = parseInt(p[1], 10);
+        if(mNum !== parseInt(selectedMonth, 10)) return false;
+      }
+
+      // 2. Year Filter
+      if(selectedYear !== 'all'){
+        if(!e.event_date) return false;
+        var yStr = e.event_date.split('-')[0];
+        if(yStr !== selectedYear) return false;
+      }
+
+      // 3. Country Filter
+      if(selectedCountry !== 'all'){
+        var c = (e.country_name || e.country || '').toLowerCase();
+        if(c !== selectedCountry.toLowerCase()) return false;
+      }
+
+      // 4. Category Filter
+      if(selectedCategory !== 'all'){
+        if(!eventMatchesCategory(e, selectedCategory)) return false;
+      }
+
+      // 5. Search Query
+      if(searchQuery){
+        var q = searchQuery.toLowerCase();
+        var hay = [e.name, e.city, e.country_name || e.country, e.category, e.blurb, e.location].filter(Boolean).join(' ').toLowerCase();
+        if(hay.indexOf(q) === -1) return false;
+      }
+
+      return true;
+    });
+
+    // Sorting
+    list.sort(function(a, b){
+      if(currentSort === 'curated' || currentSort === 'date-asc'){
+        return (a.event_date || '9999').localeCompare(b.event_date || '9999');
+      }
+      if(currentSort === 'date-desc'){
+        return (b.event_date || '').localeCompare(a.event_date || '');
+      }
+      if(currentSort === 'popular'){
+        var pa = a.interested_count || 0;
+        var pb = b.interested_count || 0;
+        return pb - pa;
+      }
+      if(currentSort === 'name'){
+        return (a.name || '').localeCompare(b.name || '');
+      }
+      return 0;
+    });
+
+    return list;
+  }
+
+  // Update Meta Row (Heading)
+  function updateMetaHeading(filteredCount){
+    var monthStr = '';
+    if(selectedMonth === 'all'){
+      monthStr = selectedYear === 'all' ? 'All Upcoming Events' : 'All Events ' + selectedYear;
+    } else {
+      var mIdx = parseInt(selectedMonth, 10) - 1;
+      var mName = MONTH_NAMES[mIdx] || 'Events';
+      monthStr = selectedYear === 'all' ? mName : (mName + ' ' + selectedYear);
+    }
+    var titleStr = selectedCategory !== 'all' ? (selectedCategory + ' · ' + monthStr) : monthStr;
+    if(headingMonthYear) headingMonthYear.textContent = titleStr;
+    if(headingEventCount) headingEventCount.textContent = filteredCount + (filteredCount === 1 ? ' Event' : ' Events');
+  }
+
+  // Set Category Function (Updates dropdown filter and triggers smart month switch)
+  function setCategory(cat){
+    selectedCategory = cat || 'all';
+
+    // Update Dropdown
+    if(categoryDropdownMenu){
+      categoryDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(item){
+        var mCat = item.getAttribute('data-category') || 'all';
+        if(mCat.toLowerCase() === selectedCategory.toLowerCase()){
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+    }
+    if(categoryFilterLabel){
+      categoryFilterLabel.textContent = selectedCategory === 'all' ? 'Filter' : selectedCategory;
+    }
+
+    // Smart month switch: If current month has 0 events for this category, auto-switch to 'all' months!
+    if(selectedCategory !== 'all' && selectedMonth !== 'all'){
+      var matchesCurrentMonth = allEvents.some(function(e){
+        var m = e.event_date ? parseInt(e.event_date.split('-')[1], 10) : 0;
+        return m === parseInt(selectedMonth, 10) && eventMatchesCategory(e, selectedCategory);
+      });
+      if(!matchesCurrentMonth){
+        var matchesAnyMonth = allEvents.some(function(e){
+          return eventMatchesCategory(e, selectedCategory);
+        });
+        if(matchesAnyMonth){
+          selectedMonth = 'all';
+          if(monthPillsTrack){
+            monthPillsTrack.querySelectorAll('.month-pill').forEach(function(p){
+              p.classList.toggle('active', p.getAttribute('data-month') === 'all');
+            });
+          }
+        }
+      }
+    }
+
+    render();
+  }
+
+  // Render Function
+  function render(){
+    var filtered = getFilteredEvents();
+    updateMetaHeading(filtered.length);
+
+    if(filtered.length === 0){
+      grid.innerHTML = '<div class="triggers-empty-state">' +
+        '<div class="empty-icon">' +
+          '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>' +
+        '</div>' +
+        '<h3>No events found</h3>' +
+        '<p>We couldn\'t find any events matching your selected filters or month. Try adjusting your search.</p>' +
+        '<button type="button" class="triggers-empty-reset-btn" id="emptyResetBtn">View All Events</button>' +
+      '</div>';
+
+      var resetBtn = document.getElementById('emptyResetBtn');
+      if(resetBtn){
+        resetBtn.addEventListener('click', function(){
+          selectedMonth = 'all';
+          selectedYear = 'all';
+          selectedCountry = 'all';
+          selectedCategory = 'all';
+          searchQuery = '';
+          if(searchInput) searchInput.value = '';
+          if(clearSearchBtn) clearSearchBtn.style.display = 'none';
+          countryFilterLabel.textContent = 'All Countries';
+          yearFilterLabel.textContent = 'All Years';
+          categoryFilterLabel.textContent = 'Filter';
+          monthPillsTrack.querySelectorAll('.month-pill').forEach(function(p){
+            p.classList.toggle('active', p.getAttribute('data-month') === 'all');
+          });
+          render();
+        });
+      }
       return;
     }
 
-    var present={};
-    events.forEach(function(e){if(e.category) present[e.category]=true;});
-    var standard=['Music','Sports','Art & Culture','Business & Science'];
-    var categories=standard.filter(function(c){return present[c];}).concat(Object.keys(present).filter(function(c){return standard.indexOf(c)===-1;}));
-    var tabs='<button type="button" data-tab="all" class="ev-tab active" aria-pressed="true">All events</button>'+
-      categories.map(function(c){return '<button type="button" data-tab="'+esc(c)+'" class="ev-tab" aria-pressed="false">'+esc(c)+'</button>';}).join('');
+    var html = filtered.map(renderCard).join('');
+    grid.innerHTML = html;
 
-    var groups={};
-    var order=[];
-    events.forEach(function(e){
-      if(!e.event_date) return;
-      var key=monthKey(e.event_date);
-      if(!groups[key]){groups[key]=[];order.push(key);}
-      groups[key].push(e);
+    // Attach click listener to make cards clickable
+    grid.querySelectorAll('.trigger-card').forEach(function(card){
+      card.addEventListener('click', function(e){
+        if(e.target.closest('a')) return;
+        var slug = this.getAttribute('data-slug');
+        if(slug){
+          var isLocal = window.location.protocol === 'file:' || window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+          window.location.href = isLocal ? ('event.html?slug=' + encodeURIComponent(slug)) : ('/event/' + encodeURIComponent(slug));
+        }
+      });
     });
-    order.sort();
-    var body=order.length?order.map(function(key){
-      return '<section class="ev-month" data-month="'+esc(key)+'"><div class="ev-month-label">'+esc(monthLabel(key))+'</div>'+
-        '<div class="ev-grid">'+groups[key].map(card).join('')+'</div></section>';
-    }).join(''):'<div class="empty-state"><p>New events are coming soon.</p></div>';
+  }
 
-    wrap.innerHTML='<div class="ev-tabs">'+tabs+'</div>'+body;
+  // Month Carousel Navigation & Pills
+  monthPillsTrack.querySelectorAll('.month-pill').forEach(function(pill){
+    pill.addEventListener('click', function(){
+      monthPillsTrack.querySelectorAll('.month-pill').forEach(function(p){ p.classList.remove('active'); });
+      this.classList.add('active');
+      selectedMonth = this.getAttribute('data-month') || 'all';
+      render();
+    });
+  });
 
-    var tabElements=[].slice.call(wrap.querySelectorAll('.ev-tab'));
-    var activeCategory='all';
-    function searchableEvent(e){
-      return [e.name,e.category,e.city,e.country_name||e.country,e.event_date?fmtDate(e.event_date):''].filter(Boolean).join(' ').toLowerCase();
-    }
-    function hideSearchResults(){
-      if(!searchResults||!searchInput) return;
-      searchResults.hidden=true;
-      searchResults.innerHTML='';
-      searchInput.setAttribute('aria-expanded','false');
-    }
-    function showSearchResults(){
-      if(!searchResults||!searchInput) return;
-      var query=searchInput.value.trim().toLowerCase();
-      if(!query){hideSearchResults();return;}
-      var matches=events.filter(function(e){return searchableEvent(e).indexOf(query)>-1;}).slice(0,6);
-      searchResults.innerHTML=matches.length?matches.map(function(e){
-        var place=[e.city,e.country_name||e.country].filter(Boolean).join(', ');
-        var details=[e.category,place,e.event_date?fmtDate(e.event_date):''].filter(Boolean).join(' · ');
-        return '<a class="event-search-result" role="option" href="'+eventHref(e)+'"><span class="event-result-mark" aria-hidden="true">'+esc((e.category||'Event').charAt(0))+'</span><span><b>'+esc(e.name||'Event')+'</b><small>'+esc(details)+'</small></span><i aria-hidden="true">→</i></a>';
-      }).join(''):'<div class="event-search-no-result"><b>No matching events</b><small>Try another event, city or category.</small></div>';
-      searchResults.hidden=false;
-      searchInput.setAttribute('aria-expanded','true');
-    }
-    function renderQuickSuggestions(){
-      if(!quickSuggestions) return;
-      var suggestions=[],seen={};
-      events.forEach(function(e){
-        var label=(e.name||'').trim();
-        var key=label.toLowerCase();
-        if(label&&!seen[key]&&suggestions.length<4){seen[key]=true;suggestions.push({label:label,value:label});}
-      });
-      categories.forEach(function(category){
-        var key=category.toLowerCase();
-        if(!seen[key]&&suggestions.length<6){seen[key]=true;suggestions.push({label:category,value:category});}
-      });
-      if(!suggestions.length){quickSuggestions.hidden=true;return;}
-      quickSuggestions.innerHTML=suggestions.map(function(item){return '<button type="button" data-suggestion="'+esc(item.value)+'"><i aria-hidden="true">✦</i>'+esc(item.label)+'</button>';}).join('');
-      quickSuggestions.hidden=false;
-      quickSuggestions.querySelectorAll('button').forEach(function(button){
-        button.addEventListener('click',function(){
-          if(!searchInput) return;
-          searchInput.value=button.getAttribute('data-suggestion')||'';
-          activeCategory='all';
-          tabElements.forEach(function(tab){var active=tab.getAttribute('data-tab')==='all';tab.classList.toggle('active',active);tab.setAttribute('aria-pressed',active?'true':'false');});
-          hideSearchResults();
-          applyFilters();
-          searchInput.focus();
-        });
-      });
-    }
-    function applyFilters(){
-      var query=(searchInput?searchInput.value:'').trim().toLowerCase();
-      var visibleTotal=0;
-      [].forEach.call(wrap.querySelectorAll('.ev-card'),function(item){
-        var categoryOk=activeCategory==='all'||item.getAttribute('data-cat')===activeCategory;
-        var searchOk=!query||(item.getAttribute('data-search')||'').indexOf(query)>-1;
-        var visible=categoryOk&&searchOk;
-        item.style.display=visible?'':'none';
-        if(visible) visibleTotal++;
-      });
-      [].forEach.call(wrap.querySelectorAll('.ev-month'),function(month){
-        var visible=0;
-        [].forEach.call(month.querySelectorAll('.ev-card'),function(item){
-          if(item.style.display!=='none') visible++;
-        });
-        month.style.display=visible?'':'none';
-      });
-      if(eventCount) eventCount.textContent=visibleTotal;
-    }
-    tabElements.forEach(function(tab){
-      tab.addEventListener('click',function(){
-        activeCategory=tab.getAttribute('data-tab')||'all';
-        tabElements.forEach(function(item){
-          var active=item===tab;
-          item.classList.toggle('active',active);
-          item.setAttribute('aria-pressed',active?'true':'false');
-        });
-        applyFilters();
-      });
+  if(monthPrevBtn){
+    monthPrevBtn.addEventListener('click', function(){
+      monthPillsTrack.scrollBy({ left: -200, behavior: 'smooth' });
     });
-    renderQuickSuggestions();
-    if(searchInput){
-      searchInput.addEventListener('input',function(){applyFilters();showSearchResults();});
-      searchInput.addEventListener('focus',showSearchResults);
-      searchInput.addEventListener('keydown',function(event){if(event.key==='Escape')hideSearchResults();});
+  }
+  if(monthNextBtn){
+    monthNextBtn.addEventListener('click', function(){
+      monthPillsTrack.scrollBy({ left: 200, behavior: 'smooth' });
+    });
+  }
+
+  // Dropdown Toggles
+  function closeAllDropdowns(){
+    [countryDropdown, yearDropdown, categoryDropdown, sortDropdownWrap].forEach(function(drop){
+      if(drop){
+        drop.classList.remove('open');
+        var btn = drop.querySelector('button');
+        if(btn) btn.classList.remove('open');
+        var menu = drop.querySelector('.triggers-dropdown-menu');
+        if(menu) menu.classList.remove('open');
+      }
+    });
+  }
+
+  function setupDropdown(wrap, btn, menu){
+    if(!wrap || !btn || !menu) return;
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = menu.classList.contains('open');
+      closeAllDropdowns();
+      if(!isOpen){
+        wrap.classList.add('open');
+        btn.classList.add('open');
+        menu.classList.add('open');
+      }
+    });
+  }
+
+  setupDropdown(countryDropdown, countryDropdownBtn, countryDropdownMenu);
+  setupDropdown(yearDropdown, yearDropdownBtn, yearDropdownMenu);
+  setupDropdown(categoryDropdown, categoryDropdownBtn, categoryDropdownMenu);
+  setupDropdown(sortDropdownWrap, sortDropdownBtn, sortDropdownMenu);
+
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.triggers-dropdown') && !e.target.closest('.sort-dropdown-wrap')){
+      closeAllDropdowns();
     }
-    if(searchButton) searchButton.addEventListener('click',function(){
-      applyFilters();
-      showSearchResults();
-      if(searchInput) searchInput.focus();
+  });
+
+  // Year Selection
+  yearDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(item){
+    item.addEventListener('click', function(e){
+      e.stopPropagation();
+      selectedYear = this.getAttribute('data-year') || 'all';
+      yearDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      yearFilterLabel.textContent = selectedYear === 'all' ? 'All Years' : selectedYear;
+      closeAllDropdowns();
+      render();
     });
-    document.addEventListener('click',function(event){
-      if(!event.target.closest('.event-search-dock')) hideSearchResults();
+  });
+
+  // Category Dropdown Selection
+  categoryDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(item){
+    item.addEventListener('click', function(e){
+      e.stopPropagation();
+      var cat = this.getAttribute('data-category') || 'all';
+      closeAllDropdowns();
+      setCategory(cat);
     });
-  }).catch(showLoadError);
+  });
+
+  // Sort Selection
+  sortDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(item){
+    item.addEventListener('click', function(e){
+      e.stopPropagation();
+      currentSort = this.getAttribute('data-sort') || 'curated';
+      sortDropdownMenu.querySelectorAll('.dropdown-menu-item').forEach(function(b){ b.classList.remove('active'); });
+      this.classList.add('active');
+      currentSortLabel.textContent = this.textContent.trim();
+      closeAllDropdowns();
+      render();
+    });
+  });
+
+  // Search Input
+  if(searchInput){
+    searchInput.addEventListener('input', function(){
+      searchQuery = this.value.trim();
+      if(clearSearchBtn){
+        clearSearchBtn.style.display = searchQuery ? 'grid' : 'none';
+      }
+      render();
+    });
+  }
+  if(clearSearchBtn){
+    clearSearchBtn.addEventListener('click', function(){
+      searchInput.value = '';
+      searchQuery = '';
+      clearSearchBtn.style.display = 'none';
+      searchInput.focus();
+      render();
+    });
+  }
+
+  // Grid / List View Toggle
+  if(viewGridBtn && viewListBtn){
+    viewGridBtn.addEventListener('click', function(){
+      viewGridBtn.classList.add('active');
+      viewListBtn.classList.remove('active');
+      grid.classList.remove('view-list');
+      currentView = 'grid';
+      render();
+    });
+    viewListBtn.addEventListener('click', function(){
+      viewListBtn.classList.add('active');
+      viewGridBtn.classList.remove('active');
+      grid.classList.add('view-list');
+      currentView = 'list';
+      render();
+    });
+  }
+
+  function normalizeDbEvent(e, idx){
+    var cName = (e.country_name || e.country || countryNameFromSlug(e.country_slug) || '').trim();
+    var city = (e.city || '').trim();
+    var location = getCardLocation(e);
+    var category = mapEventCategory(e.category, e.slug, e.name);
+    return {
+      id: e.id,
+      slug: e.slug,
+      name: e.name || 'International Event',
+      country_slug: e.country_slug || '',
+      country: cName,
+      country_name: cName,
+      city: city,
+      location: location,
+      category: category,
+      event_date: e.event_date || '',
+      end_date: e.end_date || '',
+      blurb: e.blurb || 'Discover this premier international event and apply for your travel visa seamlessly.',
+      image_url: e.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80',
+      image_alt: e.image_alt || e.name || 'Event photo',
+      interested_text: e.interested_text || null,
+      interested_count: e.interested_count || null,
+      sort_order: e.sort_order != null ? e.sort_order : idx,
+      active: e.active !== false
+    };
+  }
+
+  // Initialize: load LIVE events directly from Supabase database!
+  function initEvents(){
+    grid.innerHTML = '<div class="triggers-loading"><div class="triggers-spinner" aria-hidden="true"></div><p>Discovering upcoming events…</p></div>';
+
+    var cfg = window.VISADOO_CONFIG || {};
+    var supabaseUrl = cfg.SUPABASE_URL || 'https://rfueqawvadcvhpmleeoi.supabase.co';
+    var supabaseKey = cfg.SUPABASE_ANON_KEY || 'sb_publishable_LyaaSuHTI2x6rCc_HmD-iA_bR9gLx7i';
+
+    function loadLiveEvents(){
+      var endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/events?active=eq.true&order=event_date.asc';
+      return fetch(endpoint, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': 'Bearer ' + supabaseKey
+        }
+      })
+      .then(function(res){
+        if(!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(rows){
+        if(Array.isArray(rows) && rows.length > 0){
+          var normalizedDb = rows.map(normalizeDbEvent);
+          var dbSlugs = {};
+          normalizedDb.forEach(function(e){ dbSlugs[e.slug] = true; });
+
+          // Merge DB rows with SEED_EVENTS so all categories have full cards immediately
+          var merged = normalizedDb.slice();
+          SEED_EVENTS.forEach(function(seed){
+            if(!dbSlugs[seed.slug]){
+              merged.push(normalizeDbEvent(seed));
+            }
+          });
+          allEvents = merged;
+          populateCountryDropdown(allEvents);
+          render();
+          return true;
+        }
+        return false;
+      });
+    }
+
+    loadLiveEvents().catch(function(err){
+      console.warn('Could not load from live DB, falling back to seed data:', err);
+      allEvents = SEED_EVENTS.map(normalizeDbEvent);
+      populateCountryDropdown(allEvents);
+      render();
+    });
+  }
+
+  initEvents();
 })();
 </script>
 </body>

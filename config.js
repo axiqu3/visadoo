@@ -10,7 +10,7 @@ window.VISADOO_CONFIG = {
     {
       id: "30-day Single Entry",
       name: "30-Day Tourist Visa",
-      sub: "Single / Multiple",
+      sub: "Single Entry",
       price: 350,
       days: 30,
       popular: true,
@@ -19,7 +19,7 @@ window.VISADOO_CONFIG = {
     {
       id: "60-day Single Entry",
       name: "60-Day Tourist Visa",
-      sub: "Single / Multiple",
+      sub: "Single Entry",
       price: 799,
       days: 60,
       popular: false,

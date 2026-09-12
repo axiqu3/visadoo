@@ -10,7 +10,7 @@ const PLANE='<svg viewBox="0 0 24 24" fill="none"><path d="M21 16v-2l-8-5V3.5a1.
 var BRAND = "";
 function shade(hex,p){ hex=(hex||"").replace("#",""); if(hex.length===3) hex=hex.split("").map(function(c){return c+c;}).join(""); if(hex.length!==6) return "#"+hex; var r=parseInt(hex.substr(0,2),16),g=parseInt(hex.substr(2,2),16),b=parseInt(hex.substr(4,2),16); var t=p<0?0:255,a=Math.abs(p)/100; r=Math.round((t-r)*a+r); g=Math.round((t-g)*a+g); b=Math.round((t-b)*a+b); return "#"+[r,g,b].map(function(v){return ("0"+v.toString(16)).slice(-2);}).join(""); }
 function brandVars(p){ if(!p) return ""; return '<style id="brand-vars">:root{--blue-600:'+p+';--blue-700:'+shade(p,-14)+';--blue-900:'+shade(p,-34)+';--blue-500:'+shade(p,8)+';--blue-400:'+shade(p,24)+';--blue-100:'+shade(p,82)+';--sky-50:'+shade(p,93)+';}</style>'; }
-var LOGO="", FAVICON="", APPICON="", BNAME="Visa Doo";
+var LOGO="/assets/logo_transparent.png", FAVICON="", APPICON="", BNAME="Visa Doo";
 function brandMark(){ return LOGO ? ('<img src="'+esc(LOGO)+'" alt="'+esc(BNAME||"logo")+'" style="height:34px;width:auto;max-width:180px;display:block">') : ('<span class="logo">'+PLANE+'</span>Visa<b>Doo</b>'); }
 function iconTags(){ var t = FAVICON ? ('<link rel="icon" href="'+esc(FAVICON)+'">') : '<link rel="icon" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27><rect width=%27100%27 height=%27100%27 rx=%2724%27 fill=%27%232563eb%27/></svg>">'; if(APPICON||LOGO) t += '<link rel="apple-touch-icon" href="'+esc(APPICON||LOGO)+'">'; return t; }
 
@@ -38,6 +38,35 @@ export default async (request) => {
     BRAND = ss0.brand_color || "";
     LOGO = ss0.logo_url || ""; FAVICON = ss0.favicon_url || ""; APPICON = ss0.app_icon_url || ""; BNAME = ss0.brand_name || "Visa Doo";
     const rows = slug ? await fetchJson(SUPABASE_URL+"/rest/v1/pages?slug=eq."+encodeURIComponent(slug)+"&status=eq.published&select=*") : null;
+    const fallbackPages = {
+      'about': {
+        title: 'About Us',
+        seo_title: 'About Us | Visa Doo',
+        seo_description: 'Learn more about Visa Doo, our mission, and our visa processing services.',
+        content: '<p>Visa Doo is a leading visa concierge and travel documentation service provider. We simplify international travel visas, e-visas, and entry requirements for travellers worldwide.</p><p>Our dedicated team of visa specialists inspects every application to ensure seamless approval and stress-free international travel.</p>'
+      },
+      'privacy-policy': {
+        title: 'Privacy Policy',
+        seo_title: 'Privacy Policy | Visa Doo',
+        seo_description: 'Read the privacy policy and data protection terms for Visa Doo.',
+        content: '<p>Your privacy is important to us. Visa Doo collects only the personal information and travel documents necessary to process your visa application with official immigration authorities.</p><p>All uploaded documents and personal information are transmitted securely and encrypted in transit.</p>'
+      },
+      'terms': {
+        title: 'Terms of Service',
+        seo_title: 'Terms of Service | Visa Doo',
+        seo_description: 'Read the terms of service and conditions for using Visa Doo.',
+        content: '<p>By using Visa Doo, you agree to comply with all applicable terms and conditions. Visa Doo acts as an authorized documentation assistance service provider.</p><p>Final visa issuance decisions remain at the sole discretion of the respective sovereign government and immigration authorities.</p>'
+      }
+    };
+    if((!rows || !rows.length) && fallbackPages[slug]){
+      const fp = fallbackPages[slug];
+      const body='<article class="article-wrap"><div class="container article-inner">'+
+        '<h1 class="article-title">'+esc(fp.title)+'</h1>'+
+        '<div class="article-body" style="margin-top:24px;line-height:1.7;color:#334155">'+fp.content+'</div></div></article>';
+      return new Response(shell(fp.seo_title, fp.seo_description, SITE+"/p/"+slug, body), {
+        headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"public, max-age=0, must-revalidate" }
+      });
+    }
     if(!rows || !rows.length){
       if(slug){
         // Address changed? Forward the old address to the current one (301).

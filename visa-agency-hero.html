@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VISA DOO ? Premium Visa Agency</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;850&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8fbfe;
+      color: #0b192c;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* =========================================================
+       PREMIUM MINIMALIST VISA AGENCY HERO SECTION
+       ========================================================= */
+    .visa-hero-section {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 70px 7vw;
+      background: radial-gradient(circle at 18% 25%, rgba(224, 242, 254, 0.5) 0%, rgba(240, 249, 255, 0.25) 50%, #ffffff 85%);
+      overflow: hidden;
+    }
+
+    /* Ambient Subtle Gradient Lighting */
+    .visa-hero-section::before {
+      content: '';
+      position: absolute;
+      top: -12%;
+      right: 18%;
+      width: 650px;
+      height: 650px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(186, 230, 253, 0.3) 0%, rgba(255, 255, 255, 0) 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .visa-hero-section::after {
+      content: '';
+      position: absolute;
+      bottom: -15%;
+      left: 10%;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(219, 234, 254, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .visa-hero-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1360px;
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.08fr 1fr;
+      align-items: center;
+      gap: 6.5vw;
+    }
+
+    /* LEFT SIDE: Brand, Headline, Subtitle, CTA */
+    .visa-hero-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      max-width: 580px;
+    }
+
+    .visa-brand {
+      font-size: 15px;
+      font-weight: 850;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #0b192c;
+      margin-bottom: 38px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .visa-headline {
+      font-size: clamp(42px, 5vw, 68px);
+      font-weight: 850;
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      color: #0b192c;
+      margin-bottom: 24px;
+    }
+
+    .visa-headline .accent-blue {
+      color: #2563eb;
+      display: inline;
+    }
+
+    .visa-subheadline {
+      font-size: clamp(16px, 1.3vw, 19px);
+      font-weight: 450;
+      line-height: 1.62;
+      color: #475569;
+      margin-bottom: 42px;
+      max-width: 480px;
+    }
+
+    .visa-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background-color: #0d1b2a;
+      color: #ffffff;
+      font-size: 15.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      padding: 16px 34px;
+      border-radius: 9999px;
+      text-decoration: none;
+      box-shadow: 0 10px 28px rgba(13, 27, 42, 0.22);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      cursor: pointer;
+    }
+
+    .visa-cta-btn:hover {
+      background-color: #1e293b;
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(13, 27, 42, 0.28);
+      color: #ffffff;
+    }
+
+    .visa-cta-arrow {
+      font-size: 18px;
+      line-height: 1;
+      transition: transform 0.25s ease;
+    }
+
+    .visa-cta-btn:hover .visa-cta-arrow {
+      transform: translateX(4px);
+    }
+
+    /* RIGHT SIDE: Visual flat-lay photography & handwritten badge */
+    .visa-hero-visual-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .visa-visual-container {
+      position: relative;
+      width: 100%;
+      max-width: 580px;
+    }
+
+    .visa-visual-card {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3.2;
+      border-radius: 28px;
+      overflow: hidden;
+      background: #ffffff;
+      box-shadow: 0 24px 60px -12px rgba(15, 23, 42, 0.12),
+                  0 8px 24px -6px rgba(15, 23, 42, 0.05);
+      border: 1px solid rgba(226, 232, 240, 0.85);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .visa-visual-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .visa-visual-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    /* Handwritten cursive phrase accent with line-art */
+    .handwritten-badge {
+      position: absolute;
+      bottom: -36px;
+      left: -24px;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Subtle Blue Line-art Sparkles */
+    .sparkle-accent {
+      position: absolute;
+      top: -16px;
+      left: -14px;
+      width: 26px;
+      height: 26px;
+      color: #3b82f6;
+      opacity: 0.9;
+    }
+
+    .handwritten-text {
+      font-family: 'Caveat', cursive, sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #0b192c;
+      line-height: 1.08;
+      transform: rotate(-3.5deg);
+      text-shadow: 0 2px 8px rgba(255, 255, 255, 0.95);
+      letter-spacing: -0.01em;
+    }
+
+    .handwritten-lineart {
+      width: 110px;
+      height: 14px;
+      margin-top: 2px;
+      color: #2563eb;
+      transform: rotate(-2.5deg);
+    }
+
+    /* RESPONSIVE BREAKPOINTS */
+    @media (max-width: 1024px) {
+      .visa-hero-section {
+        padding: 70px 5vw 90px;
+        min-height: auto;
+      }
+      .visa-hero-container {
+        grid-template-columns: 1fr;
+        gap: 52px;
+        text-align: center;
+      }
+      .visa-hero-content {
+        align-items: center;
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      .visa-subheadline {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .visa-visual-container {
+        max-width: 520px;
+        margin: 0 auto;
+      }
+      .handwritten-badge {
+        bottom: -28px;
+        left: 10px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .visa-hero-section {
+        padding: 50px 20px 80px;
+      }
+      .visa-brand {
+        margin-bottom: 24px;
+        font-size: 13.5px;
+      }
+      .visa-headline {
+        font-size: 36px;
+        margin-bottom: 18px;
+      }
+      .visa-subheadline {
+        font-size: 15px;
+        margin-bottom: 32px;
+      }
+      .visa-cta-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 16px 24px;
+        font-size: 15px;
+      }
+      .visa-visual-card {
+        border-radius: 20px;
+      }
+      .handwritten-text {
+        font-size: 23px;
+      }
+      .handwritten-badge {
+        bottom: -24px;
+        left: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==========================================
+       HERO SECTION ? VISA DOO
+       ========================================== -->
+  <section class="visa-hero-section">
+    <div class="visa-hero-container">
+
+      <!-- LEFT SIDE: Typography & CTA -->
+      <div class="visa-hero-content">
+        <div class="visa-brand">VISA DOO</div>
+
+        <h1 class="visa-headline">
+          Visa,<br>
+          without the <span class="accent-blue">confusion.</span>
+        </h1>
+
+        <p class="visa-subheadline">
+          From choosing the right visa to preparing your documents,<br>
+          we make every step simple.
+        </p>
+
+        <a href="#requirements" class="visa-cta-btn">
+          <span>Check Visa Requirements</span>
+          <span class="visa-cta-arrow" aria-hidden="true">&rarr;</span>
+        </a>
+      </div>
+
+      <!-- RIGHT SIDE: Visual Flat-Lay Photography -->
+      <div class="visa-hero-visual-wrapper">
+        <div class="visa-visual-container">
+          <div class="visa-visual-card">
+            <img 
+              src="assets/visa-application-photo.jpg" 
+              alt="Visa Doo ? Professional visa application with navy passport and approved stamp" 
+              class="visa-visual-image"
+            >
+          </div>
+
+          <!-- Handwritten cursive phrase accent with line-art -->
+          <div class="handwritten-badge" aria-hidden="true">
+            <!-- Sparkle line-art -->
+            <svg class="sparkle-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <line x1="12" y1="2" x2="12" y2="7"></line>
+              <line x1="5" y1="9" x2="9" y2="11"></line>
+              <line x1="19" y1="9" x2="15" y2="11"></line>
+            </svg>
+            <span class="handwritten-text">
+              Your Next Chapter<br>Starts Here
+            </span>
+            <!-- Fluid flourish underline -->
+            <svg class="handwritten-lineart" viewBox="0 0 110 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <path d="M3 8 C 30 2, 70 13, 107 6" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</body>
+</html>
