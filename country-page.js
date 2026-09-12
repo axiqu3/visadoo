@@ -4015,7 +4015,7 @@
     var faqs = guideFaqs(countryName || 'UAE');
     var accordionHtml = faqs.map(function(item, index){
       return '<details>' +
-        '<summary>' + esc(item[0]) + '<span aria-hidden="true">+</span></summary>' +
+        '<summary>' + esc(item[0]) + '<span class="uae-accordion-icon" aria-hidden="true"></span></summary>' +
         '<p>' + esc(item[1]) + '</p>' +
       '</details>';
     }).join('');
@@ -4492,7 +4492,7 @@
     var attractionsSection = guide ? '<section class="uae-attractions" id="country-attractions"><header><h2>'+esc(guide.title)+'</h2></header><ol>'+attractionsCards+'</ol></section>' : '';
     return '<section class="uae-public-guide-section"><div class="container"><section class="uae-account-information uae-public-travel-guide'+(guide?'':' uae-information-faq-only')+'">'+
       attractionsSection+
-      '<section class="uae-account-faq" id="country-faq"><header><h2>Frequently asked questions</h2></header><div>'+faqs.map(function(item,index){return '<details'+(index===0?' open':'')+'><summary>'+esc(item[0])+'<span aria-hidden="true">+</span></summary><p>'+esc(item[1])+'</p></details>';}).join('')+'</div></section>'+
+      '<section class="uae-account-faq" id="country-faq"><header><h2>Frequently asked questions</h2></header><div>'+faqs.map(function(item,index){return '<details'+(index===0?' open':'')+'><summary>'+esc(item[0])+'<span class="uae-accordion-icon" aria-hidden="true"></span></summary><p>'+esc(item[1])+'</p></details>';}).join('')+'</div></section>'+
     '</section></div></section>';
   }
 

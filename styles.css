@@ -2654,8 +2654,9 @@ p{margin:0}
 .faq-list{display:flex;flex-direction:column;gap:12px}
 .faq-item{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .faq-q{width:100%;text-align:left;background:none;border:none;font-family:inherit;font-weight:700;font-size:16px;color:var(--ink);padding:18px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px}
-.faq-ic{font-size:22px;color:var(--blue-600);font-weight:700;flex-shrink:0;transition:.2s}
-.faq-item.open .faq-ic{transform:rotate(45deg)}
+.faq-ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--line);border-radius:50%;color:var(--ink);font-size:0;flex-shrink:0;transition:transform .28s cubic-bezier(0.16,1,0.3,1),background-color .2s ease}
+.faq-ic::after{content:"";display:block;width:14px;height:14px;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;pointer-events:none}
+.faq-item.open .faq-ic{transform:rotate(180deg);background:#f1f5f9}
 .faq-a{max-height:0;overflow:hidden;transition:max-height .25s ease}
 .faq-item.open .faq-a{max-height:400px}
 .faq-a p{padding:0 20px 18px;color:var(--muted);font-size:15px;line-height:1.6}
@@ -7582,8 +7583,9 @@ body.visa-modal-open{overflow:hidden}
 .uae-account-document-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 1px;color:#000;cursor:pointer;list-style:none}
 .uae-account-document-disclosure>summary::-webkit-details-marker{display:none}
 .uae-account-document-disclosure>summary>span{color:#000;font-size:11px;font-weight:820}
-.uae-account-document-disclosure>summary>i{width:26px;height:26px;display:grid;place-items:center;border:1px solid #cdd9d7;border-radius:50%;color:#000;font-size:15px;font-style:normal;transition:transform .18s ease}
-.uae-account-document-disclosure[open]>summary>i{transform:rotate(45deg)}
+.uae-account-document-disclosure>summary>i{width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #cdd9d7;border-radius:50%;color:#000;font-size:0;font-style:normal;transition:transform .28s cubic-bezier(0.16,1,0.3,1),background-color .2s ease}
+.uae-account-document-disclosure>summary>i::after{content:"";display:block;width:14px;height:14px;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;pointer-events:none}
+.uae-account-document-disclosure[open]>summary>i{transform:rotate(180deg);background:#f1f5f9}
 .uae-account-document-disclosure[open]>summary{border-bottom:1px solid #e6ebea}
 .uae-account-documents .uae-history-documents{gap:13px;padding:20px 0 0}
 .uae-account-document-disclosure .uae-history-documents{padding-bottom:20px}
@@ -7618,8 +7620,9 @@ body.visa-modal-open{overflow:hidden}
 .uae-account-application-card>summary span{color:#24756d;font-size:8px;font-weight:820;letter-spacing:.06em;text-transform:uppercase}
 .uae-account-application-card>summary h3{margin-top:4px;color:#203d44;font-size:13px}
 .uae-account-application-card>summary p{margin-top:4px;color:#7c8d91;font-size:9px}
-.uae-account-application-card>summary>i{width:30px;height:30px;display:grid;place-items:center;border:1px solid #d5e0de;border-radius:50%;color:#1f766d;font-size:14px;font-style:normal;transition:transform .18s ease}
-.uae-account-application-card[open]>summary>i{transform:rotate(45deg)}
+.uae-account-application-card>summary>i{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #d5e0de;border-radius:50%;color:#1f766d;font-size:0;font-style:normal;transition:transform .28s cubic-bezier(0.16,1,0.3,1),background-color .2s ease}
+.uae-account-application-card>summary>i::after{content:"";display:block;width:14px;height:14px;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;pointer-events:none}
+.uae-account-application-card[open]>summary>i{transform:rotate(180deg);background:#f1f5f9}
 .uae-account-application-detail{padding:0 0 17px}
 .uae-account-application-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:11px 0;border-top:1px solid #eef1f1}
 .uae-account-application-detail dl>div:nth-child(even){padding-left:13px;border-left:1px solid #eef1f1}
@@ -7760,8 +7763,11 @@ body.visa-modal-open{overflow:hidden}
 .uae-account-faq details{border-bottom:1px solid #dbe3e2}
 .uae-account-faq summary{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:19px 0;color:#1d3942;font-size:12px;font-weight:760;cursor:pointer;list-style:none}
 .uae-account-faq summary::-webkit-details-marker{display:none}
-.uae-account-faq summary>span{width:24px;height:24px;flex:none;display:grid;place-items:center;border:1px solid #d0dbd9;border-radius:50%;color:#24756d;font-size:14px;transition:transform .18s ease}
-.uae-account-faq details[open] summary>span{transform:rotate(45deg)}
+.uae-account-faq summary>span{width:24px;height:24px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1px solid #cbd5e1;border-radius:50%;background:#ffffff;color:#0f172a;font-size:0;transition:transform .28s cubic-bezier(0.16,1,0.3,1),background-color .2s ease,border-color .2s ease}
+.uae-account-faq summary>span::after{content:"";display:block;width:14px;height:14px;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;pointer-events:none}
+.uae-account-faq details[open] summary>span{transform:rotate(180deg);background:#f1f5f9;border-color:#cbd5e1;color:#0f172a}
+.uae-account-faq summary:hover>span{border-color:#94a3b8;background:#f8fafc}
+.uae-account-faq details[open] summary:hover>span{background:#e2e8f0}
 .uae-account-faq details>p{max-width:720px;padding:0 34px 19px 0;color:#687c82;font-size:11px;line-height:1.65}
 .uae-contact-panel{display:flex;justify-content:space-between;gap:30px;align-items:center;margin-top:72px;padding:31px 0;border-top:1px solid #dbe3e2;border-bottom:1px solid #dbe3e2}
 .uae-contact-panel h2{font-size:27px}
@@ -7831,8 +7837,9 @@ body.visa-modal-open{overflow:hidden}
 .uae-account-current>summary h2,.uae-account-current>header h2{margin-top:6px;color:#16323a;font-size:25px;letter-spacing:-.03em}
 .uae-account-current>summary p,.uae-account-current>header p{margin-top:5px;color:#78898d;font-size:10px}
 .uae-account-current>summary>div:last-child{display:flex;gap:13px;align-items:center}
-.uae-account-current>summary i,.uae-account-disclosure>summary>i{width:34px;height:34px;flex:none;display:grid;place-items:center;border:1px solid #cddbd8;border-radius:50%;color:#1f766d;font-size:16px;font-style:normal;transition:transform .2s ease,background .2s ease}
-.uae-account-current[open]>summary i,.uae-account-disclosure[open]>summary>i{transform:rotate(45deg);background:#eef7f5}
+.uae-account-current>summary i,.uae-account-disclosure>summary>i{width:34px;height:34px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:1px solid #cbd5e1;border-radius:50%;color:#0f172a;background:#fff;font-size:0;font-style:normal;transition:transform .28s cubic-bezier(0.16,1,0.3,1),background-color .2s ease}
+.uae-account-current>summary i::after,.uae-account-disclosure>summary>i::after{content:"";display:block;width:14px;height:14px;background-color:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;pointer-events:none}
+.uae-account-current[open]>summary i,.uae-account-disclosure[open]>summary>i{transform:rotate(180deg);background:#f1f5f9;border-color:#cbd5e1}
 .uae-account-current-detail{padding:0 27px 27px;border-top:1px solid #e8eeee}
 .uae-account-current-detail .uae-account-progress{padding-top:27px}
 .uae-account-current-detail .uae-account-documents{padding-bottom:0}

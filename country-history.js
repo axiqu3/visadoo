@@ -110,7 +110,7 @@
 
   function compactApplication(app,names){
     var date=new Date(app.created_at).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
-    return '<details class="uae-account-application-card"><summary><div><span>'+esc(app.status||'Submitted')+'</span><h3>'+esc(names[app.visa_type]||app.visa_type||'UAE visa')+'</h3><p>'+esc(app.reference_code||'—')+' &middot; '+esc(date)+'</p></div><i aria-hidden="true">+</i></summary><div class="uae-account-application-detail"><dl><div><dt>Reference</dt><dd>'+esc(app.reference_code||'—')+'</dd></div><div><dt>Submitted</dt><dd>'+esc(date)+'</dd></div></dl><div class="uae-history-documents">'+documentTile(app,'passport','Passport front')+documentTile(app,'photo','Personal photo')+'</div><a href="/app.html#track">View full tracking <span aria-hidden="true">&#8594;</span></a></div></details>';
+    return '<details class="uae-account-application-card"><summary><div><span>'+esc(app.status||'Submitted')+'</span><h3>'+esc(names[app.visa_type]||app.visa_type||'UAE visa')+'</h3><p>'+esc(app.reference_code||'—')+' &middot; '+esc(date)+'</p></div><i class="uae-accordion-icon" aria-hidden="true"></i></summary><div class="uae-account-application-detail"><dl><div><dt>Reference</dt><dd>'+esc(app.reference_code||'—')+'</dd></div><div><dt>Submitted</dt><dd>'+esc(date)+'</dd></div></dl><div class="uae-history-documents">'+documentTile(app,'passport','Passport front')+documentTile(app,'photo','Personal photo')+'</div><a href="/app.html#track">View full tracking <span aria-hidden="true">&#8594;</span></a></div></details>';
   }
 
   function otherVisaTypes(currentSlug,choices){
@@ -175,7 +175,7 @@
     return '<section class="uae-account-information'+(showAttractions===false?' uae-information-faq-only':'')+'">'+
       (showAttractions===false?'':attractionsSection)+
       reviewsSection+
-      (showFaq===false?'':'<section class="uae-account-faq" id="uae-faq"><header><span>FAQ</span><h2>Frequently asked questions</h2></header><div>'+faqs.map(function(item,index){return '<details><summary>'+item[0]+'<span aria-hidden="true">+</span></summary><p>'+item[1]+'</p></details>';}).join('')+'</div></section>')+
+      (showFaq===false?'':'<section class="uae-account-faq" id="uae-faq"><header><span>FAQ</span><h2>Frequently asked questions</h2></header><div>'+faqs.map(function(item,index){return '<details><summary>'+item[0]+'<span class="uae-accordion-icon" aria-hidden="true"></span></summary><p>'+item[1]+'</p></details>';}).join('')+'</div></section>')+
     '</section>';
   }
 

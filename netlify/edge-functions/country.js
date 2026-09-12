@@ -659,7 +659,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
       '</div>'+
       '<nav class="nav-links" id="navLinks">'+
         '<a href="/">Home</a>'+
-        '<a href="/events">Travel Triggers</a>'+
+        '<a href="/events">Happenings</a>'+
       '</nav>'+
       '<div class="nav-actions">'+
         '<div class="site-language-header-selector">' +

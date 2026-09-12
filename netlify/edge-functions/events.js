@@ -1,5 +1,5 @@
-// Visa Doo — Travel Triggers Edge Function (/events and /events.html)
-// Rewrites seamlessly to /events/events.html so the client receives the modern, responsive Travel Triggers page.
+// Visa Doo — Happenings Edge Function (/events and /events.html)
+// Rewrites seamlessly to /events/events.html so the client receives the modern, responsive Happenings page.
 
 export default async (request, context) => {
   try {

@@ -1866,31 +1866,67 @@ body.traveller-picker-open {
   display: none;
 }
 
-.uae-country-page .uae-accordion-icon {
+.uae-country-page .uae-accordion-icon,
+.uae-accordion-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border: 1px solid #cbd5e1;
   background: #ffffff;
   color: #0f172a;
   font-style: normal;
-  font-size: 13px;
-  font-weight: 600;
-  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  font-size: 0;
   flex: none;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.uae-country-page .uae-accordion-icon::after {
-  content: "+";
+.uae-country-page .uae-accordion-icon::after,
+.uae-accordion-icon::after {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center / contain;
+  pointer-events: none;
 }
 
-.uae-country-page .uae-travel-accordion[open] .uae-accordion-icon {
-  transform: rotate(45deg);
+.uae-country-page .uae-accordion-icon svg,
+.uae-accordion-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.uae-country-page .uae-accordion-icon:has(svg)::after,
+.uae-accordion-icon:has(svg)::after {
+  display: none;
+}
+
+.uae-country-page .uae-travel-accordion[open] .uae-accordion-icon,
+.uae-country-page details[open] .uae-accordion-icon,
+.uae-travel-accordion[open] .uae-accordion-icon,
+details[open] .uae-accordion-icon {
+  transform: rotate(180deg);
   background: #f1f5f9;
+  border-color: #cbd5e1;
   color: #0f172a;
+}
+
+.uae-country-page .uae-travel-accordion-summary:hover .uae-accordion-icon,
+.uae-travel-accordion-summary:hover .uae-accordion-icon {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.uae-country-page .uae-travel-accordion[open] .uae-travel-accordion-summary:hover .uae-accordion-icon,
+.uae-travel-accordion[open] .uae-travel-accordion-summary:hover .uae-accordion-icon {
+  background: #e2e8f0;
 }
 
 .uae-country-page .uae-travel-accordion-body {

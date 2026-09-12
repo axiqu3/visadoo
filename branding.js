@@ -234,7 +234,7 @@
 
   var UI_DICT = {
     en: {
-      home: 'Home', explore: 'Explore', visaTypes: 'Visa Types', events: 'Travel Triggers', articles: 'Articles', contact: 'Contact Us', track: 'Track visa',
+      home: 'Home', explore: 'Explore', visaTypes: 'Visa Types', events: 'Happenings', articles: 'Articles', contact: 'Contact Us', track: 'Track visa',
       heroTitle: 'Get Your<br>Visa Now!', heroSub: 'Find Visa information for all countries and apply today.', heroBtn: 'Get your Visa now!',
       whereFrom: 'Where am I From?', whereTo: 'Where am I Going?', whereToPlaceholder: 'Search country or destination', viewMap: 'View Map',
       popDest: 'Popular destinations', chooseCountry: 'Choose your country',
@@ -425,7 +425,7 @@
     if (vtLink) vtLink.textContent = copy.visaTypes || 'Visa Types';
 
     var evsLink = document.querySelector('.nav-links a[href*="events"]');
-    if (evsLink) evsLink.textContent = copy.events || 'Travel Triggers';
+    if (evsLink) evsLink.textContent = copy.events || 'Happenings';
 
     var artLink = document.querySelector('.nav-links a[href*="articles"]');
     if (artLink) artLink.textContent = copy.articles;
