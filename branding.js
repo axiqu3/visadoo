@@ -319,9 +319,14 @@
     }
   } catch(e){}
 
-  function ensureGoogleTranslateEngine() {
+  function ensureGoogleTranslateEngine(force) {
     var saved = 'en';
     try { saved = localStorage.getItem('visadoo-language') || 'en'; } catch(e){}
+
+    // Only inject Google Translate if user has actively chosen a non-English language
+    if (!force && (!saved || saved === 'en')) {
+      return;
+    }
 
     if (!document.getElementById('google_translate_element')) {
       var gtDiv = document.createElement('div');
@@ -356,8 +361,13 @@
       sc.id = 'visadoo-gt-script';
       sc.type = 'text/javascript';
       sc.async = true;
+      sc.onerror = function() {
+        // Silently catch if blocked by strict CSP or network offline
+      };
       sc.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-      document.head.appendChild(sc);
+      try {
+        document.head.appendChild(sc);
+      } catch(err) {}
     }
   }
 
@@ -383,6 +393,7 @@
       return;
     }
     setGoogleTranslateCookie(lang);
+    ensureGoogleTranslateEngine(true);
     var attempts = 0;
     function tryApply() {
       var combo = document.querySelector('.goog-te-combo');
