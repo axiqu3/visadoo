@@ -776,7 +776,7 @@ function pageHtml(c, visas, defaultImg, active, brandColor, whatsappNumber){
     '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></scr'+'ipt>'+
     '<script src="/config.js"></scr'+'ipt>'+
     '<script src="/country-experience.js"></scr'+'ipt>'+
-    '<script src="/country-page.js?v=20260911-total-amount-v1"></scr'+'ipt>'+
+    '<script src="/country-page.js?v=20260914-visa-sync-v4"></scr'+'ipt>'+
     '<script src="/country-history.js?v=20260804-natural-uae-hero"></scr'+'ipt>'+
     '<script>(function(){var b=document.getElementById("menuBtn"),n=document.getElementById("navLinks");if(!b||!n)return;b.addEventListener("click",function(){var o=n.classList.toggle("open");b.setAttribute("aria-expanded",String(o))});n.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){n.classList.remove("open");b.setAttribute("aria-expanded","false")})})})();</scr'+'ipt>'+
     '<script>(function(){var w=document.querySelector("[data-uae-visa-selector]"),c=w&&w.querySelectorAll("[data-uae-choice]");if(!w||!c.length)return;function u(o){if(!o)return;["name","category","stay","entry","processing","price"].forEach(function(k){w.querySelectorAll("[data-uae-"+k+"]").forEach(function(n){n.textContent=o.getAttribute("data-"+k)||""})});c.forEach(function(i){var l=i.closest(".uae-visa-option");if(l)l.classList.toggle("selected",i===o)})}c.forEach(function(i){i.addEventListener("change",function(){if(i.checked)u(i)})});u(w.querySelector("[data-uae-choice]:checked"))})();</scr'+'ipt>'+
@@ -841,12 +841,29 @@ export default async (request) => {
     const slug=parts[1]?decodeURIComponent(parts[1]):"";
     if(!slug) return notFound();
 
-    const countries=await fetchJson(SUPABASE_URL+"/rest/v1/countries?slug=eq."+encodeURIComponent(slug)+"&active=eq.true&select=*");
-    if(!countries.length) return notFound();
-    const c=countries[0];
-    const data=await Promise.all([
-      fetchJson(SUPABASE_URL+"/rest/v1/visa_types?country_slug=eq."+encodeURIComponent(slug)+"&active=eq.true&order=sort_order&select=*"),
-      fetchJson(SUPABASE_URL+"/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name,contact_whatsapp")
+    let canonicalSlugs = [slug];
+    if (slug === 'united-arab-emirates' || slug === 'uae') canonicalSlugs = ['united-arab-emirates', 'uae'];
+    else if (slug === 'sri-lanka' || slug === 'srilanka') canonicalSlugs = ['sri-lanka', 'srilanka'];
+    else if (slug === 'egypt' || slug === 'egypt-2') canonicalSlugs = ['egypt', 'egypt-2'];
+    else if (slug === 'saudi-arabia' || slug === 'saudi') canonicalSlugs = ['saudi-arabia', 'saudi'];
+    else if (slug === 'azerbaijan' || slug === 'azerbaijan-2') canonicalSlugs = ['azerbaijan', 'azerbaijan-2'];
+
+    const countryFilter = canonicalSlugs.length > 1
+      ? 'or=(' + canonicalSlugs.map(s => 'slug.eq.' + encodeURIComponent(s)).join(',') + ')'
+      : 'slug=eq.' + encodeURIComponent(slug);
+
+    const countries = await fetchJson(SUPABASE_URL + "/rest/v1/countries?" + countryFilter + "&active=eq.true&select=*");
+    if (!countries.length) return notFound();
+    const c = countries[0];
+    if (c && c.slug && canonicalSlugs.indexOf(c.slug) === -1) canonicalSlugs.push(c.slug);
+
+    const visaTypesFilter = canonicalSlugs.length > 1
+      ? 'or=(' + canonicalSlugs.map(s => 'country_slug.eq.' + encodeURIComponent(s)).join(',') + ')'
+      : 'country_slug=eq.' + encodeURIComponent(c.slug || slug);
+
+    const data = await Promise.all([
+      fetchJson(SUPABASE_URL + "/rest/v1/visa_types?" + visaTypesFilter + "&active=eq.true&order=sort_order&select=*"),
+      fetchJson(SUPABASE_URL + "/rest/v1/site_settings?id=eq.global&select=default_social_image,active_currency,currencies,brand_color,logo_url,favicon_url,app_icon_url,brand_name,contact_whatsapp")
     ]);
     const visas=data[0]||[];
     const settings=data[1]||[];

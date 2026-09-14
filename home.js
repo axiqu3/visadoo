@@ -179,23 +179,36 @@
   // ---- destinations photography helper ----
   function isFlagImage(url){
     if(!url) return false;
-    return /flagcdn\.com|flagsapi\.com|\/flags?\/|flag|\.svg$/i.test(url) || /\/assets\/flags\//i.test(url);
+    if(/flagcdn\.com|flagsapi\.com|\/flags?\/|flag|\.svg$/i.test(url) || /\/assets\/flags\//i.test(url)) return true;
+    var legacyFlags = [
+      '1782309962646', // UAE flag
+      '1782272456773', // Qatar flag
+      '1782934463510', // Sri Lanka flag
+      '1784208234936', // Philippines Aponex logo
+      '1788267551875', // Bahrain flag
+      '1788436936401', // Oman flag
+      '1788436968838', // Saudi Arabia flag
+      '1788164598379'  // Azerbaijan flag
+    ];
+    for (var i = 0; i < legacyFlags.length; i++) {
+      if (url.indexOf(legacyFlags[i]) > -1) return true;
+    }
+    return false;
   }
 
   function destinationPhoto(c){
+    if (c.image_url && !isFlagImage(c.image_url)) {
+      return (/^(\/|https?:\/\/|assets\/)/i.test(c.image_url)) ? c.image_url : ('/' + c.image_url);
+    }
+    if (c.hero_image_url && !isFlagImage(c.hero_image_url)) {
+      return (/^(\/|https?:\/\/|assets\/)/i.test(c.hero_image_url)) ? c.hero_image_url : ('/' + c.hero_image_url);
+    }
     var photos=window.VISADOO_DESTINATION_PHOTOS||{};
     var baseSlug = (c.slug || '').toLowerCase().replace(/-\d+$/, '');
     var src = photos[c.slug+'-card'] || photos[c.slug+'-banner'] || photos[c.slug] || photos[baseSlug+'-card'] || photos[baseSlug+'-banner'] || photos[baseSlug] || '';
     if (!src || isFlagImage(src)) {
-      if (c.hero_image_url && !isFlagImage(c.hero_image_url)) {
-        src = c.hero_image_url;
-      } else if (c.image_url && !isFlagImage(c.image_url)) {
-        src = c.image_url;
-      } else {
-        src = 'assets/hero-visa-travel.jpg';
-      }
+      src = 'assets/hero-visa-travel.jpg';
     }
-    if (!src) return '';
     return (/^(\/|https?:\/\/|assets\/)/i.test(src)) ? src : ('/' + src);
   }
 
@@ -411,25 +424,7 @@
     var photoStyle = photo ? ' style="background-image:url(&quot;' + photo + '&quot;)"' : '';
     
     var countryDisplayName = c.name || '';
-    if (baseSlug === 'united-arab-emirates' || baseSlug === 'uae') countryDisplayName = 'United Arab Emirates';
-    else if (baseSlug === 'bahrain') countryDisplayName = 'Bahrain';
-    else if (baseSlug === 'vietnam') countryDisplayName = 'Vietnam';
-    else if (baseSlug === 'morocco') countryDisplayName = 'Morocco';
-    else if (baseSlug === 'qatar') countryDisplayName = 'Qatar';
-    else if (baseSlug === 'sri-lanka' || baseSlug === 'srilanka') countryDisplayName = 'Sri Lanka';
-    else if (baseSlug === 'egypt') countryDisplayName = 'Egypt';
-    else if (baseSlug === 'thailand') countryDisplayName = 'Thailand';
-    else if (baseSlug === 'philippines') countryDisplayName = 'Philippines';
-    else if (baseSlug === 'russia') countryDisplayName = 'Russia';
-    else if (baseSlug === 'oman') countryDisplayName = 'Oman';
-    else if (baseSlug === 'azerbaijan') countryDisplayName = 'Azerbaijan';
-    else if (baseSlug === 'indonesia') countryDisplayName = 'Indonesia';
-    else if (baseSlug === 'singapore') countryDisplayName = 'Singapore';
-    else if (baseSlug === 'malaysia') countryDisplayName = 'Malaysia';
-    else if (baseSlug === 'georgia') countryDisplayName = 'Georgia';
-    else if (baseSlug === 'saudi-arabia' || baseSlug === 'saudi') countryDisplayName = 'Saudi Arabia';
-    else if (baseSlug === 'turkey' || baseSlug === 'turkiye') countryDisplayName = 'Turkey';
-    else if (baseSlug === 'kenya') countryDisplayName = 'Kenya';
+    var docsNeeded = (c.blurb && c.blurb.trim()) ? c.blurb.trim() : ((c.summary && c.summary.trim() && c.summary.trim().length <= 40) ? c.summary.trim() : 'Passport, Photo');
 
     return '<a class="dest-mockup-card dest-card-item-link" href="' + countryHref(c.slug) + '"' +
       ' data-group="' + (c.group_slug || '') + '" data-types="' + (c.visaTypes || '') + '" data-slug="' + baseSlug + '">' +
@@ -439,7 +434,7 @@
       '</div>' +
       '<div class="dest-card-under-info">' +
         '<span class="dest-under-docs-label">Documents needed:</span>' +
-        '<span class="dest-under-docs-val">Passport, Photo</span>' +
+        '<span class="dest-under-docs-val">' + esc(docsNeeded) + '</span>' +
       '</div>' +
     '</a>';
   }
@@ -516,6 +511,31 @@
     'kenya': ['kenya', 'nairobi', 'mombasa', 'safari']
   };
 
+  var SCHENGEN_SLUGS = [
+    'france', 'germany', 'italy', 'spain', 'switzerland',
+    'greece', 'denmark', 'austria', 'netherlands', 'belgium',
+    'portugal', 'sweden', 'norway', 'finland', 'poland',
+    'czech-republic', 'hungary', 'estonia', 'latvia', 'lithuania',
+    'luxembourg', 'malta', 'slovakia', 'slovenia', 'croatia', 'iceland', 'liechtenstein'
+  ];
+
+  function isSchengenCountry(c) {
+    if (!c) return false;
+    var g = (c.group_slug || '').toLowerCase();
+    if (g === 'schengen') return true;
+    if (g === 'e-visa' || g === 'evisa') return false;
+    var s = (c.slug || '').toLowerCase();
+    return SCHENGEN_SLUGS.indexOf(s) > -1;
+  }
+
+  function isEvisaCountry(c) {
+    if (!c) return false;
+    var g = (c.group_slug || '').toLowerCase();
+    if (g === 'e-visa' || g === 'evisa') return true;
+    if (g === 'schengen') return false;
+    return !isSchengenCountry(c);
+  }
+
   var activeSearchCountries = FALLBACK_COUNTRIES;
 
   function scoreMatch(c, q) {
@@ -541,11 +561,11 @@
     }
 
     // Schengen group search
-    if (q === 'schengen' && (c.group_slug === 'schengen' || ['france','germany','italy','spain','switzerland','greece','denmark','japan'].indexOf(slug) > -1)) {
+    if (q === 'schengen' && isSchengenCountry(c)) {
       return 65;
     }
     // E-Visa group search
-    if ((q === 'evisa' || q === 'e-visa') && (c.group_slug === 'e-visa' || c.group_slug === 'evisa')) {
+    if ((q === 'evisa' || q === 'e-visa') && isEvisaCountry(c)) {
       return 65;
     }
 
@@ -847,7 +867,7 @@
           results.innerHTML = matches.map(function (c) {
             var iso = (c.iso2 || countryIso(c) || 'un').toLowerCase();
             var slug = (c.slug || '').toLowerCase();
-            var isSchengen = (c.group_slug === 'schengen') || SCHENGEN_SLUGS.indexOf(slug) > -1;
+            var isSchengen = isSchengenCountry(c);
             var badgeText = isSchengen
               ? 'Schengen'
               : ((c.visaCount != null && c.visaCount > 0)
@@ -948,61 +968,42 @@
     var showAllCountries = false;
     var activeVisaFilter = 'all';
 
-    // Curate order: prioritizes top requested countries (Morocco, Qatar, Sri Lanka, Philippines, UAE, Bahrain, Vietnam, Thailand, etc.)
-    var topPrioritySlugs = [
-      'morocco', 'qatar', 'sri-lanka', 'philippines',
-      'united-arab-emirates', 'bahrain', 'vietnam', 'thailand',
-      'egypt', 'russia', 'oman', 'azerbaijan',
-      'indonesia', 'singapore', 'malaysia', 'saudi-arabia',
-      'georgia', 'turkey', 'kenya'
-    ];
-
-    var orderedCountries = [];
-    var seenSlugs = {};
-
-    topPrioritySlugs.forEach(function(ts){
-      var match = countries.filter(function(c){
-        var s = (c.slug||'').toLowerCase();
-        return s === ts || (ts === 'united-arab-emirates' && (s === 'uae' || s === 'dubai'));
-      })[0];
-      if(match && !seenSlugs[match.slug]){
-        orderedCountries.push(match);
-        seenSlugs[match.slug] = true;
-      }
+    // Sort strictly by admin-configured sort_order, then alphabetical name
+    var orderedCountries = (countries || []).slice().sort(function(a, b) {
+      var soA = (a.sort_order != null && a.sort_order !== '') ? Number(a.sort_order) : 999;
+      var soB = (b.sort_order != null && b.sort_order !== '') ? Number(b.sort_order) : 999;
+      if (soA !== soB) return soA - soB;
+      return (a.name || '').localeCompare(b.name || '');
     });
 
-    countries.forEach(function(c){
-      if(!seenSlugs[c.slug]){
-        orderedCountries.push(c);
-        seenSlugs[c.slug] = true;
-      }
+    // Top Destinations: countries marked featured by admin, fallback to first 5 if none
+    var featuredCountries = orderedCountries.filter(function(c) { return !!c.featured; });
+    var popularCountries = featuredCountries.length > 0 ? featuredCountries : orderedCountries.slice(0, 5);
+
+    // Track countries already displayed in Top Destinations so they never repeat in following sections
+    var popularIdentifiers = {};
+    popularCountries.forEach(function(c) {
+      if (c.slug) popularIdentifiers[c.slug.toLowerCase().trim()] = true;
+      if (c.id) popularIdentifiers[String(c.id).toLowerCase().trim()] = true;
+      if (c.name) popularIdentifiers[c.name.toLowerCase().trim()] = true;
     });
 
-    var SCHENGEN_SLUGS = [
-      'france', 'germany', 'italy', 'spain', 'switzerland',
-      'greece', 'denmark', 'austria', 'netherlands', 'belgium',
-      'portugal', 'sweden', 'norway', 'finland', 'poland',
-      'czech-republic', 'hungary'
-    ];
-
-    function isSchengenCountry(c) {
+    function isAlreadyInPopular(c) {
       if (!c) return false;
-      var s = (c.slug || '').toLowerCase();
-      var g = (c.group_slug || '').toLowerCase();
-      return SCHENGEN_SLUGS.indexOf(s) > -1 || (g === 'schengen' && ['japan', 'china', 'south-korea', 'ireland', 'azerbaijan'].indexOf(s) === -1);
+      var slug = (c.slug || '').toLowerCase().trim();
+      var id = (c.id || '').toString().toLowerCase().trim();
+      var name = (c.name || '').toLowerCase().trim();
+      return !!(popularIdentifiers[slug] || (id && popularIdentifiers[id]) || (name && popularIdentifiers[name]));
     }
 
-    // Top 5 Popular Destinations (Top 5 countries)
-    var popularCountries = orderedCountries.slice(0, 5);
-
-    // E-Visas (remaining countries that are not Schengen)
-    var evisaCountries = orderedCountries.slice(5).filter(function(c) {
-      return !isSchengenCountry(c);
+    // E-Visas: all active countries categorized under e-visa (excluding ones already in Top Destinations)
+    var evisaCountries = orderedCountries.filter(function(c) {
+      return isEvisaCountry(c) && !isAlreadyInPopular(c);
     });
 
-    // Schengen Visas (all Schengen countries)
+    // Schengen Visas: all active countries categorized under schengen (excluding ones already in Top Destinations)
     var schengenCountries = orderedCountries.filter(function(c) {
-      return isSchengenCountry(c);
+      return isSchengenCountry(c) && !isAlreadyInPopular(c);
     });
 
     // Populate Grids
@@ -1037,9 +1038,9 @@
 
       if(activeVisaFilter === 'all') return true;
       if(activeVisaFilter === 'evisa' || activeVisaFilter === 'e-visa'){
-        return cardGroup.indexOf('evisa') > -1 || cardGroup.indexOf('e-visa') > -1 || cardTypes.indexOf('evisa') > -1 || cardTypes.indexOf('e-visa') > -1 || ['united-arab-emirates','uae','vietnam','morocco','qatar','sri-lanka','egypt','thailand','russia','bahrain','indonesia','azerbaijan','oman','singapore','malaysia','georgia','saudi-arabia','turkey','kenya'].indexOf(cardSlug) > -1;
+        return cardGroup.indexOf('evisa') > -1 || cardGroup.indexOf('e-visa') > -1 || cardTypes.indexOf('evisa') > -1 || cardTypes.indexOf('e-visa') > -1 || (cardGroup !== 'schengen' && SCHENGEN_SLUGS.indexOf(cardSlug) === -1);
       } else if(activeVisaFilter === 'schengen'){
-        return cardGroup.indexOf('schengen') > -1 || ['france','germany','italy','spain','switzerland','greece','denmark','austria','netherlands','belgium','portugal'].indexOf(cardSlug) > -1;
+        return cardGroup.indexOf('schengen') > -1 || (cardGroup !== 'e-visa' && cardGroup !== 'evisa' && SCHENGEN_SLUGS.indexOf(cardSlug) > -1);
       } else if(activeVisaFilter === 'sticker'){
         return cardGroup.indexOf('sticker') > -1 || ['france','germany','italy','spain','switzerland','united-kingdom','united-states','china','philippines','japan','greece'].indexOf(cardSlug) > -1;
       } else if(activeVisaFilter === 'business'){
@@ -1227,13 +1228,9 @@
         }
         
         countries.forEach(function(c) {
-          var slug = c.slug.toLowerCase();
-          var schengenSlugs = [
-            'japan', 'spain', 'denmark', 'france', 'germany', 
-            'switzerland', 'china', 'greece', 'south-korea', 'ireland'
-          ];
+          var slug = (c.slug || '').toLowerCase();
           if (!c.group_slug) {
-            if (schengenSlugs.indexOf(slug) > -1) {
+            if (SCHENGEN_SLUGS.indexOf(slug) > -1) {
               c.group_slug = 'schengen';
             } else {
               c.group_slug = 'e-visa';

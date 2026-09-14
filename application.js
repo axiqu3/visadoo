@@ -32,8 +32,8 @@
   function canEditCRM(){ return hasRole(['admin','agent','sales']); }        // CRM: create/edit/convert (viewer = read-only)
   function defaultStaffView(){ return 'dashboard'; }   // all staff land on the read-only Dashboard
 
-  // Visa types: loaded live from the database (config is just a fallback)
-  var VISAS = (cfg.VISAS || []).slice();
+  // Visa types: loaded live from the database
+  var VISAS = [];
   function mapVisaRow(r){
     return { id:r.slug, name:r.name, sub:r.sub, price:r.price_aed, days:r.days,
              popular:r.popular, blurb:r.blurb, features:r.features||[], active:r.active,
@@ -67,16 +67,10 @@
       }
       if (u.indexOf('working') > -1 || u.indexOf('business') > -1) {
         if (String(n).indexOf('working') > -1) return String(n);
-        if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1) return 'Upto 5 days';
-        if (slug.indexOf('vietnam') > -1) return '3–5 working days';
-        if (slug.indexOf('thailand') > -1) return '3 – 4 days';
-        return n + ' working day' + (String(n) === '1' ? '' : 's');
+        return 'Upto ' + n + ' working day' + (String(n) === '1' ? '' : 's');
       }
       if (u.indexOf('day') > -1) {
-        if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1) return 'Upto 5 days';
-        if (slug.indexOf('vietnam') > -1) return '3–5 working days';
-        if (slug.indexOf('thailand') > -1) return '3 – 4 days';
-        return n + ' day' + (String(n) === '1' ? '' : 's');
+        return 'Upto ' + n + ' day' + (String(n) === '1' ? '' : 's');
       }
     }
 
@@ -101,202 +95,14 @@
   }
   function loadVisaTypes(){
     return sb.from('visa_types').select('*').eq('active',true).order('sort_order').then(function(r){
-      if(!r.error && r.data && r.data.length){ VISAS = r.data.map(mapVisaRow); }
-      var fallbackJapan = [
-        {
-          id: 'japan-tourist-visa',
-          name: 'Japan Tourist Visa (eVisa)',
-          sub: 'Single Entry',
-          price: 3200,
-          days: 90,
-          popular: true,
-          blurb: 'Perfect for a memorable holiday and exploring Japan\'s unique culture.',
-          features: ['90 days validity', 'Single entry', 'eVisa format'],
-          active: true,
-          country_slug: 'japan',
-          category: 'Tourist',
-          prices: { INR: 3200 },
-          etaValue: 5,
-          etaUnit: 'days'
-        },
-        {
-          id: 'japan-double-entry',
-          name: 'Double Entry Visa',
-          sub: 'Double Entry',
-          price: 4500,
-          days: 90,
-          popular: false,
-          blurb: 'Perfect for visitors planning two short trips to Japan.',
-          features: ['90 days validity', 'Double entry', 'eVisa format'],
-          active: true,
-          country_slug: 'japan',
-          category: 'Tourist',
-          prices: { INR: 4500 },
-          etaValue: 5,
-          etaUnit: 'days'
-        },
-        {
-          id: 'japan-multiple-entry',
-          name: 'Multiple Entry Visa',
-          sub: 'Multiple Entry',
-          price: 6500,
-          days: 90,
-          popular: false,
-          blurb: 'Perfect for frequent travellers to Japan.',
-          features: ['90 days validity', 'Multiple entry', 'Regular visa'],
-          active: true,
-          country_slug: 'japan',
-          category: 'Tourist',
-          prices: { INR: 6500 },
-          etaValue: 5,
-          etaUnit: 'days'
-        }
-      ];
-      fallbackJapan.forEach(function(jv){
-        var exists = VISAS.some(function(v){ return v.id === jv.id; });
-        if(!exists) VISAS.push(jv);
-      });
-      var fallbackSpain={id:'spain-schengen-tourist',name:'Spain Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Spain.',features:['Up to 90 days','Schengen visa','Tourist'],active:true,country_slug:'spain',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='spain';})) VISAS.push(fallbackSpain);
-      var fallbackSouthKorea={id:'south-korea-tourist-visa',name:'South Korea Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay tourist visa for South Korea.',features:['Up to 90 days','Tourist visa','South Korea'],active:true,country_slug:'south-korea',category:'Tourist',prices:{INR:6500},etaValue:20,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='south-korea';})) VISAS.push(fallbackSouthKorea);
-       var fallbackSwitzerland={id:'switzerland-schengen-tourist',name:'Switzerland Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Switzerland.',features:['Up to 90 days','Schengen visa','Switzerland'],active:true,country_slug:'switzerland',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='switzerland';})) VISAS.push(fallbackSwitzerland);
-      var fallbackIreland={id:'ireland-tourist-visa',name:'Ireland Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay tourist visa for Ireland.',features:['Up to 90 days','Tourist visa','Ireland'],active:true,country_slug:'ireland',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='ireland';})) VISAS.push(fallbackIreland);
-      var fallbackGreece={id:'greece-schengen-tourist',name:'Greece Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Greece.',features:['Up to 90 days','Schengen visa','Greece'],active:true,country_slug:'greece',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='greece';})) VISAS.push(fallbackGreece);
-      var fallbackItaly={id:'italy-schengen-tourist',name:'Italy Schengen Tourist Visa',sub:'Short Stay',price:6500,days:90,popular:true,blurb:'Short-stay Schengen visa for tourism in Italy.',features:['Up to 90 days','Schengen visa','Italy'],active:true,country_slug:'italy',category:'Tourist',prices:{INR:6500},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='italy';})) VISAS.push(fallbackItaly);
-      var fallbackAzerbaijanTourist={id:'azerbaijan-tourist-evisa',slug:'azerbaijan-tourist-evisa',name:'Azerbaijan Tourist E Visa',sub:'Single Entry',price:2899,days:30,popular:true,blurb:'Azerbaijan Tourist E Visa.',features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],active:true,country_slug:'azerbaijan',category:'Tourist',prices:{INR:2899},etaValue:3,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='azerbaijan-tourist-evisa'||v.slug==='azerbaijan-tourist-evisa';})) VISAS.push(fallbackAzerbaijanTourist);
-      var fallbackAzerbaijanBiz={id:'azerbaijan-business-evisa',slug:'azerbaijan-business-evisa',name:'Azerbaijan Business E Visa',sub:'Single Entry',price:2899,days:30,popular:false,blurb:'Azerbaijan Business E Visa.',features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],active:true,country_slug:'azerbaijan',category:'Business',prices:{INR:2899},etaValue:3,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='azerbaijan-business-evisa'||v.slug==='azerbaijan-business-evisa';})) VISAS.push(fallbackAzerbaijanBiz);
-      var fallbackChina={id:'china-business-visa',name:'China Business Visa',sub:'M Visa',price:6500,days:30,popular:true,blurb:'China business visa application.',features:['Business visa','China','M Visa'],active:true,country_slug:'china',category:'Business',prices:{INR:6500},etaValue:7,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.country_slug==='china';})) VISAS.push(fallbackChina);
-      // Russia must also work when the live visa_types row is unavailable.
-      var fallbackRussiaTourist={id:'russia-tourist-visa',slug:'russia-tourist-visa',name:'Russia Tourist Visa',sub:'Single Entry',price:4999,days:30,popular:true,blurb:'Russia Tourist Visa.',features:['Stay Period: 30 Days','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],active:true,country_slug:'russia',category:'Tourist',prices:{INR:4999},etaValue:12,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='russia-tourist-visa'||v.slug==='russia-tourist-visa';})) VISAS.push(fallbackRussiaTourist);
-      var fallbackRussiaBiz={id:'russia-business-visa',slug:'russia-business-visa',name:'Russia Business Visa',sub:'Single Entry',price:4999,days:90,popular:false,blurb:'Russia Business Visa.',features:['Stay Period: 3 Months','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],active:true,country_slug:'russia',category:'Business',prices:{INR:4999},etaValue:12,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='russia-business-visa'||v.slug==='russia-business-visa';})) VISAS.push(fallbackRussiaBiz);
-      // Indonesia must always open the same upload wizard even if the live visa row is unavailable.
-      var fallbackIndonesiaTourist={id:'indonesia-tourist-visa',slug:'indonesia-tourist-visa',name:'Indonesia Tourist Visa',sub:'Single Entry',price:8999,days:30,popular:true,blurb:'Indonesia Tourist Visa.',features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],active:true,country_slug:'indonesia',category:'Tourist',prices:{INR:8999},etaValue:7,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='indonesia-tourist-visa'||v.slug==='indonesia-tourist-visa';})) VISAS.push(fallbackIndonesiaTourist);
-      var fallbackIndonesiaBiz={id:'indonesia-business-visa',slug:'indonesia-business-visa',name:'Indonesia Business Visa',sub:'Single Entry',price:8999,days:30,popular:false,blurb:'Indonesia Business Visa.',features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],active:true,country_slug:'indonesia',category:'Business',prices:{INR:8999},etaValue:7,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='indonesia-business-visa'||v.slug==='indonesia-business-visa';})) VISAS.push(fallbackIndonesiaBiz);
-      // Kenya must always open the upload wizard even if its live visa row is unavailable.
-      var fallbackKenyaTourist={id:'kenya-single-entry-tourist-visa',slug:'kenya-single-entry-tourist-visa',name:'Single Entry Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:true,blurb:'Single Entry Tourist Visa for Kenya.',features:['Stay Period: As per Embassy','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],active:true,country_slug:'kenya',category:'Tourist',prices:{INR:5999},etaValue:2,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='kenya-single-entry-tourist-visa'||v.slug==='kenya-single-entry-tourist-visa';})) VISAS.push(fallbackKenyaTourist);
-      var fallbackKenyaBiz={id:'kenya-single-entry-business-visa',slug:'kenya-single-entry-business-visa',name:'Single Entry Business Visa',sub:'Single Entry',price:5999,days:3,popular:false,blurb:'Single Entry Business Visa for Kenya.',features:['Stay Period: 72 Hours','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],active:true,country_slug:'kenya',category:'Business',prices:{INR:5999},etaValue:2,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='kenya-single-entry-business-visa'||v.slug==='kenya-single-entry-business-visa';})) VISAS.push(fallbackKenyaBiz);
-      var fallbackKenyaLegacy={id:'kenya-tourist-visa',slug:'kenya-tourist-visa',name:'Single Entry Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:false,blurb:'Single Entry Tourist Visa for Kenya.',features:['Stay Period: As per Embassy','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],active:true,country_slug:'kenya',category:'Tourist',prices:{INR:5999},etaValue:2,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='kenya-tourist-visa'||v.slug==='kenya-tourist-visa';})) VISAS.push(fallbackKenyaLegacy);
-      // Thailand must always open the same upload wizard even if its live visa row is unavailable.
-      var fallbackThailandEv = {id:'thailand-e-visa',slug:'thailand-e-visa',name:'Thailand E Visa',sub:'Single Entry',price:499,days:30,popular:true,blurb:'Thailand E-Visa.',features:['30 days stay','1 Month validity','Single entry','24 Hours processing'],active:true,country_slug:'thailand',category:'Tourist',prices:{INR:499},etaValue:24,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='thailand-e-visa';})) VISAS.push(fallbackThailandEv);
-      var fallbackThailandExp = {id:'thailand-e-visa-express',slug:'thailand-e-visa-express',name:'Thailand E Visa (Express)',sub:'Single Entry',price:11999,days:15,popular:false,blurb:'Thailand E-Visa (Express).',features:['Upto 15 days stay','1 Month validity','Single entry','Upto 24 Hours processing'],active:true,country_slug:'thailand',category:'Tourist',prices:{INR:11999},etaValue:24,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='thailand-e-visa-express';})) VISAS.push(fallbackThailandExp);
-      var fallbackThailandStamp = {id:'thailand-tourist-visa-stamp-visa',slug:'thailand-tourist-visa-stamp-visa',name:'Thailand Tourist Visa (Stamp Visa)',sub:'Single Entry',price:5999,days:60,popular:false,blurb:'Thailand Tourist Visa (Stamp Visa).',features:['Upto 60 days stay','3 Months validity','Single entry','3 – 4 Days processing'],active:true,country_slug:'thailand',category:'Tourist',prices:{INR:5999},etaValue:4,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='thailand-tourist-visa-stamp-visa';})) VISAS.push(fallbackThailandStamp);
-      var fallbackThailandBiz = {id:'thailand-business-visa-stamp-visa',slug:'thailand-business-visa-stamp-visa',name:'Thailand Business Visa (Stamp Visa)',sub:'Single Entry',price:7999,days:90,popular:false,blurb:'Thailand Business Visa (Stamp Visa).',features:['Upto 90 days stay','3 Months validity','Single entry','3 – 4 Days processing'],active:true,country_slug:'thailand',category:'Business',prices:{INR:7999},etaValue:4,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='thailand-business-visa-stamp-visa';})) VISAS.push(fallbackThailandBiz);
-      // Bahrain must always open the same upload wizard even if its live visa row is unavailable.
-      var fallbackBahrain14={id:'bahrain-14-days-tourist-visa',name:'Bahrain 2 Weeks Single Entry',sub:'Single Entry',price:4500,days:14,popular:true,blurb:'Tourist eVisa application for Bahrain.',features:['Tourist eVisa','Bahrain','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:4500},etaValue:5,etaUnit:'days'};
-      var fallbackBahrain30={id:'bahrain-30-days-tourist-visa',name:'Bahrain One Month Multiple Entry',sub:'Multiple Entry',price:7000,days:30,popular:false,blurb:'Multiple entry tourist eVisa application for Bahrain.',features:['Tourist eVisa','Bahrain','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:7000},etaValue:5,etaUnit:'days'};
-      var fallbackBahrain={id:'bahrain-tourist-visa',name:'Bahrain 2 Weeks Single Entry',sub:'Single Entry',price:4500,days:14,popular:true,blurb:'Tourist eVisa application for Bahrain.',features:['Tourist eVisa','Bahrain','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:4500},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='bahrain-14-days-tourist-visa';})) VISAS.push(fallbackBahrain14);
-      if(!VISAS.some(function(v){return v.id==='bahrain-30-days-tourist-visa';})) VISAS.push(fallbackBahrain30);
-      if(!VISAS.some(function(v){return v.id==='bahrain-tourist-visa';})) VISAS.push(fallbackBahrain);
-      var fallbackBahrain365={id:'bahrain-one-year-multiple-entry',name:'Bahrain One Year Multiple Entry',sub:'Multiple Entry',price:14000,days:365,popular:false,blurb:'One year multiple entry tourist eVisa for Bahrain.',features:['One year validity','Multiple entry','Online application'],active:true,country_slug:'bahrain',category:'Tourist',prices:{INR:14000},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='bahrain-one-year-multiple-entry';})) VISAS.push(fallbackBahrain365);
-      // Sri Lanka must always open the same upload wizard even if its live visa row is unavailable.
-      var fallbackSriLankaTourist={id:'srilanka-30-days-tourist-visa',slug:'srilanka-30-days-tourist-visa',name:'30 Days Sri Lanka Tourist Visa',sub:'Double Entry',price:999,days:30,popular:true,blurb:'30 Days Sri Lanka Tourist Visa.',features:['Stay: Upto 30 Days','Validity: 6 Months','Double entry','24 to 48 Hours processing'],active:true,country_slug:'srilanka',category:'Tourist',prices:{INR:999},etaValue:48,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='srilanka-30-days-tourist-visa'||v.slug==='srilanka-30-days-tourist-visa';})) VISAS.push(fallbackSriLankaTourist);
-      var fallbackSriLankaBiz={id:'srilanka-30-days-business-visa',slug:'srilanka-30-days-business-visa',name:'30 Days Sri Lanka Business Visa',sub:'Multiple Entry',price:3499,days:30,popular:false,blurb:'30 Days Sri Lanka Business Visa.',features:['Stay: Upto 30 Days','Validity: 6 Months','Multiple entry','24 to 48 Hours processing'],active:true,country_slug:'srilanka',category:'Business',prices:{INR:3499},etaValue:48,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='srilanka-30-days-business-visa'||v.slug==='srilanka-30-days-business-visa';})) VISAS.push(fallbackSriLankaBiz);
-      var fallbackSriLankaLegacy={id:'srilanka-tourist-visa',slug:'srilanka-tourist-visa',name:'30 Days Sri Lanka Tourist Visa',sub:'Double Entry',price:999,days:30,popular:false,blurb:'30 Days Sri Lanka Tourist Visa.',features:['Stay: Upto 30 Days','Validity: 6 Months','Double entry','24 to 48 Hours processing'],active:true,country_slug:'srilanka',category:'Tourist',prices:{INR:999},etaValue:48,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='srilanka-tourist-visa'||v.slug==='srilanka-tourist-visa';})) VISAS.push(fallbackSriLankaLegacy);
-      var fallbackVietnam={id:'vietnam-tourist-visa',slug:'vietnam-tourist-visa',name:'Tourist eVisa',sub:'Single Entry',price:2999,days:30,popular:true,blurb:'Tourist eVisa for Vietnam.',features:['30 days stay','Single entry','3–5 working days'],active:true,country_slug:'vietnam',category:'Tourist',prices:{INR:2999},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='vietnam-tourist-visa';})) VISAS.push(fallbackVietnam);
-      var fallbackVietnamExpress={id:'vietnam-tourist-visa-express',slug:'vietnam-tourist-visa-express',name:'Tourist eVisa (Express)',sub:'Single Entry',price:9999,days:30,popular:false,blurb:'Express Tourist eVisa for Vietnam (24 Hours).',features:['24 hours processing','30 days stay','Single entry'],active:true,country_slug:'vietnam',category:'Tourist',prices:{INR:9999},etaValue:24,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='vietnam-tourist-visa-express';})) VISAS.push(fallbackVietnamExpress);
-      var fallbackVietnamSuper={id:'vietnam-tourist-visa-super-express',slug:'vietnam-tourist-visa-super-express',name:'Tourist eVisa (Super Express)',sub:'Single Entry',price:10999,days:30,popular:false,blurb:'Super Express Tourist eVisa for Vietnam (12 Hours).',features:['12 hours processing','30 days stay','Single entry'],active:true,country_slug:'vietnam',category:'Tourist',prices:{INR:10999},etaValue:12,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='vietnam-tourist-visa-super-express';})) VISAS.push(fallbackVietnamSuper);
-      var fallbackMorocco={id:'morocco-tourist-visa',slug:'morocco-tourist-visa',name:'Morocco Tourist eVisa',sub:'Single Entry',price:4149,days:90,popular:true,blurb:'Online tourist eVisa for Morocco.',features:['Stay up to 90 Days','Validity: Up to 90 Days','Single entry','3 – 5 Days processing'],active:true,country_slug:'morocco',category:'Tourist',prices:{INR:4149},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='morocco-tourist-visa'||v.slug==='morocco-tourist-visa';})) VISAS.push(fallbackMorocco);
-      var fallbackMoroccoBiz={id:'morocco-business-visa',slug:'morocco-business-visa',name:'Morocco Business eVisa',sub:'Single Entry',price:4149,days:90,popular:false,blurb:'Online business eVisa for Morocco.',features:['Stay up to 90 Days','Validity: Up to 90 Days','Single entry','5 – 7 Days processing'],active:true,country_slug:'morocco',category:'Business',prices:{INR:4149},etaValue:7,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='morocco-business-visa'||v.slug==='morocco-business-visa';})) VISAS.push(fallbackMoroccoBiz);
-      var fallbackTurkey={id:'turkey-tourist-evisa',name:'Turkey Tourist eVisa',sub:'Single Entry',price:5500,days:30,popular:true,blurb:'Online tourist eVisa for Turkey.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'turkey',category:'Tourist',prices:{INR:5500},etaValue:2,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='turkey-tourist-evisa';})) VISAS.push(fallbackTurkey);
-      var fallbackTurkeyVisa={id:'turkey-tourist-visa',name:'Turkey Tourist eVisa',sub:'Single Entry',price:5500,days:30,popular:true,blurb:'Online tourist eVisa for Turkey.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'turkey',category:'Tourist',prices:{INR:5500},etaValue:2,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='turkey-tourist-visa';})) VISAS.push(fallbackTurkeyVisa);
-      var fallbackUae48={id:'48-hours-transit-visa',slug:'uae-48-hours-transit-visa',name:'48 Hours Transit Visa',sub:'Single Entry',price:3499,days:2,popular:false,blurb:'48 Hours Transit Visa for UAE.',features:['2 days stay (48h)','Single entry','Validity 30 days'],active:true,country_slug:'united-arab-emirates',category:'Transit',prices:{INR:3499},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='48-hours-transit-visa'||v.slug==='uae-48-hours-transit-visa';})) VISAS.push(fallbackUae48);
-
-      var fallbackUae={id:'30-days-tourist-visa',slug:'uae-30-days-tourist-visa',name:'30 Days Tourist Visa',sub:'Single Entry',price:7600,days:30,popular:true,blurb:'30 days tourist visa for UAE.',features:['30 days stay','Single entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:7600},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='30-days-tourist-visa'||v.slug==='uae-30-days-tourist-visa';})) VISAS.push(fallbackUae);
-
-      var fallbackUaeFamily={id:'30-days-family-tourist-visa',slug:'uae-30-days-family-tourist-visa',name:'30 Days Family Tourist Visa (Includes 2 Adults + 1 Child)',sub:'Single Entry',price:19999,days:30,popular:false,blurb:'30 days family tourist visa for UAE (Includes 2 Adults + 1 Child).',features:['Includes 2 Adults + 1 Child','30 days stay','Single entry'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:19999},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='30-days-family-tourist-visa'||v.slug==='uae-30-days-family-tourist-visa';})) VISAS.push(fallbackUaeFamily);
-
-      var fallbackUae96={id:'96-hours-transit-visa',slug:'uae-96-hours-transit-visa',name:'96 Hours Transit Visa',sub:'Single Entry',price:5299,days:4,popular:false,blurb:'96 Hours Transit Visa for UAE.',features:['4 days stay (96h)','Single entry','Validity 30 days'],active:true,country_slug:'united-arab-emirates',category:'Transit',prices:{INR:5299},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='96-hours-transit-visa'||v.slug==='uae-96-hours-transit-visa';})) VISAS.push(fallbackUae96);
-
-      var fallbackUae14={id:'14-days-tourist-visa',slug:'uae-14-days-tourist-visa',name:'14 Days Tourist Visa',sub:'Single Entry',price:7699,days:14,popular:false,blurb:'14 days tourist visa for UAE.',features:['14 days stay','Single entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:7699},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='14-days-tourist-visa'||v.slug==='uae-14-days-tourist-visa';})) VISAS.push(fallbackUae14);
-
-      var fallbackUaeExpress={id:'30-days-tourist-visa-express',slug:'uae-30-days-tourist-visa-express',name:'30 Days Tourist Visa (Express)',sub:'Single Entry',price:8999,days:30,popular:false,blurb:'Express 30 days tourist visa for UAE.',features:['Express 48h processing','30 days stay','Single entry'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:8999},etaValue:48,etaUnit:'hours'};
-      if(!VISAS.some(function(v){return v.id==='30-days-tourist-visa-express'||v.slug==='uae-30-days-tourist-visa-express';})) VISAS.push(fallbackUaeExpress);
-
-      var fallbackUae60={id:'60-days-tourist-visa',slug:'uae-60-days-tourist-visa',name:'60 Days Tourist Visa',sub:'Single Entry',price:10800,days:60,popular:false,blurb:'60 days tourist visa for UAE.',features:['60 days stay','Single entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:10800},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='60-days-tourist-visa'||v.slug==='uae-60-days-tourist-visa';})) VISAS.push(fallbackUae60);
-
-      var fallbackUaeMulti={id:'30-days-multiple-entry-visa',slug:'uae-30-days-multiple-entry-visa',name:'30 Days Multiple Entry Tourist Visa',sub:'Multiple Entry',price:17999,days:30,popular:false,blurb:'30 days multiple entry tourist visa for UAE.',features:['30 days stay','Multiple entry','Validity 58 days'],active:true,country_slug:'united-arab-emirates',category:'Tourist',prices:{INR:17999},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='30-days-multiple-entry-visa'||v.slug==='uae-30-days-multiple-entry-visa';})) VISAS.push(fallbackUaeMulti);
-      var fallbackQatar1={id:'qatar-30-days-tourist-visa-age-1-55',slug:'qatar-30-days-tourist-visa-age-1-55',name:'Qatar Tourist Visa 30 Days (Age 1–55 Years)',sub:'Single Entry',price:8999,days:30,popular:true,blurb:'Qatar Tourist Visa 30 Days (Age 1–55 Years).',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Tourist',prices:{INR:8999},etaValue:6,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='qatar-30-days-tourist-visa-age-1-55'||v.slug==='qatar-30-days-tourist-visa-age-1-55';})) VISAS.push(fallbackQatar1);
-      var fallbackQatar2={id:'qatar-30-days-tourist-visa-age-55-plus',slug:'qatar-30-days-tourist-visa-age-55-plus',name:'Qatar Tourist Visa 30 Days (Age 55 Years & Above)',sub:'Single Entry',price:13999,days:30,popular:false,blurb:'Qatar Tourist Visa 30 Days (Age 55 Years & Above).',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Tourist',prices:{INR:13999},etaValue:6,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='qatar-30-days-tourist-visa-age-55-plus'||v.slug==='qatar-30-days-tourist-visa-age-55-plus';})) VISAS.push(fallbackQatar2);
-      var fallbackQatar3={id:'qatar-30-days-business-visa',slug:'qatar-30-days-business-visa',name:'Qatar Business Visa 30 Days',sub:'Single Entry',price:9999,days:30,popular:false,blurb:'Qatar Business Visa 30 Days.',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Business',prices:{INR:9999},etaValue:6,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='qatar-30-days-business-visa'||v.slug==='qatar-30-days-business-visa';})) VISAS.push(fallbackQatar3);
-      var fallbackQatar4={id:'qatar-90-days-business-visa',slug:'qatar-90-days-business-visa',name:'Qatar Business Visa 90 Days',sub:'Single Entry',price:20999,days:90,popular:false,blurb:'Qatar Business Visa 90 Days.',features:['Stay 90 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Business',prices:{INR:20999},etaValue:6,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='qatar-90-days-business-visa'||v.slug==='qatar-90-days-business-visa';})) VISAS.push(fallbackQatar4);
-      var fallbackQatarLegacy={id:'qatar-tourist-evisa',slug:'qatar-tourist-evisa',name:'Qatar Tourist Visa 30 Days (Age 1–55 Years)',sub:'Single Entry',price:8999,days:30,popular:false,blurb:'Qatar Tourist Visa 30 Days (Age 1–55 Years).',features:['Stay 30 Days','Validity 3 Months','Single entry','5 – 6 Days processing'],active:true,country_slug:'qatar',category:'Tourist',prices:{INR:8999},etaValue:6,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='qatar-tourist-evisa'||v.slug==='qatar-tourist-evisa';})) VISAS.push(fallbackQatarLegacy);
-      
-      var fallbackEgyptTourist={id:'egypt-tourist-visa',slug:'egypt-tourist-visa',name:'Egypt Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:true,blurb:'Egypt Tourist Visa.',features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],active:true,country_slug:'egypt',category:'Tourist',prices:{INR:5999},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='egypt-tourist-visa'||v.slug==='egypt-tourist-visa';})) VISAS.push(fallbackEgyptTourist);
-      var fallbackEgypt30Legacy={id:'egypt-30-days-tourist-visa',slug:'egypt-30-days-tourist-visa',name:'Egypt Tourist Visa',sub:'Single Entry',price:5999,days:30,popular:false,blurb:'Egypt Tourist Visa.',features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],active:true,country_slug:'egypt',category:'Tourist',prices:{INR:5999},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='egypt-30-days-tourist-visa'||v.slug==='egypt-30-days-tourist-visa';})) VISAS.push(fallbackEgypt30Legacy);
-      var fallbackEgyptBusiness={id:'egypt-business-visa',slug:'egypt-business-visa',name:'Egypt Business Visa',sub:'Single Entry',price:6999,days:30,popular:false,blurb:'Egypt Business Visa.',features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],active:true,country_slug:'egypt',category:'Business',prices:{INR:6999},etaValue:15,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='egypt-business-visa'||v.slug==='egypt-business-visa';})) VISAS.push(fallbackEgyptBusiness);
-
-      var fallbackPhilippinesSingle={id:'philippines-single-entry-visa',slug:'philippines-single-entry-visa',name:'Philippines Single Entry Visa',sub:'Single Entry',price:8499,days:59,popular:true,blurb:'Philippines Single Entry Visa (Tourist/Business).',features:['Stay Period: Upto 59 Days','Validity: 3 Months','Single Entry','Processing: 8 - 10 Days'],active:true,country_slug:'philippines',category:'Tourist / Business',prices:{INR:8499},etaValue:10,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='philippines-single-entry-visa'||v.slug==='philippines-single-entry-visa';})) VISAS.push(fallbackPhilippinesSingle);
-      var fallbackPhilippinesMulti={id:'philippines-multiple-entry-business-visa',slug:'philippines-multiple-entry-business-visa',name:'Philippines Multiple Entry Business Visa',sub:'Multiple Entry',price:9999,days:59,popular:false,blurb:'Philippines Multiple Entry Business Visa.',features:['Stay Period: Upto 59 Days','Validity: 6 Months / 1 Year','Multiple Entry','Processing: 8 - 10 Days'],active:true,country_slug:'philippines',category:'Business',prices:{INR:9999},etaValue:10,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='philippines-multiple-entry-business-visa'||v.slug==='philippines-multiple-entry-business-visa';})) VISAS.push(fallbackPhilippinesMulti);
-
-      var fallbackOman10={id:'oman-10-days-tourist-visa',slug:'oman-10-days-tourist-visa',name:'10 Days Tourist Visa',sub:'Single Entry',price:4499,days:10,popular:false,blurb:'Oman 10 Days Tourist Visa.',features:['Stay Period: 10 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],active:true,country_slug:'oman',category:'Tourist',prices:{INR:4499},etaValue:6,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='oman-10-days-tourist-visa'||v.slug==='oman-10-days-tourist-visa';})) VISAS.push(fallbackOman10);
-      var fallbackOman30={id:'oman-30-days-tourist-visa',slug:'oman-30-days-tourist-visa',name:'30 Days Tourist Visa',sub:'Single Entry',price:7999,days:30,popular:true,blurb:'Oman 30 Days Tourist Visa.',features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],active:true,country_slug:'oman',category:'Tourist',prices:{INR:7999},etaValue:6,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='oman-30-days-tourist-visa'||v.slug==='oman-30-days-tourist-visa';})) VISAS.push(fallbackOman30);
-
-      var fallbackSaudi30={id:'saudi-arabia-30-days-tourist-visa',slug:'saudi-arabia-30-days-tourist-visa',name:'Saudi Arabia Tourist Visa',sub:'Single Entry',price:16000,days:30,popular:true,blurb:'30 days tourist eVisa for Saudi Arabia.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:16000},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='saudi-arabia-30-days-tourist-visa';})) VISAS.push(fallbackSaudi30);
-      var fallbackSaudiTourist={id:'saudi-arabia-tourist-visa',slug:'saudi-arabia-tourist-visa',name:'Saudi Arabia Tourist Visa',sub:'Single Entry',price:16000,days:30,popular:true,blurb:'30 days tourist eVisa for Saudi Arabia.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:16000},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='saudi-arabia-tourist-visa';})) VISAS.push(fallbackSaudiTourist);
-      var fallbackSaudiShort={id:'saudi-30-days-tourist-visa',slug:'saudi-30-days-tourist-visa',name:'Saudi Arabia Tourist Visa',sub:'Single Entry',price:16000,days:30,popular:true,blurb:'30 days tourist eVisa for Saudi Arabia.',features:['30 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:16000},etaValue:5,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='saudi-30-days-tourist-visa';})) VISAS.push(fallbackSaudiShort);
-      var fallbackSaudiMulti={id:'saudi-arabia-one-year-multiple-entry',slug:'saudi-arabia-one-year-multiple-entry',name:'Saudi Arabia One Year Multiple Entry',sub:'Multiple Entry',price:12500,days:365,popular:true,blurb:'1 year multiple entry tourist eVisa for Saudi Arabia.',features:['1 year validity','Multiple entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:12500},etaValue:1,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='saudi-arabia-one-year-multiple-entry';})) VISAS.push(fallbackSaudiMulti);
-      var fallbackSaudi90={id:'saudi-arabia-90-days-tourist-visa',slug:'saudi-arabia-90-days-tourist-visa',name:'Saudi Arabia 90 Days Single Entry',sub:'Single Entry',price:7500,days:90,popular:false,blurb:'90 days tourist eVisa for Saudi Arabia.',features:['90 days stay','Single entry','Online application'],active:true,country_slug:'saudi-arabia',category:'Tourist',prices:{INR:7500},etaValue:1,etaUnit:'days'};
-      if(!VISAS.some(function(v){return v.id==='saudi-arabia-90-days-tourist-visa';})) VISAS.push(fallbackSaudi90);
-
-      VISAS.forEach(function(v){
-        if(v && (v.id==='30-days-tourist-visa'||v.id==='60-days-tourist-visa'||v.id==='30-days-uae-visa'||v.id==='60-days-uae-visa'||v.id==='uae-30-days-tourist-visa'||v.id==='uae-60-days-tourist-visa'||(v.slug&&v.slug.indexOf('uae-')===0)||(v.id&&v.id.indexOf('uae-')===0)||(v.slug&&v.slug.indexOf('transit-visa')>-1)||(v.id&&v.id.indexOf('transit-visa')>-1))){
-          v.country_slug = 'united-arab-emirates';
-        }
-      });
+      if(!r.error && r.data){
+        VISAS = r.data.map(mapVisaRow);
+        VISAS.forEach(function(v){
+          if(v && (v.id==='30-days-tourist-visa'||v.id==='60-days-tourist-visa'||v.id==='30-days-uae-visa'||v.id==='60-days-uae-visa'||v.id==='uae-30-days-tourist-visa'||v.id==='uae-60-days-tourist-visa'||(v.slug&&v.slug.indexOf('uae-')===0)||(v.id&&v.id.indexOf('uae-')===0)||(v.slug&&v.slug.indexOf('transit-visa')>-1)||(v.id&&v.id.indexOf('transit-visa')>-1))){
+            if(!v.country_slug) v.country_slug = 'united-arab-emirates';
+          }
+        });
+      }
       return VISAS;
     });
   }
@@ -483,6 +289,157 @@
     return null;
   }
   function qParam(k){ return new URLSearchParams(location.search).get(k); }
+
+  function showApplicationSuccessModal(app, onProceed) {
+    app = app || {};
+    var existing = document.getElementById('appSubmitSuccessOverlay');
+    if (existing) existing.remove();
+
+    var fullName = app.full_name || '';
+    var firstName = fullName ? fullName.split(' ')[0] : 'traveller';
+
+    var overlay = document.createElement('div');
+    overlay.id = 'appSubmitSuccessOverlay';
+    overlay.className = 'app-submit-success-overlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'submitModalTitle');
+
+    overlay.innerHTML =
+      '<div class="app-submit-success-modal is-anim-loading" id="appSubmitModal">' +
+        '<button type="button" class="app-submit-modal-close" id="appSubmitModalClose" aria-label="Close modal">✕</button>' +
+
+        '<!-- Centered Stage: Spinner then Tick in EXACT Center of the Box -->' +
+        '<div class="app-submit-center-stage" id="appSubmitCenterStage">' +
+          '<div class="app-submit-loader" id="appSubmitLoader" aria-hidden="true">' +
+            '<div class="app-submit-spinner"></div>' +
+            '<p class="app-submit-loader-text">Submitting application...</p>' +
+          '</div>' +
+          '<div class="app-submit-tick-hero" id="appSubmitTickHero">' +
+            '<svg class="app-submit-check-burst" width="68" height="68" viewBox="0 0 72 72" fill="none" aria-hidden="true">' +
+              '<line class="burst-ray" x1="18" y1="16" x2="12" y2="10" stroke="#22c55e" stroke-width="3.4" stroke-linecap="round"/>' +
+              '<line class="burst-ray" x1="8" y1="36" x2="2" y2="36" stroke="#22c55e" stroke-width="3.4" stroke-linecap="round"/>' +
+              '<line class="burst-ray" x1="54" y1="16" x2="60" y2="10" stroke="#22c55e" stroke-width="3.4" stroke-linecap="round"/>' +
+              '<line class="burst-ray" x1="64" y1="36" x2="70" y2="36" stroke="#22c55e" stroke-width="3.4" stroke-linecap="round"/>' +
+              '<circle class="burst-circle" cx="36" cy="36" r="23" fill="#22c55e"/>' +
+              '<polyline class="burst-check" points="28 36 33.5 41.5 45 29" fill="none" stroke="#ffffff" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+            '</svg>' +
+          '</div>' +
+        '</div>' +
+
+        '<!-- Modal Content: Centered Header & Body Row -->' +
+        '<div class="app-submit-content-wrap" id="appSubmitContentWrap">' +
+          '<div class="app-submit-header-center">' +
+            '<div class="app-submit-badge-spacer" aria-hidden="true"></div>' +
+            '<h2 class="app-submit-modal-title" id="submitModalTitle">Application Submitted!</h2>' +
+            '<p class="app-submit-modal-sub">Thank you, <span class="app-submit-user-name">' + esc(firstName.toUpperCase()) + '!</span> We have received your application successfully.</p>' +
+          '</div>' +
+          '<div class="app-submit-body-row">' +
+            '<div class="app-submit-avatar-col">' +
+              '<img src="assets/visa-expert-submitted.png?v=20260914-clean-v1" alt="Visa Expert" class="app-submit-avatar-img">' +
+            '</div>' +
+            '<div class="app-submit-info-col">' +
+              '<p class="app-submit-modal-notice">' +
+                'Our visa expert will get in touch with you soon.<br>' +
+                'You’ll get a call or message within <strong>2 to 3 minutes.</strong>' +
+              '</p>' +
+              '<div class="app-submit-modal-next-step">' +
+                '<div class="app-submit-next-icon" aria-hidden="true">' +
+                  '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>' +
+                  '</svg>' +
+                '</div>' +
+                '<div class="app-submit-next-text">' +
+                  '<h3 class="app-submit-next-title">Next Step: Payment</h3>' +
+                  '<p class="app-submit-next-desc">Our team will contact you to arrange payment and continue processing.</p>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    var animTimers = [];
+    function scheduleStep(fn, delay) {
+      animTimers.push(setTimeout(fn, delay));
+    }
+    function clearAnim() {
+      animTimers.forEach(function(id){ clearTimeout(id); });
+      animTimers = [];
+    }
+
+    var modal = overlay.querySelector('#appSubmitModal');
+    var tickHero = overlay.querySelector('#appSubmitTickHero');
+    var loader = overlay.querySelector('#appSubmitLoader');
+
+    requestAnimationFrame(function(){
+      overlay.classList.add('is-visible');
+
+      var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReduced) {
+        if (modal) {
+          modal.classList.remove('is-anim-loading');
+          modal.classList.add('is-anim-done');
+        }
+        if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+        return;
+      }
+
+      // Stage 1: Loading spinner is running in center of box (0 - 900ms)
+      // Stage 2 (at 900ms): Loader finishes -> Tick pops up in EXACT center of box
+      scheduleStep(function(){
+        if (!modal) return;
+        modal.classList.remove('is-anim-loading');
+        modal.classList.add('is-anim-tick');
+        if (tickHero) tickHero.classList.add('play-tick');
+      }, 900);
+
+      // Stage 3 (at 1750ms): Tick decreases in size and goes straight UP into the header, revealing all details
+      scheduleStep(function(){
+        if (!modal) return;
+        modal.classList.remove('is-anim-tick');
+        modal.classList.add('is-anim-revealing');
+      }, 1750);
+
+      // Stage 4 (at 2450ms): Animation complete
+      scheduleStep(function(){
+        if (!modal) return;
+        modal.classList.remove('is-anim-revealing');
+        modal.classList.add('is-anim-done');
+        if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+      }, 2450);
+    });
+
+    var hasProceeded = false;
+    function proceed() {
+      if (hasProceeded) return;
+      hasProceeded = true;
+      clearAnim();
+      document.removeEventListener('keydown', escHandler);
+      overlay.classList.remove('is-visible');
+      setTimeout(function(){
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (typeof onProceed === 'function') onProceed();
+      }, 200);
+    }
+
+    var closeBtn = overlay.querySelector('#appSubmitModalClose');
+    if (closeBtn) closeBtn.onclick = proceed;
+
+    overlay.onclick = function(e){
+      if (e.target === overlay) proceed();
+    };
+
+    var escHandler = function(e){
+      if (e.key === 'Escape') {
+        proceed();
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+  }
+
 
   // Prepare an image for upload: normalise to a web-friendly JPEG and shrink if huge.
   // Resolves {blob, ext, type}; rejects {code:'decode'|'big'|'convert'|'invalid', name, error}.
@@ -673,7 +630,7 @@
       if(navLinks){ navLinks.hidden=true; navLinks.classList.remove('open'); }
       headerActions.innerHTML =
         '<button class="admin-notify-bell" id="adminNotifyBell" type="button" aria-label="New applications" title="New applications">🔔<span id="adminNotifyCount" hidden>0</span></button>'+
-        '<button class="user-chip profile-trigger" data-go="profile" type="button" aria-label="Open profile"><span class="avatar">'+av+'</span><span class="uname">Profile</span>'+roleBadge+'</button>'+
+        '<div class="user-chip"><span class="avatar">'+av+'</span><span class="uname">'+esc(name)+'</span>'+roleBadge+'</div>'+
         '<button class="link-btn app-signout" id="signOutBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Sign out</span></button>';
     }
     headerActions.querySelectorAll('[data-go]').forEach(function(b){ b.onclick=function(){ go(b.getAttribute('data-go')); }; });
@@ -1106,26 +1063,43 @@
   // ============================================================
   function renderProfile(){
     if(!state.user){ renderSignIn(); return; }
+    if(isStaff()){ go(defaultStaffView()); return; }
     renderHeader();
     var meta=state.user.user_metadata||{};
     var name=meta.full_name||meta.name||(state.user.email||'').split('@')[0]||'Your account';
     var initial=(name[0]||'U').toUpperCase();
     var avatar=meta.avatar_url?'<img src="'+esc(meta.avatar_url)+'" alt="">':esc(initial);
-    var customerActions=isStaff() ?
-      '<button class="profile-action" type="button" data-profile-go="'+esc(defaultStaffView())+'"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke-linecap="round"/></svg></span><span><b>Back to dashboard</b><small>Return to the staff workspace</small></span><i aria-hidden="true">&rarr;</i></button>' :
+    var customerActions=
       '<button class="profile-action" type="button" data-profile-explore><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg></span><span><b>New application</b><small>Explore visas and destinations</small></span><i aria-hidden="true">&rarr;</i></button>'+
       '<button class="profile-action" type="button" data-profile-go="track"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5M10 13h5m-5 4h5" stroke-linecap="round"/></svg></span><span><b>My applications</b><small>Track your visa status</small></span><i aria-hidden="true">&rarr;</i></button>';
     root.innerHTML='<main class="app-main profile-main profile-dashboard">'+
-      '<aside class="profile-sidebar">'+
-        '<div class="profile-identity"><div class="profile-avatar">'+avatar+'</div><div><h1>'+esc(name)+'</h1><p>'+esc(state.user.email||'')+'</p></div></div>'+
-        '<div class="profile-stats"><div><strong id="profileCompletedCount">0</strong><span>Completed</span></div><div><strong id="profileOngoingCount">0</strong><span>Ongoing</span></div></div>'+
-        '<div class="profile-sidebar-label">Account</div><div class="profile-actions">'+customerActions+
-          '<button class="profile-action" type="button" data-profile-go="setpw"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" stroke-linecap="round"/></svg></span><span><b>Change password</b><small>Update your account password</small></span><i aria-hidden="true">&rarr;</i></button>'+
-          '<button class="profile-action" type="button" id="profileMfaBtn"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span><span><b>Two-Factor Auth (2FA)</b><small id="profileMfaStatus">Protected with TOTP</small></span><i aria-hidden="true">&rarr;</i></button>'+
-          '<button class="profile-action profile-action-signout" type="button" data-profile-signout><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Sign out</b><small>Sign out of your VisaDoo account</small></span><i aria-hidden="true">&rarr;</i></button>'+
+      '<div class="profile-single-card">'+
+        '<div class="profile-card-top">'+
+          '<div class="profile-top-left">'+
+            '<div class="profile-identity">'+
+              '<div class="profile-avatar">'+avatar+'</div>'+
+              '<div class="profile-identity-info">'+
+                '<h1>'+esc(name)+'</h1>'+
+                '<p>'+esc(state.user.email||'')+'</p>'+
+                '<div class="profile-stats">'+
+                  '<div class="profile-stat-item"><strong id="profileCompletedCount">0</strong><span>Completed</span></div>'+
+                  '<div class="profile-stat-divider"></div>'+
+                  '<div class="profile-stat-item"><strong id="profileOngoingCount">0</strong><span>Ongoing</span></div>'+
+                '</div>'+
+              '</div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="profile-top-right">'+
+            '<div class="profile-sidebar-label">Account settings</div>'+
+            '<div class="profile-actions">'+customerActions+
+              '<button class="profile-action" type="button" data-profile-go="setpw"><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 15v2" stroke-linecap="round"/></svg></span><span><b>Change password</b><small>Update your account password</small></span><i aria-hidden="true">&rarr;</i></button>'+
+              '<button class="profile-action profile-action-signout" type="button" data-profile-signout><span class="profile-action-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Sign out</b><small>Sign out of your VisaDoo account</small></span><i aria-hidden="true">&rarr;</i></button>'+
+            '</div>'+
+          '</div>'+
         '</div>'+
-      '</aside>'+
-      '<section class="profile-workspace"><div class="profile-documents-wrap" id="profileDocuments"><div class="customer-documents-loading"><span class="spin"></span><span>Loading your applications&hellip;</span></div></div></section>'+
+        '<div class="profile-card-divider"></div>'+
+        '<section class="profile-workspace"><div class="profile-documents-wrap" id="profileDocuments"><div class="customer-documents-loading"><span class="spin"></span><span>Loading your applications&hellip;</span></div></div></section>'+
+      '</div>'+
     '</main>';
     root.querySelectorAll('[data-profile-go]').forEach(function(button){ button.onclick=function(){ go(button.getAttribute('data-profile-go')); }; });
     var profileExplore=root.querySelector('[data-profile-explore]');
@@ -6577,16 +6551,6 @@
         '<section class="panel apply-step' + (applyWizardStep === 2 ? ' active' : '') + '" id="applyStep2" data-apply-step="2"' + (applyWizardStep !== 2 ? ' hidden' : '') + '>'+
           '<aside class="passport-outside-guide" id="passportOutsideGuide" title="Click to view sample passport">'+
             '<div class="passport-dummy-guide-card">'+
-              '<div class="passport-dummy-guide-header">'+
-                '<span class="passport-dummy-guide-badge">'+
-                  '<svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>'+
-                  ' Sample'+
-                '</span>'+
-                '<div class="passport-guide-tab-pills">'+
-                  '<button type="button" class="passport-guide-tab-btn active" id="sampleTabFront">Front</button>'+
-                  '<button type="button" class="passport-guide-tab-btn" id="sampleTabBack">Back</button>'+
-                '</div>'+
-              '</div>'+
               '<div class="passport-dummy-img-frame" id="passportSamplePreviewFrame">'+
                 '<img src="/assets/passport-sample.jpg" alt="Dummy passport specimen example" class="passport-dummy-img" id="passportSamplePreviewImg" loading="eager">'+
                 '<span class="passport-dummy-overlay-tag" id="passportSampleOverlayTag">FRONT PAGE</span>'+
@@ -6595,14 +6559,6 @@
                 '<div class="passport-dummy-note-item">'+
                   '<svg class="passport-check-svg" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd"/></svg>'+
                   '<span id="sampleNote1">Clear photo & readable text</span>'+
-                '</div>'+
-                '<div class="passport-dummy-note-item">'+
-                  '<svg class="passport-check-svg" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd"/></svg>'+
-                  '<span id="sampleNote2">All 4 corners visible</span>'+
-                '</div>'+
-                '<div class="passport-dummy-note-item">'+
-                  '<svg class="passport-check-svg" viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clip-rule="evenodd"/></svg>'+
-                  '<span id="sampleNote3">No glare or blur</span>'+
                 '</div>'+
               '</div>'+
             '</div>'+
@@ -6932,19 +6888,23 @@
         separateDialCode:true,
         preferredCountries:['in','ae','sa','qa','kw','om','bh','us','gb'],
         customPlaceholder:function(selectedCountryPlaceholder, selectedCountryData){
-          return '9874563210';
+          return 'xxxxxxx123';
         },
         utilsScript:'/vendor/utils.js'
       });
     }
-    input.setAttribute('placeholder', '9874563210');
-    input.placeholder = '9874563210';
+    input.setAttribute('placeholder', 'xxxxxxx123');
+    input.placeholder = 'xxxxxxx123';
     sb.from('site_settings').select('mobile_otp_active').eq('id','global').single().then(function(r){
       mobileOtpRequired = !!(r.data && r.data.mobile_otp_active);
       if(mobileOtpRequired) buildOtpUI();
     });
     input.addEventListener('input', resetMobileVerify);
-    input.addEventListener('countrychange', resetMobileVerify);
+    input.addEventListener('countrychange', function(){
+      input.setAttribute('placeholder', 'xxxxxxx123');
+      input.placeholder = 'xxxxxxx123';
+      resetMobileVerify();
+    });
   }
   function resetMobileVerify(){
     if(!mobileOtpRequired) return;
@@ -10102,8 +10062,6 @@
     var tabFront = document.getElementById('sampleTabFront');
     var tabBack = document.getElementById('sampleTabBack');
     var note1 = document.getElementById('sampleNote1');
-    var note2 = document.getElementById('sampleNote2');
-    var note3 = document.getElementById('sampleNote3');
 
     if (side === 'back') {
       if (tabBack) tabBack.classList.add('active');
@@ -10111,16 +10069,12 @@
       if (img) img.src = '/assets/passport-sample-back.jpg';
       if (tag) tag.textContent = 'BACK PAGE';
       if (note1) note1.textContent = "Address & parents' details";
-      if (note2) note2.textContent = 'All 4 corners visible';
-      if (note3) note3.textContent = 'Clear barcode & text';
     } else {
       if (tabFront) tabFront.classList.add('active');
       if (tabBack) tabBack.classList.remove('active');
       if (img) img.src = '/assets/passport-sample.jpg';
       if (tag) tag.textContent = 'FRONT PAGE';
       if (note1) note1.textContent = 'Clear photo & readable text';
-      if (note2) note2.textContent = 'All 4 corners visible';
-      if (note3) note3.textContent = 'No glare or blur';
     }
   }
 
@@ -11336,8 +11290,11 @@
             if (typeof window.updateDraftResumeButtonVisibility === 'function') window.updateDraftResumeButtonVisibility();
             if (typeof window.updateNewVisaButtonVisibility === 'function') window.updateNewVisaButtonVisibility();
           } catch(_e) {}
-          toast('Application submitted successfully'); 
-          go('track'); 
+          if (btn) { btn.innerHTML = 'Submitted ✓'; }
+          go('track');
+          showApplicationSuccessModal(app, function(){
+            toast('Application submitted successfully'); 
+          });
         }
         else { renderSuccess(app); }
       }).catch(function(err){
@@ -11375,8 +11332,15 @@
             var tIdx = Number(qParam('travellerIndex')) || 0;
             var totalTravellers = Number(qParam('travellers')) || 1;
             recordTravellerSubmission(fr.data, tIdx, totalTravellers);
-            toast('Application saved. Document upload can be retried from your application.');
-            renderSuccess(fr.data);
+            if(totalTravellers<=1){
+              go('track');
+              showApplicationSuccessModal(fr.data, function(){
+                toast('Application saved. Document upload can be retried from your application.');
+              });
+            } else {
+              toast('Application saved. Document upload can be retried from your application.');
+              renderSuccess(fr.data);
+            }
           }).catch(function(finalErr){
             btn.disabled=false; btn.innerHTML='Submit application';
             console.error('Fallback application save failed:', finalErr);
@@ -11897,16 +11861,10 @@
   // ============================================================
   //  TRACK (customer dashboard)
   // ============================================================
-  function renderTrackHeroArt(){
-    return '<div class="track-hero-art" aria-hidden="true">'+
-      '<img src="assets/visa-journey-hero-clean.png" alt="Your Visa Journey Continues" class="track-hero-img" loading="eager" decoding="async">'+
-    '</div>';
-  }
-
   function renderTrack(){
     document.body.classList.remove('track-detail-open');
     root.innerHTML='<main class="app-main track-main track-dashboard">'+
-      '<section class="track-workspace"><header class="track-workspace-head"><div class="track-workspace-copy"><h2>Track your visa status.</h2><p>Select an application to view its timeline, documents and latest updates.</p></div>'+renderTrackHeroArt()+'</header><div id="trackList"><div class="track-loading"><span class="spin"></span><p>Loading your applications&hellip;</p></div></div></section>'+
+      '<section class="track-workspace"><header class="track-workspace-head"><div class="track-workspace-copy"><h2>Track your visa status.</h2><p>Select an application to view its timeline, documents and latest updates.</p></div></header><div id="trackList"><div class="track-loading"><span class="spin"></span><p>Loading your applications&hellip;</p></div></div></section>'+
     '</main>';
 
     sb.from('applications').select('*, documents(*), app_messages(*)').order('created_at',{ascending:false}).then(function(r){
@@ -13583,64 +13541,6 @@
 
   var vtCountryFilter=(function(){ try{ return sessionStorage.getItem('visadoo_admin_vt_filter')||'all'; }catch(_e){ return 'all'; } })();
 
-  // One-time seed for the visa prices configured for the public country pages.
-  // This makes the same visa options visible/editable in Admin > Visa Types,
-  // even when the database did not previously contain rows for them.
-  var VT_ADMIN_SEED_VERSION='visadoo_admin_visa_seed_20260909_egypt_v1';
-  var VT_ADMIN_DEFAULTS=[
-    {slug:'uae-48-hours-transit-visa',name:'48 Hours Transit Visa',country_slug:'united-arab-emirates',category:'Transit',sub:'Single Entry',days:2,price_aed:3499,prices:{INR:3499},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:10,features:['Stay up to 2 days (48 Hours)','Validity: 30 Days','Single Entry','Processing: Upto 5 Days'],blurb:'48 Hours Transit Visa for UAE. Single entry valid for 30 days.'},
-    {slug:'uae-30-days-tourist-visa',name:'30 Days Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:30,price_aed:7600,prices:{INR:7600},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:20,features:['Stay up to 30 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'30 Days Tourist Visa for UAE. Single entry valid for 58 days.'},
-    {slug:'uae-30-days-family-tourist-visa',name:'30 Days Family Tourist Visa (Includes 2 Adults + 1 Child)',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:30,price_aed:19999,prices:{INR:19999},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:30,features:['Includes 2 Adults + 1 Child','Stay up to 30 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'30 Days Family Tourist Visa for UAE (Includes 2 Adults + 1 Child). Single entry valid for 58 days.'},
-    {slug:'uae-96-hours-transit-visa',name:'96 Hours Transit Visa',country_slug:'united-arab-emirates',category:'Transit',sub:'Single Entry',days:4,price_aed:5299,prices:{INR:5299},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:40,features:['Stay up to 4 days (96 Hours)','Validity: 30 Days','Single Entry','Processing: Upto 5 Days'],blurb:'96 Hours Transit Visa for UAE. Single entry valid for 30 days.'},
-    {slug:'uae-14-days-tourist-visa',name:'14 Days Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:14,price_aed:7699,prices:{INR:7699},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:50,features:['Stay up to 14 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'14 Days Tourist Visa for UAE. Single entry valid for 58 days.'},
-    {slug:'uae-30-days-tourist-visa-express',name:'30 Days Tourist Visa (Express)',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:48,processing_time_unit:'hours',active:true,popular:false,sort_order:60,features:['Express Processing: Upto 48 Hours','Stay up to 30 Days','Validity: 58 Days','Single Entry'],blurb:'Express 30 Days Tourist Visa for UAE. Fast processing within 48 hours.'},
-    {slug:'uae-60-days-tourist-visa',name:'60 Days Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Single Entry',days:60,price_aed:10800,prices:{INR:10800},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:70,features:['Stay up to 60 Days','Validity: 58 Days','Single Entry','Processing: Upto 5 Days'],blurb:'60 Days Tourist Visa for UAE. Single entry valid for 58 days.'},
-    {slug:'uae-30-days-multiple-entry-visa',name:'30 Days Multiple Entry Tourist Visa',country_slug:'united-arab-emirates',category:'Tourist',sub:'Multiple Entry',days:30,price_aed:17999,prices:{INR:17999},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:80,features:['Stay up to 30 Days','Validity: 58 Days','Multiple Entry','Processing: Upto 5 Days'],blurb:'30 Days Multiple Entry Tourist Visa for UAE. Multiple entries within 58 days validity.'},
-    {slug:'vietnam-tourist-visa',name:'Tourist eVisa',country_slug:'vietnam',category:'Tourist',sub:'Single Entry',days:30,price_aed:2999,prices:{INR:2999},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:90,features:['Stay up to 30 Days','Validity: 30 Days','Single Entry','Processing: 3–5 Working Days'],blurb:'Tourist eVisa for Vietnam. Single entry valid for 30 days.'},
-    {slug:'vietnam-tourist-visa-express',name:'Tourist eVisa (Express)',country_slug:'vietnam',category:'Tourist',sub:'Single Entry',days:30,price_aed:9999,prices:{INR:9999},processing_time_value:24,processing_time_unit:'hours',active:true,popular:false,sort_order:91,features:['Express Processing: 24 Hours','Stay up to 30 Days','Validity: 30 Days','Single Entry'],blurb:'Express Tourist eVisa for Vietnam. Fast processing within 24 hours.'},
-    {slug:'vietnam-tourist-visa-super-express',name:'Tourist eVisa (Super Express)',country_slug:'vietnam',category:'Tourist',sub:'Single Entry',days:30,price_aed:10999,prices:{INR:10999},processing_time_value:12,processing_time_unit:'hours',active:true,popular:false,sort_order:92,features:['Super Express: 12 Hours','Stay up to 30 Days','Validity: 30 Days','Single Entry'],blurb:'Super Express Tourist eVisa for Vietnam. Urgent processing within 12 hours.'},
-    {slug:'morocco-tourist-visa',name:'Morocco Tourist eVisa',country_slug:'morocco',category:'Tourist',sub:'Single Entry',days:90,price_aed:4149,prices:{INR:4149},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:100,features:['Stay up to 90 Days','Validity: Up to 90 Days','Single Entry','Processing: 3 – 5 Days'],blurb:'Official Morocco Tourist eVisa. Single entry valid for up to 90 days with 3–5 days processing.'},
-    {slug:'morocco-business-visa',name:'Morocco Business eVisa',country_slug:'morocco',category:'Business',sub:'Single Entry',days:90,price_aed:4149,prices:{INR:4149},processing_time_value:7,processing_time_unit:'working days',active:true,popular:false,sort_order:101,features:['Stay up to 90 Days','Validity: Up to 90 Days','Single Entry','Processing: 5 – 7 Days'],blurb:'Official Morocco Business eVisa. Single entry valid for up to 90 days with 5–7 days processing.'},
-    {slug:'qatar-30-days-tourist-visa-age-1-55',name:'Qatar Tourist Visa 30 Days (Age 1–55 Years)',country_slug:'qatar',category:'Tourist',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:true,sort_order:110,features:['Stay 30 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Tourist Visa 30 Days (Age 1–55 Years). 5 – 6 Days processing.'},
-    {slug:'qatar-30-days-tourist-visa-age-55-plus',name:'Qatar Tourist Visa 30 Days (Age 55 Years & Above)',country_slug:'qatar',category:'Tourist',sub:'Single Entry',days:30,price_aed:13999,prices:{INR:13999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:false,sort_order:111,features:['Stay 30 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Tourist Visa 30 Days (Age 55 Years & Above). 5 – 6 Days processing.'},
-    {slug:'qatar-30-days-business-visa',name:'Qatar Business Visa 30 Days',country_slug:'qatar',category:'Business',sub:'Single Entry',days:30,price_aed:9999,prices:{INR:9999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:false,sort_order:112,features:['Stay 30 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Business Visa 30 Days. 5 – 6 Days processing.'},
-    {slug:'qatar-90-days-business-visa',name:'Qatar Business Visa 90 Days',country_slug:'qatar',category:'Business',sub:'Single Entry',days:90,price_aed:20999,prices:{INR:20999},processing_time_value:6,processing_time_unit:'working days',active:true,popular:false,sort_order:113,features:['Stay 90 Days','Validity: 3 Months','Single Entry','Processing: 5 – 6 Days'],blurb:'Qatar Business Visa 90 Days. 5 – 6 Days processing.'},
-    {slug:'srilanka-30-days-tourist-visa',name:'30 Days Sri Lanka Tourist Visa',country_slug:'srilanka',category:'Tourist',sub:'Double Entry',days:30,price_aed:999,prices:{INR:999},processing_time_value:48,processing_time_unit:'hours',active:true,popular:true,sort_order:120,features:['Stay: Upto 30 Days','Validity: 6 Months','Double Entry','Processing: 24 to 48 Hours'],blurb:'30 Days Sri Lanka Tourist Visa. 24 to 48 Hours processing.'},
-    {slug:'srilanka-30-days-business-visa',name:'30 Days Sri Lanka Business Visa',country_slug:'srilanka',category:'Business',sub:'Multiple Entry',days:30,price_aed:3499,prices:{INR:3499},processing_time_value:48,processing_time_unit:'hours',active:true,popular:false,sort_order:121,features:['Stay: Upto 30 Days','Validity: 6 Months','Multiple Entry','Processing: 24 to 48 Hours'],blurb:'30 Days Sri Lanka Business Visa. 24 to 48 Hours processing.'},
-    {slug:'thailand-e-visa',name:'Thailand E Visa',country_slug:'thailand',category:'Tourist',sub:'Single Entry',days:30,price_aed:499,prices:{INR:499},processing_time_value:24,processing_time_unit:'hours',active:true,popular:true,sort_order:130,features:['Stay up to 30 Days','Validity: 1 Month','Single Entry','Processing: 24 Hours'],blurb:'Thailand E-Visa. 24 Hours processing.'},
-    {slug:'thailand-e-visa-express',name:'Thailand E Visa (Express)',country_slug:'thailand',category:'Tourist',sub:'Single Entry',days:15,price_aed:11999,prices:{INR:11999},processing_time_value:24,processing_time_unit:'hours',active:true,popular:false,sort_order:131,features:['Stay up to 15 Days','Validity: 1 Month','Single Entry','Processing: Upto 24 Hours'],blurb:'Thailand E-Visa (Express). Upto 24 Hours processing.'},
-    {slug:'thailand-tourist-visa-stamp-visa',name:'Thailand Tourist Visa (Stamp Visa)',country_slug:'thailand',category:'Tourist',sub:'Single Entry',days:60,price_aed:5999,prices:{INR:5999},processing_time_value:4,processing_time_unit:'days',active:true,popular:false,sort_order:132,features:['Stay up to 60 Days','Validity: 3 Months','Single Entry','Processing: 3 – 4 Days'],blurb:'Thailand Tourist Visa (Stamp Visa). 3 – 4 Days processing.'},
-    {slug:'thailand-business-visa-stamp-visa',name:'Thailand Business Visa (Stamp Visa)',country_slug:'thailand',category:'Business',sub:'Single Entry',days:90,price_aed:7999,prices:{INR:7999},processing_time_value:4,processing_time_unit:'days',active:true,popular:false,sort_order:133,features:['Stay up to 90 Days','Validity: 3 Months','Single Entry','Processing: 3 – 4 Days'],blurb:'Thailand Business Visa (Stamp Visa). 3 – 4 Days processing.'},
-    {slug:'kenya-single-entry-tourist-visa',name:'Single Entry Tourist Visa',country_slug:'kenya',category:'Tourist',sub:'Single Entry',days:30,price_aed:5999,prices:{INR:5999},processing_time_value:2,processing_time_unit:'days',active:true,popular:true,sort_order:140,features:['Stay Period: As per Embassy','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],blurb:'Single Entry Tourist Visa for Kenya. Stay period as per embassy, validity 3 months, processing upto 2 days.'},
-    {slug:'kenya-single-entry-business-visa',name:'Single Entry Business Visa',country_slug:'kenya',category:'Business',sub:'Single Entry',days:3,price_aed:5999,prices:{INR:5999},processing_time_value:2,processing_time_unit:'days',active:true,popular:false,sort_order:141,features:['Stay Period: 72 Hours','Validity: 3 Months','Single Entry','Processing: Upto 2 Days'],blurb:'Single Entry Business Visa for Kenya. Stay period 72 hours, validity 3 months, processing upto 2 days.'},
-    {slug:'russia-tourist-visa',name:'Russia Tourist Visa',country_slug:'russia',category:'Tourist',sub:'Single Entry',days:30,price_aed:4999,prices:{INR:4999},processing_time_value:12,processing_time_unit:'days',active:true,popular:true,sort_order:150,features:['Stay Period: 30 Days','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],blurb:'Russia Tourist Visa. Stay period 30 days, single entry, validity as per embassy with 10 - 12 days processing.'},
-    {slug:'russia-business-visa',name:'Russia Business Visa',country_slug:'russia',category:'Business',sub:'Single Entry',days:90,price_aed:4999,prices:{INR:4999},processing_time_value:12,processing_time_unit:'days',active:true,popular:false,sort_order:151,features:['Stay Period: 3 Months','Validity: As per Embassy','Single Entry','Processing: 10 - 12 Days'],blurb:'Russia Business Visa. Stay period 3 months, single entry, validity as per embassy with 10 - 12 days processing.'},
-    {slug:'indonesia-tourist-visa',name:'Indonesia Tourist Visa',country_slug:'indonesia',category:'Tourist',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:7,processing_time_unit:'working days',active:true,popular:true,sort_order:160,features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],blurb:'Indonesia Tourist Visa. Stay period 30 days, single entry, extension not permitted with 5-7 working days processing.'},
-    {slug:'indonesia-business-visa',name:'Indonesia Business Visa',country_slug:'indonesia',category:'Business',sub:'Single Entry',days:30,price_aed:8999,prices:{INR:8999},processing_time_value:7,processing_time_unit:'working days',active:true,popular:false,sort_order:161,features:['Stay Period: 30 Days','Single Entry','Extension: Not Permitted','Processing: 5-7 Working Days'],blurb:'Indonesia Business Visa. Stay period 30 days, single entry, extension not permitted with 5-7 working days processing.'},
-    {slug:'azerbaijan-tourist-evisa',name:'Azerbaijan Tourist E Visa',country_slug:'azerbaijan',category:'Tourist',sub:'Single Entry',days:30,price_aed:2899,prices:{INR:2899},processing_time_value:3,processing_time_unit:'days',active:true,popular:true,sort_order:170,features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],blurb:'Azerbaijan Tourist E Visa. Stay period 30 days, validity 3 months, single entry with upto 3 days processing.'},
-    {slug:'azerbaijan-business-evisa',name:'Azerbaijan Business E Visa',country_slug:'azerbaijan',category:'Business',sub:'Single Entry',days:30,price_aed:2899,prices:{INR:2899},processing_time_value:3,processing_time_unit:'days',active:true,popular:false,sort_order:171,features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: Upto 3 Days'],blurb:'Azerbaijan Business E Visa. Stay period 30 days, validity 3 months, single entry with upto 3 days processing.'},
-    {slug:'bahrain-14-days-tourist-visa',name:'Bahrain 2 Weeks Single Entry',country_slug:'bahrain',category:'Tourist',sub:'Single Entry',days:14,price_aed:4500,prices:{INR:4500},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:180},
-    {slug:'bahrain-30-days-tourist-visa',name:'Bahrain One Month Multiple Entry',country_slug:'bahrain',category:'Tourist',sub:'Multiple Entry',days:30,price_aed:7000,prices:{INR:7000},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:190},
-    {slug:'bahrain-one-year-multiple-entry',name:'Bahrain One Year Multiple Entry',country_slug:'bahrain',category:'Tourist',sub:'Multiple Entry',days:365,price_aed:14000,prices:{INR:14000},processing_time_value:5,processing_time_unit:'working days',active:true,popular:false,sort_order:200},
-    {slug:'egypt-tourist-visa',name:'Egypt Tourist Visa',country_slug:'egypt',category:'Tourist',sub:'Single Entry',days:30,price_aed:5999,prices:{INR:5999},processing_time_value:15,processing_time_unit:'days',active:true,popular:true,sort_order:210,features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],blurb:'Egypt Tourist Visa. Stay period 30 days, validity 30 days, single entry with 10 - 15 days processing.'},
-    {slug:'egypt-business-visa',name:'Egypt Business Visa',country_slug:'egypt',category:'Business',sub:'Single Entry',days:30,price_aed:6999,prices:{INR:6999},processing_time_value:15,processing_time_unit:'days',active:true,popular:false,sort_order:211,features:['Stay Period: 30 Days','Validity: 30 Days','Single Entry','Processing: 10 - 15 Days'],blurb:'Egypt Business Visa. Stay period 30 days, validity 30 days, single entry with 10 - 15 days processing.'},
-    {slug:'philippines-single-entry-visa',name:'Philippines Single Entry Visa',country_slug:'philippines',category:'Tourist / Business',sub:'Single Entry',days:59,price_aed:8499,prices:{INR:8499},processing_time_value:10,processing_time_unit:'days',active:true,popular:true,sort_order:220,features:['Stay Period: Upto 59 Days','Validity: 3 Months','Single Entry','Processing: 8 - 10 Days'],blurb:'Philippines Single Entry Visa (Tourist/Business). Stay period upto 59 days, validity 3 months, single entry with 8 - 10 days processing.'},
-    {slug:'philippines-multiple-entry-business-visa',name:'Philippines Multiple Entry Business Visa',country_slug:'philippines',category:'Business',sub:'Multiple Entry',days:59,price_aed:9999,prices:{INR:9999},processing_time_value:10,processing_time_unit:'days',active:true,popular:false,sort_order:221,features:['Stay Period: Upto 59 Days','Validity: 6 Months / 1 Year','Multiple Entry','Processing: 8 - 10 Days'],blurb:'Philippines Multiple Entry Business Visa. Stay period upto 59 days, validity 6 months / 1 year, multiple entry with 8 - 10 days processing.'},
-    {slug:'oman-10-days-tourist-visa',name:'10 Days Tourist Visa',country_slug:'oman',category:'Tourist',sub:'Single Entry',days:10,price_aed:4499,prices:{INR:4499},processing_time_value:6,processing_time_unit:'days',active:true,popular:false,sort_order:230,features:['Stay Period: 10 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],blurb:'Oman 10 Days Tourist Visa. Stay period 10 days, validity 3 months, single entry with 5 - 6 days processing.'},
-    {slug:'oman-30-days-tourist-visa',name:'30 Days Tourist Visa',country_slug:'oman',category:'Tourist',sub:'Single Entry',days:30,price_aed:7999,prices:{INR:7999},processing_time_value:6,processing_time_unit:'days',active:true,popular:true,sort_order:231,features:['Stay Period: 30 Days','Validity: 3 Months','Single Entry','Processing: 5 - 6 Days'],blurb:'Oman 30 Days Tourist Visa. Stay period 30 days, validity 3 months, single entry with 5 - 6 days processing.'},
-    {slug:'saudi-arabia-30-days-tourist-visa',name:'Saudi Arabia Tourist Visa',country_slug:'saudi-arabia',category:'Tourist',sub:'Single Entry',days:30,price_aed:16000,prices:{INR:16000},processing_time_value:5,processing_time_unit:'working days',active:true,popular:true,sort_order:240}
-  ];
-
-  function ensureAdminVisaDefaults(){
-    try{ if(localStorage.getItem(VT_ADMIN_SEED_VERSION)==='done') return Promise.resolve(); }catch(e){}
-    // Refresh the configured defaults once for this seed version so stale dummy
-    // rates/variants are corrected in Supabase as well as on the public cards.
-    return sb.from('visa_types').upsert(VT_ADMIN_DEFAULTS,{onConflict:'slug'}).then(function(r){
-      if(r.error){ console.warn('Visa seed upsert failed',r.error); return; }
-      try{localStorage.setItem(VT_ADMIN_SEED_VERSION,'done');}catch(e){}
-    });
-  }
-
   function renderVisaTypesAdmin(){
     if(!canManageContent()){ go(defaultStaffView()); return; }
     root.innerHTML='<div class="app-main">' + adminSections('visatypes') +
@@ -13656,24 +13556,10 @@
         country_slug:(vtCountryFilter!=='all'?vtCountryFilter:''), category:'Tourist' };
       paintVt();
     };
-    ensureAdminVisaDefaults().then(function(){
-      return Promise.all([ sb.from('visa_types').select('*').order('sort_order'), loadCountriesGroups() ]);
-    }).then(function(res){
-      // Always make the configured VisaDoo visa types visible in Admin, even if the
-      // database seed could not run (for example because of an older schema/RLS).
-      // Real database rows win; only genuinely missing slugs get a local fallback row.
+    Promise.all([ sb.from('visa_types').select('*').order('sort_order'), loadCountriesGroups() ]).then(function(res){
       var dbRows=(res[0] && res[0].data) ? res[0].data : [];
-      var bySlug={};
-      dbRows.forEach(function(v){ if(v && v.slug) bySlug[v.slug]=true; });
-      var hiddenSeed={};
-      try{ hiddenSeed=JSON.parse(localStorage.getItem('visadoo_hidden_admin_visa_defaults')||'{}')||{}; }catch(e){ hiddenSeed={}; }
-      var fallbackRows=VT_ADMIN_DEFAULTS.filter(function(v){ return !bySlug[v.slug] && !hiddenSeed[v.slug]; }).map(function(v){
-        var x=JSON.parse(JSON.stringify(v));
-        x.id='seed:'+x.slug;
-        x._seedFallback=true;
-        return x;
-      });
-      vtList=dbRows.concat(fallbackRows); vtEditing=null;
+      vtList=dbRows;
+      vtEditing=null;
       var sel=document.getElementById('vtFilter');
       if(sel){ sel.innerHTML='<option value="all">All countries</option>'+countryList.map(function(c){ return '<option value="'+esc(c.slug)+'"'+(c.slug===vtCountryFilter?' selected':'')+'>'+esc(c.name)+'</option>'; }).join('');
         sel.onchange=function(){ vtCountryFilter=sel.value; try{ sessionStorage.setItem('visadoo_admin_vt_filter', vtCountryFilter); }catch(_e){} paintVt(); }; }
@@ -13692,6 +13578,7 @@
     area.querySelectorAll('[data-q]').forEach(function(b){ b.onclick=function(){ var v=vtList.filter(function(x){return x.id===b.getAttribute('data-q');})[0]; if(v && v._seedFallback){ toast('Save this visa type once before adding questions.'); vtEditing=JSON.parse(JSON.stringify(v)); paintVt(); return; } vtQEditing=v; paintVt(); }; });
     area.querySelectorAll('[data-seo]').forEach(function(b){ b.onclick=function(){ var v=vtList.filter(function(x){return x.id===b.getAttribute('data-seo');})[0]; vtSeoEditing=JSON.parse(JSON.stringify(v)); paintVt(); }; });
     area.querySelectorAll('[data-edit]').forEach(function(b){ b.onclick=function(){ var v=vtList.filter(function(x){return x.id===b.getAttribute('data-edit');})[0]; vtEditing=JSON.parse(JSON.stringify(v)); paintVt(); }; });
+    area.querySelectorAll('[data-hide]').forEach(function(b){ b.onclick=function(){ vtToggleActive(b.getAttribute('data-hide'), b); }; });
     area.querySelectorAll('[data-del]').forEach(function(b){ b.onclick=function(){ vtDelete(b.getAttribute('data-del')); }; });
   }
 
@@ -13708,6 +13595,7 @@
           '<button class="btn btn-ghost" data-q="'+esc(v.id)+'">Questions</button>'+
           '<button class="btn btn-ghost" data-seo="'+esc(v.id)+'">SEO</button>'+
           '<button class="btn btn-ghost" data-edit="'+esc(v.id)+'">Edit</button>'+
+          '<button class="btn btn-ghost" data-hide="'+esc(v.id)+'">'+(v.active===false?'Show':'Hide')+'</button>'+
           '<button class="btn btn-ghost" data-del="'+esc(v.id)+'" style="color:var(--red)">Delete</button>'+
         '</div>'+
       '</div>'+
@@ -13787,11 +13675,10 @@
       };
       saveBtn.disabled=true; saveBtn.innerHTML='<span class="spin"></span>';
       var op;
-      if(vtEditing.id && String(vtEditing.id).indexOf('seed:')!==0){
+      if(vtEditing.id){
         op=sb.from('visa_types').update(payload).eq('id',vtEditing.id);
       } else {
-        // A locally displayed seeded row becomes a real DB row the first time it is saved.
-        payload.slug=(vtEditing && vtEditing._seedFallback && vtEditing.slug) ? vtEditing.slug : uniqueSlug(slugify(name));
+        payload.slug=uniqueSlug(slugify(name));
         op=sb.from('visa_types').insert(payload);
       }
       op.then(function(r){
@@ -13807,23 +13694,34 @@
     };
   }
 
+  function vtToggleActive(id, btn){
+    var v=vtList.filter(function(x){return x.id===id;})[0];
+    if(!v) return;
+    var newActive = (v.active === false);
+    if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin" style="width:12px;height:12px"></span>'; }
+    sb.from('visa_types').update({ active: newActive }).eq('id', id).then(function(r){
+      if(r.error){
+        if(btn){ btn.disabled=false; btn.textContent=(v.active===false?'Show':'Hide'); }
+        toast('Could not update status. Please try again.');
+        console.error('vtToggleActive error:', r.error);
+        return;
+      }
+      v.active=newActive;
+      logAudit({ module:'Catalogue', action:(newActive?'show':'hide'), record_type:'visa_type', record_ref:v.name, remarks:(newActive?'Visa type shown on website':'Visa type hidden from website'), risk:'normal' });
+      toast(newActive ? 'Visa type is now visible on website' : 'Visa type hidden from website');
+      loadVisaTypes();
+      paintVt();
+    }).catch(function(err){
+      if(btn){ btn.disabled=false; btn.textContent=(v.active===false?'Show':'Hide'); }
+      toast('Network error. Please try again.');
+      console.error(err);
+    });
+  }
+
   function vtDelete(id){
     var v=vtList.filter(function(x){return x.id===id;})[0];
     if(!v) return;
     if(!window.confirm('Delete “'+v.name+'”? It will be removed from your website. Existing applications are not affected.')) return;
-    // Fallback seed rows are not in the DB yet. Hide them locally instead of sending
-    // a delete request with a synthetic id.
-    if(String(id).indexOf('seed:')===0){
-      try{
-        var hidden=JSON.parse(localStorage.getItem('visadoo_hidden_admin_visa_defaults')||'{}')||{};
-        hidden[v.slug]=true;
-        localStorage.setItem('visadoo_hidden_admin_visa_defaults',JSON.stringify(hidden));
-      }catch(e){}
-      vtList=vtList.filter(function(x){return x.id!==id;});
-      toast('Visa type removed');
-      paintVt();
-      return;
-    }
     sb.from('visa_types').delete().eq('id',id).then(function(r){
       if(r.error){ toast('Could not delete. Please try again.'); console.error(r.error); return; }
       logAudit({ module:'Catalogue', action:'delete', record_type:'visa_type', record_ref:v.name, remarks:'Visa type deleted', risk:'high' });
@@ -15097,6 +14995,7 @@
         '<div class="field"><label>Display order</label><input id="cSort" type="number" value="'+esc(c.sort_order)+'"></div>'+
       '</div>'+
       '<div class="field"><label>Short summary (shown on the country page &amp; cards)</label><textarea id="cSummary" style="min-height:64px" placeholder="One friendly line about visas for this country.">'+esc(c.summary||'')+'</textarea></div>'+
+      '<div class="field"><label>Documents needed (shown under card on homepage)</label><input id="cBlurb" type="text" value="'+esc(c.blurb||'')+'" placeholder="e.g. Passport, Photo"><div class="phint" style="margin-top:4px">Shown as “Documents needed: Passport, Photo” below the destination card on the homepage.</div></div>'+
       '<div class="field"><label>Card image (optional)</label><div class="img-drop"><div class="img-thumb" id="cImgThumb" style="width:84px;height:54px">'+(c.image_url?'<img src="'+esc(c.image_url)+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">':IMGICON)+'</div>'+
         '<div><button type="button" class="btn btn-ghost" id="cImgBtn">'+(c.image_url?'Replace image':'Upload image')+'</button>'+(c.image_url?' <button type="button" class="link-btn" id="cImgRm" style="color:var(--red)">Remove</button>':'')+'<div class="phint" style="margin:6px 0 0">Shown on the homepage card instead of the flag. Leave empty to use the flag.</div></div>'+
         '<input type="file" id="cImgFile" accept="image/*" style="display:none"></div></div>'+
@@ -15131,7 +15030,7 @@
       var msg=document.getElementById('cMsg');
       if(!name){ msg.className='signin-msg err'; msg.textContent='Please enter the country name.'; return; }
       var payload={ name:name, iso2:(document.getElementById('cIso').value.trim().toUpperCase()||null), group_slug:document.getElementById('cGroup').value||null,
-        summary:document.getElementById('cSummary').value.trim()||null, image_url:cImageUrl, image_alt:document.getElementById('cImgAlt').value.trim()||null, seo_title:document.getElementById('cSeoT').value.trim()||null, seo_description:document.getElementById('cSeoD').value.trim()||null,
+        summary:document.getElementById('cSummary').value.trim()||null, blurb:document.getElementById('cBlurb').value.trim()||null, image_url:cImageUrl, image_alt:document.getElementById('cImgAlt').value.trim()||null, seo_title:document.getElementById('cSeoT').value.trim()||null, seo_description:document.getElementById('cSeoD').value.trim()||null,
         featured:document.getElementById('cFeat').checked, active:document.getElementById('cActive').checked, sort_order:parseInt(document.getElementById('cSort').value,10)||0 };
       saveBtn.disabled=true; saveBtn.innerHTML='<span class="spin"></span>';
       var op;
@@ -16913,41 +16812,87 @@
     { slug:'japan-sakura-cherry-blossom-festival-2027', name:'Cherry Blossom (Sakura) Festival Kyoto & Tokyo 2027', country_slug:'japan', category:'Art & Culture', event_date:'2027-03-20', end_date:'2027-04-10', city:'Kyoto & Tokyo, Japan', image_url:'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80', image_alt:'Kyoto temple surrounded by pink cherry blossoms in spring', blurb:"Witness the legendary Japanese cherry blossoms in full bloom across ancient temples, gardens and riverside walkways.", seo_title:'Japan Cherry Blossom Season 2027 Visa | Visa Doo', seo_description:'Experience Sakura 2027 in Japan. Apply for your Japan tourist visa with verified itineraries on Visa Doo.', featured:true, sort_order:18, active:true }
   ];
 
+  var evCountryFilter=(function(){ try{ return sessionStorage.getItem('visadoo_admin_ev_filter')||'all'; }catch(_e){ return 'all'; } })();
+
   function renderEventsAdmin(){
     if(!canManageContent()){ go(defaultStaffView()); return; }
     root.innerHTML='<div class="app-main">'+adminSections('events')+
       '<div class="app-head" style="display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap">'+
         '<div><h1>Events</h1><p>Major international events that promote your visa services. Each event links to that country’s visas.</p></div>'+
-        '<button class="btn btn-primary" id="evNew">+ Add event</button>'+
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><select id="evFilter" style="padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-weight:600;font-size:14px;background:#fff"></select><button class="btn btn-primary" id="evNew">+ Add event</button></div>'+
       '</div>'+
       '<div id="evArea"><div class="empty-state"><span class="spin" style="border-color:#cbd5e1;border-top-color:#2563eb"></span><p style="margin-top:12px">Loading…</p></div></div>'+
     '</div>';
     wireAdminSections();
     document.getElementById('evNew').onclick=function(){
-      evEditing={ id:null, slug:'', name:'', country_slug:'', category:'Music', event_date:'', end_date:'', city:'', image_url:'', blurb:'', seo_title:'', seo_description:'', active:true };
+      evEditing={ id:null, slug:'', name:'', country_slug:(evCountryFilter!=='all'?evCountryFilter:''), category:'Music', event_date:'', end_date:'', city:'', image_url:'', blurb:'', seo_title:'', seo_description:'', active:true };
       paintEv();
     };
     Promise.all([ sb.from('events').select('*').order('event_date',{ascending:true}), countryList.length?Promise.resolve(true):loadCountriesGroups() ]).then(function(res){
-      evList=res[0].data||[]; evEditing=null; paintEv();
+      evList=res[0].data||[]; evEditing=null;
+      var sel=document.getElementById('evFilter');
+      if(sel){
+        sel.innerHTML='<option value="all">All countries</option>'+countryList.map(function(c){ return '<option value="'+esc(c.slug)+'"'+(c.slug===evCountryFilter?' selected':'')+'>'+esc(c.name)+'</option>'; }).join('');
+        sel.onchange=function(){ evCountryFilter=sel.value; try{ sessionStorage.setItem('visadoo_admin_ev_filter', evCountryFilter); }catch(_e){} paintEv(); };
+      }
+      paintEv();
     });
   }
 
   function paintEv(){
     var area=document.getElementById('evArea'); if(!area) return;
     if(evEditing){ area.innerHTML=evFormHtml(evEditing); wireEvForm(); return; }
-    if(!evList.length){ area.innerHTML='<div class="panel empty-state"><p>No events yet. Click “Add event” to create your first one.</p></div>'; return; }
-    area.innerHTML='<div class="app-list">'+evList.map(evRow).join('')+'</div>';
-    area.querySelectorAll('[data-evopen]').forEach(function(el){ el.onclick=function(){ var e=evList.filter(function(x){return x.id===el.getAttribute('data-evopen');})[0]; evEditing=JSON.parse(JSON.stringify(e)); paintEv(); }; });
+    var shown = evCountryFilter==='all' ? evList : evList.filter(function(e){ return e.country_slug===evCountryFilter; });
+    if(!shown.length){ area.innerHTML='<div class="panel empty-state"><p>'+(evList.length?'No events for this country yet.':'No events yet. Click “Add event” to create your first one.')+'</p></div>'; return; }
+    area.innerHTML='<div class="app-list">'+shown.map(evRow).join('')+'</div>';
+    area.querySelectorAll('[data-evopen]').forEach(function(el){
+      el.onclick=function(evt){
+        if(evt.target.closest('button, a')) return;
+        var e=evList.filter(function(x){return x.id===el.getAttribute('data-evopen');})[0];
+        if(!e) return;
+        evEditing=JSON.parse(JSON.stringify(e));
+        paintEv();
+      };
+    });
+    area.querySelectorAll('[data-evedit]').forEach(function(b){
+      b.onclick=function(evt){
+        evt.stopPropagation();
+        var e=evList.filter(function(x){return x.id===b.getAttribute('data-evedit');})[0];
+        if(!e) return;
+        evEditing=JSON.parse(JSON.stringify(e));
+        paintEv();
+      };
+    });
+    area.querySelectorAll('[data-evhide]').forEach(function(b){
+      b.onclick=function(evt){
+        evt.stopPropagation();
+        evToggleActive(b.getAttribute('data-evhide'), b);
+      };
+    });
+    area.querySelectorAll('[data-evdel]').forEach(function(b){
+      b.onclick=function(evt){
+        evt.stopPropagation();
+        evDelete(b.getAttribute('data-evdel'));
+      };
+    });
   }
 
   function evRow(e){
     var when=e.event_date?new Date(e.event_date).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'No date';
     var sub=[countryName(e.country_slug), e.category, when].filter(Boolean).map(esc).join(' · ');
-    var inactive=e.active?'':' <span class="status-pill pill-sm" style="background:#eef2f7;color:#64748b">Hidden</span>';
-    return '<div class="app-row" data-evopen="'+esc(e.id)+'"><div class="ar-main">'+
-      '<div class="ar-name">'+esc(e.name||'(untitled)')+inactive+'</div>'+
-      '<div class="ar-sub">'+(sub||'—')+'</div></div>'+
-      '<div class="ar-right">'+CHEV+'</div></div>';
+    var inactive=(e.active!==false)?'':' <span class="status-pill sp-action" style="font-size:11px">Hidden</span>';
+    return '<div class="app-row" data-evopen="'+esc(e.id)+'">'+
+      '<div class="ar-main">'+
+        '<div class="ar-name">'+esc(e.name||'(untitled)')+inactive+'</div>'+
+        '<div class="ar-sub">'+(sub||'—')+'</div>'+
+      '</div>'+
+      '<div class="ar-right" style="display:flex;gap:8px;align-items:center">'+
+        '<button type="button" class="btn btn-ghost" data-evedit="'+esc(e.id)+'">Edit</button>'+
+        '<button type="button" class="btn btn-ghost" data-evhide="'+esc(e.id)+'">'+(e.active===false?'Show':'Hide')+'</button>'+
+        '<button type="button" class="btn btn-ghost" data-evdel="'+esc(e.id)+'" style="color:var(--red)">Delete</button>'+
+        CHEV+
+      '</div>'+
+    '</div>';
   }
 
   function evFormHtml(e){
@@ -16955,6 +16900,7 @@
     var cats=EVENT_CATEGORIES.slice();
     evList.forEach(function(x){ if(x.category && cats.indexOf(x.category)===-1) cats.push(x.category); });
     var catList=cats.map(function(c){ return '<option value="'+esc(c)+'">'; }).join('');
+    var isLive = (e.active !== false);
     return '<div class="panel">'+
       '<button class="link-btn" id="evBack" style="margin-bottom:10px">← Back to events</button>'+
       '<div class="field"><label>Event name <span class="req-star">*</span></label><input id="evName" type="text" value="'+esc(e.name||'')+'" placeholder="e.g. Exit Festival 2026"></div>'+
@@ -16976,10 +16922,12 @@
         '<div class="field"><label>SEO title (optional)</label><input id="evSeoTitle" type="text" value="'+esc(e.seo_title||'')+'"></div>'+
         '<div class="field"><label>SEO description (optional)</label><input id="evSeoDesc" type="text" value="'+esc(e.seo_description||'')+'"></div>'+
       '</div>'+
-      '<label style="display:flex;align-items:center;gap:9px;font-weight:500;cursor:pointer;margin-top:4px"><input id="evActive" type="checkbox" '+(e.active?'checked':'')+' style="width:auto"> Show on the website (live)</label>'+
+      '<label style="display:flex;align-items:center;gap:9px;font-weight:500;cursor:pointer;margin-top:4px"><input id="evActive" type="checkbox" '+(isLive?'checked':'')+' style="width:auto"> Show on the website (live)</label>'+
       '<div class="signin-msg" id="evMsg"></div>'+
-      '<div style="display:flex;gap:10px;margin-top:12px;align-items:center"><button class="btn btn-primary" id="evSave">'+(e.id?'Save changes':'Create event')+'</button>'+
-        (e.id?'<button class="btn btn-ghost" id="evDel" style="color:var(--red)">Delete</button>':'')+
+      '<div style="display:flex;gap:10px;margin-top:12px;align-items:center">'+
+        '<button class="btn btn-primary" id="evSave">'+(e.id?'Save changes':'Create event')+'</button>'+
+        (e.id?'<button type="button" class="btn btn-ghost" id="evQuickHide">'+(isLive?'Hide event':'Show event')+'</button>':'')+
+        (e.id?'<button type="button" class="btn btn-ghost" id="evDel" style="color:var(--red)">Delete</button>':'')+
         (e.id&&e.slug?'<a class="link-btn" href="'+esc(publicDetailHref('event',e.slug))+'" target="_blank" rel="noopener" style="margin-left:auto">View live page ↗</a>':'')+
       '</div>'+
     '</div>';
@@ -16987,6 +16935,12 @@
 
   function wireEvForm(){
     document.getElementById('evBack').onclick=function(){ evEditing=null; paintEv(); };
+    var qHide=document.getElementById('evQuickHide');
+    if(qHide && evEditing && evEditing.id){
+      qHide.onclick=function(){
+        evToggleActive(evEditing.id, qHide);
+      };
+    }
     var coverFile=document.getElementById('evCoverFile');
     document.getElementById('evCover').onclick=function(){ coverFile.click(); };
     coverFile.onchange=function(){
@@ -17034,11 +16988,48 @@
         evEditing=null; toast('Event saved'); renderEventsAdmin();
       });
     };
-    var del=document.getElementById('evDel'); if(del) del.onclick=function(){
-      if(!window.confirm('Delete this event? This cannot be undone.')) return;
-      var evName=evEditing.name;
-      sb.from('events').delete().eq('id',evEditing.id).then(function(r){ if(r.error){ toast('Could not delete.'); console.error(r.error); return; } logAudit({ module:'Catalogue', action:'delete', record_type:'event', record_ref:evName, remarks:'Event deleted', risk:'high' }); evEditing=null; toast('Event deleted'); renderEventsAdmin(); });
-    };
+    var del=document.getElementById('evDel'); if(del && evEditing && evEditing.id){
+      del.onclick=function(){ evDelete(evEditing.id); };
+    }
+  }
+
+  function evToggleActive(id, btn){
+    var e=evList.filter(function(x){return x.id===id;})[0];
+    if(!e) return;
+    var newActive = (e.active === false);
+    if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin" style="width:12px;height:12px"></span>'; }
+    sb.from('events').update({ active: newActive }).eq('id', id).then(function(r){
+      if(r.error){
+        if(btn){ btn.disabled=false; btn.textContent=(e.active===false?'Show':'Hide'); }
+        toast('Could not update status. Please try again.');
+        console.error('evToggleActive error:', r.error);
+        return;
+      }
+      e.active=newActive;
+      if(evEditing && evEditing.id===id){
+        evEditing.active=newActive;
+      }
+      logAudit({ module:'Catalogue', action:(newActive?'show':'hide'), record_type:'event', record_ref:e.name, remarks:(newActive?'Event shown on website':'Event hidden from website'), risk:'normal' });
+      toast(newActive ? 'Event is now visible on website' : 'Event hidden from website');
+      paintEv();
+    }).catch(function(err){
+      if(btn){ btn.disabled=false; btn.textContent=(e.active===false?'Show':'Hide'); }
+      toast('Network error. Please try again.');
+      console.error(err);
+    });
+  }
+
+  function evDelete(id){
+    var e=evList.filter(function(x){return x.id===id;})[0];
+    if(!e) return;
+    if(!window.confirm('Delete “'+(e.name||'this event')+'”? This cannot be undone.')) return;
+    sb.from('events').delete().eq('id',id).then(function(r){
+      if(r.error){ toast('Could not delete.'); console.error(r.error); return; }
+      logAudit({ module:'Catalogue', action:'delete', record_type:'event', record_ref:e.name, remarks:'Event deleted', risk:'high' });
+      evEditing=null;
+      toast('Event deleted');
+      renderEventsAdmin();
+    });
   }
 
   // ============================================================
@@ -19192,8 +19183,8 @@ async function generateChinaVisaPdf(a){var p=smartPdfProfile(a),cvs=[];for(var i
     if(!state.user){ renderSignIn(); return; }
     document.body.classList.remove('signin-page');
     var v=state.view;
-    // staff never land on the customer apply/track screens
-    if(isStaff() && (v==='apply'||v==='track')) v=defaultStaffView();
+    // staff never land on the customer apply/track/profile screens
+    if(isStaff() && (v==='apply'||v==='track'||v==='profile')) v=defaultStaffView();
     // permission guards — bounce to an allowed area
     if(v==='admin' && !canViewApps()) v=defaultStaffView();
     if(v==='appview' && (!canViewApps() || !appViewId)) v='admin';
@@ -19263,6 +19254,7 @@ async function generateChinaVisaPdf(a){var p=smartPdfProfile(a),cvs=[];for(var i
     if(h.indexOf('custview/')===0){ custViewId=decodeURIComponent(h.slice(9))||null; return custViewId?'custview':'customers'; }
     if(h.indexOf('supview/')===0){ supViewId=decodeURIComponent(h.slice(8))||null; return supViewId?'supview':'suppliers'; }
     if(h.indexOf('leadview/')===0){ leadViewId=decodeURIComponent(h.slice(9))||null; return leadViewId?'leadview':'leads'; }
+    if(h==='profile' && isStaff()) return defaultStaffView();
     if(['track','apply','profile','dashboard','admin','destinations','visatypes','events','articles','content','siteseo','brand','emailcfg','enquiries','leads','followups','customers','aiassistant','automations','templates','msghistory','suppliers','refunds','reports','team','audit','setpw'].indexOf(h)>-1) return h;
     return isStaff() ? defaultStaffView() : 'apply';
   }
@@ -19276,7 +19268,7 @@ async function generateChinaVisaPdf(a){var p=smartPdfProfile(a),cvs=[];for(var i
       var r=res[0];
       state.role = (r.data && r.data.role) || 'customer';
       state.isAdmin = state.role==='admin';
-      if(isStaff() && (state.view==='apply'||state.view==='track')) state.view=defaultStaffView();
+      if(isStaff() && (state.view==='apply'||state.view==='track'||state.view==='profile')) state.view=defaultStaffView();
       if(window.VisaDooSecurity && typeof window.VisaDooSecurity.initSessionGuard === 'function'){
         window.VisaDooSecurity.initSessionGuard({
           isStaff: isStaff(),

@@ -212,9 +212,9 @@
     'venice-film-festival-2026': { slug: 'venice-film-festival-2026', name: 'Venice International Film Festival 2026', country_slug: 'italy', category: 'Art & Culture', event_date: '2026-09-02', end_date: '2026-09-12', city: 'Venice, Italy', image_url: 'https://images.unsplash.com/photo-1520175480921-4edfa2983e0f?auto=format&fit=crop&w=1200&q=80', blurb: "The world's oldest film festival celebrating cinematic brilliance on the glamorous island of Lido di Venezia." }
   };
 
-  fetchJson('/rest/v1/events?slug=eq.'+encodeURIComponent(eventSlug)+'&active=eq.true&select=*').then(function(events){
-    var event = events && events.length ? events[0] : SEED_MAP[eventSlug];
-    if(!event){ renderError('Event not found','This event is not available right now.'); return null; }
+  fetchJson('/rest/v1/events?slug=eq.'+encodeURIComponent(eventSlug)+'&select=*').then(function(events){
+    var event = events && events.length ? events[0] : null;
+    if(!event || event.active === false){ renderError('Event not found','This event is not available right now.'); return null; }
     return Promise.all([
       Promise.resolve(event),
       fetchJson('/rest/v1/countries?slug=eq.'+encodeURIComponent(event.country_slug)+'&select=*').catch(function(){ return [{ name: event.country_slug }]; }),
@@ -224,11 +224,6 @@
     if(!data) return;
     render(data[0],data[1][0]||{name:data[0].country_slug},data[2]||[]);
   }).catch(function(){
-    var fallback = SEED_MAP[eventSlug];
-    if(fallback){
-      render(fallback, { name: fallback.country_slug }, []);
-    } else {
-      renderError('Could not load this event','Please check your connection and try again.');
-    }
+    renderError('Could not load this event','Please check your connection and try again.');
   });
 })();

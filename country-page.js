@@ -32,7 +32,21 @@
 
   function isFlagImage(url){
     if(!url) return false;
-    return /flagcdn\.com|flagsapi\.com|\/flags?\/|flag|\.svg$/i.test(url) || /\/assets\/flags\//i.test(url);
+    if(/flagcdn\.com|flagsapi\.com|\/flags?\/|flag|\.svg$/i.test(url) || /\/assets\/flags\//i.test(url)) return true;
+    var legacyFlags = [
+      '1782309962646', // UAE flag
+      '1782272456773', // Qatar flag
+      '1782934463510', // Sri Lanka flag
+      '1784208234936', // Philippines Aponex logo
+      '1788267551875', // Bahrain flag
+      '1788436936401', // Oman flag
+      '1788436968838', // Saudi Arabia flag
+      '1788164598379'  // Azerbaijan flag
+    ];
+    for (var i = 0; i < legacyFlags.length; i++) {
+      if (url.indexOf(legacyFlags[i]) > -1) return true;
+    }
+    return false;
   }
 
   function shortText(value,fallback,limit){
@@ -71,6 +85,7 @@
 
   function fetchJson(path){
     return fetch(cfg.SUPABASE_URL.replace(/\/$/,'')+path,{
+      cache: 'no-cache',
       headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+cfg.SUPABASE_ANON_KEY}
     }).then(function(response){
       if(!response.ok) throw new Error('Request failed');
@@ -126,16 +141,10 @@
       }
       if (unit.indexOf('working') > -1 || unit.indexOf('business') > -1) {
         if (String(value).indexOf('working') > -1 || String(value).indexOf('business') > -1) return String(value);
-        if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1 || slug.indexOf('dubai') > -1) return 'Upto 5 days';
-        if (slug.indexOf('vietnam') > -1) return '3–5 working days';
-        if (slug.indexOf('thailand') > -1) return '3 – 4 days';
-        return value + ' working day' + (String(value) === '1' ? '' : 's');
+        return 'Upto ' + value + ' working day' + (String(value) === '1' ? '' : 's');
       }
       if (unit.indexOf('day') > -1) {
-        if (slug.indexOf('uae') > -1 || slug.indexOf('united-arab-emirates') > -1 || slug.indexOf('dubai') > -1) return 'Upto 5 days';
-        if (slug.indexOf('vietnam') > -1) return '3–5 working days';
-        if (slug.indexOf('thailand') > -1) return '3 – 4 days';
-        return value + ' day' + (String(value) === '1' ? '' : 's');
+        return 'Upto ' + value + ' day' + (String(value) === '1' ? '' : 's');
       }
     }
 
@@ -215,6 +224,17 @@
   function stayText(visa){
     if(!visa) return '';
     if(visa.stay && typeof visa.stay === 'string') return visa.stay;
+    var value=(visa.days!=null&&visa.days!=='')?visa.days:visa.stay_period_value;
+    if(value!=null&&value!==''&&Number(value)>0){
+      var n = Number(value);
+      var slug = ((visa.slug || visa.id || '') + ' ' + (visa.country_slug || '') + ' ' + (window.currentCountrySlug || '')).toLowerCase();
+      if(slug.indexOf('thailand') > -1){
+        if(n === 15) return 'Upto 15 days';
+        if(n === 60) return 'Upto 60 days';
+        if(n === 90) return 'Upto 90 days';
+      }
+      return n + ' days';
+    }
     var slug = ((visa.slug || visa.id || '') + ' ' + (visa.country_slug || '') + ' ' + (window.currentCountrySlug || '')).toLowerCase();
     if(slug.indexOf('48-hours') > -1) return '2 days';
     if(slug.indexOf('96-hours') > -1) return '4 days';
@@ -226,16 +246,6 @@
     if(slug.indexOf('russia') > -1) return '30 days';
     if(slug.indexOf('azerbaijan') > -1) return '30 days';
     if(slug.indexOf('philippines') > -1) return 'Upto 59 days';
-    var value=(visa.days!=null&&visa.days!=='')?visa.days:visa.stay_period_value;
-    if(value!=null&&value!==''&&Number(value)>0){
-      var n = Number(value);
-      if(slug.indexOf('thailand') > -1){
-        if(n === 15) return 'Upto 15 days';
-        if(n === 60) return 'Upto 60 days';
-        if(n === 90) return 'Upto 90 days';
-      }
-      return n + ' days';
-    }
     return '';
   }
 
@@ -4593,7 +4603,7 @@
         countryExperienceShowcase(country, image, visas, reviews) +
         '<div class="uae-travel-body-section">' +
           '<div class="container uae-travel-container">' +
-            visaContent +
+            (visaContent || '<div class="country-empty" style="text-align:center;padding:48px 20px;background:#fff;border-radius:16px;border:1px solid #e2e8f0;margin:24px 0"><h3>Visa options coming soon</h3><p style="color:#64748b;margin:8px 0 20px">We are currently updating visa options for '+esc(country.name)+'.</p><a href="/#contact" class="btn btn-primary" style="display:inline-block">Contact us</a></div>') +
           '</div>' +
         '</div>' +
         '<section class="uae-public-guide-section">' +
@@ -4936,849 +4946,8 @@
     }
   };
 
-  var UAE_EIGHT_VISAS = [
-    {
-      slug: 'uae-48-hours-transit-visa',
-      name: '48 Hours Transit Visa',
-      category: 'Transit',
-      stay_period_value: 2,
-      stay_period_unit: 'days',
-      validity_days: 30,
-      sub: 'Single Entry',
-      price_aed: 3499,
-      processing_time_value: 5,
-      processing_time_unit: 'working days'
-    },
-    {
-      slug: 'uae-30-days-tourist-visa',
-      name: '30 Days Tourist Visa',
-      category: 'Tourist',
-      stay_period_value: 30,
-      stay_period_unit: 'days',
-      validity_days: 58,
-      sub: 'Single Entry',
-      price_aed: 7600,
-      processing_time_value: 5,
-      processing_time_unit: 'working days'
-    },
-    {
-      slug: 'uae-30-days-family-tourist-visa',
-      name: '30 Days Family Tourist Visa (Includes 2 Adults + 1 Child)',
-      category: 'Tourist',
-      stay_period_value: 30,
-      stay_period_unit: 'days',
-      validity_days: 58,
-      sub: 'Single Entry',
-      price_aed: 19999,
-      processing_time_value: 5,
-      processing_time_unit: 'working days'
-    },
-    {
-      slug: 'uae-96-hours-transit-visa',
-      name: '96 Hours Transit Visa',
-      category: 'Transit',
-      stay_period_value: 4,
-      stay_period_unit: 'days',
-      validity_days: 30,
-      sub: 'Single Entry',
-      price_aed: 5299,
-      processing_time_value: 5,
-      processing_time_unit: 'working days'
-    },
-    {
-      slug: 'uae-14-days-tourist-visa',
-      name: '14 Days Tourist Visa',
-      category: 'Tourist',
-      stay_period_value: 14,
-      stay_period_unit: 'days',
-      validity_days: 58,
-      sub: 'Single Entry',
-      price_aed: 7699,
-      processing_time_value: 5,
-      processing_time_unit: 'working days'
-    },
-    {
-      slug: 'uae-30-days-tourist-visa-express',
-      name: '30 Days Tourist Visa (Express)',
-      category: 'Tourist',
-      stay_period_value: 30,
-      stay_period_unit: 'days',
-      validity_days: 58,
-      sub: 'Single Entry',
-      price_aed: 8999,
-      processing_time_value: 48,
-      processing_time_unit: 'hours'
-    },
-    {
-      slug: 'uae-60-days-tourist-visa',
-      name: '60 Days Tourist Visa',
-      category: 'Tourist',
-      stay_period_value: 60,
-      stay_period_unit: 'days',
-      validity_days: 58,
-      sub: 'Single Entry',
-      price_aed: 10800,
-      processing_time_value: 5,
-      processing_time_unit: 'working days'
-    },
-    {
-      slug: 'uae-30-days-multiple-entry-visa',
-      name: '30 Days Multiple Entry Tourist Visa',
-      category: 'Tourist',
-      stay_period_value: 30,
-      stay_period_unit: 'days',
-      validity_days: 58,
-      sub: 'Multiple Entry',
-      price_aed: 17999,
-      processing_time_value: 5,
-      processing_time_unit: 'working days'
-    }
-  ];
+  var FALLBACK_VISAS = {};
 
-  var FALLBACK_VISAS = {
-    uae: UAE_EIGHT_VISAS,
-    'united-arab-emirates': UAE_EIGHT_VISAS,
-    qatar: [
-      {
-        slug: 'qatar-30-days-tourist-visa-age-1-55',
-        name: 'Qatar Tourist Visa 30 Days (Age 1–55 Years)',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 8999,
-        prices: { INR: 8999 },
-        processing: '5 – 6 Days',
-        processing_time_value: '5-6',
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'qatar-30-days-tourist-visa-age-55-plus',
-        name: 'Qatar Tourist Visa 30 Days (Age 55 Years & Above)',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 13999,
-        prices: { INR: 13999 },
-        processing: '5 – 6 Days',
-        processing_time_value: '5-6',
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'qatar-30-days-business-visa',
-        name: 'Qatar Business Visa 30 Days',
-        category: 'Business',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 9999,
-        prices: { INR: 9999 },
-        processing: '5 – 6 Days',
-        processing_time_value: '5-6',
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'qatar-90-days-business-visa',
-        name: 'Qatar Business Visa 90 Days',
-        category: 'Business',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        stay: '90 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 20999,
-        prices: { INR: 20999 },
-        processing: '5 – 6 Days',
-        processing_time_value: '5-6',
-        processing_time_unit: 'days'
-      }
-    ],
-    spain: [
-      {
-        slug: 'spain-schengen-tourist',
-        name: 'Spain Schengen Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    china: [
-      {
-        slug: 'china-tourist-visa',
-        name: 'China Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    'south-korea': [
-      {
-        slug: 'south-korea-tourist-visa',
-        name: 'South Korea Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    switzerland: [
-      {
-        slug: 'switzerland-schengen-tourist',
-        name: 'Switzerland Schengen Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    ireland: [
-      {
-        slug: 'ireland-tourist-visa',
-        name: 'Ireland Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    japan: [
-      {
-        slug: 'japan-tourist-visa',
-        name: 'Japan Tourist Visa (eVisa)',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 3200,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'japan-double-entry',
-        name: 'Double Entry Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Double Entry',
-        price_aed: 4500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'japan-multiple-entry',
-        name: 'Multiple Entry Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Multiple Entry',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    france: [
-      {
-        slug: 'france-schengen-tourist',
-        name: 'France Schengen Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    germany: [
-      {
-        slug: 'germany-schengen-tourist',
-        name: 'Germany Schengen Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    greece: [
-      {
-        slug: 'greece-schengen-tourist',
-        name: 'Greece Schengen Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    italy: [
-      {
-        slug: 'italy-schengen-tourist',
-        name: 'Italy Schengen Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Short Stay',
-        price_aed: 6500,
-        processing_time_value: 1,
-        processing_time_unit: 'days'
-      }
-    ],
-    azerbaijan: [
-      {
-        slug: 'azerbaijan-tourist-evisa',
-        name: 'Azerbaijan Tourist E Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 2899,
-        processing: 'Upto 3 Days',
-        processing_time_value: 3,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'azerbaijan-business-evisa',
-        name: 'Azerbaijan Business E Visa',
-        category: 'Business',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 2899,
-        processing: 'Upto 3 Days',
-        processing_time_value: 3,
-        processing_time_unit: 'days'
-      }
-    ],
-    'azerbaijan-2': [
-      {
-        slug: 'azerbaijan-tourist-evisa',
-        name: 'Azerbaijan Tourist E Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 2899,
-        processing: 'Upto 3 Days',
-        processing_time_value: 3,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'azerbaijan-business-evisa',
-        name: 'Azerbaijan Business E Visa',
-        category: 'Business',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 2899,
-        processing: 'Upto 3 Days',
-        processing_time_value: 3,
-        processing_time_unit: 'days'
-      }
-    ],
-    thailand: [
-      {
-        slug: 'thailand-e-visa',
-        name: 'Thailand E Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '1 Month',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 499,
-        processing: '24 Hours',
-        processing_time_value: 24,
-        processing_time_unit: 'hours'
-      },
-      {
-        slug: 'thailand-e-visa-express',
-        name: 'Thailand E Visa (Express)',
-        category: 'Tourist',
-        stay_period_value: 15,
-        stay_period_unit: 'days',
-        stay: 'Upto 15 Days',
-        validity: '1 Month',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 11999,
-        processing: 'Upto 24 Hours',
-        processing_time_value: 24,
-        processing_time_unit: 'hours'
-      },
-      {
-        slug: 'thailand-tourist-visa-stamp-visa',
-        name: 'Thailand Tourist Visa (Stamp Visa)',
-        category: 'Tourist',
-        stay_period_value: 60,
-        stay_period_unit: 'days',
-        stay: 'Upto 60 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 5999,
-        processing: '3 – 4 Days',
-        processing_time_value: '3-4',
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'thailand-business-visa-stamp-visa',
-        name: 'Thailand Business Visa (Stamp Visa)',
-        category: 'Business',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        stay: 'Upto 90 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 7999,
-        processing: '3 – 4 Days',
-        processing_time_value: '3-4',
-        processing_time_unit: 'days'
-      }
-    ],
-    bahrain: [
-      {
-        slug: 'bahrain-14-days-tourist-visa',
-        name: 'Bahrain 2 Weeks Single Entry',
-        category: 'Tourist',
-        stay_period_value: 14,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 4500,
-        processing_time_value: '3-5',
-        processing_time_unit: 'working days'
-      },
-      {
-        slug: 'bahrain-30-days-tourist-visa',
-        name: 'Bahrain One Month Multiple Entry',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Multiple Entry',
-        price_aed: 7000,
-        processing_time_value: '3-5',
-        processing_time_unit: 'working days'
-      },
-      {
-        slug: 'bahrain-one-year-multiple-entry',
-        name: 'Bahrain One Year Multiple Entry',
-        category: 'Tourist',
-        stay_period_value: 365,
-        stay_period_unit: 'days',
-        sub: 'Multiple Entry',
-        price_aed: 14000,
-        processing_time_value: '3-5',
-        processing_time_unit: 'working days'
-      }
-    ],
-    indonesia: [
-      {
-        slug: 'indonesia-tourist-visa',
-        name: 'Indonesia Tourist Visa',
-        category: 'Tourist',
-        stay: '30 Days',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 8999,
-        features: ['Stay Period: 30 Days', 'Single Entry', 'Extension: Not Permitted', 'Processing: 5-7 Working Days'],
-        processing_time_value: '5-7',
-        processing_time_unit: 'working days'
-      },
-      {
-        slug: 'indonesia-business-visa',
-        name: 'Indonesia Business Visa',
-        category: 'Business',
-        stay: '30 Days',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 8999,
-        features: ['Stay Period: 30 Days', 'Single Entry', 'Extension: Not Permitted', 'Processing: 5-7 Working Days'],
-        processing_time_value: '5-7',
-        processing_time_unit: 'working days'
-      }
-    ],
-    russia: [
-      {
-        slug: 'russia-tourist-visa',
-        name: 'Russia Tourist Visa',
-        category: 'Tourist',
-        stay: '30 Days',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 4999,
-        validity: 'As per Embassy',
-        processing_time_value: '10-12',
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'russia-business-visa',
-        name: 'Russia Business Visa',
-        category: 'Business',
-        stay: '3 Months',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 4999,
-        validity: 'As per Embassy',
-        processing_time_value: '10-12',
-        processing_time_unit: 'days'
-      }
-    ],
-    kenya: [
-      {
-        slug: 'kenya-single-entry-tourist-visa',
-        name: 'Single Entry Tourist Visa',
-        category: 'Tourist',
-        stay: 'As per Embassy',
-        sub: 'Single Entry',
-        price_aed: 5999,
-        validity: '3 Months',
-        processing_time_value: 2,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'kenya-single-entry-business-visa',
-        name: 'Single Entry Business Visa',
-        category: 'Business',
-        stay: '72 Hours',
-        sub: 'Single Entry',
-        price_aed: 5999,
-        validity: '3 Months',
-        processing_time_value: 2,
-        processing_time_unit: 'days'
-      }
-    ],
-    vietnam: [
-      {
-        slug: 'vietnam-tourist-visa',
-        name: 'Tourist eVisa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 2999,
-        processing_time_value: 5,
-        processing_time_unit: 'working days'
-      },
-      {
-        slug: 'vietnam-tourist-visa-express',
-        name: 'Tourist eVisa (Express)',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 9999,
-        processing_time_value: 24,
-        processing_time_unit: 'hours'
-      },
-      {
-        slug: 'vietnam-tourist-visa-super-express',
-        name: 'Tourist eVisa (Super Express)',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 10999,
-        processing_time_value: 12,
-        processing_time_unit: 'hours'
-      }
-    ],
-    morocco: [
-      {
-        slug: 'morocco-tourist-visa',
-        name: 'Morocco Tourist eVisa',
-        category: 'Tourist',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        stay: 'Up to 90 Days',
-        validity: 'Up to 90 Days',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 4149,
-        prices: { INR: 4149 },
-        processing: '3 – 5 Days',
-        processing_time_value: '3-5',
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'morocco-business-visa',
-        name: 'Morocco Business eVisa',
-        category: 'Business',
-        stay_period_value: 90,
-        stay_period_unit: 'days',
-        stay: 'Up to 90 Days',
-        validity: 'Up to 90 Days',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 4149,
-        prices: { INR: 4149 },
-        processing: '5 – 7 Days',
-        processing_time_value: '5-7',
-        processing_time_unit: 'days'
-      }
-    ],
-    srilanka: [
-      {
-        slug: 'srilanka-30-days-tourist-visa',
-        name: '30 Days Sri Lanka Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: 'Upto 30 Days',
-        validity: '6 Months',
-        validity_days: 180,
-        sub: 'Double Entry',
-        price_aed: 999,
-        prices: { INR: 999 },
-        processing: '24 to 48 Hours',
-        processing_time_value: 48,
-        processing_time_unit: 'hours'
-      },
-      {
-        slug: 'srilanka-30-days-business-visa',
-        name: '30 Days Sri Lanka Business Visa',
-        category: 'Business',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: 'Upto 30 Days',
-        validity: '6 Months',
-        validity_days: 180,
-        sub: 'Multiple Entry',
-        price_aed: 3499,
-        prices: { INR: 3499 },
-        processing: '24 to 48 Hours',
-        processing_time_value: 48,
-        processing_time_unit: 'hours'
-      }
-    ],
-    turkey: [
-      {
-        slug: 'turkey-tourist-visa',
-        name: 'Turkey Tourist eVisa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 5500,
-        processing_time_value: '1-2',
-        processing_time_unit: 'working days'
-      }
-    ],
-    egypt: [
-      {
-        slug: 'egypt-tourist-visa',
-        name: 'Egypt Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '30 Days',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 5999,
-        prices: { INR: 5999 },
-        processing: '10 - 15 Days',
-        processing_time_value: 15,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'egypt-business-visa',
-        name: 'Egypt Business Visa',
-        category: 'Business',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '30 Days',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 6999,
-        prices: { INR: 6999 },
-        processing: '10 - 15 Days',
-        processing_time_value: 15,
-        processing_time_unit: 'days'
-      }
-    ],
-    'egypt-2': [
-      {
-        slug: 'egypt-tourist-visa',
-        name: 'Egypt Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '30 Days',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 5999,
-        prices: { INR: 5999 },
-        processing: '10 - 15 Days',
-        processing_time_value: 15,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'egypt-business-visa',
-        name: 'Egypt Business Visa',
-        category: 'Business',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '30 Days',
-        validity_days: 30,
-        sub: 'Single Entry',
-        price_aed: 6999,
-        prices: { INR: 6999 },
-        processing: '10 - 15 Days',
-        processing_time_value: 15,
-        processing_time_unit: 'days'
-      }
-    ],
-    philippines: [
-      {
-        slug: 'philippines-single-entry-visa',
-        name: 'Philippines Single Entry Visa',
-        category: 'Tourist / Business',
-        stay_period_value: 59,
-        stay_period_unit: 'days',
-        stay: 'Upto 59 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 8499,
-        processing: '8 - 10 Days',
-        processing_time_value: 10,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'philippines-multiple-entry-business-visa',
-        name: 'Philippines Multiple Entry Business Visa',
-        category: 'Business',
-        stay_period_value: 59,
-        stay_period_unit: 'days',
-        stay: 'Upto 59 Days',
-        validity: '6 Months / 1 Year',
-        validity_days: 365,
-        sub: 'Multiple Entry',
-        price_aed: 9999,
-        processing: '8 - 10 Days',
-        processing_time_value: 10,
-        processing_time_unit: 'days'
-      }
-    ],
-    oman: [
-      {
-        slug: 'oman-10-days-tourist-visa',
-        name: '10 Days Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 10,
-        stay_period_unit: 'days',
-        stay: '10 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 4499,
-        processing: '5 - 6 Days',
-        processing_time_value: 6,
-        processing_time_unit: 'days'
-      },
-      {
-        slug: 'oman-30-days-tourist-visa',
-        name: '30 Days Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        stay: '30 Days',
-        validity: '3 Months',
-        validity_days: 90,
-        sub: 'Single Entry',
-        price_aed: 7999,
-        processing: '5 - 6 Days',
-        processing_time_value: 6,
-        processing_time_unit: 'days'
-      }
-    ],
-    'saudi-arabia': [
-      {
-        slug: 'saudi-arabia-30-days-tourist-visa',
-        name: 'Saudi Arabia Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 16000,
-        processing_time_value: 5,
-        processing_time_unit: 'working days'
-      }
-    ],
-    saudi: [
-      {
-        slug: 'saudi-arabia-30-days-tourist-visa',
-        name: 'Saudi Arabia Tourist Visa',
-        category: 'Tourist',
-        stay_period_value: 30,
-        stay_period_unit: 'days',
-        sub: 'Single Entry',
-        price_aed: 16000,
-        processing_time_value: 5,
-        processing_time_unit: 'working days'
-      }
-    ]
-  };
-
-  // Public Sri Lanka route uses the hyphenated slug. Keep fallback content identical.
-  FALLBACK_COUNTRIES['sri-lanka'] = FALLBACK_COUNTRIES.srilanka;
-  FALLBACK_VISAS['sri-lanka'] = FALLBACK_VISAS.srilanka;
 
   var FALLBACK_REVIEWS = [
     { name: 'Rahul Sharma', location: 'Delhi', rating: 5, body: 'Extremely fast service! Got my UAE visa in less than 2 days. The tracking system is very detailed.' },
@@ -5806,26 +4975,42 @@
         renderError('Destination not found', 'We don’t have this destination yet.<br><br><a href="/" class="btn btn-primary btn-lg" style="display:inline-block;margin-top:14px">Browse destinations</a>');
         return;
       }
-      var fallbackV = FALLBACK_VISAS[slug] || [];
+      var fallbackV = [];
       window.UAE_REVIEWS = FALLBACK_REVIEWS;
       renderCountry(fallbackC, fallbackV, FALLBACK_REVIEWS);
       return;
     }
 
+    var queryCountrySlugs = [slug];
+    if (slug === 'uae' || slug === 'united-arab-emirates' || slug === 'dubai') queryCountrySlugs = ['united-arab-emirates', 'uae', 'dubai'];
+    else if (slug === 'srilanka' || slug === 'sri-lanka') queryCountrySlugs = ['sri-lanka', 'srilanka'];
+    else if (slug === 'egypt' || slug === 'egypt-2') queryCountrySlugs = ['egypt', 'egypt-2'];
+    else if (slug === 'saudi' || slug === 'saudi-arabia') queryCountrySlugs = ['saudi-arabia', 'saudi'];
+    else if (slug === 'azerbaijan' || slug === 'azerbaijan-2') queryCountrySlugs = ['azerbaijan', 'azerbaijan-2'];
+
+    var countryFilter = queryCountrySlugs.length > 1
+      ? 'or=(' + queryCountrySlugs.map(function(s){ return 'slug.eq.' + encodeURIComponent(s); }).join(',') + ')'
+      : 'slug=eq.' + encodeURIComponent(slug);
+
+    var visaTypesFilter = queryCountrySlugs.length > 1
+      ? 'or=(' + queryCountrySlugs.map(function(s){ return 'country_slug.eq.' + encodeURIComponent(s); }).join(',') + ')'
+      : 'country_slug=eq.' + encodeURIComponent(slug);
+
     Promise.all([
-      fetchJson('/rest/v1/countries?slug=eq.'+encodeURIComponent(slug)+'&active=eq.true&select=*'),
-      fetchJson('/rest/v1/visa_types?country_slug=eq.'+encodeURIComponent(slug)+'&active=eq.true&order=sort_order&select=*'),
+      fetchJson('/rest/v1/countries?' + countryFilter + '&active=eq.true&select=*'),
+      fetchJson('/rest/v1/visa_types?' + visaTypesFilter + '&order=sort_order&select=*'),
       fetchJson('/rest/v1/reviews?active=eq.true&order=sort_order&select=*').catch(function(){ return []; }),
       fetchJson('/rest/v1/countries?active=eq.true&order=sort_order&select=*').catch(function(){ return []; }),
       fetchJson('/rest/v1/pages?slug=eq.system-nationality-destinations&status=eq.published&select=content&limit=1').catch(function(){ return []; })
     ]).then(function(data){
-      var c = (data[0] && data[0].length) ? data[0][0] : FALLBACK_COUNTRIES[slug];
+      var c = (data[0] && data[0].length) ? data[0][0] : (FALLBACK_COUNTRIES[slug] || FALLBACK_COUNTRIES[queryCountrySlugs[0]]);
       if(!c){
         renderError('Destination not found', 'We don’t have this destination yet.<br><br><a href="/" class="btn btn-primary btn-lg" style="display:inline-block;margin-top:14px">Browse destinations</a>');
         return;
       }
-      var forcedConfigured = ['egypt','egypt-2','philippines','oman','saudi-arabia','saudi','uae','united-arab-emirates','vietnam','thailand'].indexOf(slug) > -1;
-      var v = forcedConfigured ? (FALLBACK_VISAS[slug] || []) : ((data[1] && data[1].length) ? data[1] : (FALLBACK_VISAS[slug] || []));
+
+      var dbVisas = (data[1] && data[1].length) ? data[1] : [];
+      var v = dbVisas.filter(function(x){ return x && x.active !== false; });
       var r = (data[2] && data[2].length) ? data[2] : FALLBACK_REVIEWS;
       var allActive = (data[3] && data[3].length) ? data[3] : [];
 
@@ -5847,7 +5032,7 @@
     }).catch(function(){
       var fallbackC = FALLBACK_COUNTRIES[slug];
       if(fallbackC){
-        var fallbackV = FALLBACK_VISAS[slug] || [];
+        var fallbackV = [];
         window.UAE_REVIEWS = FALLBACK_REVIEWS;
         renderCountry(fallbackC, fallbackV, FALLBACK_REVIEWS, []);
       } else {

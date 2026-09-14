@@ -78,7 +78,7 @@ function pageHtml(ev, c, visas, brandColor){
     '</div></footer>'+
     '<script src="/config.js"></scr'+'ipt><script src="/destination-images.js"></scr'+'ipt>'+
     '<script>window.__VISADOO_EVENT_DATA__='+preload+';</scr'+'ipt>'+
-    '<script src="/events/event-page.js?v=20260801-netlify-new-event"></scr'+'ipt>'+
+    '<script src="/events/event-page.js?v=20260914-active-check-v2"></scr'+'ipt>'+
     '<script>(function(){var button=document.getElementById("menuBtn"),links=document.getElementById("navLinks");if(!button||!links)return;button.addEventListener("click",function(){var open=links.classList.toggle("open");button.setAttribute("aria-expanded",String(open));});links.querySelectorAll("a").forEach(function(link){link.addEventListener("click",function(){links.classList.remove("open");button.setAttribute("aria-expanded","false");});});})();</scr'+'ipt>'+
     '</body></html>';
 }

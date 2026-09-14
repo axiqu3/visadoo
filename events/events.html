@@ -1529,7 +1529,7 @@
     var supabaseKey = cfg.SUPABASE_ANON_KEY || 'sb_publishable_LyaaSuHTI2x6rCc_HmD-iA_bR9gLx7i';
 
     function loadLiveEvents(){
-      var endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/events?active=eq.true&order=event_date.asc';
+      var endpoint = supabaseUrl.replace(/\/$/, '') + '/rest/v1/events?select=*&order=event_date.asc';
       return fetch(endpoint, {
         headers: {
           'apikey': supabaseKey,
@@ -1542,18 +1542,9 @@
       })
       .then(function(rows){
         if(Array.isArray(rows) && rows.length > 0){
-          var normalizedDb = rows.map(normalizeDbEvent);
-          var dbSlugs = {};
-          normalizedDb.forEach(function(e){ dbSlugs[e.slug] = true; });
-
-          // Merge DB rows with SEED_EVENTS so all categories have full cards immediately
-          var merged = normalizedDb.slice();
-          SEED_EVENTS.forEach(function(seed){
-            if(!dbSlugs[seed.slug]){
-              merged.push(normalizeDbEvent(seed));
-            }
-          });
-          allEvents = merged;
+          // Show only active events from the database (admin can hide any event)
+          var activeRows = rows.filter(function(x){ return x && x.active !== false; });
+          allEvents = activeRows.map(normalizeDbEvent);
           populateCountryDropdown(allEvents);
           render();
           return true;
