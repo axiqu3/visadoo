@@ -8045,6 +8045,9 @@
       if (typeof updatePhilippinesSpouseField === 'function') {
         try { updatePhilippinesSpouseField(); } catch(_e) {}
       }
+      if (typeof updateOccupationOtherField === 'function') {
+        try { updateOccupationOtherField(); } catch(_e) {}
+      }
     }
     var active=step===1?one:(step===2?two:three);
     var heading=active.querySelector('[data-step-heading]')||active.querySelector('h2');
@@ -8115,6 +8118,9 @@
       var input=document.getElementById(id);
       if(input) input.addEventListener('input',syncPassportFullName);
     });
+    if (typeof updateOccupationOtherField === 'function') {
+      updateOccupationOtherField();
+    }
     var exit=document.getElementById('applyExit');
     if(exit) exit.onclick=function(){
       var travellersParam = Number(qParam('travellers')) || 1;
@@ -8796,6 +8802,9 @@
 
     if (typeof updatePhilippinesSpouseField === 'function') {
       try { updatePhilippinesSpouseField(); } catch(_e) {}
+    }
+    if (typeof updateOccupationOtherField === 'function') {
+      try { updateOccupationOtherField(); } catch(_e) {}
     }
     return count;
   }
