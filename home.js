@@ -424,7 +424,15 @@
     var photoStyle = photo ? ' style="background-image:url(&quot;' + photo + '&quot;)"' : '';
     
     var countryDisplayName = c.name || '';
-    var docsNeeded = (c.blurb && c.blurb.trim()) ? c.blurb.trim() : ((c.summary && c.summary.trim() && c.summary.trim().length <= 40) ? c.summary.trim() : 'Passport, Photo');
+    var docsNeeded = 'Passport, Photo';
+    if (c.blurb && c.blurb.trim()) {
+      var customDocs = c.blurb.trim();
+      // Guard against accidental marketing copy or visa descriptions
+      var isMarketingCopy = /^(get\s+|apply\s+|perfect\s+for|ideal\s+for|[a-z\s]+e-?visa\b)/i.test(customDocs) || /tourist\s+visa/i.test(customDocs);
+      if (!isMarketingCopy) {
+        docsNeeded = customDocs;
+      }
+    }
 
     return '<a class="dest-mockup-card dest-card-item-link" href="' + countryHref(c.slug) + '"' +
       ' data-group="' + (c.group_slug || '') + '" data-types="' + (c.visaTypes || '') + '" data-slug="' + baseSlug + '">' +

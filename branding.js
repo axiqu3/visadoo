@@ -405,7 +405,7 @@
         return;
       }
       attempts++;
-      if (attempts < 25) {
+      if (attempts < 60) {
         setTimeout(tryApply, 120);
       }
     }
@@ -430,19 +430,39 @@
     var copy = UI_DICT[lang] || UI_DICT.en;
 
     var homeLink = document.querySelector('.nav-links a[href*="index"], .nav-links a[href="/"], .nav-links a[href="#top"], .nav-links a[href="#destinations"]');
-    if (homeLink) homeLink.textContent = copy.home || 'Home';
+    if (homeLink) {
+      homeLink.textContent = copy.home || 'Home';
+      homeLink.classList.add('notranslate');
+      homeLink.setAttribute('translate', 'no');
+    }
 
     var vtLink = document.querySelector('.nav-links a[href*="visa-types"]');
-    if (vtLink) vtLink.textContent = copy.visaTypes || 'Visa Types';
+    if (vtLink) {
+      vtLink.textContent = copy.visaTypes || 'Visa Types';
+      vtLink.classList.add('notranslate');
+      vtLink.setAttribute('translate', 'no');
+    }
 
     var evsLink = document.querySelector('.nav-links a[href*="events"]');
-    if (evsLink) evsLink.textContent = copy.events || 'Activities';
+    if (evsLink) {
+      evsLink.textContent = copy.events || 'Activities';
+      evsLink.classList.add('notranslate');
+      evsLink.setAttribute('translate', 'no');
+    }
 
     var artLink = document.querySelector('.nav-links a[href*="articles"]');
-    if (artLink) artLink.textContent = copy.articles;
+    if (artLink) {
+      artLink.textContent = copy.articles;
+      artLink.classList.add('notranslate');
+      artLink.setAttribute('translate', 'no');
+    }
 
     var cntLink = document.querySelector('.nav-links a[href*="contact"]');
-    if (cntLink) cntLink.textContent = copy.contact || 'Contact Us';
+    if (cntLink) {
+      cntLink.textContent = copy.contact || 'Contact Us';
+      cntLink.classList.add('notranslate');
+      cntLink.setAttribute('translate', 'no');
+    }
 
     var trkLink = document.querySelector('.nav-track, .nav-actions a[href*="track"]');
     if (trkLink) {
@@ -630,9 +650,12 @@
       else openMenu();
     };
 
-    document.addEventListener('click', function() {
-      closeMenu();
-    });
+    if (!container.getAttribute('data-lang-doc-wired')) {
+      container.setAttribute('data-lang-doc-wired', 'true');
+      document.addEventListener('click', function() {
+        closeMenu();
+      });
+    }
 
     menu.onclick = function(e) {
       e.stopPropagation();

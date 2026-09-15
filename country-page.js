@@ -1680,100 +1680,16 @@
     }
     if (slug === 'russia') {
       var russiaReqs = [
-        ['Original Passport', 'Original Passport with at least 6 months validity and minimum 3 blank pages + all old passports if any.'],
-        ['Visa Application Form', 'Completed and signed visa application form.'],
-        ['2 Recent Photographs', '2 recent colour photographs with white background and matt finish.'],
-        ['Personal Covering Letter', 'Personal covering letter explaining purpose of travel to Russia.'],
-        ['Original Bank Statement', 'Stamped & updated bank statement for last 6 months with bank seal.'],
-        ['Air Tickets', 'Proof of return flight tickets from and back to your home country.'],
-        ['Tourist Confirmation Letter', 'Issued by a Russian tour operator (registered in the Unified Federal Register of Tour Operators under a unique reference number).']
+        ['Passport copy', 'Scanned colour copy of your passport (front and back page) with at least 6 months validity.'],
+        ['Photo', 'Recent passport-size colour photograph with a white background.'],
+        ['Occupation details', 'Details of your current employment, profession, or business.'],
+        ['Last 3 year travel history (if have)', 'Details of countries visited in the last 3 years, including entry/exit stamps or visa copies, if applicable.']
       ];
-      var supportingDocsRussia = [
-        {
-          title: '1. If Employed:',
-          items: [
-            '<strong>Leave Sanctioned Certificate:</strong> With company seal providing approval for leave.',
-            '<strong>Salary Slips:</strong> Of last 3 months.'
-          ]
-        },
-        {
-          title: '2. If Self Employed:',
-          items: [
-            '<strong>Business Proof:</strong> Registration License / MOA / Partnership deed.',
-            '<strong>Company Bank Statement:</strong> Stamped & updated for last 6 months with bank seal.'
-          ]
-        },
-        {
-          title: '3. If Retired:',
-          items: [
-            '<strong>Retirement Proof:</strong> Pension book, statement etc.'
-          ]
-        },
-        {
-          title: '4. If Student:',
-          items: [
-            '<strong>ID Card:</strong> From school, college or institute.'
-          ]
-        },
-        {
-          title: '5. If Minor:',
-          items: [
-            '<strong>Birth Certificate:</strong> Showing the names of both parents.',
-            '<strong>Legalized Letter of Consent (NOC):</strong>' +
-              '<ul class="morocco-sub-list">' +
-                '<li>If the child is travelling with one parent, the letter of consent authorizing travel must be legalized by the other parent.</li>' +
-                '<li>If the child is travelling alone or without either parent, a notarized letter of consent from both parents permitting travel.</li>' +
-              '</ul>',
-            '<strong>Death Certificate:</strong> In case one or both parents are deceased.',
-            '<strong>ID Proof:</strong> Of parents.'
-          ]
-        },
-        {
-          title: '6. If Visiting Friend or Relative:',
-          items: [
-            '<strong>Invitation Letter:</strong> Stating the relationship with the inviter and purpose of visiting the country.',
-            '<strong>ID Proof of Inviter:</strong> Passport or Resident Permit.',
-            '<strong>Address Proof of Inviter:</strong> Utility bill.'
-          ]
-        },
-        {
-          title: '7. If Sponsored:',
-          items: [
-            '<strong>Sponsorship Letter:</strong> Sponsors need to provide the name of the visitors, what the purpose of the visit is, relationship with the visitors, length of stay, dates of travel & any other additional information if necessary.',
-            '<strong>ID Proof of Inviter:</strong> Passport or Resident Permit.',
-            '<strong>Address Proof of Inviter:</strong> Utility bill.',
-            '<strong>Proof of Financial Support:</strong> Updated bank statement, pay slips.'
-          ]
-        },
-        {
-          title: '8. For Business Visa:',
-          items: [
-            '<strong>Invitation Letter:</strong> From the inviting company in Russia (INN Letter) or a letter of invitation issued by a Main Directorate for Migration Affairs in Russia.',
-            '<strong>Business Covering Letter:</strong> From Indian company on company letterhead.'
-          ]
-        }
-      ];
-
-      var supportingHtmlRussia = '<div class="morocco-supporting-card">' +
-        '<h3>Supporting Documents as per your occupation, type of visit</h3>' +
-        '<div class="morocco-supporting-grid">' +
-          supportingDocsRussia.map(function(cat) {
-            return '<div class="morocco-supporting-item">' +
-              '<h4>' + esc(cat.title) + '</h4>' +
-              '<ul>' +
-                cat.items.map(function(item) {
-                  return '<li>' + item + '</li>';
-                }).join('') +
-              '</ul>' +
-            '</div>';
-          }).join('') +
-        '</div>' +
-      '</div>';
 
       return '<div class="uae-travel-section" id="requirements">' +
         '<div class="uae-travel-section-header">' +
           '<h2>Documents Required for Russia Visa</h2>' +
-          '<p>Prepare these primary and supporting documents before submitting your Russia visa application.</p>' +
+          '<p>Prepare these documents before submitting your Russia visa application.</p>' +
         '</div>' +
         '<div class="uae-travel-accordions-group">' + russiaReqs.map(function(item, index) {
           return '<details class="uae-travel-accordion"' + (index === 0 ? ' open' : '') + '>' +
@@ -1781,7 +1697,6 @@
             '<div class="uae-travel-accordion-body"><div class="uae-req-details-content"><div class="uae-req-details-text"><p>' + esc(item[1]) + '</p></div></div></div>' +
           '</details>';
         }).join('') + '</div>' +
-        supportingHtmlRussia +
       '</div>';
     }
     if (slug === 'indonesia') {

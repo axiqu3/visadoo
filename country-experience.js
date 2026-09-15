@@ -1321,60 +1321,60 @@
   }
 
   function initFloatingLanguage(){
-    var container = document.querySelector('.site-language-header-selector');
-    if (!container) return;
-    var trigger = container.querySelector('.site-language-trigger');
-    var menu = container.querySelector('.site-language-menu');
-    if (!trigger || !menu) return;
-
-    var selector = document.getElementById('siteLanguage');
-
-    function openMenu() {
-      menu.style.display = 'flex';
-      trigger.setAttribute('aria-expanded', 'true');
-    }
-    function closeMenu() {
-      menu.style.display = 'none';
-      trigger.setAttribute('aria-expanded', 'false');
-    }
-
-    trigger.addEventListener('click', function(event) {
-      event.stopPropagation();
-      var isOpen = menu.style.display === 'flex';
-      if (isOpen) closeMenu();
-      else openMenu();
-    });
-
-    document.addEventListener('click', function() {
-      closeMenu();
-    });
-
-    menu.addEventListener('click', function(event) {
-      event.stopPropagation();
-    });
-
-    container.querySelectorAll('[data-language-option]').forEach(function(button) {
-      button.addEventListener('click', function(event) {
-        event.stopPropagation();
-        var code = button.getAttribute('data-language-option');
-        if (typeof window.visadooSetLanguage === 'function') {
-          window.visadooSetLanguage(code);
-        } else {
-          try { window.localStorage.setItem('visadoo-language', code); } catch(error) {}
-          if (selector) {
-            selector.value = code;
-            selector.dispatchEvent(new Event('change', { bubbles: true }));
+    var actions = document.querySelector('.header .nav-actions, .discover-header .nav-actions');
+    if (typeof window.initLanguageSelectorIn === 'function') {
+      window.initLanguageSelectorIn(actions);
+    } else {
+      var container = document.querySelector('.site-language-header-selector');
+      if (container) {
+        var trigger = container.querySelector('.site-language-trigger');
+        var menu = container.querySelector('.site-language-menu');
+        if (trigger && menu) {
+          trigger.onclick = function(e) {
+            e.stopPropagation();
+            var isOpen = menu.style.display === 'flex';
+            menu.style.display = isOpen ? 'none' : 'flex';
+            trigger.setAttribute('aria-expanded', String(!isOpen));
+          };
+          if (!container.getAttribute('data-lang-doc-wired')) {
+            container.setAttribute('data-lang-doc-wired', 'true');
+            document.addEventListener('click', function() {
+              menu.style.display = 'none';
+              trigger.setAttribute('aria-expanded', 'false');
+            });
           }
-          applyLanguage(code);
+          menu.onclick = function(e) {
+            e.stopPropagation();
+          };
+          container.querySelectorAll('[data-language-option]').forEach(function(button) {
+            button.onclick = function(e) {
+              e.stopPropagation();
+              var code = button.getAttribute('data-language-option');
+              if (typeof window.visadooSetLanguage === 'function') {
+                window.visadooSetLanguage(code, false);
+              } else {
+                try { window.localStorage.setItem('visadoo-language', code); } catch(error) {}
+                applyLanguage(code);
+              }
+              menu.style.display = 'none';
+              trigger.setAttribute('aria-expanded', 'false');
+            };
+          });
         }
-        closeMenu();
-      });
-    });
+      }
+    }
 
     var saved = 'en';
     try { saved = window.localStorage.getItem('visadoo-language') || 'en'; } catch(error) {}
     applyLanguage(UI_COPY[saved] ? saved : 'en');
   }
+
+  window.applyLanguage = applyLanguage;
+  document.addEventListener('languagechanged', function(e) {
+    if (e && e.detail) {
+      applyLanguage(e.detail);
+    }
+  });
 
   initLanguageSelector();
   window.VisaDooCountryExperience={

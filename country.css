@@ -586,16 +586,24 @@ body.traveller-picker-open {
 }
 
 [dir="rtl"].country-page .site-language-menu,
-[dir="rtl"] .country-page .site-language-menu {
+[dir="rtl"] .country-page .site-language-menu,
+html.visadoo-rtl .country-page .site-language-menu,
+html.translated-rtl .country-page .site-language-menu,
+html.visadoo-rtl .site-language-menu,
+html.translated-rtl .site-language-menu {
   right: auto;
   left: 0;
 }
 [dir="rtl"].country-page .site-language-menu button,
-[dir="rtl"] .country-page .site-language-menu button {
+[dir="rtl"] .country-page .site-language-menu button,
+html.visadoo-rtl .country-page .site-language-menu button,
+html.translated-rtl .country-page .site-language-menu button {
   text-align: right;
 }
 [dir="rtl"].country-page .site-language-menu button i,
-[dir="rtl"] .country-page .site-language-menu button i {
+[dir="rtl"] .country-page .site-language-menu button i,
+html.visadoo-rtl .country-page .site-language-menu button i,
+html.translated-rtl .country-page .site-language-menu button i {
   margin-left: 0;
   margin-right: auto;
 }

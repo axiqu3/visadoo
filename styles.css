@@ -8872,9 +8872,123 @@ html.translated-ltr {
 [dir="rtl"] .board-heading {
   text-align: right;
 }
-[dir="rtl"] .nav-links {
-  margin-right: auto;
-  margin-left: 0;
+/* Header Bar Layout in RTL (Fixes media_1789455960079.png) */
+[dir="rtl"] .nav,
+[dir="rtl"] .discover-header .nav,
+[dir="rtl"] .header .nav,
+html.visadoo-rtl .nav,
+html.visadoo-rtl .discover-header .nav,
+html.visadoo-rtl .header .nav,
+html.translated-rtl .nav,
+html.translated-rtl .discover-header .nav,
+html.translated-rtl .header .nav {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+[dir="rtl"] .nav-actions,
+[dir="rtl"] .discover-header .nav-actions,
+[dir="rtl"] .header .nav-actions,
+html.visadoo-rtl .nav-actions,
+html.visadoo-rtl .discover-header .nav-actions,
+html.visadoo-rtl .header .nav-actions,
+html.translated-rtl .nav-actions,
+html.translated-rtl .discover-header .nav-actions,
+html.translated-rtl .header .nav-actions {
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+
+[dir="rtl"] .nav-brand-cluster,
+[dir="rtl"] .discover-header .nav-brand-cluster,
+html.visadoo-rtl .nav-brand-cluster,
+html.visadoo-rtl .discover-header .nav-brand-cluster,
+html.translated-rtl .nav-brand-cluster,
+html.translated-rtl .discover-header .nav-brand-cluster {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+[dir="rtl"] .discover-header .brand-logo-img,
+[dir="rtl"] .discover-header .brand img,
+[dir="rtl"] .header .brand img,
+html.visadoo-rtl .discover-header .brand-logo-img,
+html.visadoo-rtl .discover-header .brand img,
+html.translated-rtl .discover-header .brand-logo-img,
+html.translated-rtl .discover-header .brand img {
+  margin-left: 0 !important;
+  margin-right: -18px !important;
+}
+
+[dir="rtl"] .discover-header #nationalityDropdown .dropdown-chevron,
+[dir="rtl"] .discover-header .header-dropdown-trigger .dropdown-chevron,
+html.visadoo-rtl .discover-header #nationalityDropdown .dropdown-chevron,
+html.visadoo-rtl .discover-header .header-dropdown-trigger .dropdown-chevron,
+html.translated-rtl .discover-header #nationalityDropdown .dropdown-chevron,
+html.translated-rtl .discover-header .header-dropdown-trigger .dropdown-chevron {
+  margin-left: 0 !important;
+  margin-right: 4px !important;
+}
+
+[dir="rtl"] .discover-header .header-dropdown-menu,
+html.visadoo-rtl .discover-header .header-dropdown-menu,
+html.translated-rtl .discover-header .header-dropdown-menu {
+  right: auto !important;
+  left: 0 !important;
+}
+
+@media (min-width: 821px) {
+  [dir="rtl"] .discover-header .nav-links,
+  [dir="rtl"] .header .nav-links,
+  [dir="rtl"] .home-page .discover-header .nav-links,
+  [dir="rtl"] .nav-links,
+  html.visadoo-rtl .discover-header .nav-links,
+  html.visadoo-rtl .header .nav-links,
+  html.visadoo-rtl .home-page .discover-header .nav-links,
+  html.visadoo-rtl .nav-links,
+  html.translated-rtl .discover-header .nav-links,
+  html.translated-rtl .header .nav-links,
+  html.translated-rtl .home-page .discover-header .nav-links,
+  html.translated-rtl .nav-links {
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 32px !important;
+    z-index: 20 !important;
+    direction: rtl !important;
+  }
+}
+[dir="rtl"] .faq-question-btn,
+html.visadoo-rtl .faq-question-btn,
+html.translated-rtl .faq-question-btn {
+  text-align: right !important;
+}
+[dir="rtl"] .faq-a-text,
+html.visadoo-rtl .faq-a-text,
+html.translated-rtl .faq-a-text {
+  text-align: right !important;
+}
+html.translated-rtl body,
+html.translated-ltr body,
+body.translated-rtl,
+body.translated-ltr {
+  top: 0px !important;
+  position: static !important;
+}
+.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
 }
 
 
@@ -13180,6 +13294,84 @@ html.has-scroll-animations .review-card-item:hover {
 
 .cta-confusion-pill-btn:hover .cta-btn-arrow {
   transform: translateX(4px);
+}
+
+/* RTL Banner Layout for Arabic & Translated Pages (Fixes media_1789455532797.png) */
+[dir="rtl"] .cta-confusion-card,
+html.visadoo-rtl .cta-confusion-card,
+html.translated-rtl .cta-confusion-card,
+body.translated-rtl .cta-confusion-card,
+body.visadoo-rtl .cta-confusion-card {
+  direction: ltr !important;
+}
+
+[dir="rtl"] .cta-confusion-content,
+html.visadoo-rtl .cta-confusion-content,
+html.translated-rtl .cta-confusion-content,
+body.translated-rtl .cta-confusion-content,
+body.visadoo-rtl .cta-confusion-content {
+  direction: rtl !important;
+  text-align: right !important;
+  align-items: flex-start !important;
+  background: linear-gradient(90deg, rgba(246, 250, 254, 0.96) 0%, rgba(246, 250, 254, 0.90) 65%, rgba(246, 250, 254, 0) 100%) !important;
+  border-radius: 24px !important;
+}
+
+[dir="rtl"] .cta-confusion-title,
+html.visadoo-rtl .cta-confusion-title,
+html.translated-rtl .cta-confusion-title,
+body.translated-rtl .cta-confusion-title,
+body.visadoo-rtl .cta-confusion-title {
+  letter-spacing: normal !important;
+  text-align: right !important;
+}
+
+[dir="rtl"] .cta-confusion-sub,
+html.visadoo-rtl .cta-confusion-sub,
+html.translated-rtl .cta-confusion-sub,
+body.translated-rtl .cta-confusion-sub,
+body.visadoo-rtl .cta-confusion-sub {
+  text-align: right !important;
+}
+
+[dir="rtl"] .cta-confusion-tag,
+html.visadoo-rtl .cta-confusion-tag,
+html.translated-rtl .cta-confusion-tag,
+body.translated-rtl .cta-confusion-tag,
+body.visadoo-rtl .cta-confusion-tag {
+  flex-direction: row !important;
+}
+
+[dir="rtl"] .cta-confusion-actions,
+html.visadoo-rtl .cta-confusion-actions,
+html.translated-rtl .cta-confusion-actions,
+body.translated-rtl .cta-confusion-actions,
+body.visadoo-rtl .cta-confusion-actions {
+  justify-content: flex-start !important;
+}
+
+[dir="rtl"] .cta-confusion-pill-btn,
+html.visadoo-rtl .cta-confusion-pill-btn,
+html.translated-rtl .cta-confusion-pill-btn,
+body.translated-rtl .cta-confusion-pill-btn,
+body.visadoo-rtl .cta-confusion-pill-btn {
+  flex-direction: row-reverse !important;
+}
+
+[dir="rtl"] .cta-confusion-pill-btn .cta-btn-arrow,
+html.visadoo-rtl .cta-confusion-pill-btn .cta-btn-arrow,
+html.translated-rtl .cta-confusion-pill-btn .cta-btn-arrow,
+body.translated-rtl .cta-confusion-pill-btn .cta-btn-arrow,
+body.visadoo-rtl .cta-confusion-pill-btn .cta-btn-arrow {
+  transform: rotate(180deg) !important;
+}
+
+[dir="rtl"] .cta-confusion-pill-btn:hover .cta-btn-arrow,
+html.visadoo-rtl .cta-confusion-pill-btn:hover .cta-btn-arrow,
+html.translated-rtl .cta-confusion-pill-btn:hover .cta-btn-arrow,
+body.translated-rtl .cta-confusion-pill-btn:hover .cta-btn-arrow,
+body.visadoo-rtl .cta-confusion-pill-btn:hover .cta-btn-arrow {
+  transform: rotate(180deg) translateX(4px) !important;
 }
 
 /* =========================================================

@@ -1530,6 +1530,44 @@
   }
 
 
+  function updateOccupationOtherField(selectEl) {
+    var occElements = selectEl ? [selectEl] : Array.prototype.slice.call(document.querySelectorAll('#occupation'));
+    if (occElements.length === 0) {
+      var fallback = document.getElementById('occupation');
+      if (fallback) occElements = [fallback];
+    }
+    occElements.forEach(function(sel) {
+      var container = sel ? (sel.closest('form') || sel.closest('.review-section-body') || sel.closest('.denmark-review-shell') || document) : document;
+      var wrap = container.querySelector('#occ_other_wrap') || document.getElementById('occ_other_wrap');
+      var posInput = container.querySelector('#position') || document.getElementById('position');
+      if (!sel || !wrap) return;
+      var isOther = (sel.value || '').trim().toLowerCase() === 'other';
+      if (isOther) {
+        wrap.style.display = '';
+        if (posInput) {
+          posInput.setAttribute('required', 'required');
+          if (selectEl && document.activeElement === selectEl) {
+            setTimeout(function() { try { posInput.focus(); } catch(_e) {} }, 60);
+          }
+        }
+      } else {
+        wrap.style.display = 'none';
+        if (posInput) {
+          posInput.removeAttribute('required');
+          posInput.value = '';
+        }
+      }
+    });
+  }
+  window.updateOccupationOtherField = updateOccupationOtherField;
+  document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'occupation') {
+      if (typeof updateOccupationOtherField === 'function') {
+        updateOccupationOtherField(e.target);
+      }
+    }
+  });
+
   // ============================================================
   //  PHILIPPINES · CLEAN SINGLE-PAGE REVIEW WITH FATHER/MOTHER OCR & EMPLOYER DETAILS
   // ============================================================
@@ -1713,8 +1751,8 @@
                 field('arrival_date','Travel Date','date','',true)+
                 field('passport_issue_date','Passport issued on','date','',true)+
                 field('passport_expiry','Passport valid till','date','',true)+
-                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+ 
-                field('position','Current position','text','',false)+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required onchange="updateOccupationOtherField(this)"><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+ 
+                '<div class="field" id="occ_other_wrap" style="display:none;grid-column:1/-1"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
                 '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+ 
               '</div>'+ 
             '</div>'+ 
@@ -1769,8 +1807,8 @@
                 field('arrival_date','Travel Date','date','',true)+
                 field('passport_issue_date','Passport issued on','date','',true)+
                 field('passport_expiry','Passport valid till','date','',true)+
-                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+ 
-                field('position','Current position','text','',false)+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required onchange="updateOccupationOtherField(this)"><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+ 
+                '<div class="field" id="occ_other_wrap" style="display:none;grid-column:1/-1"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
                 '<div class="field" style="grid-column:1/-1"><label for="residential_address">Permanent Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Permanent residence address"></textarea></div>'+ 
               '</div>'+ 
             '</div>'+ 
@@ -1826,8 +1864,8 @@
                 field('arrival_date','Travel Date','date','',true)+
                 field('passport_issue_date','Passport issued on','date','',true)+
                 field('passport_expiry','Passport valid till','date','',true)+
-                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
-                field('position','Current position','text','',false)+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required onchange="updateOccupationOtherField(this)"><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
+                '<div class="field" id="occ_other_wrap" style="display:none;grid-column:1/-1"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
                 '<div class="field" style="grid-column:1/-1"><label for="residential_address">Residence Address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter residence address"></textarea></div>'+
               '</div>'+
             '</div>'+
@@ -1889,8 +1927,8 @@
             '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
               '<h4 class="denmark-subheading">2. Employment & Bank details</h4>'+
               '<div class="grid2">'+
-                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
-                field('position','Current position','text','',false)+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required onchange="updateOccupationOtherField(this)"><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
+                '<div class="field" id="occ_other_wrap" style="display:none"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
                 field('thai_bank_name','Bank Name','text','',true)+
                 '<div class="field">' +
                   '<label for="annual_income_select">Annual income <span class="req-star">*</span></label>' +
@@ -1982,9 +2020,9 @@
             '<div class="thailand-sec" style="padding-top:24px;border-top:1px solid #e2e8f0">'+
               '<h4 class="denmark-subheading">2. Employment & Bank details</h4>'+
               '<div class="grid2">'+
-                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
+                '<div class="field"><label for="occupation">Current occupation <span class="req-star">*</span></label><select id="occupation" required onchange="updateOccupationOtherField(this)"><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Unemployed">Unemployed</option><option value="Retired">Retired</option><option value="Other">Other</option></select></div>'+
+                '<div class="field" id="occ_other_wrap" style="display:none"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
                 field('job_title','Job Title','text','',true)+
-                field('position','Current position','text','',false)+
                 field('thai_bank_name','Bank Name','text','',false)+
               '</div>'+
               '<div class="field bank-statement-field" style="margin-top:20px!important;width:100%">'+
@@ -3022,7 +3060,7 @@
               req('passport_expiry','Expiry Date','date')+
               req('arrival_date','Travel Date','date')+
               opt('occupation','Current Occupation',['Employee','Business Owner','Self Employed','Student','Retired','Unemployed','Other'],true)+
-              field('position','Current Position','text','',false)+
+              '<div class="field" id="occ_other_wrap" style="display:none;grid-column:1/-1"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
               (!isSecondary ? '<div class="field" style="grid-column:1/-1"><label for="residential_address">Current residential address <span class="req-star">*</span></label><textarea id="residential_address" style="min-height:64px" required placeholder="Enter full residential address"></textarea></div>' : '') +
             '</div>'+
           '</div>'+
@@ -3704,8 +3742,8 @@
               '</div>'+
               '<div class="review-section-body">'+
                 '<div class="grid2">'+
-                  '<div class="field"><label for="occupation">Current Occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Retired">Retired</option><option value="Unemployed">Unemployed</option><option value="Other">Other</option></select></div>'+
-                  field('position','Current Position','text','',false) +
+                  '<div class="field"><label for="occupation">Current Occupation <span class="req-star">*</span></label><select id="occupation" required onchange="updateOccupationOtherField(this)"><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Retired">Retired</option><option value="Unemployed">Unemployed</option><option value="Other">Other</option></select></div>'+
+                  '<div class="field" id="occ_other_wrap" style="display:none"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
                   field('employer_name','Employer Name','text','',false) +
                   field('employer_phone','Employer Phone','text','',false) +
                 '</div>'+
@@ -4313,8 +4351,8 @@
               '</div>'+
               '<div class="review-section-body">'+
                 '<div class="grid2">'+
-                  '<div class="field"><label for="occupation">Current Occupation <span class="req-star">*</span></label><select id="occupation" required><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Retired">Retired</option><option value="Unemployed">Unemployed</option><option value="Other">Other</option></select></div>'+
-                  field('position','Current Position','text','',false) +
+                  '<div class="field"><label for="occupation">Current Occupation <span class="req-star">*</span></label><select id="occupation" required onchange="updateOccupationOtherField(this)"><option value="">Select occupation</option><option value="Employee">Employee</option><option value="Business Owner">Business Owner</option><option value="Self Employed">Self Employed</option><option value="Student">Student</option><option value="Retired">Retired</option><option value="Unemployed">Unemployed</option><option value="Other">Other</option></select></div>'+
+                  '<div class="field" id="occ_other_wrap" style="display:none"><label for="position">Current Position <span class="req-star">*</span></label><input type="text" id="position" name="position" placeholder="Enter current position"></div>'+
                   field('employer_name','Employer Name','text','',false) +
                   field('employer_phone','Employer Phone','text','',false) +
                 '</div>'+
@@ -4443,7 +4481,7 @@
     if (occ) {
       occ.onchange = function() {
         var needsEmp = ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1;
-        ['position', 'employer_name', 'employer_phone'].forEach(function(id) {
+        ['employer_name', 'employer_phone'].forEach(function(id) {
           var field = document.getElementById(id);
           if (field) {
             var fWrap = field.closest('.field');
@@ -4471,6 +4509,7 @@
             empAddr.value = '';
           }
         }
+        if (typeof updateOccupationOtherField === 'function') updateOccupationOtherField(occ);
         updateAllPremiumSectionStatuses(countrySlug);
       };
     }
@@ -4778,7 +4817,7 @@
     var sec5Reqs = ['occupation'];
     var occ = document.getElementById('occupation');
     if (occ && ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1) {
-      sec5Reqs.push('position', 'employer_name', 'employer_phone', 'employer_address');
+      sec5Reqs.push('employer_name', 'employer_phone', 'employer_address');
     }
     var sec5Empty = countEmpty(sec5Reqs);
     var badge5 = document.getElementById('badge_sec5');
@@ -5009,6 +5048,10 @@
       if (countrySlug === 'kenya' || countrySlug === 'morocco' || countrySlug === 'azerbaijan' || countrySlug === 'azerbaijan-2') {
         err = check('occupation', 'Current occupation is required.', 2); if (err) return err;
       }
+      var occOtherCheck = document.getElementById('occupation');
+      if (occOtherCheck && (occOtherCheck.value || '').trim().toLowerCase() === 'other') {
+        err = check('position', 'Current position is required.', 2); if (err) return err;
+      }
       if (countrySlug === 'saudi-arabia' || countrySlug === 'saudi') {
         err = check('absher_contact', 'Absher Contact is required.', 2); if (err) return err;
         err = check('national_address', 'National Address is required.', 2); if (err) return err;
@@ -5161,9 +5204,12 @@
     err = check('occupation', 'Current occupation is required.', 5);
     if (err) return err;
     var occ = document.getElementById('occupation');
+    if (occ && (occ.value || '').trim().toLowerCase() === 'other') {
+      err = check('position', 'Current position is required.', 5);
+      if (err) return err;
+    }
     if (occ && ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1) {
       var sec5 = [
-        ['position', 'Current position'],
         ['employer_name', 'Employer name'],
         ['employer_phone', 'Employer phone'],
         ['employer_address', 'Employer address']
@@ -5707,7 +5753,7 @@
     if (occ) {
       occ.onchange = function() {
         var needsEmp = ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1;
-        ['position', 'employer_name', 'employer_phone'].forEach(function(id) {
+        ['employer_name', 'employer_phone'].forEach(function(id) {
           var field = document.getElementById(id);
           if (field) {
             var fWrap = field.closest('.field');
@@ -5735,6 +5781,7 @@
             empAddr.value = '';
           }
         }
+        if (typeof updateOccupationOtherField === 'function') updateOccupationOtherField(occ);
         updateAllJapanSectionStatuses();
       };
     }
@@ -6101,7 +6148,7 @@
     var sec5Reqs = ['occupation'];
     var occ = document.getElementById('occupation');
     if (occ && ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1) {
-      sec5Reqs.push('position', 'employer_name', 'employer_phone', 'employer_address');
+      sec5Reqs.push('employer_name', 'employer_phone', 'employer_address');
     }
     var sec5Empty = countEmpty(sec5Reqs);
     var badge5 = document.getElementById('badge_sec5');
@@ -6365,9 +6412,12 @@
     err = check('occupation', 'Current occupation is required.', 5);
     if (err) return err;
     var occ = document.getElementById('occupation');
+    if (occ && (occ.value || '').trim().toLowerCase() === 'other') {
+      err = check('position', 'Current position is required.', 5);
+      if (err) return err;
+    }
     if (occ && ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1) {
       var sec5 = [
-        ['position', 'Current position'],
         ['employer_name', 'Employer name'],
         ['employer_phone', 'Employer phone'],
         ['employer_address', 'Employer address']
@@ -10768,7 +10818,7 @@
 
       // Employment
       qa.answers.push({ q: 'occupation', label: 'Current Occupation', type: 'text', value: val('occupation') });
-      qa.answers.push({ q: 'position', label: 'Current Position', type: 'text', value: val('position') });
+      if (val('position')) qa.answers.push({ q: 'position', label: 'Current Position', type: 'text', value: val('position') });
       qa.answers.push({ q: 'employer_name', label: 'Employer Name', type: 'text', value: val('employer_name') });
       qa.answers.push({ q: 'employer_phone', label: 'Employer Phone', type: 'text', value: val('employer_phone') });
       qa.answers.push({ q: 'employer_address', label: 'Employer Address', type: 'text', value: val('employer_address') });
@@ -10912,8 +10962,8 @@
 
       // Employment
       qa.answers.push({ q: 'occupation', label: 'Current Occupation', type: 'text', value: val('occupation') });
-      qa.answers.push({ q: 'job_title', label: 'Job Title', type: 'text', value: val('job_title') || val('position') });
-      qa.answers.push({ q: 'position', label: 'Current Position', type: 'text', value: val('position') });
+      if (val('job_title')) qa.answers.push({ q: 'job_title', label: 'Job Title', type: 'text', value: val('job_title') });
+      if (val('position')) qa.answers.push({ q: 'position', label: 'Current Position', type: 'text', value: val('position') });
 
       // Country-specific fields
       if (v.country_slug === 'thailand' || v.country_slug === 'bahrain') {
