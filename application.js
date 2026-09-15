@@ -3162,12 +3162,7 @@
     var occ = document.getElementById('occupation');
     if (occ) {
       occ.onchange = function() {
-        var needsEmp = ['Employee', 'Business Owner', 'Self Employed'].indexOf(occ.value) > -1;
-        var pos = document.getElementById('position');
-        if (pos) {
-          var fWrap = pos.closest('.field');
-          if (fWrap) fWrap.style.display = needsEmp ? '' : 'none';
-        }
+        if (typeof updateOccupationOtherField === 'function') updateOccupationOtherField(occ);
       };
       occ.onchange();
     }
